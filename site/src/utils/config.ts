@@ -8,15 +8,6 @@
  * Configuration file for environment variables and constants
  */
 
-// Declare import.meta.env type
-declare global {
-  interface ImportMeta {
-    env: {
-      A_API_KEY: string;
-    };
-  }
-}
-
 // API Configuration
 export const API_URL = 'https://api.moddy.app';
 export const API_KEY = import.meta.env.A_API_KEY || '';
