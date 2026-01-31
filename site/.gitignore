@@ -2,11 +2,7 @@
 node_modules/
 
 # Build outputs
-_dev/
-_prod/
-build/
-lib/
-.wireit/
+dist/
 
 # TypeScript
 tsconfig.tsbuildinfo
@@ -14,10 +10,6 @@ tsconfig.tsbuildinfo
 # Environment variables
 .env
 .env.local
-
-# Note: site/about/*.md, site/components/*.md, and site/theming/*.md
-# are generated during build but MUST be committed to git for Vercel deployment
-# Eleventy needs these files to generate the documentation pages
 
 # Logs
 *.log
