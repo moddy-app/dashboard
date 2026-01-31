@@ -8,7 +8,7 @@
  * HMAC utilities for API request signing
  */
 
-import { API_KEY } from './config.js';
+import { API_KEY } from './config.ts';
 
 /**
  * Generates a random UUID v4
@@ -83,14 +83,7 @@ export async function generateSignature(requestId: string, body: any = {}): Prom
   const sortedPayload = sortKeys(payloadObj);
   const payload = jsonDumps(sortedPayload);
 
-  // Debug logs (remove in production)
-  console.log('🔍 HMAC Debug:');
-  console.log('  Request ID:', requestId);
-  console.log('  Body:', JSON.stringify(body));
-  console.log('  Payload to sign:', payload);
-  console.log('  API Key (first 10):', API_KEY.substring(0, 10));
-
-  // Convert API_KEY string to Uint8Array
+// Convert API_KEY string to Uint8Array
   const encoder = new TextEncoder();
   const keyData = encoder.encode(API_KEY);
 
@@ -110,8 +103,6 @@ export async function generateSignature(requestId: string, body: any = {}): Prom
   // Convert signature to hex string
   const hashArray = Array.from(new Uint8Array(signature));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-  console.log('  Signature:', hashHex);
 
   return hashHex;
 }

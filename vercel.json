@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd site && npm run build:prod",
-  "outputDirectory": "site/_prod",
-  "installCommand": "cd site && npm install --legacy-peer-deps",
+  "buildCommand": "cd site && npm run build",
+  "outputDirectory": "site/dist",
+  "installCommand": "cd site && npm install",
   "framework": null
 }

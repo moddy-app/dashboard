@@ -1,20 +1,19 @@
 {
   "compilerOptions": {
-    "module": "es2022",
-    "lib": ["es2022", "dom", "dom.iterable"],
-    "target": "es2022",
-    "declaration": true,
-    "strict": true,
-    "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
-    "experimentalDecorators": true,
-    "useDefineForClassFields": false,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "types": []
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*", "stories/*", "stories/components"],
-  "exclude": []
+  "include": ["src"]
 }

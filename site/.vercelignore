@@ -1,7 +1,0 @@
-node_modules
-.wireit
-lib
-_dev
-*.log
-.DS_Store
-tsconfig.tsbuildinfo

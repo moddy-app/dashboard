@@ -8,8 +8,8 @@
  * Authentication service for Discord OAuth and session management
  */
 
-import { generateSignature, generateRequestId } from './hmac.js';
-import { API_URL, DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, DISCORD_SCOPES } from './config.js';
+import { generateSignature, generateRequestId } from './hmac.ts';
+import { API_URL, DISCORD_CLIENT_ID, DISCORD_REDIRECT_URI, DISCORD_SCOPES } from './config.ts';
 
 export interface User {
   discord_id: string;
