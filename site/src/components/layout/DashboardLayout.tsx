@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { logout, type UserInfo } from '@/utils/auth';
+import { DatePickerDemo } from '@/components/DatePickerDemo';
 
 interface DashboardLayoutProps {
   user: UserInfo;
@@ -126,45 +127,12 @@ export function DashboardLayout({ user, onLogout }: DashboardLayoutProps) {
 function HomePage() {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Serveurs
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">--</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Commandes utilisées
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">--</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Membres gérés
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">--</div>
-          </CardContent>
-        </Card>
-      </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Activité récente</CardTitle>
+          <CardTitle>Test shadcn/ui - DatePicker</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">Aucune activité récente pour le moment.</p>
+          <DatePickerDemo />
         </CardContent>
       </Card>
     </div>
