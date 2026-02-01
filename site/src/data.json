@@ -1,0 +1,272 @@
+[
+  {
+    "id": 1,
+    "header": "Cover Page",
+    "type": "Cover Page",
+    "status": "Done",
+    "target": "$1,200.00",
+    "limit": "$1,000.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 2,
+    "header": "Table of Contents",
+    "type": "Table of Contents",
+    "status": "In Progress",
+    "target": "$500.00",
+    "limit": "$450.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 3,
+    "header": "Executive Summary",
+    "type": "Executive Summary",
+    "status": "In Progress",
+    "target": "$2,500.00",
+    "limit": "$2,000.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 4,
+    "header": "Technical Approach",
+    "type": "Technical Approach",
+    "status": "Done",
+    "target": "$3,000.00",
+    "limit": "$2,800.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 5,
+    "header": "Design Specifications",
+    "type": "Design",
+    "status": "In Progress",
+    "target": "$1,800.00",
+    "limit": "$1,500.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 6,
+    "header": "Project Capabilities",
+    "type": "Capabilities",
+    "status": "Done",
+    "target": "$2,200.00",
+    "limit": "$2,100.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 7,
+    "header": "Implementation Plan",
+    "type": "Technical Approach",
+    "status": "In Progress",
+    "target": "$1,500.00",
+    "limit": "$1,400.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 8,
+    "header": "Risk Assessment",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$900.00",
+    "limit": "$850.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 9,
+    "header": "Budget Overview",
+    "type": "Summary",
+    "status": "In Progress",
+    "target": "$1,100.00",
+    "limit": "$1,000.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 10,
+    "header": "Timeline",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$700.00",
+    "limit": "$650.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 11,
+    "header": "Team Structure",
+    "type": "Summary",
+    "status": "In Progress",
+    "target": "$1,300.00",
+    "limit": "$1,200.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 12,
+    "header": "Quality Assurance",
+    "type": "Technical Approach",
+    "status": "Done",
+    "target": "$2,000.00",
+    "limit": "$1,900.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 13,
+    "header": "Security Measures",
+    "type": "Capabilities",
+    "status": "In Progress",
+    "target": "$1,600.00",
+    "limit": "$1,550.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 14,
+    "header": "Performance Metrics",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$800.00",
+    "limit": "$750.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 15,
+    "header": "User Documentation",
+    "type": "Design",
+    "status": "In Progress",
+    "target": "$1,400.00",
+    "limit": "$1,350.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 16,
+    "header": "API Reference",
+    "type": "Technical Approach",
+    "status": "Done",
+    "target": "$1,900.00",
+    "limit": "$1,800.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 17,
+    "header": "Integration Guide",
+    "type": "Capabilities",
+    "status": "In Progress",
+    "target": "$1,700.00",
+    "limit": "$1,600.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 18,
+    "header": "Deployment Strategy",
+    "type": "Technical Approach",
+    "status": "Done",
+    "target": "$2,300.00",
+    "limit": "$2,200.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 19,
+    "header": "Maintenance Plan",
+    "type": "Summary",
+    "status": "In Progress",
+    "target": "$1,000.00",
+    "limit": "$950.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 20,
+    "header": "Support Guidelines",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$600.00",
+    "limit": "$550.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 21,
+    "header": "Training Materials",
+    "type": "Design",
+    "status": "In Progress",
+    "target": "$1,250.00",
+    "limit": "$1,200.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 22,
+    "header": "Compliance Report",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$850.00",
+    "limit": "$800.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 23,
+    "header": "Testing Protocol",
+    "type": "Technical Approach",
+    "status": "In Progress",
+    "target": "$1,950.00",
+    "limit": "$1,850.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 24,
+    "header": "Data Migration",
+    "type": "Capabilities",
+    "status": "Done",
+    "target": "$2,100.00",
+    "limit": "$2,000.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 25,
+    "header": "Architecture Overview",
+    "type": "Design",
+    "status": "In Progress",
+    "target": "$1,450.00",
+    "limit": "$1,400.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 26,
+    "header": "Scalability Analysis",
+    "type": "Technical Approach",
+    "status": "Done",
+    "target": "$1,750.00",
+    "limit": "$1,700.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 27,
+    "header": "Cost Analysis",
+    "type": "Summary",
+    "status": "In Progress",
+    "target": "$950.00",
+    "limit": "$900.00",
+    "reviewer": "Emily Whalen"
+  },
+  {
+    "id": 28,
+    "header": "Resource Allocation",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$750.00",
+    "limit": "$700.00",
+    "reviewer": "Eddie Lake"
+  },
+  {
+    "id": 29,
+    "header": "Project Milestones",
+    "type": "Summary",
+    "status": "In Progress",
+    "target": "$1,150.00",
+    "limit": "$1,100.00",
+    "reviewer": "Jamik Tashpulatov"
+  },
+  {
+    "id": 30,
+    "header": "Stakeholder Analysis",
+    "type": "Focus Document",
+    "status": "Done",
+    "target": "$650.00",
+    "limit": "$600.00",
+    "reviewer": "Emily Whalen"
+  }
+]
