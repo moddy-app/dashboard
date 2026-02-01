@@ -1,2 +1,0 @@
-# docs
-Moddy documentation
