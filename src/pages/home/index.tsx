@@ -20,9 +20,12 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+
 export default function Page() {
   return (
     <SidebarProvider>
+      {/* Sidebar */}
       <Sidebar>
         <SidebarContent>
           <SidebarGroup>
@@ -45,8 +48,10 @@ export default function Page() {
         </SidebarContent>
       </Sidebar>
 
+      {/* Main content */}
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2">
+        {/* Header */}
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
 
@@ -59,29 +64,65 @@ export default function Page() {
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbLink href="#">
-                    Building Your Application
+                    Dashboard
                   </BreadcrumbLink>
                 </BreadcrumbItem>
 
                 <BreadcrumbSeparator className="hidden md:block" />
 
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
+                  <BreadcrumbPage>Accueil</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
 
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
-            <div className="bg-muted/50 aspect-video rounded-xl" />
+        {/* Content */}
+        <main className="flex flex-1 flex-col gap-6 p-6">
+          {/* Stats */}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader>
+                <CardTitle>Utilisateurs</CardTitle>
+              </CardHeader>
+              <CardContent className="text-2xl font-bold">
+                1 245
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Projets</CardTitle>
+              </CardHeader>
+              <CardContent className="text-2xl font-bold">
+                32
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Revenus</CardTitle>
+              </CardHeader>
+              <CardContent className="text-2xl font-bold">
+                4 820 €
+              </CardContent>
+            </Card>
           </div>
 
-          <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
-        </div>
+          {/* Main panel */}
+          <Card className="flex-1">
+            <CardHeader>
+              <CardTitle>Activité récente</CardTitle>
+            </CardHeader>
+
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>✅ Nouveau projet créé</p>
+              <p>✅ Utilisateur inscrit</p>
+              <p>⚠️ Maintenance prévue</p>
+            </CardContent>
+          </Card>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   )
