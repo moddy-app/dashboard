@@ -21,5 +21,5 @@ This dashboard allows you to manage and configure Moddy through a modern and int
 ```bash
 cd app
 npm install
-npm run dev
+npm run build
 ```
