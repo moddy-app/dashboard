@@ -11,15 +11,31 @@ export function HomePage() {
     }
   }, [auth.status])
 
-  // Loading ou redirect en cours
+  if (auth.status === 'loading') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Checking session...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (auth.status === 'unauthenticated') {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Redirecting...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        <p className="text-sm text-muted-foreground">
-          {auth.status === 'loading' ? 'Vérification de la session...' : 'Redirection...'}
-        </p>
-      </div>
+      <p className="text-lg font-medium">You are logged in</p>
     </div>
   )
 }
