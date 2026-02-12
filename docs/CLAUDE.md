@@ -268,8 +268,12 @@ Le système utilise :
 - Configuration ESLint pour la qualité du code
 - TypeScript en mode strict
 - Showcase de composants d'exemple
-- **Intégration backend complète (HMAC, auth Discord, gestion de session)**
+- **Intégration backend complète (proxy Vercel sécurisé, auth Discord, gestion de session)**
 - **Hook useAuth pour la gestion d'état d'authentification**
+- **Affichage du nom d'utilisateur Discord sur la page d'accueil**
+- **Récupération des informations complètes de l'utilisateur (avatar, email, etc.)**
+- **Système de logs en temps réel sur la page (débogage)**
+- **Section de débogage des cookies**
 - **Test de connexion au démarrage de l'application**
 
 ### 🚧 Prêt pour le développement

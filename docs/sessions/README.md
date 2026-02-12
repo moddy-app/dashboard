@@ -64,6 +64,20 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-02-12 (Suite 2) - Affichage du nom d'utilisateur et débogage
+**Fichier** : [2026-02-12_affichage-username-debug.md](./2026-02-12_affichage-username-debug.md)
+
+**Résumé** : Ajout de l'affichage du nom d'utilisateur Discord sur la page d'accueil avec `getUserInfo()`. Création d'un système de logs en temps réel sur la page et d'une section de débogage des cookies. Résolution d'un problème critique de CORS avec `preview.moddy.app`.
+
+**Fichiers modifiés** :
+- `app/src/hooks/useAuth.ts` - Ajout de getUserInfo()
+- `app/src/App.tsx` - Affichage username + sections de débogage
+- `app/src/lib/auth.ts` - Logs détaillés
+
+**Impact** : ✅ **Majeur** - UX améliorée + système de débogage complet
+
+---
+
 ### 2026-02-12 (Suite) - Proxy Vercel pour la Sécurité
 **Fichier** : [2026-02-12_proxy-vercel-securite.md](./2026-02-12_proxy-vercel-securite.md)
 
