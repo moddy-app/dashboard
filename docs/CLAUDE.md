@@ -75,6 +75,9 @@
 ### Routing
 - **react-router-dom 7.13.0** - Routing côté client (SPA)
 
+### Monitoring & Error Tracking
+- **@sentry/react** - Capture et reporting d'erreurs en production (Sentry)
+
 ### Autres dépendances
 - **@base-ui/react 1.1.0** - Composants UI headless légers
 - **@fontsource-variable/geist 5.2.8** - Police variable Geist (typographie moderne)
@@ -280,7 +283,8 @@ Le système utilise :
 - **Récupération des informations complètes de l'utilisateur (avatar, email, etc.)**
 - **Routing SPA avec react-router-dom** (`/` et `/debug`)
 - **Auth guard sur la page d'accueil** (redirect vers `moddy.app/sign-in` si non connecté)
-- **Page de debug complète** (`/debug`) avec 10 sections : auth, API ping, env, router, browser, performance, cookies, storage, live logs, UI showcase
+- **Sentry intégré** pour le suivi des erreurs en production (initialisé dans `main.tsx`)
+- **Page de debug complète** (`/debug`) avec 11 sections : auth, API ping, env, router, browser, performance, cookies, storage, live logs, Sentry, UI showcase
 - **Configuration Vercel SPA** (rewrites pour éviter les 404 sur les routes client-side)
 
 ### 🚧 Prêt pour le développement
@@ -344,6 +348,22 @@ La page d'accueil vérifie l'authentification :
 - **Loading** → Spinner centré
 - **Non connecté** → Redirect vers `https://moddy.app/sign-in?url=<URL actuelle encodée>`
 - **Connecté** → Affiche le contenu de la page
+
+## Monitoring & Error Tracking (Sentry)
+
+### Configuration
+- **SDK** : `@sentry/react`
+- **Initialisation** : Dans `main.tsx`, avant le rendu de l'app
+- **DSN** : Configuré en dur (projet Sentry dédié au dashboard Moddy)
+- **PII** : `sendDefaultPii: true` (collecte les IP et données utilisateur par défaut)
+
+### Fonctionnement
+- Sentry capture automatiquement les erreurs JavaScript non gérées
+- Les erreurs sont envoyées au projet Sentry sur `o4510617959202816.ingest.de.sentry.io`
+- La DebugPage (`/debug`) contient une section "Sentry Error Tracking" avec :
+  - Affichage du DSN et du statut d'initialisation
+  - Bouton "Throw Test Error" pour tester la capture d'erreurs
+  - Bouton "Send Test Message" pour envoyer un message de test via `Sentry.captureMessage()`
 
 ## Intégration Git
 
@@ -434,4 +454,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-12*
+*Dernière mise à jour : 2026-02-12 (ajout Sentry)*

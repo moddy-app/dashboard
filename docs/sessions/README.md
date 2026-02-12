@@ -64,6 +64,21 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-02-12 (Suite 4) - Intégration Sentry Error Tracking
+**Fichier** : [2026-02-12_sentry-error-tracking.md](./2026-02-12_sentry-error-tracking.md)
+
+**Résumé** : Intégration de `@sentry/react` pour le suivi des erreurs en production. Initialisation dans `main.tsx`, ajout d'une section de test dans la DebugPage avec boutons pour tester la capture d'erreurs et l'envoi de messages.
+
+**Fichiers modifiés** :
+- `app/src/main.tsx` - Initialisation Sentry
+- `app/src/pages/DebugPage.tsx` - Section Sentry Error Tracking
+- `app/package.json` - Dépendance @sentry/react
+- `docs/CLAUDE.md` - Documentation mise à jour
+
+**Impact** : ✅ **Majeur** - Monitoring des erreurs en production activé
+
+---
+
 ### 2026-02-12 (Suite 3) - Routing SPA, Auth Guard et Page Debug
 **Fichier** : [2026-02-12_routing-spa-auth-guard.md](./2026-02-12_routing-spa-auth-guard.md)
 

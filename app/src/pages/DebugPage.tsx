@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { signInWithDiscord, logout } from '@/lib/auth'
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 
 // Store logs globally
 const logs: string[] = []
@@ -362,6 +363,36 @@ export function DebugPage() {
               ))}
             </div>
           )}
+        </div>
+      </DebugSection>
+
+      {/* Sentry */}
+      <DebugSection title="Sentry Error Tracking" defaultOpen={false}>
+        <div className="space-y-3">
+          <KeyValue label="DSN" value={Sentry.getClient()?.getDsn()?.toString() ?? 'Not configured'} mono />
+          <KeyValue label="Status" value={Sentry.getClient() ? 'Initialized' : 'Not initialized'} />
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                throw new Error('This is a Sentry test error!')
+              }}
+              className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+            >
+              Throw Test Error
+            </button>
+            <button
+              onClick={() => {
+                Sentry.captureMessage('Test message from Debug Panel')
+                console.log('[Sentry] Test message sent')
+              }}
+              className="rounded bg-yellow-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-yellow-700"
+            >
+              Send Test Message
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            "Throw Test Error" will crash this section (caught by Sentry). "Send Test Message" sends a non-error event to Sentry.
+          </p>
         </div>
       </DebugSection>
 
