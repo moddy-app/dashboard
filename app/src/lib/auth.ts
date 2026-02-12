@@ -55,19 +55,24 @@ export interface UserInfo {
  */
 export async function verifySession(): Promise<VerifyResponse> {
   try {
+    console.log('[verifySession] Calling', `${API_URL}/auth/verify`)
     const response = await fetch(`${API_URL}/auth/verify`, {
       credentials: 'include', // Important: envoie les cookies
     })
 
+    console.log('[verifySession] Response status:', response.status)
+    console.log('[verifySession] Response headers:', Object.fromEntries(response.headers.entries()))
+
     if (!response.ok) {
-      console.error('Failed to verify session:', response.status)
+      console.error('[verifySession] Failed to verify session:', response.status)
       return { valid: false }
     }
 
     const data: VerifyResponse = await response.json()
+    console.log('[verifySession] Response data:', data)
     return data
   } catch (error) {
-    console.error('Error verifying session:', error)
+    console.error('[verifySession] Error verifying session:', error)
     return { valid: false }
   }
 }

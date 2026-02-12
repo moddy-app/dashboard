@@ -1,9 +1,50 @@
 import { ComponentExample } from '@/components/component-example'
 import { useAuth } from '@/hooks/useAuth'
 import { signInWithDiscord, logout } from '@/lib/auth'
+import { useState, useEffect } from 'react'
+
+// Stocker les logs globalement
+const logs: string[] = []
+const logListeners: Set<(logs: string[]) => void> = new Set()
+
+// Intercepter console.log pour capturer les logs
+const originalLog = console.log
+const originalError = console.error
+
+console.log = (...args: any[]) => {
+  const message = args.map(arg =>
+    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+  ).join(' ')
+  logs.push(`[LOG] ${new Date().toLocaleTimeString()} - ${message}`)
+  if (logs.length > 50) logs.shift() // Garder seulement les 50 derniers
+  logListeners.forEach(listener => listener([...logs]))
+  originalLog(...args)
+}
+
+console.error = (...args: any[]) => {
+  const message = args.map(arg =>
+    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+  ).join(' ')
+  logs.push(`[ERROR] ${new Date().toLocaleTimeString()} - ${message}`)
+  if (logs.length > 50) logs.shift()
+  logListeners.forEach(listener => listener([...logs]))
+  originalError(...args)
+}
 
 export function App() {
   const auth = useAuth()
+  const [displayLogs, setDisplayLogs] = useState<string[]>([])
+
+  useEffect(() => {
+    // S'abonner aux logs
+    const listener = (newLogs: string[]) => setDisplayLogs(newLogs)
+    logListeners.add(listener)
+    setDisplayLogs([...logs])
+
+    return () => {
+      logListeners.delete(listener)
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -98,6 +139,35 @@ export function App() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Debug: Logs en temps réel */}
+      <div className="mb-8 rounded-lg border bg-card p-6">
+        <h2 className="mb-4 text-xl font-bold">Logs de débogage (Temps réel)</h2>
+        <div className="max-h-96 overflow-y-auto rounded bg-black p-4 font-mono text-xs">
+          {displayLogs.length === 0 ? (
+            <p className="text-gray-500">Aucun log pour le moment...</p>
+          ) : (
+            <div className="space-y-1">
+              {displayLogs.map((log, index) => (
+                <div
+                  key={index}
+                  className={
+                    log.includes('[ERROR]')
+                      ? 'text-red-400'
+                      : log.includes('[useAuth]')
+                        ? 'text-blue-400'
+                        : log.includes('[verifySession]')
+                          ? 'text-green-400'
+                          : 'text-gray-300'
+                  }
+                >
+                  {log}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Debug: Liste des cookies */}
