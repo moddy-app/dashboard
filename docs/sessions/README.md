@@ -64,6 +64,25 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-02-12 (Suite 3) - Routing SPA, Auth Guard et Page Debug
+**Fichier** : [2026-02-12_routing-spa-auth-guard.md](./2026-02-12_routing-spa-auth-guard.md)
+
+**Résumé** : Mise en place du routing avec `react-router-dom`, création d'une page d'accueil avec auth guard (redirect vers `moddy.app/sign-in` si non connecté), déplacement et enrichissement de la page debug sur `/debug`, et configuration de Vercel pour le SPA routing.
+
+**Fichiers créés** :
+- `app/src/pages/HomePage.tsx` - Page d'accueil avec auth guard
+- `app/src/pages/DebugPage.tsx` - Page debug enrichie (10 sections)
+- `vercel.json` / `app/vercel.json` - SPA rewrites
+
+**Fichiers modifiés** :
+- `app/src/App.tsx` - Routeur avec 2 routes
+- `app/src/main.tsx` - BrowserRouter
+- `app/package.json` - react-router-dom
+
+**Impact** : ✅ **Majeur** - Architecture SPA en place, auth guard fonctionnel
+
+---
+
 ### 2026-02-12 (Suite 2) - Affichage du nom d'utilisateur et débogage
 **Fichier** : [2026-02-12_affichage-username-debug.md](./2026-02-12_affichage-username-debug.md)
 

@@ -22,14 +22,16 @@
 │   │   ├── components/     # Composants React réutilisables
 │   │   │   ├── ui/        # Bibliothèque shadcn/ui
 │   │   │   └── *.tsx      # Composants d'exemple
-│   │   ├── pages/         # Composants de pages (vide, prêt à être développé)
+│   │   ├── pages/         # Pages de l'application
+│   │   │   ├── HomePage.tsx   # Page d'accueil (auth guard + redirect)
+│   │   │   └── DebugPage.tsx  # Page de debug (/debug)
 │   │   ├── layouts/       # Composants de mise en page (vide)
 │   │   ├── hooks/         # Hooks React personnalisés (useAuth, etc.)
 │   │   ├── services/      # Services API (prêt pour extension)
 │   │   ├── lib/          # Fonctions utilitaires (auth, utils)
 │   │   ├── assets/       # Ressources statiques
-│   │   ├── App.tsx       # Composant racine
-│   │   ├── main.tsx      # Point d'entrée React
+│   │   ├── App.tsx       # Routeur principal (react-router-dom)
+│   │   ├── main.tsx      # Point d'entrée React (BrowserRouter)
 │   │   └── index.css     # Styles globaux + design tokens
 │   ├── public/           # Fichiers statiques publics
 │   ├── .env.local        # Variables d'environnement (dev local uniquement)
@@ -38,7 +40,9 @@
 │   ├── vite.config.ts    # Configuration Vite
 │   ├── components.json   # Configuration shadcn/ui
 │   ├── eslint.config.js  # Configuration ESLint
+│   ├── vercel.json       # Rewrites SPA pour Vercel
 │   └── tsconfig.*.json   # Configurations TypeScript
+├── vercel.json           # Rewrites SPA pour Vercel (racine)
 ├── docs/                 # Documentation
 │   ├── CLAUDE.md         # Documentation technique pour Claude (ce fichier)
 │   ├── backend-integration/  # Documentation d'intégration API
@@ -67,6 +71,9 @@
 - **ESLint 9.39.1** - Linting du code avec support TypeScript
 - **TypeScript ESLint 8.46.4** - Règles de linting spécifiques à TypeScript
 - **Vite React Plugin 5.1.1** - Support JSX dans Vite
+
+### Routing
+- **react-router-dom 7.13.0** - Routing côté client (SPA)
 
 ### Autres dépendances
 - **@base-ui/react 1.1.0** - Composants UI headless légers
@@ -270,18 +277,17 @@ Le système utilise :
 - Showcase de composants d'exemple
 - **Intégration backend complète (proxy Vercel sécurisé, auth Discord, gestion de session)**
 - **Hook useAuth pour la gestion d'état d'authentification**
-- **Affichage du nom d'utilisateur Discord sur la page d'accueil**
 - **Récupération des informations complètes de l'utilisateur (avatar, email, etc.)**
-- **Système de logs en temps réel sur la page (débogage)**
-- **Section de débogage des cookies**
-- **Test de connexion au démarrage de l'application**
+- **Routing SPA avec react-router-dom** (`/` et `/debug`)
+- **Auth guard sur la page d'accueil** (redirect vers `moddy.app/sign-in` si non connecté)
+- **Page de debug complète** (`/debug`) avec 10 sections : auth, API ping, env, router, browser, performance, cookies, storage, live logs, UI showcase
+- **Configuration Vercel SPA** (rewrites pour éviter les 404 sur les routes client-side)
 
 ### 🚧 Prêt pour le développement
-- Routing des pages et navigation
-- Layouts de pages
+- Layouts de pages (sidebar, header, navigation)
 - Logique de changement de thème
 - Gestion et validation de formulaires
-- Pages protégées nécessitant l'authentification
+- Contenu du dashboard (pages fonctionnelles)
 
 ## Guidelines de développement
 
@@ -303,7 +309,7 @@ npx shadcn@latest add [component-name]
 ### Ajout de nouvelles pages
 
 1. Créer le composant dans `src/pages/`
-2. Configurer le routing (à venir)
+2. Ajouter la `<Route>` dans `src/App.tsx`
 3. Ajouter les layouts nécessaires dans `src/layouts/`
 
 ### Ajout de services API
@@ -319,6 +325,25 @@ npx shadcn@latest add [component-name]
 - **Responsive** : Utiliser les breakpoints Tailwind (`sm:`, `md:`, `lg:`, etc.)
 - **Performance** : Lazy loading pour les pages, memo pour les composants lourds
 - **Tests** : À implémenter (React Testing Library recommandé)
+
+## Routing
+
+### Architecture
+- **`main.tsx`** — `<BrowserRouter>` wrapping l'app
+- **`App.tsx`** — `<Routes>` avec les routes définies
+- **`vercel.json`** — Rewrites SPA (`/*` → `index.html`, `/api/*` → serverless)
+
+### Routes actuelles
+| Route | Page | Auth requise | Description |
+|-------|------|-------------|-------------|
+| `/` | `HomePage` | Oui (redirect vers `moddy.app/sign-in`) | Page d'accueil du dashboard |
+| `/debug` | `DebugPage` | Non | Panneau de debug complet |
+
+### Auth Guard
+La page d'accueil vérifie l'authentification :
+- **Loading** → Spinner centré
+- **Non connecté** → Redirect vers `https://moddy.app/sign-in?url=<URL actuelle encodée>`
+- **Connecté** → Affiche le contenu de la page
 
 ## Intégration Git
 
