@@ -15,6 +15,8 @@
 
 ```
 /workspaces/dashboard/
+├── api/                    # Serverless Functions Vercel
+│   └── backend-proxy.ts   # Proxy sécurisé pour signer les requêtes HMAC
 ├── app/                    # Application React + Vite principale
 │   ├── src/
 │   │   ├── components/     # Composants React réutilisables
@@ -24,7 +26,7 @@
 │   │   ├── layouts/       # Composants de mise en page (vide)
 │   │   ├── hooks/         # Hooks React personnalisés (useAuth, etc.)
 │   │   ├── services/      # Services API (prêt pour extension)
-│   │   ├── lib/          # Fonctions utilitaires (hmac, auth, utils)
+│   │   ├── lib/          # Fonctions utilitaires (auth, utils)
 │   │   ├── assets/       # Ressources statiques
 │   │   ├── App.tsx       # Composant racine
 │   │   ├── main.tsx      # Point d'entrée React
@@ -187,16 +189,21 @@ variants: {
 **`src/lib/utils.ts`** :
 - Fonction `cn()` - Fusionne intelligemment les classes Tailwind avec clsx et tailwind-merge
 
-**`src/lib/hmac.ts`** :
-- Fonction `generateSignature()` - Génère une signature HMAC-SHA256 pour les requêtes API
-- Fonction `generateRequestId()` - Génère un UUID v4 unique pour identifier les requêtes
-- Utilise l'API Web Crypto pour la sécurité
-
 **`src/lib/auth.ts`** :
 - Fonction `verifySession()` - Vérifie si l'utilisateur est connecté
-- Fonction `signInWithDiscord()` - Démarre le flow d'authentification Discord OAuth
+- Fonction `signInWithDiscord()` - Démarre le flow d'authentification Discord OAuth (via proxy)
 - Fonction `logout()` - Déconnecte l'utilisateur
 - Fonction `getUserInfo()` - Récupère les informations complètes de l'utilisateur
+- Fonction `callBackendProxy()` - Appelle le proxy Vercel pour signer les requêtes
+
+### API Serverless (Vercel Functions)
+
+**`/api/backend-proxy.ts`** :
+- Proxy sécurisé pour les requêtes vers le backend Moddy
+- Génère les signatures HMAC côté serveur (clé API jamais exposée au client)
+- Utilise `crypto` Node.js pour HMAC-SHA256
+- Forward les requêtes vers le backend avec signature
+- **Sécurité** : La clé API reste côté serveur uniquement
 
 ### Hooks personnalisés
 
@@ -212,36 +219,46 @@ variants: {
 Le dashboard communique avec le backend Moddy via l'API `https://api.moddy.app`.
 
 **Variables d'environnement (Vercel) :**
+
+**Publiques** (préfixées par `VITE_`, exposées au client) :
 - `VITE_API_URL` - URL de l'API backend (https://api.moddy.app)
-- `VITE_API_KEY` - Clé partagée pour signer les requêtes HMAC
 - `VITE_DISCORD_CLIENT_ID` - ID client Discord OAuth
+
+**Privées** (côté serveur uniquement, jamais exposées au client) :
+- `API_URL` - URL de l'API backend (pour les serverless functions)
+- `API_KEY` - Clé partagée pour signer les requêtes HMAC (⚠️ NE JAMAIS préfixer par `VITE_`)
 
 ### Authentification
 
 Le système utilise :
 - **Discord OAuth2** pour l'authentification
 - **HMAC-SHA256** pour signer les requêtes API vers `/api/website/*`
+- **Proxy Vercel** qui signe les requêtes côté serveur (la clé API n'est jamais exposée au client)
 - **Cookies HTTP-only** (`moddy_session`) pour la gestion de session
 - Le **backend gère la création des cookies**, le frontend ne fait que vérifier
 
 ### Flow d'authentification
 
 1. User clique sur "Se connecter avec Discord"
-2. Frontend → `POST /api/website/auth/init` (avec signature HMAC)
-3. Backend → Retourne un `state` token
-4. Frontend → Redirige vers Discord OAuth avec le `state`
-5. Discord → User autorise l'application
-6. Discord → Redirige vers le backend `/auth/discord/callback`
-7. Backend → Crée la session et pose le cookie `moddy_session`
-8. Backend → Redirige vers la page d'origine
-9. Frontend → Vérifie la session avec `GET /auth/verify`
+2. Frontend → `POST /api/backend-proxy` (proxy Vercel)
+3. Proxy Vercel → Signe la requête avec HMAC côté serveur
+4. Proxy → `POST /api/website/auth/init` vers le backend Moddy
+5. Backend → Retourne un `state` token
+6. Frontend → Redirige vers Discord OAuth avec le `state`
+7. Discord → User autorise l'application
+8. Discord → Redirige vers le backend `/auth/discord/callback`
+9. Backend → Crée la session et pose le cookie `moddy_session`
+10. Backend → Redirige vers la page d'origine
+11. Frontend → Vérifie la session avec `GET /auth/verify`
 
 ### Sécurité
 
-- Toutes les requêtes vers `/api/website/*` sont signées avec HMAC-SHA256
-- Les cookies sont `HttpOnly`, `Secure`, et `SameSite=Lax`
-- Le frontend utilise `credentials: 'include'` pour envoyer les cookies
-- Les signatures utilisent l'API Web Crypto du navigateur
+- **Clé API jamais exposée** : La clé API reste côté serveur (proxy Vercel)
+- **Signature HMAC côté serveur** : Les requêtes vers `/api/website/*` sont signées par le proxy
+- **Cookies sécurisés** : `HttpOnly`, `Secure`, et `SameSite=Lax`
+- **CORS strict** : Le backend n'accepte que les requêtes depuis `moddy.app`
+- **Credentials include** : Le frontend utilise `credentials: 'include'` pour envoyer les cookies
+- **Rate limiting** : Protection contre le spam (à implémenter côté backend)
 
 ## Statut du développement
 

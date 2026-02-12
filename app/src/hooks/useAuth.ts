@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { verifySession, type User } from '@/lib/auth'
+import { verifySession, getUserInfo, type User, type UserInfo } from '@/lib/auth'
 
 type AuthState =
   | { status: 'loading' }
-  | { status: 'authenticated'; user: User }
+  | { status: 'authenticated'; user: User; userInfo: UserInfo | null }
   | { status: 'unauthenticated' }
 
 export function useAuth() {
@@ -14,12 +14,16 @@ export function useAuth() {
       const result = await verifySession()
 
       if (result.valid && result.discord_id) {
+        // Récupérer les informations complètes de l'utilisateur
+        const userInfo = await getUserInfo()
+
         setState({
           status: 'authenticated',
           user: {
             discord_id: result.discord_id,
             email: result.email || null,
           },
+          userInfo,
         })
       } else {
         setState({ status: 'unauthenticated' })

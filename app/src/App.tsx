@@ -34,6 +34,16 @@ export function App() {
               </svg>
               <span className="font-semibold">Connecté au backend</span>
             </div>
+            {auth.userInfo && (
+              <p className="text-base font-medium">
+                Vous êtes connecté en tant que{' '}
+                <span className="text-primary">
+                  {auth.userInfo.username}
+                  {auth.userInfo.discriminator !== '0' &&
+                    `#${auth.userInfo.discriminator}`}
+                </span>
+              </p>
+            )}
             <div className="space-y-1 text-sm">
               <p>
                 <strong>Discord ID:</strong> {auth.user.discord_id}

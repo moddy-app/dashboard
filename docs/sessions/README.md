@@ -64,16 +64,39 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-02-12 (Suite) - Proxy Vercel pour la Sécurité
+**Fichier** : [2026-02-12_proxy-vercel-securite.md](./2026-02-12_proxy-vercel-securite.md)
+
+**Résumé** : Correction d'une faille de sécurité critique en créant un proxy Vercel serverless. La clé API n'est plus exposée au client - la signature HMAC est maintenant générée côté serveur uniquement.
+
+**Fichiers créés** :
+- `api/backend-proxy.ts` - Proxy serverless Vercel
+- `api/package.json` - Dépendances pour les fonctions API
+- `api/README.md` - Documentation du proxy
+
+**Fichiers modifiés** :
+- `app/src/lib/auth.ts` - Utilise maintenant le proxy
+- `app/.env.local` - Variables publiques/privées séparées
+
+**Fichiers supprimés** :
+- `app/src/lib/hmac.ts` - Plus nécessaire côté client
+
+**Impact** : 🔴 **Critique** - Corrige une faille de sécurité majeure
+
+---
+
 ### 2026-02-12 - Intégration Backend
 **Fichier** : [2026-02-12_integration-backend.md](./2026-02-12_integration-backend.md)
 
 **Résumé** : Implémentation complète de la communication entre le frontend et le backend Moddy. Ajout de l'authentification Discord OAuth2, signature HMAC des requêtes, hook useAuth, et test de connexion au démarrage.
 
 **Fichiers créés** :
-- `app/src/lib/hmac.ts`
+- `app/src/lib/hmac.ts` (⚠️ supprimé plus tard pour sécurité)
 - `app/src/lib/auth.ts`
 - `app/src/hooks/useAuth.ts`
 - `app/.env.local`
+
+**Impact** : ✅ **Majeur** - Connexion backend opérationnelle
 
 ---
 

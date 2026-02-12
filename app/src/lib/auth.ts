@@ -1,8 +1,29 @@
-import { generateSignature, generateRequestId } from './hmac'
-
 const API_URL = import.meta.env.VITE_API_URL || ''
 const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || ''
 const REDIRECT_URI = `${API_URL}/auth/discord/callback`
+
+/**
+ * Appelle le proxy Vercel pour signer les requêtes de manière sécurisée
+ * La clé API n'est jamais exposée au client
+ */
+async function callBackendProxy(endpoint: string, body: any = {}) {
+  const response = await fetch('/api/backend-proxy', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      endpoint,
+      body,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Proxy request failed: ${response.status}`)
+  }
+
+  return response.json()
+}
 
 export interface User {
   discord_id: number
@@ -53,31 +74,14 @@ export async function verifySession(): Promise<VerifyResponse> {
 
 /**
  * Démarre le flow d'authentification Discord
+ * Utilise le proxy Vercel pour signer les requêtes de manière sécurisée
  */
 export async function signInWithDiscord() {
   try {
-    // 1. Initialiser l'auth et obtenir le state
-    const requestId = generateRequestId()
-    const body = {
+    // 1. Initialiser l'auth via le proxy (signature côté serveur)
+    const { state } = await callBackendProxy('/api/website/auth/init', {
       current_page: window.location.href,
-    }
-    const signature = await generateSignature(requestId, body)
-
-    const response = await fetch(`${API_URL}/api/website/auth/init`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Request-Id': requestId,
-        'X-Signature': signature,
-      },
-      body: JSON.stringify(body),
     })
-
-    if (!response.ok) {
-      throw new Error(`Failed to initialize auth: ${response.status}`)
-    }
-
-    const { state } = await response.json()
 
     // 2. Construire l'URL Discord OAuth
     const discordUrl = new URL('https://discord.com/api/oauth2/authorize')
