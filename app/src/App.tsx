@@ -100,6 +100,39 @@ export function App() {
         )}
       </div>
 
+      {/* Debug: Liste des cookies */}
+      <div className="mb-8 rounded-lg border bg-card p-6">
+        <h2 className="mb-4 text-xl font-bold">Cookies visibles (Debug)</h2>
+        <div className="space-y-2">
+          {document.cookie ? (
+            <div className="space-y-2">
+              {document.cookie.split('; ').map((cookie, index) => {
+                const [name, value] = cookie.split('=')
+                return (
+                  <div
+                    key={index}
+                    className="rounded bg-muted p-3 font-mono text-sm"
+                  >
+                    <div className="text-xs text-muted-foreground">Cookie #{index + 1}</div>
+                    <div className="mt-1">
+                      <strong className="text-primary">{name}:</strong>{' '}
+                      <span className="break-all">{value}</span>
+                    </div>
+                  </div>
+                )
+              })}
+              <p className="mt-4 text-xs text-muted-foreground">
+                ⚠️ Note: Le cookie <code className="rounded bg-muted px-1">moddy_session</code> est <strong>HttpOnly</strong> et n'apparaît pas ici (c'est normal pour la sécurité).
+              </p>
+            </div>
+          ) : (
+            <p className="text-muted-foreground">
+              Aucun cookie visible. Le cookie <code className="rounded bg-muted px-1">moddy_session</code> est HttpOnly et n'est pas accessible en JavaScript.
+            </p>
+          )}
+        </div>
+      </div>
+
       {/* Composants d'exemple */}
       <ComponentExample />
     </div>
