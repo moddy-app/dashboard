@@ -56,23 +56,35 @@ export interface UserInfo {
 export async function verifySession(): Promise<VerifyResponse> {
   try {
     console.log('[verifySession] Calling', `${API_URL}/auth/verify`)
+    console.log('[verifySession] Current origin:', window.location.origin)
+    console.log('[verifySession] Cookies in browser:', document.cookie || '(none visible)')
+
     const response = await fetch(`${API_URL}/auth/verify`, {
       credentials: 'include', // Important: envoie les cookies
     })
 
     console.log('[verifySession] Response status:', response.status)
+    console.log('[verifySession] Response ok?:', response.ok)
     console.log('[verifySession] Response headers:', Object.fromEntries(response.headers.entries()))
+
+    // Lire le texte brut de la réponse
+    const responseText = await response.text()
+    console.log('[verifySession] Response text (raw):', responseText)
 
     if (!response.ok) {
       console.error('[verifySession] Failed to verify session:', response.status)
       return { valid: false }
     }
 
-    const data: VerifyResponse = await response.json()
-    console.log('[verifySession] Response data:', data)
+    // Parser le JSON depuis le texte
+    const data: VerifyResponse = JSON.parse(responseText)
+    console.log('[verifySession] Response data (parsed):', data)
     return data
   } catch (error) {
     console.error('[verifySession] Error verifying session:', error)
+    console.error('[verifySession] Error type:', typeof error)
+    console.error('[verifySession] Error message:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('[verifySession] Error stack:', error instanceof Error ? error.stack : 'No stack')
     return { valid: false }
   }
 }
