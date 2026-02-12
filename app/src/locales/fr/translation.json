@@ -1,0 +1,107 @@
+{
+  "home": {
+    "checkingSession": "V\u00e9rification de la session...",
+    "redirecting": "Redirection...",
+    "loggedIn": "Vous \u00eates connect\u00e9"
+  },
+  "debug": {
+    "title": "Panneau de debug",
+    "auth": {
+      "title": "Authentification",
+      "checkingSession": "V\u00e9rification de la session...",
+      "authenticated": "Authentifi\u00e9",
+      "avatar": "Avatar",
+      "id": "ID : {{id}}",
+      "userInfoRaw": "Infos utilisateur (brut)",
+      "sessionData": "Donn\u00e9es de session",
+      "discordId": "ID Discord",
+      "email": "E-mail",
+      "notProvided": "Non fourni",
+      "logout": "Se d\u00e9connecter",
+      "notLoggedIn": "Non connect\u00e9",
+      "signInDiscord": "Se connecter avec Discord"
+    },
+    "api": {
+      "title": "Connectivit\u00e9 API",
+      "pingDirect": "Ping API directe",
+      "pingProxy": "Ping Proxy Vercel",
+      "directApi": "API directe :",
+      "vercelProxy": "Proxy Vercel :"
+    },
+    "environment": {
+      "title": "Environnement"
+    },
+    "router": {
+      "title": "Routeur",
+      "pathname": "Chemin",
+      "search": "Recherche",
+      "hash": "Hash",
+      "origin": "Origine",
+      "fullUrl": "URL compl\u00e8te"
+    },
+    "browser": {
+      "title": "Navigateur",
+      "userAgent": "User Agent",
+      "language": "Langue",
+      "languages": "Langues",
+      "online": "En ligne",
+      "cookiesEnabled": "Cookies activ\u00e9s",
+      "cpuCores": "C\u0153urs CPU",
+      "platform": "Plateforme",
+      "screen": "\u00c9cran",
+      "window": "Fen\u00eatre",
+      "timezone": "Fuseau horaire"
+    },
+    "performance": {
+      "title": "Performance",
+      "domContentLoaded": "DOM Content Loaded",
+      "pageLoad": "Chargement de la page",
+      "dnsLookup": "R\u00e9solution DNS",
+      "tcpConnect": "Connexion TCP",
+      "ttfb": "TTFB",
+      "domInteractive": "DOM Interactif",
+      "transferSize": "Taille du transfert",
+      "type": "Type",
+      "notAvailable": "Donn\u00e9es de performance non disponibles",
+      "memory": "M\u00e9moire",
+      "notSupported": "Non support\u00e9"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "httpOnlyNote": "Le cookie <code>moddy_session</code> est HttpOnly et n\u2019appara\u00eetra pas ici.",
+      "noCookies": "Aucun cookie visible (les cookies HttpOnly ne sont pas accessibles via JavaScript)."
+    },
+    "storage": {
+      "title": "Stockage",
+      "localStorage": "LocalStorage ({{count}} entr\u00e9es)",
+      "sessionStorage": "SessionStorage ({{count}} entr\u00e9es)",
+      "empty": "Vide"
+    },
+    "logs": {
+      "title": "Logs en direct ({{count}})",
+      "noLogs": "Aucun log pour l\u2019instant..."
+    },
+    "sentry": {
+      "title": "Suivi d\u2019erreurs Sentry",
+      "dsn": "DSN",
+      "notConfigured": "Non configur\u00e9",
+      "status": "Statut",
+      "initialized": "Initialis\u00e9",
+      "notInitialized": "Non initialis\u00e9",
+      "throwTestError": "Lancer une erreur test",
+      "sendTestMessage": "Envoyer un message test",
+      "description": "\u00ab Lancer une erreur test \u00bb va crasher cette section (captur\u00e9 par Sentry). \u00ab Envoyer un message test \u00bb envoie un \u00e9v\u00e9nement non-erreur \u00e0 Sentry."
+    },
+    "components": {
+      "title": "Composants UI (Showcase)"
+    },
+    "languageSwitcher": "Langue",
+    "languageAuto": "Auto"
+  },
+  "common": {
+    "yes": "Oui",
+    "no": "Non",
+    "empty": "(vide)",
+    "clear": "Effacer"
+  }
+}

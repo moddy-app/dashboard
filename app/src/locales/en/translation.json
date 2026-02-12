@@ -1,0 +1,107 @@
+{
+  "home": {
+    "checkingSession": "Checking session...",
+    "redirecting": "Redirecting...",
+    "loggedIn": "You are logged in"
+  },
+  "debug": {
+    "title": "Debug Panel",
+    "auth": {
+      "title": "Authentication",
+      "checkingSession": "Checking session...",
+      "authenticated": "Authenticated",
+      "avatar": "Avatar",
+      "id": "ID: {{id}}",
+      "userInfoRaw": "User Info (raw)",
+      "sessionData": "Session Data",
+      "discordId": "Discord ID",
+      "email": "Email",
+      "notProvided": "Not provided",
+      "logout": "Log out",
+      "notLoggedIn": "Not logged in",
+      "signInDiscord": "Sign in with Discord"
+    },
+    "api": {
+      "title": "API Connectivity",
+      "pingDirect": "Ping Direct API",
+      "pingProxy": "Ping Vercel Proxy",
+      "directApi": "Direct API:",
+      "vercelProxy": "Vercel Proxy:"
+    },
+    "environment": {
+      "title": "Environment"
+    },
+    "router": {
+      "title": "Router",
+      "pathname": "Pathname",
+      "search": "Search",
+      "hash": "Hash",
+      "origin": "Origin",
+      "fullUrl": "Full URL"
+    },
+    "browser": {
+      "title": "Browser",
+      "userAgent": "User Agent",
+      "language": "Language",
+      "languages": "Languages",
+      "online": "Online",
+      "cookiesEnabled": "Cookies Enabled",
+      "cpuCores": "CPU Cores",
+      "platform": "Platform",
+      "screen": "Screen",
+      "window": "Window",
+      "timezone": "Timezone"
+    },
+    "performance": {
+      "title": "Performance",
+      "domContentLoaded": "DOM Content Loaded",
+      "pageLoad": "Page Load",
+      "dnsLookup": "DNS Lookup",
+      "tcpConnect": "TCP Connect",
+      "ttfb": "TTFB",
+      "domInteractive": "DOM Interactive",
+      "transferSize": "Transfer Size",
+      "type": "Type",
+      "notAvailable": "Performance data not available",
+      "memory": "Memory",
+      "notSupported": "Not supported"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "httpOnlyNote": "The <code>moddy_session</code> cookie is HttpOnly and won't appear here.",
+      "noCookies": "No visible cookies (HttpOnly cookies are not accessible via JavaScript)."
+    },
+    "storage": {
+      "title": "Storage",
+      "localStorage": "LocalStorage ({{count}} entries)",
+      "sessionStorage": "SessionStorage ({{count}} entries)",
+      "empty": "Empty"
+    },
+    "logs": {
+      "title": "Live Logs ({{count}})",
+      "noLogs": "No logs yet..."
+    },
+    "sentry": {
+      "title": "Sentry Error Tracking",
+      "dsn": "DSN",
+      "notConfigured": "Not configured",
+      "status": "Status",
+      "initialized": "Initialized",
+      "notInitialized": "Not initialized",
+      "throwTestError": "Throw Test Error",
+      "sendTestMessage": "Send Test Message",
+      "description": "\"Throw Test Error\" will crash this section (caught by Sentry). \"Send Test Message\" sends a non-error event to Sentry."
+    },
+    "components": {
+      "title": "UI Components (Showcase)"
+    },
+    "languageSwitcher": "Language",
+    "languageAuto": "Auto"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "empty": "(empty)",
+    "clear": "Clear"
+  }
+}

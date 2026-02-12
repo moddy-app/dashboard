@@ -1,8 +1,10 @@
 import { ComponentExample } from '@/components/component-example'
 import { useAuth } from '@/hooks/useAuth'
 import { signInWithDiscord, logout } from '@/lib/auth'
+import { getPreferences, setPreferences, detectBrowserLanguage } from '@/lib/preferences'
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import * as Sentry from '@sentry/react'
 
 // Store logs globally
@@ -59,10 +61,27 @@ function StatusDot({ ok }: { ok: boolean }) {
 export function DebugPage() {
   const auth = useAuth()
   const location = useLocation()
+  const { t, i18n } = useTranslation()
+  const [languageMode, setLanguageMode] = useState<'auto' | 'en' | 'fr'>(() => {
+    const pref = getPreferences().language
+    return (pref as 'en' | 'fr') ?? 'auto'
+  })
   const [displayLogs, setDisplayLogs] = useState<string[]>([])
   const [apiPing, setApiPing] = useState<{ status: string; latency: number | null; error?: string } | null>(null)
   const [proxyPing, setProxyPing] = useState<{ status: string; latency: number | null; error?: string } | null>(null)
   const [now, setNow] = useState(new Date())
+
+  const changeLanguage = useCallback((mode: 'auto' | 'en' | 'fr') => {
+    setLanguageMode(mode)
+    if (mode === 'auto') {
+      setPreferences({ language: undefined })
+      const detected = detectBrowserLanguage(['en', 'fr'], 'en')
+      i18n.changeLanguage(detected)
+    } else {
+      setPreferences({ language: mode })
+      i18n.changeLanguage(mode)
+    }
+  }, [i18n])
 
   useEffect(() => {
     const listener = (newLogs: string[]) => setDisplayLogs(newLogs)
@@ -119,54 +138,70 @@ export function DebugPage() {
   return (
     <div className="min-h-screen bg-background p-4 sm:p-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Debug Panel</h1>
-        <span className="font-mono text-xs text-muted-foreground">{now.toLocaleString()}</span>
+        <h1 className="text-2xl font-bold">{t('debug.title')}</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t('debug.languageSwitcher')}:</span>
+            <div className="flex gap-1">
+              {(['auto', 'en', 'fr'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => changeLanguage(mode)}
+                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${languageMode === mode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                >
+                  {mode === 'auto' ? t('debug.languageAuto') : mode.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <span className="font-mono text-xs text-muted-foreground">{now.toLocaleString()}</span>
+        </div>
       </div>
 
       {/* Auth Status */}
-      <DebugSection title="Authentication">
+      <DebugSection title={t('debug.auth.title')}>
         {auth.status === 'loading' && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-            <span>Checking session...</span>
+            <span>{t('debug.auth.checkingSession')}</span>
           </div>
         )}
         {auth.status === 'authenticated' && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-green-600">
               <StatusDot ok />
-              <span className="font-semibold">Authenticated</span>
+              <span className="font-semibold">{t('debug.auth.authenticated')}</span>
             </div>
             {auth.userInfo && (
               <>
                 <div className="flex items-center gap-3">
                   {auth.userInfo.avatar_url && (
-                    <img src={auth.userInfo.avatar_url} alt="Avatar" className="h-10 w-10 rounded-full" />
+                    <img src={auth.userInfo.avatar_url} alt={t('debug.auth.avatar')} className="h-10 w-10 rounded-full" />
                   )}
                   <div>
                     <p className="font-medium text-primary">
                       {auth.userInfo.username}
                       {auth.userInfo.discriminator !== '0' && `#${auth.userInfo.discriminator}`}
                     </p>
-                    <p className="text-xs text-muted-foreground">ID: {auth.userInfo.id}</p>
+                    <p className="text-xs text-muted-foreground">{t('debug.auth.id', { id: auth.userInfo.id })}</p>
                   </div>
                 </div>
                 <div className="rounded bg-muted p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">User Info (raw)</p>
+                  <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.userInfoRaw')}</p>
                   <pre className="overflow-x-auto text-xs">{JSON.stringify(auth.userInfo, null, 2)}</pre>
                 </div>
               </>
             )}
             <div className="rounded bg-muted p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Session Data</p>
-              <KeyValue label="Discord ID" value={auth.user.discord_id} mono />
-              <KeyValue label="Email" value={auth.user.email || 'Not provided'} />
+              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.sessionData')}</p>
+              <KeyValue label={t('debug.auth.discordId')} value={auth.user.discord_id} mono />
+              <KeyValue label={t('debug.auth.email')} value={auth.user.email || t('debug.auth.notProvided')} />
             </div>
             <button
               onClick={async () => { if (await logout()) window.location.reload() }}
               className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
             >
-              Log out
+              {t('debug.auth.logout')}
             </button>
           </div>
         )}
@@ -174,33 +209,33 @@ export function DebugPage() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-yellow-600">
               <StatusDot ok={false} />
-              <span className="font-semibold">Not logged in</span>
+              <span className="font-semibold">{t('debug.auth.notLoggedIn')}</span>
             </div>
             <button
               onClick={() => signInWithDiscord()}
               className="flex items-center gap-2 rounded-md bg-[#5865F2] px-4 py-2 font-medium text-white hover:bg-[#4752C4]"
             >
-              Sign in with Discord
+              {t('debug.auth.signInDiscord')}
             </button>
           </div>
         )}
       </DebugSection>
 
       {/* API Connectivity */}
-      <DebugSection title="API Connectivity">
+      <DebugSection title={t('debug.api.title')}>
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <button onClick={pingApi} className="rounded bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90">
-              Ping Direct API
+              {t('debug.api.pingDirect')}
             </button>
             <button onClick={pingProxy} className="rounded bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground hover:opacity-90">
-              Ping Vercel Proxy
+              {t('debug.api.pingProxy')}
             </button>
           </div>
           {apiPing && (
             <div className="flex items-center gap-2 text-sm">
               <StatusDot ok={apiPing.status === 'ok'} />
-              <span>Direct API: <strong>{apiPing.status}</strong></span>
+              <span>{t('debug.api.directApi')} <strong>{apiPing.status}</strong></span>
               {apiPing.latency !== null && <span className="text-muted-foreground">({apiPing.latency}ms)</span>}
               {apiPing.error && <span className="text-red-500">{apiPing.error}</span>}
             </div>
@@ -208,7 +243,7 @@ export function DebugPage() {
           {proxyPing && (
             <div className="flex items-center gap-2 text-sm">
               <StatusDot ok={proxyPing.status === 'ok'} />
-              <span>Vercel Proxy: <strong>{proxyPing.status}</strong></span>
+              <span>{t('debug.api.vercelProxy')} <strong>{proxyPing.status}</strong></span>
               {proxyPing.latency !== null && <span className="text-muted-foreground">({proxyPing.latency}ms)</span>}
               {proxyPing.error && <span className="text-red-500">{proxyPing.error}</span>}
             </div>
@@ -217,7 +252,7 @@ export function DebugPage() {
       </DebugSection>
 
       {/* Environment */}
-      <DebugSection title="Environment">
+      <DebugSection title={t('debug.environment.title')}>
         <div className="space-y-1">
           {Object.entries(envVars).map(([key, val]) => (
             <KeyValue key={key} label={key} value={val} mono />
@@ -226,53 +261,53 @@ export function DebugPage() {
       </DebugSection>
 
       {/* Router */}
-      <DebugSection title="Router">
-        <KeyValue label="Pathname" value={location.pathname} mono />
-        <KeyValue label="Search" value={location.search || '(empty)'} mono />
-        <KeyValue label="Hash" value={location.hash || '(empty)'} mono />
-        <KeyValue label="Origin" value={window.location.origin} mono />
-        <KeyValue label="Full URL" value={window.location.href} mono />
+      <DebugSection title={t('debug.router.title')}>
+        <KeyValue label={t('debug.router.pathname')} value={location.pathname} mono />
+        <KeyValue label={t('debug.router.search')} value={location.search || t('common.empty')} mono />
+        <KeyValue label={t('debug.router.hash')} value={location.hash || t('common.empty')} mono />
+        <KeyValue label={t('debug.router.origin')} value={window.location.origin} mono />
+        <KeyValue label={t('debug.router.fullUrl')} value={window.location.href} mono />
       </DebugSection>
 
       {/* Browser */}
-      <DebugSection title="Browser" defaultOpen={false}>
-        <KeyValue label="User Agent" value={navigator.userAgent} mono />
-        <KeyValue label="Language" value={navigator.language} />
-        <KeyValue label="Languages" value={navigator.languages.join(', ')} />
-        <KeyValue label="Online" value={<><StatusDot ok={navigator.onLine} /> {navigator.onLine ? 'Yes' : 'No'}</>} />
-        <KeyValue label="Cookies Enabled" value={navigator.cookieEnabled ? 'Yes' : 'No'} />
-        <KeyValue label="CPU Cores" value={navigator.hardwareConcurrency} />
-        <KeyValue label="Platform" value={navigator.platform} />
-        <KeyValue label="Screen" value={`${screen.width}x${screen.height} (${devicePixelRatio}x)`} />
-        <KeyValue label="Window" value={`${window.innerWidth}x${window.innerHeight}`} />
-        <KeyValue label="Timezone" value={Intl.DateTimeFormat().resolvedOptions().timeZone} />
+      <DebugSection title={t('debug.browser.title')} defaultOpen={false}>
+        <KeyValue label={t('debug.browser.userAgent')} value={navigator.userAgent} mono />
+        <KeyValue label={t('debug.browser.language')} value={navigator.language} />
+        <KeyValue label={t('debug.browser.languages')} value={navigator.languages.join(', ')} />
+        <KeyValue label={t('debug.browser.online')} value={<><StatusDot ok={navigator.onLine} /> {navigator.onLine ? t('common.yes') : t('common.no')}</>} />
+        <KeyValue label={t('debug.browser.cookiesEnabled')} value={navigator.cookieEnabled ? t('common.yes') : t('common.no')} />
+        <KeyValue label={t('debug.browser.cpuCores')} value={navigator.hardwareConcurrency} />
+        <KeyValue label={t('debug.browser.platform')} value={navigator.platform} />
+        <KeyValue label={t('debug.browser.screen')} value={`${screen.width}x${screen.height} (${devicePixelRatio}x)`} />
+        <KeyValue label={t('debug.browser.window')} value={`${window.innerWidth}x${window.innerHeight}`} />
+        <KeyValue label={t('debug.browser.timezone')} value={Intl.DateTimeFormat().resolvedOptions().timeZone} />
       </DebugSection>
 
       {/* Performance */}
-      <DebugSection title="Performance" defaultOpen={false}>
+      <DebugSection title={t('debug.performance.title')} defaultOpen={false}>
         {perf ? (
           <>
-            <KeyValue label="DOM Content Loaded" value={`${Math.round(perf.domContentLoadedEventEnd - perf.startTime)}ms`} />
-            <KeyValue label="Page Load" value={`${Math.round(perf.loadEventEnd - perf.startTime)}ms`} />
-            <KeyValue label="DNS Lookup" value={`${Math.round(perf.domainLookupEnd - perf.domainLookupStart)}ms`} />
-            <KeyValue label="TCP Connect" value={`${Math.round(perf.connectEnd - perf.connectStart)}ms`} />
-            <KeyValue label="TTFB" value={`${Math.round(perf.responseStart - perf.requestStart)}ms`} />
-            <KeyValue label="DOM Interactive" value={`${Math.round(perf.domInteractive - perf.startTime)}ms`} />
-            <KeyValue label="Transfer Size" value={`${(perf.transferSize / 1024).toFixed(1)} KB`} />
-            <KeyValue label="Type" value={perf.type} />
+            <KeyValue label={t('debug.performance.domContentLoaded')} value={`${Math.round(perf.domContentLoadedEventEnd - perf.startTime)}ms`} />
+            <KeyValue label={t('debug.performance.pageLoad')} value={`${Math.round(perf.loadEventEnd - perf.startTime)}ms`} />
+            <KeyValue label={t('debug.performance.dnsLookup')} value={`${Math.round(perf.domainLookupEnd - perf.domainLookupStart)}ms`} />
+            <KeyValue label={t('debug.performance.tcpConnect')} value={`${Math.round(perf.connectEnd - perf.connectStart)}ms`} />
+            <KeyValue label={t('debug.performance.ttfb')} value={`${Math.round(perf.responseStart - perf.requestStart)}ms`} />
+            <KeyValue label={t('debug.performance.domInteractive')} value={`${Math.round(perf.domInteractive - perf.startTime)}ms`} />
+            <KeyValue label={t('debug.performance.transferSize')} value={`${(perf.transferSize / 1024).toFixed(1)} KB`} />
+            <KeyValue label={t('debug.performance.type')} value={perf.type} />
           </>
         ) : (
-          <p className="text-sm text-muted-foreground">Performance data not available</p>
+          <p className="text-sm text-muted-foreground">{t('debug.performance.notAvailable')}</p>
         )}
-        <KeyValue label="Memory" value={
+        <KeyValue label={t('debug.performance.memory')} value={
           'memory' in performance
             ? `${((performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory.usedJSHeapSize / 1048576).toFixed(1)} MB / ${((performance as unknown as { memory: { usedJSHeapSize: number; totalJSHeapSize: number } }).memory.totalJSHeapSize / 1048576).toFixed(1)} MB`
-            : 'Not supported'
+            : t('debug.performance.notSupported')
         } />
       </DebugSection>
 
       {/* Cookies */}
-      <DebugSection title="Cookies" defaultOpen={false}>
+      <DebugSection title={t('debug.cookies.title')} defaultOpen={false}>
         {document.cookie ? (
           <div className="space-y-2">
             {document.cookie.split('; ').map((cookie, index) => {
@@ -284,23 +319,27 @@ export function DebugPage() {
               )
             })}
             <p className="text-xs text-muted-foreground">
-              The <code className="rounded bg-muted px-1">moddy_session</code> cookie is HttpOnly and won't appear here.
+              {t('debug.cookies.httpOnlyNote').split('<code>').map((part, i) => {
+                if (i === 0) return part
+                const [code, rest] = part.split('</code>')
+                return <span key={i}><code className="rounded bg-muted px-1">{code}</code>{rest}</span>
+              })}
             </p>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">
-            No visible cookies (HttpOnly cookies are not accessible via JavaScript).
+            {t('debug.cookies.noCookies')}
           </p>
         )}
       </DebugSection>
 
       {/* Storage */}
-      <DebugSection title="Storage" defaultOpen={false}>
+      <DebugSection title={t('debug.storage.title')} defaultOpen={false}>
         <div className="space-y-3">
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">LocalStorage ({localStorage.length} entries)</p>
+            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{t('debug.storage.localStorage', { count: localStorage.length })}</p>
             {localStorage.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Empty</p>
+              <p className="text-sm text-muted-foreground">{t('debug.storage.empty')}</p>
             ) : (
               <div className="space-y-1">
                 {Array.from({ length: localStorage.length }).map((_, i) => {
@@ -312,9 +351,9 @@ export function DebugPage() {
             )}
           </div>
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">SessionStorage ({sessionStorage.length} entries)</p>
+            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{t('debug.storage.sessionStorage', { count: sessionStorage.length })}</p>
             {sessionStorage.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Empty</p>
+              <p className="text-sm text-muted-foreground">{t('debug.storage.empty')}</p>
             ) : (
               <div className="space-y-1">
                 {Array.from({ length: sessionStorage.length }).map((_, i) => {
@@ -329,18 +368,18 @@ export function DebugPage() {
       </DebugSection>
 
       {/* Logs */}
-      <DebugSection title={`Live Logs (${displayLogs.length})`}>
+      <DebugSection title={t('debug.logs.title', { count: displayLogs.length })}>
         <div className="flex justify-end mb-2">
           <button
             onClick={() => { logs.length = 0; setDisplayLogs([]) }}
             className="rounded bg-muted px-2 py-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            Clear
+            {t('common.clear')}
           </button>
         </div>
         <div className="max-h-96 overflow-y-auto rounded bg-black p-4 font-mono text-xs">
           {displayLogs.length === 0 ? (
-            <p className="text-gray-500">No logs yet...</p>
+            <p className="text-gray-500">{t('debug.logs.noLogs')}</p>
           ) : (
             <div className="space-y-0.5">
               {displayLogs.map((log, index) => (
@@ -367,10 +406,10 @@ export function DebugPage() {
       </DebugSection>
 
       {/* Sentry */}
-      <DebugSection title="Sentry Error Tracking" defaultOpen={false}>
+      <DebugSection title={t('debug.sentry.title')} defaultOpen={false}>
         <div className="space-y-3">
-          <KeyValue label="DSN" value={Sentry.getClient()?.getDsn()?.toString() ?? 'Not configured'} mono />
-          <KeyValue label="Status" value={Sentry.getClient() ? 'Initialized' : 'Not initialized'} />
+          <KeyValue label={t('debug.sentry.dsn')} value={Sentry.getClient()?.getDsn()?.toString() ?? t('debug.sentry.notConfigured')} mono />
+          <KeyValue label={t('debug.sentry.status')} value={Sentry.getClient() ? t('debug.sentry.initialized') : t('debug.sentry.notInitialized')} />
           <div className="flex gap-2">
             <button
               onClick={() => {
@@ -378,7 +417,7 @@ export function DebugPage() {
               }}
               className="rounded bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
             >
-              Throw Test Error
+              {t('debug.sentry.throwTestError')}
             </button>
             <button
               onClick={() => {
@@ -387,17 +426,17 @@ export function DebugPage() {
               }}
               className="rounded bg-yellow-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-yellow-700"
             >
-              Send Test Message
+              {t('debug.sentry.sendTestMessage')}
             </button>
           </div>
           <p className="text-xs text-muted-foreground">
-            "Throw Test Error" will crash this section (caught by Sentry). "Send Test Message" sends a non-error event to Sentry.
+            {t('debug.sentry.description')}
           </p>
         </div>
       </DebugSection>
 
       {/* Component Showcase */}
-      <DebugSection title="UI Components (Showcase)" defaultOpen={false}>
+      <DebugSection title={t('debug.components.title')} defaultOpen={false}>
         <ComponentExample />
       </DebugSection>
     </div>

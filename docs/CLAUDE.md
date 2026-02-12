@@ -28,10 +28,14 @@
 │   │   ├── layouts/       # Composants de mise en page (vide)
 │   │   ├── hooks/         # Hooks React personnalisés (useAuth, etc.)
 │   │   ├── services/      # Services API (prêt pour extension)
-│   │   ├── lib/          # Fonctions utilitaires (auth, utils)
+│   │   ├── lib/          # Fonctions utilitaires (auth, utils, preferences)
+│   │   ├── locales/      # Fichiers de traduction i18n
+│   │   │   ├── en/translation.json  # Traductions anglais
+│   │   │   └── fr/translation.json  # Traductions français
 │   │   ├── assets/       # Ressources statiques
 │   │   ├── App.tsx       # Routeur principal (react-router-dom)
 │   │   ├── main.tsx      # Point d'entrée React (BrowserRouter)
+│   │   ├── i18n.ts       # Configuration react-i18next
 │   │   └── index.css     # Styles globaux + design tokens
 │   ├── public/           # Fichiers statiques publics
 │   ├── .env.local        # Variables d'environnement (dev local uniquement)
@@ -77,6 +81,10 @@
 
 ### Monitoring & Error Tracking
 - **@sentry/react** - Capture et reporting d'erreurs en production (Sentry)
+
+### Internationalisation (i18n)
+- **react-i18next** - Intégration React pour i18next (hook `useTranslation`)
+- **i18next** - Moteur de traduction (gestion des langues, interpolation, fallback)
 
 ### Autres dépendances
 - **@base-ui/react 1.1.0** - Composants UI headless légers
@@ -199,6 +207,11 @@ variants: {
 **`src/lib/utils.ts`** :
 - Fonction `cn()` - Fusionne intelligemment les classes Tailwind avec clsx et tailwind-merge
 
+**`src/lib/preferences.ts`** :
+- Fonction `getPreferences()` - Lit le cookie `moddy_preferences` et retourne un objet `UserPreferences`
+- Fonction `setPreferences()` - Met à jour le cookie avec les nouvelles préférences (merge)
+- Fonction `detectBrowserLanguage()` - Détecte la langue du navigateur parmi les langues supportées
+
 **`src/lib/auth.ts`** :
 - Fonction `verifySession()` - Vérifie si l'utilisateur est connecté
 - Fonction `signInWithDiscord()` - Démarre le flow d'authentification Discord OAuth (via proxy)
@@ -284,6 +297,7 @@ Le système utilise :
 - **Routing SPA avec react-router-dom** (`/` et `/debug`)
 - **Auth guard sur la page d'accueil** (redirect vers `moddy.app/sign-in` si non connecté)
 - **Sentry intégré** pour le suivi des erreurs en production (initialisé dans `main.tsx`)
+- **Internationalisation (i18n)** avec react-i18next (EN par défaut, FR en fallback, sélecteur de langue dans `/debug`)
 - **Page de debug complète** (`/debug`) avec 11 sections : auth, API ping, env, router, browser, performance, cookies, storage, live logs, Sentry, UI showcase
 - **Configuration Vercel SPA** (rewrites pour éviter les 404 sur les routes client-side)
 
@@ -315,6 +329,7 @@ npx shadcn@latest add [component-name]
 1. Créer le composant dans `src/pages/`
 2. Ajouter la `<Route>` dans `src/App.tsx`
 3. Ajouter les layouts nécessaires dans `src/layouts/`
+4. **Obligatoire : supporter l'i18n** — Utiliser `useTranslation()` pour tous les textes affichés, ajouter les clés dans `locales/en/translation.json` et `locales/fr/translation.json`
 
 ### Ajout de services API
 
@@ -364,6 +379,73 @@ La page d'accueil vérifie l'authentification :
   - Affichage du DSN et du statut d'initialisation
   - Bouton "Throw Test Error" pour tester la capture d'erreurs
   - Bouton "Send Test Message" pour envoyer un message de test via `Sentry.captureMessage()`
+
+## Internationalisation (i18n)
+
+### Configuration
+- **Moteur** : i18next + react-i18next
+- **Fichier de config** : `src/i18n.ts` (importé dans `main.tsx` avant le render)
+- **Langue de secours** : `en` (anglais)
+- **Détection auto** : détecte la langue du navigateur (`navigator.languages`)
+- **Cookie de préférences** : `moddy_preferences` (JSON, 1 an, extensible pour futur dark mode etc.)
+- **Interpolation** : `escapeValue: false` (React gère l'échappement)
+
+### Logique de résolution de la langue
+1. Si le cookie `moddy_preferences` contient une clé `language` → utilise cette langue
+2. Sinon, détecte la langue du navigateur parmi les langues supportées (en, fr)
+3. Si aucune langue supportée n'est détectée → fallback `en`
+
+### Cookie `moddy_preferences`
+- **Format** : JSON encodé (`{ "language": "fr" }`)
+- **Durée** : 1 an (`max-age=31536000`)
+- **Attributs** : `path=/; SameSite=Lax`
+- **Extensible** : prévu pour accueillir d'autres préférences (ex: `theme: "dark"`)
+- **Mode Auto** : si l'utilisateur choisit "Auto", la clé `language` est supprimée du cookie
+- **Utilitaires** : `src/lib/preferences.ts` (`getPreferences()`, `setPreferences()`, `detectBrowserLanguage()`)
+
+### Structure des traductions
+```
+src/locales/
+├── en/translation.json   # Textes anglais (source)
+└── fr/translation.json   # Textes français
+```
+
+Les clés sont organisées par page/section :
+- `home.*` — Page d'accueil
+- `debug.*` — Page de debug (auth, api, router, browser, performance, cookies, storage, logs, sentry, components)
+- `common.*` — Textes communs (yes, no, empty, clear)
+
+### Utilisation dans les composants
+```tsx
+import { useTranslation } from 'react-i18next'
+
+const { t, i18n } = useTranslation()
+
+// Traduction simple
+<p>{t('home.loggedIn')}</p>
+
+// Avec interpolation
+<p>{t('debug.auth.id', { id: userId })}</p>
+<p>{t('debug.storage.localStorage', { count: 5 })}</p>
+
+// Changer la langue
+i18n.changeLanguage('fr')
+```
+
+### Fichiers traduits
+- `HomePage.tsx` — 3 textes traduits
+- `DebugPage.tsx` — ~60 textes traduits + sélecteur de langue Auto/EN/FR avec persistance cookie
+
+### Fichiers exclus de la traduction
+- `component-example.tsx` — Textes de démonstration (showcase), restent en anglais
+- `auth.ts` / `useAuth.ts` — Logs console développeur, restent en anglais
+
+### Conventions i18n
+1. **Clés en camelCase** organisées par page puis par section
+2. **Interpolation** avec double accolades : `{{variable}}`
+3. **Hook `useTranslation()`** dans chaque composant qui affiche du texte
+4. **Pas de traduction des logs console** (messages développeur)
+5. **Ajouter les nouvelles clés** dans les deux fichiers JSON (en + fr) simultanément
 
 ## Intégration Git
 
@@ -454,4 +536,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-12 (ajout Sentry)*
+*Dernière mise à jour : 2026-02-12 (ajout i18n react-i18next)*

@@ -64,6 +64,27 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-02-12 (Suite 5) - Internationalisation (i18n) avec react-i18next
+**Fichier** : [2026-02-12_i18n-react-i18next.md](./2026-02-12_i18n-react-i18next.md)
+
+**Résumé** : Implémentation complète de l'internationalisation avec `react-i18next` et `i18next`. Traductions EN/FR pour HomePage et DebugPage (~100 clés). Détection automatique de la langue navigateur, cookie `moddy_preferences` extensible, sélecteur Auto/EN/FR dans la DebugPage.
+
+**Fichiers créés** :
+- `app/src/i18n.ts` - Configuration react-i18next
+- `app/src/locales/en/translation.json` - Traductions anglaises
+- `app/src/locales/fr/translation.json` - Traductions françaises
+- `app/src/lib/preferences.ts` - Utilitaires cookie préférences
+
+**Fichiers modifiés** :
+- `app/src/main.tsx` - Import i18n
+- `app/src/pages/HomePage.tsx` - useTranslation
+- `app/src/pages/DebugPage.tsx` - useTranslation + sélecteur langue
+- `docs/CLAUDE.md` - Documentation i18n complète
+
+**Impact** : ✅ **Majeur** - Site entièrement internationalisé EN/FR
+
+---
+
 ### 2026-02-12 (Suite 4) - Intégration Sentry Error Tracking
 **Fichier** : [2026-02-12_sentry-error-tracking.md](./2026-02-12_sentry-error-tracking.md)
 
