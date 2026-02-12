@@ -22,14 +22,15 @@
 │   │   │   └── *.tsx      # Composants d'exemple
 │   │   ├── pages/         # Composants de pages (vide, prêt à être développé)
 │   │   ├── layouts/       # Composants de mise en page (vide)
-│   │   ├── hooks/         # Hooks React personnalisés (vide)
-│   │   ├── services/      # Services API (vide, prêt pour l'intégration backend)
-│   │   ├── lib/          # Fonctions utilitaires
+│   │   ├── hooks/         # Hooks React personnalisés (useAuth, etc.)
+│   │   ├── services/      # Services API (prêt pour extension)
+│   │   ├── lib/          # Fonctions utilitaires (hmac, auth, utils)
 │   │   ├── assets/       # Ressources statiques
 │   │   ├── App.tsx       # Composant racine
 │   │   ├── main.tsx      # Point d'entrée React
 │   │   └── index.css     # Styles globaux + design tokens
 │   ├── public/           # Fichiers statiques publics
+│   ├── .env.local        # Variables d'environnement (dev local uniquement)
 │   ├── index.html        # Point d'entrée HTML
 │   ├── package.json      # Dépendances et scripts
 │   ├── vite.config.ts    # Configuration Vite
@@ -37,6 +38,10 @@
 │   ├── eslint.config.js  # Configuration ESLint
 │   └── tsconfig.*.json   # Configurations TypeScript
 ├── docs/                 # Documentation
+│   ├── CLAUDE.md         # Documentation technique pour Claude (ce fichier)
+│   ├── backend-integration/  # Documentation d'intégration API
+│   └── sessions/         # Résumés des sessions de développement
+│       └── YYYY-MM-DD_description.md  # Un fichier par session
 └── README.md            # Documentation du projet
 ```
 
@@ -182,6 +187,62 @@ variants: {
 **`src/lib/utils.ts`** :
 - Fonction `cn()` - Fusionne intelligemment les classes Tailwind avec clsx et tailwind-merge
 
+**`src/lib/hmac.ts`** :
+- Fonction `generateSignature()` - Génère une signature HMAC-SHA256 pour les requêtes API
+- Fonction `generateRequestId()` - Génère un UUID v4 unique pour identifier les requêtes
+- Utilise l'API Web Crypto pour la sécurité
+
+**`src/lib/auth.ts`** :
+- Fonction `verifySession()` - Vérifie si l'utilisateur est connecté
+- Fonction `signInWithDiscord()` - Démarre le flow d'authentification Discord OAuth
+- Fonction `logout()` - Déconnecte l'utilisateur
+- Fonction `getUserInfo()` - Récupère les informations complètes de l'utilisateur
+
+### Hooks personnalisés
+
+**`src/hooks/useAuth.ts`** :
+- Hook `useAuth()` - Gère l'état d'authentification de l'utilisateur
+- 3 états possibles : `loading`, `authenticated`, `unauthenticated`
+- Vérifie automatiquement la session au chargement
+
+## Intégration Backend
+
+### Configuration
+
+Le dashboard communique avec le backend Moddy via l'API `https://api.moddy.app`.
+
+**Variables d'environnement (Vercel) :**
+- `VITE_API_URL` - URL de l'API backend (https://api.moddy.app)
+- `VITE_API_KEY` - Clé partagée pour signer les requêtes HMAC
+- `VITE_DISCORD_CLIENT_ID` - ID client Discord OAuth
+
+### Authentification
+
+Le système utilise :
+- **Discord OAuth2** pour l'authentification
+- **HMAC-SHA256** pour signer les requêtes API vers `/api/website/*`
+- **Cookies HTTP-only** (`moddy_session`) pour la gestion de session
+- Le **backend gère la création des cookies**, le frontend ne fait que vérifier
+
+### Flow d'authentification
+
+1. User clique sur "Se connecter avec Discord"
+2. Frontend → `POST /api/website/auth/init` (avec signature HMAC)
+3. Backend → Retourne un `state` token
+4. Frontend → Redirige vers Discord OAuth avec le `state`
+5. Discord → User autorise l'application
+6. Discord → Redirige vers le backend `/auth/discord/callback`
+7. Backend → Crée la session et pose le cookie `moddy_session`
+8. Backend → Redirige vers la page d'origine
+9. Frontend → Vérifie la session avec `GET /auth/verify`
+
+### Sécurité
+
+- Toutes les requêtes vers `/api/website/*` sont signées avec HMAC-SHA256
+- Les cookies sont `HttpOnly`, `Secure`, et `SameSite=Lax`
+- Le frontend utilise `credentials: 'include'` pour envoyer les cookies
+- Les signatures utilisent l'API Web Crypto du navigateur
+
 ## Statut du développement
 
 ### ✅ Actuellement implémenté
@@ -190,14 +251,16 @@ variants: {
 - Configuration ESLint pour la qualité du code
 - TypeScript en mode strict
 - Showcase de composants d'exemple
+- **Intégration backend complète (HMAC, auth Discord, gestion de session)**
+- **Hook useAuth pour la gestion d'état d'authentification**
+- **Test de connexion au démarrage de l'application**
 
 ### 🚧 Prêt pour le développement
 - Routing des pages et navigation
 - Layouts de pages
-- Hooks personnalisés pour la gestion d'état
-- Services API et intégration backend
 - Logique de changement de thème
 - Gestion et validation de formulaires
+- Pages protégées nécessitant l'authentification
 
 ## Guidelines de développement
 
@@ -252,6 +315,32 @@ npx shadcn@latest add [component-name]
 
 ## Notes importantes pour Claude
 
+### Documentation de session (OBLIGATOIRE)
+
+**À la fin de chaque session de travail**, Claude doit créer un fichier de résumé dans `/docs/sessions/` :
+
+**Format du nom de fichier** : `YYYY-MM-DD_nom-descriptif.md`
+
+**Contenu requis** :
+1. **Date et objectif** de la session
+2. **Tâches accomplies** (liste détaillée)
+3. **Fichiers créés/modifiés** avec leurs chemins complets
+4. **Changements dans la structure** du projet
+5. **Fonctionnalités ajoutées** avec explication technique
+6. **Documentation technique** (flow, algorithmes, etc.)
+7. **Technologies utilisées**
+8. **Notes importantes** et décisions prises
+9. **Problèmes rencontrés** et solutions
+10. **Prochaines étapes** suggérées
+
+**Exemple** : `/docs/sessions/2026-02-12_integration-backend.md`
+
+Ce fichier sert de :
+- Historique du développement
+- Documentation pour les futures sessions
+- Référence pour comprendre les décisions passées
+- Guide pour reprendre le travail
+
 ### Lors de modifications de code
 
 1. **Toujours lire les fichiers avant de les modifier**
@@ -259,6 +348,7 @@ npx shadcn@latest add [component-name]
 3. **Maintenir la cohérence TypeScript** (mode strict activé)
 4. **Suivre la structure des dossiers** établie
 5. **Utiliser les alias d'imports** (`@/components`, `@/lib`, etc.)
+6. **Mettre à jour CLAUDE.md** si la structure ou les conventions changent
 
 ### Lors de l'ajout de fonctionnalités
 
