@@ -8,11 +8,5 @@
       "source": "/index.html",
       "destination": "/api/homepage-503"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/backend-proxy",
-      "dest": "/api/backend-proxy.ts"
-    }
   ]
 }
