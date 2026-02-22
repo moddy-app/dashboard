@@ -98,6 +98,12 @@
     "languageSwitcher": "Langue",
     "languageAuto": "Auto"
   },
+  "dashboard": {
+    "breadcrumb": {
+      "app": "Tableau de bord",
+      "overview": "Vue d'ensemble"
+    }
+  },
   "common": {
     "yes": "Oui",
     "no": "Non",

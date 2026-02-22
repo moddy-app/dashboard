@@ -23,8 +23,9 @@
 │   │   │   ├── ui/        # Bibliothèque shadcn/ui
 │   │   │   └── *.tsx      # Composants d'exemple
 │   │   ├── pages/         # Pages de l'application
-│   │   │   ├── HomePage.tsx   # Page d'accueil (auth guard + redirect)
-│   │   │   └── DebugPage.tsx  # Page de debug (/debug)
+│   │   │   ├── HomePage.tsx      # Page d'accueil (auth guard + redirect → DashboardPage)
+│   │   │   ├── DashboardPage.tsx # Dashboard principal (sidebar + breadcrumb + command menu)
+│   │   │   └── DebugPage.tsx     # Page de debug (/debug)
 │   │   ├── layouts/       # Composants de mise en page (vide)
 │   │   ├── hooks/         # Hooks React personnalisés (useAuth, etc.)
 │   │   ├── services/      # Services API (prêt pour extension)
@@ -177,7 +178,7 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - Styling avec Tailwind CSS
 - Support de la prop `asChild` via le composant Slot de Radix UI
 
-**Composants disponibles** (13 composants) :
+**Composants disponibles** (21 composants) :
 - `button.tsx` - Boutons avec variantes (default, outline, secondary, ghost, destructive, link)
 - `card.tsx` - Cartes de contenu
 - `field.tsx` - Champs de formulaire avec label et description
@@ -191,6 +192,24 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - `badge.tsx` - Badges et étiquettes
 - `label.tsx` - Labels de formulaire
 - `separator.tsx` - Séparateurs visuels
+- `sidebar.tsx` - Sidebar responsive avec collapse/expand (SidebarProvider, Sidebar, SidebarTrigger, etc.)
+- `breadcrumb.tsx` - Fil d'Ariane (Breadcrumb, BreadcrumbItem, BreadcrumbLink, etc.)
+- `command.tsx` - Palette de commandes (Command, CommandDialog, CommandInput, etc.)
+- `collapsible.tsx` - Sections collapsibles (Collapsible, CollapsibleTrigger, CollapsibleContent)
+- `avatar.tsx` - Avatars avec fallback (Avatar, AvatarImage, AvatarFallback)
+- `tooltip.tsx` - Infobulles (Tooltip, TooltipContent, TooltipProvider, TooltipTrigger)
+- `dialog.tsx` - Dialogues modaux (Dialog, DialogContent, DialogHeader, etc.)
+- `skeleton.tsx` - Squelettes de chargement
+- `sheet.tsx` - Panneaux latéraux (Sheet, SheetContent, etc.)
+
+### Composants métier (dans `/app/src/components/`)
+
+- `app-sidebar.tsx` - Sidebar principale de l'application (assemble team-switcher, nav-main, nav-projects, nav-user)
+- `team-switcher.tsx` - Sélecteur de serveur/équipe dans la sidebar
+- `nav-main.tsx` - Navigation principale avec sous-menus collapsibles
+- `nav-projects.tsx` - Navigation des projets/raccourcis
+- `nav-user.tsx` - Profil utilisateur en bas de la sidebar (avec dropdown : command menu, account, logout)
+- `command-menu.tsx` - Palette de commandes globale (⌘K)
 
 ### Exemple de variantes de composant
 
@@ -286,7 +305,7 @@ Le système utilise :
 ## Statut du développement
 
 ### ✅ Actuellement implémenté
-- Bibliothèque complète de composants shadcn/ui (13+ composants)
+- Bibliothèque complète de composants shadcn/ui (21+ composants)
 - Configuration Tailwind CSS avec design tokens
 - Configuration ESLint pour la qualité du code
 - TypeScript en mode strict
@@ -301,11 +320,14 @@ Le système utilise :
 - **Page de debug complète** (`/debug`) avec 11 sections : auth, API ping, env, router, browser, performance, cookies, storage, live logs, Sentry, UI showcase
 - **Configuration Vercel SPA** (rewrites pour éviter les 404 sur les routes client-side)
 
+- **Layout dashboard avec sidebar** (AppSidebar, TeamSwitcher, NavMain, NavProjects, NavUser)
+- **Palette de commandes** (CommandMenu, raccourci ⌘K)
+- **TooltipProvider** wrappant l'app dans `main.tsx`
+
 ### 🚧 Prêt pour le développement
-- Layouts de pages (sidebar, header, navigation)
 - Logique de changement de thème
 - Gestion et validation de formulaires
-- Contenu du dashboard (pages fonctionnelles)
+- Contenu du dashboard (pages fonctionnelles, remplir les placeholders)
 
 ## Guidelines de développement
 
@@ -355,7 +377,7 @@ npx shadcn@latest add [component-name]
 ### Routes actuelles
 | Route | Page | Auth requise | Description |
 |-------|------|-------------|-------------|
-| `/` | `HomePage` | Oui (redirect vers `moddy.app/sign-in`) | Page d'accueil du dashboard |
+| `/` | `HomePage` → `DashboardPage` | Oui (redirect vers `moddy.app/sign-in`) | Dashboard avec sidebar, breadcrumb et command menu |
 | `/debug` | `DebugPage` | Non | Panneau de debug complet |
 
 ### Auth Guard
@@ -536,4 +558,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-12 (ajout i18n react-i18next)*
+*Dernière mise à jour : 2026-02-22 (ajout dashboard layout avec sidebar, command menu, composants shadcn supplémentaires)*

@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { DashboardPage } from '@/pages/DashboardPage'
 
 export function HomePage() {
   const auth = useAuth()
@@ -35,9 +36,5 @@ export function HomePage() {
     )
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <p className="text-lg font-medium">{t('home.loggedIn')}</p>
-    </div>
-  )
+  return <DashboardPage userInfo={auth.userInfo} />
 }

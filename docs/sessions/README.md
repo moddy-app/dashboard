@@ -64,6 +64,29 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-02-22 - Dashboard Layout avec Sidebar et Command Menu
+**Fichier** : [2026-02-22_dashboard-sidebar-layout.md](./2026-02-22_dashboard-sidebar-layout.md)
+
+**Résumé** : Implémentation du layout principal du dashboard avec sidebar collapsible (team switcher, navigation, profil utilisateur), breadcrumb, et palette de commandes (⌘K). Installation de 8 nouveaux composants shadcn/ui. Création de 7 nouveaux fichiers composants.
+
+**Fichiers créés** :
+- `app/src/components/app-sidebar.tsx` - Sidebar principale
+- `app/src/components/team-switcher.tsx` - Sélecteur de serveur
+- `app/src/components/nav-main.tsx` - Navigation principale
+- `app/src/components/nav-projects.tsx` - Navigation projets
+- `app/src/components/nav-user.tsx` - Profil utilisateur sidebar
+- `app/src/components/command-menu.tsx` - Palette de commandes
+- `app/src/pages/DashboardPage.tsx` - Page dashboard
+
+**Fichiers modifiés** :
+- `app/src/pages/HomePage.tsx` - Affiche DashboardPage quand authentifié
+- `app/src/main.tsx` - Ajout TooltipProvider
+- `app/src/locales/*/translation.json` - Clés dashboard
+
+**Impact** : ✅ **Majeur** - Layout dashboard complet avec sidebar et command menu
+
+---
+
 ### 2026-02-12 (Suite 5) - Internationalisation (i18n) avec react-i18next
 **Fichier** : [2026-02-12_i18n-react-i18next.md](./2026-02-12_i18n-react-i18next.md)
 
