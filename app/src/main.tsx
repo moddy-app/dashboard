@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client"
 import { BrowserRouter } from "react-router-dom"
 import * as Sentry from "@sentry/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
 
 import "./index.css"
 import "./i18n"
@@ -18,6 +19,7 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <TooltipProvider>
         <App />
+        <Toaster position="bottom-right" richColors />
       </TooltipProvider>
     </BrowserRouter>
   </StrictMode>

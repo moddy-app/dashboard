@@ -4,20 +4,16 @@ import {
   BookOpenIcon,
   BotIcon,
   CommandIcon,
-  FrameIcon,
   GalleryVerticalEndIcon,
   LifeBuoyIcon,
-  MapIcon,
-  PieChartIcon,
+  SearchIcon,
   Settings2Icon,
   ShieldIcon,
   SquareTerminalIcon,
-  TerminalIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
 import {
@@ -83,16 +79,6 @@ const data = {
       ],
     },
     {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpenIcon,
-      items: [
-        { title: "Getting Started", url: "#" },
-        { title: "API Reference", url: "#" },
-        { title: "Changelog", url: "#" },
-      ],
-    },
-    {
       title: "Settings",
       url: "#",
       icon: Settings2Icon,
@@ -103,11 +89,6 @@ const data = {
         { title: "Limits", url: "#" },
       ],
     },
-  ],
-  projects: [
-    { name: "Design Engineering", url: "#", icon: FrameIcon },
-    { name: "Sales & Marketing", url: "#", icon: PieChartIcon },
-    { name: "Travel", url: "#", icon: MapIcon },
   ],
 }
 
@@ -133,10 +114,17 @@ export function AppSidebar({ userInfo, onLogout, onOpenCommandMenu, ...props }: 
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
       </SidebarContent>
       <SidebarFooter>
-        <SidebarMenu>
+        <SidebarMenu className="gap-0.5">
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={t('sidebar.documentation')}>
+              <a href="https://docs.moddy.app" target="_blank" rel="noopener noreferrer">
+                <BookOpenIcon />
+                <span>{t('sidebar.documentation')}</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip={t('sidebar.getHelp')}>
               <a href="https://moddy.app/support" target="_blank" rel="noopener noreferrer">
@@ -146,21 +134,13 @@ export function AppSidebar({ userInfo, onLogout, onOpenCommandMenu, ...props }: 
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <SidebarMenuButton tooltip={t('sidebar.commands')} onClick={onOpenCommandMenu}>
-              <TerminalIcon />
-              <span>{t('sidebar.commands')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={t('sidebar.documentation')}>
-              <a href="https://docs.moddy.app" target="_blank" rel="noopener noreferrer">
-                <BookOpenIcon />
-                <span>{t('sidebar.documentation')}</span>
-              </a>
+            <SidebarMenuButton tooltip={t('sidebar.search')} onClick={onOpenCommandMenu}>
+              <SearchIcon />
+              <span>{t('sidebar.search')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <NavUser user={user} onLogout={onLogout} onOpenCommandMenu={onOpenCommandMenu} />
+        <NavUser user={user} onLogout={onLogout} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

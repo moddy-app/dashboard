@@ -107,7 +107,8 @@
   "sidebar": {
     "getHelp": "Get Help",
     "commands": "Commands",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "search": "Search"
   },
   "pageTitle": {
     "dashboard": "Dashboard",

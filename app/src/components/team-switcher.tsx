@@ -75,7 +75,10 @@ export function TeamSwitcher({
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1373916203814490194", "_blank", "noopener,noreferrer")}
+            >
               <div className="bg-background flex size-6 items-center justify-center rounded-md border">
                 <PlusIcon className="size-4" />
               </div>

@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth'
 import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { LoaderIcon } from 'lucide-react'
 import { DashboardPage } from '@/pages/DashboardPage'
 
 export function HomePage() {
@@ -18,7 +19,7 @@ export function HomePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <LoaderIcon className="size-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">{t('home.checkingSession')}</p>
         </div>
       </div>
@@ -29,7 +30,7 @@ export function HomePage() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <LoaderIcon className="size-8 animate-spin text-primary" />
           <p className="text-sm text-muted-foreground">{t('home.redirecting')}</p>
         </div>
       </div>

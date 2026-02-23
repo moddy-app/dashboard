@@ -107,7 +107,8 @@
   "sidebar": {
     "getHelp": "Obtenir de l'aide",
     "commands": "Commandes",
-    "documentation": "Documentation"
+    "documentation": "Documentation",
+    "search": "Rechercher"
   },
   "pageTitle": {
     "dashboard": "Tableau de bord",
