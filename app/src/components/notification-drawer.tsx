@@ -281,12 +281,12 @@ export function NotificationDrawer({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg flex flex-col max-h-[85vh] p-0 gap-0">
-          <DialogHeader className="px-6 pt-6 pb-4">
+        <DialogContent className="sm:max-w-lg p-0 gap-0">
+          <DialogHeader className="px-6 pt-6 pb-4 pr-10">
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
           <Separator />
-          <div className="overflow-y-auto flex-1 px-6">
+          <div className="no-scrollbar max-h-[60vh] overflow-y-auto px-6 py-4">
             <NotificationList
               notifications={notifications}
               onMarkRead={onMarkRead}
@@ -304,7 +304,7 @@ export function NotificationDrawer({
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>
-        <div className="overflow-y-auto flex-1 px-4">
+        <div className="no-scrollbar overflow-y-auto flex-1 px-4">
           <NotificationList
             notifications={notifications}
             onMarkRead={onMarkRead}

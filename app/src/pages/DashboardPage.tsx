@@ -40,6 +40,7 @@ import {
 import { logout } from "@/lib/auth"
 import type { UserInfo } from "@/lib/auth"
 import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
+import { isNotificationExpired } from "@/types/notification"
 import type { Notification } from "@/types/notification"
 
 interface DashboardPageProps {
@@ -104,6 +105,8 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
   const handleMarkAllRead = useCallback(() => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
   }, [])
+
+  const activeNotifications = notifications.filter((n) => !isNotificationExpired(n))
 
   // Aucun serveur sélectionné — empty state
   const noServerSelected = true // TODO: remplacer par la vraie logique de sélection de serveur
@@ -198,7 +201,7 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
       <NotificationDrawer
         open={notificationDrawerOpen}
         onOpenChange={setNotificationDrawerOpen}
-        notifications={notifications}
+        notifications={activeNotifications}
         onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}
       />

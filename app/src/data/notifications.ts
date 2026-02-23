@@ -66,6 +66,7 @@ export const EXAMPLE_NOTIFICATIONS: Notification[] = [
     criticality: "info",
     timestamp: new Date("2026-02-17T08:00:00Z"),
     read: true,
+    expiresAt: new Date("2026-02-20T23:59:59Z"), // Expiré — rapport de la semaine passée
     actions: [
       {
         label: "Voir le rapport complet",
@@ -83,6 +84,7 @@ export const EXAMPLE_NOTIFICATIONS: Notification[] = [
     criticality: "warning",
     timestamp: new Date("2026-02-16T14:22:00Z"),
     read: true,
+    expiresAt: new Date("2026-02-18T23:59:59Z"), // Expiré — signalement ancien
     actions: [
       {
         label: "Voir les signalements",

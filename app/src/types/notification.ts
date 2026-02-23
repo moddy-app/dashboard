@@ -20,5 +20,12 @@ export interface Notification {
   criticality: NotificationCriticality
   timestamp: Date
   read: boolean
+  /** Date après laquelle la notification n'est plus affichée. Si absent, pas d'expiration. */
+  expiresAt?: Date
   actions?: NotificationAction[]
+}
+
+export function isNotificationExpired(notification: Notification): boolean {
+  if (!notification.expiresAt) return false
+  return notification.expiresAt < new Date()
 }
