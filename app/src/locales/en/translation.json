@@ -104,6 +104,15 @@
       "overview": "Overview"
     }
   },
+  "sidebar": {
+    "getHelp": "Get Help",
+    "commands": "Commands",
+    "documentation": "Documentation"
+  },
+  "pageTitle": {
+    "dashboard": "Dashboard",
+    "debug": "Debug"
+  },
   "common": {
     "yes": "Yes",
     "no": "No",

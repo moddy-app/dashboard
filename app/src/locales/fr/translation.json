@@ -104,6 +104,15 @@
       "overview": "Vue d'ensemble"
     }
   },
+  "sidebar": {
+    "getHelp": "Obtenir de l'aide",
+    "commands": "Commandes",
+    "documentation": "Documentation"
+  },
+  "pageTitle": {
+    "dashboard": "Tableau de bord",
+    "debug": "Debug"
+  },
   "common": {
     "yes": "Oui",
     "no": "Non",

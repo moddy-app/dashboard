@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react"
 import { useTranslation } from "react-i18next"
+import { usePageTitle } from "@/hooks/usePageTitle"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -25,6 +26,7 @@ interface DashboardPageProps {
 
 export function DashboardPage({ userInfo }: DashboardPageProps) {
   const { t } = useTranslation()
+  usePageTitle(t('pageTitle.dashboard'))
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
 
   const handleLogout = useCallback(async () => {

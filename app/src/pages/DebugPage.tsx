@@ -5,6 +5,7 @@ import { getPreferences, setPreferences, detectBrowserLanguage } from '@/lib/pre
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { usePageTitle } from '@/hooks/usePageTitle'
 import * as Sentry from '@sentry/react'
 
 // Store logs globally
@@ -62,6 +63,7 @@ export function DebugPage() {
   const auth = useAuth()
   const location = useLocation()
   const { t, i18n } = useTranslation()
+  usePageTitle(t('pageTitle.debug'))
   const [languageMode, setLanguageMode] = useState<'auto' | 'en' | 'fr'>(() => {
     const pref = getPreferences().language
     return (pref as 'en' | 'fr') ?? 'auto'
