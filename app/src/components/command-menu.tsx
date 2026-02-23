@@ -1,5 +1,5 @@
 import * as React from "react"
-import { useNavigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 import {
   Command,
   CommandDialog,
@@ -11,20 +11,17 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import {
-  ActivityIcon,
   BellIcon,
   BookOpenIcon,
   CreditCardIcon,
-  ExternalLinkIcon,
-  GaugeIcon,
+  GavelIcon,
   HeadphonesIcon,
+  InfoIcon,
   LogOutIcon,
   PlusIcon,
   ServerIcon,
   SettingsIcon,
-  ShieldIcon,
   SparklesIcon,
-  WifiIcon,
 } from "lucide-react"
 
 interface Server {
@@ -36,11 +33,11 @@ interface CommandMenuProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   servers?: Server[]
-  onLogout?: () => void
+  onLogoutRequest?: () => void
 }
 
-export function CommandMenu({ open, onOpenChange, servers = [], onLogout }: CommandMenuProps) {
-  const navigate = useNavigate()
+export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest }: CommandMenuProps) {
+  const { t } = useTranslation()
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -66,12 +63,12 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogout }: Comm
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
       <Command>
-        <CommandInput placeholder="Rechercher une action ou une page..." />
+        <CommandInput placeholder={t('commandMenu.placeholder')} />
         <CommandList>
-          <CommandEmpty>Aucun résultat trouvé.</CommandEmpty>
+          <CommandEmpty>{t('commandMenu.noResults')}</CommandEmpty>
 
           {/* Mes serveurs */}
-          <CommandGroup heading="Mes serveurs">
+          <CommandGroup heading={t('commandMenu.groups.myServers')}>
             {servers.length > 0 ? (
               servers.map((server) => (
                 <CommandItem
@@ -85,86 +82,63 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogout }: Comm
             ) : (
               <CommandItem onSelect={() => runCommand(() => openExternal("https://discord.com/oauth2/authorize?client_id=1373916203814490194"))}>
                 <PlusIcon />
-                <span>Ajouter Moddy à un serveur</span>
+                <span>{t('commandMenu.items.addModdyToServer')}</span>
               </CommandItem>
             )}
           </CommandGroup>
 
           <CommandSeparator />
 
-          {/* Navigation */}
-          <CommandGroup heading="Navigation">
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
-              <GaugeIcon />
-              <span>Dashboard</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
-              <ShieldIcon />
-              <span>Modération</span>
-            </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
-              <SettingsIcon />
-              <span>Paramètres</span>
-            </CommandItem>
-          </CommandGroup>
-
-          <CommandSeparator />
-
           {/* Liens utiles */}
-          <CommandGroup heading="Liens utiles">
+          <CommandGroup heading={t('commandMenu.groups.usefulLinks')}>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://discord.com/oauth2/authorize?client_id=1373916203814490194"))}>
               <PlusIcon />
-              <span>Ajouter Moddy</span>
-              <ExternalLinkIcon className="ml-auto size-3 opacity-50" />
+              <span>{t('commandMenu.items.addModdy')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://moddy.app/support"))}>
               <HeadphonesIcon />
-              <span>Ouvrir un ticket</span>
-              <ExternalLinkIcon className="ml-auto size-3 opacity-50" />
+              <span>{t('commandMenu.items.openTicket')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://docs.moddy.app"))}>
               <BookOpenIcon />
-              <span>Documentation</span>
-              <ExternalLinkIcon className="ml-auto size-3 opacity-50" />
+              <span>{t('commandMenu.items.documentation')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://www.moddy.app/navigation/subscriptions/"))}>
               <SparklesIcon />
-              <span>Abonnements</span>
-              <ExternalLinkIcon className="ml-auto size-3 opacity-50" />
+              <span>{t('commandMenu.items.subscriptions')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://status.moddy.app"))}>
-              <WifiIcon />
-              <span>Statut des services</span>
-              <ExternalLinkIcon className="ml-auto size-3 opacity-50" />
+              <InfoIcon />
+              <span>{t('commandMenu.items.servicesStatus')}</span>
             </CommandItem>
           </CommandGroup>
 
           <CommandSeparator />
 
           {/* Mon compte */}
-          <CommandGroup heading="Mon compte">
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
-              <ActivityIcon />
-              <span>Mes affaires</span>
+          <CommandGroup heading={t('commandMenu.groups.myAccount')}>
+            <CommandItem onSelect={() => runCommand(() => {})}>
+              <GavelIcon />
+              <span>{t('commandMenu.items.myPunishments')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
+            <CommandItem onSelect={() => runCommand(() => {})}>
               <BellIcon />
-              <span>Notifications</span>
+              <span>{t('commandMenu.items.notifications')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
+            <CommandItem onSelect={() => runCommand(() => {})}>
               <CreditCardIcon />
-              <span>Facturation</span>
+              <span>{t('commandMenu.items.billing')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => navigate("/"))}>
+            <CommandItem onSelect={() => runCommand(() => {})}>
               <SettingsIcon />
-              <span>Paramètres du compte</span>
+              <span>{t('commandMenu.items.accountSettings')}</span>
             </CommandItem>
             <CommandItem
-              onSelect={() => runCommand(() => onLogout?.())}
-              className="text-destructive data-[selected=true]:text-destructive"
+              onSelect={() => runCommand(() => onLogoutRequest?.())}
+              className="text-destructive data-selected:text-destructive data-selected:bg-destructive/10"
             >
-              <LogOutIcon />
-              <span>Se déconnecter</span>
+              <LogOutIcon className="!text-destructive" />
+              <span>{t('commandMenu.items.logOut')}</span>
             </CommandItem>
           </CommandGroup>
         </CommandList>

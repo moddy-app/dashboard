@@ -21,6 +21,14 @@ import {
 import { CommandMenu } from "@/components/command-menu"
 import { Button } from "@/components/ui/button"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Empty,
   EmptyContent,
   EmptyDescription,
@@ -38,7 +46,9 @@ interface DashboardPageProps {
 export function DashboardPage({ userInfo }: DashboardPageProps) {
   const { t } = useTranslation()
   usePageTitle(t('pageTitle.dashboard'))
+
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const welcomeToastShown = useRef(false)
 
   // Auto-ouvrir le command menu au premier chargement
@@ -53,18 +63,23 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
   useEffect(() => {
     if (userInfo && !welcomeToastShown.current) {
       welcomeToastShown.current = true
-      toast.success(`Connecté en tant que ${userInfo.username}`, {
-        description: "Bienvenue sur le dashboard Moddy",
+      toast.success(t('dashboard.toast.connected', { username: userInfo.username }), {
+        description: t('dashboard.toast.welcome'),
         duration: 4000,
       })
     }
-  }, [userInfo])
+  }, [userInfo, t])
 
   const handleLogout = useCallback(async () => {
+    setLogoutDialogOpen(false)
     const success = await logout()
     if (success) {
       window.location.reload()
     }
+  }, [])
+
+  const handleLogoutRequest = useCallback(() => {
+    setLogoutDialogOpen(true)
   }, [])
 
   const handleOpenCommandMenu = useCallback(() => {
@@ -78,7 +93,7 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
     <SidebarProvider>
       <AppSidebar
         userInfo={userInfo}
-        onLogout={handleLogout}
+        onLogoutRequest={handleLogoutRequest}
         onOpenCommandMenu={handleOpenCommandMenu}
       />
       <SidebarInset>
@@ -112,9 +127,9 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
                   <EmptyMedia variant="icon">
                     <ServerIcon />
                   </EmptyMedia>
-                  <EmptyTitle>Aucun serveur sélectionné</EmptyTitle>
+                  <EmptyTitle>{t('dashboard.noServer.title')}</EmptyTitle>
                   <EmptyDescription>
-                    Sélectionnez un serveur dans la barre latérale ou ajoutez Moddy à l&apos;un de vos serveurs Discord pour commencer.
+                    {t('dashboard.noServer.description')}
                   </EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="flex-row justify-center gap-2">
@@ -122,10 +137,10 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
                     onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1373916203814490194", "_blank", "noopener,noreferrer")}
                   >
                     <PlusIcon className="size-4" />
-                    Ajouter Moddy
+                    {t('dashboard.noServer.addModdy')}
                   </Button>
                   <Button variant="outline" onClick={handleOpenCommandMenu}>
-                    Parcourir les serveurs
+                    {t('dashboard.noServer.browseServers')}
                   </Button>
                 </EmptyContent>
                 <Button
@@ -135,7 +150,7 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
                   size="sm"
                 >
                   <a href="https://docs.moddy.app" target="_blank" rel="noopener noreferrer">
-                    En savoir plus <ArrowUpRightIcon className="size-3" />
+                    {t('dashboard.noServer.learnMore')} <ArrowUpRightIcon className="size-3" />
                   </a>
                 </Button>
               </Empty>
@@ -152,11 +167,31 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
           )}
         </div>
       </SidebarInset>
+
       <CommandMenu
         open={commandMenuOpen}
         onOpenChange={setCommandMenuOpen}
-        onLogout={handleLogout}
+        onLogoutRequest={handleLogoutRequest}
       />
+
+      <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('navUser.logoutDialog.title')}</DialogTitle>
+            <DialogDescription>
+              {t('navUser.logoutDialog.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLogoutDialogOpen(false)}>
+              {t('navUser.logoutDialog.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleLogout}>
+              {t('navUser.logoutDialog.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </SidebarProvider>
   )
 }

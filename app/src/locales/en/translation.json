@@ -102,7 +102,61 @@
     "breadcrumb": {
       "app": "Dashboard",
       "overview": "Overview"
+    },
+    "noServer": {
+      "title": "No server selected",
+      "description": "Select a server from the sidebar or add Moddy to one of your Discord servers to get started.",
+      "addModdy": "Add Moddy",
+      "browseServers": "Browse servers",
+      "learnMore": "Learn more"
+    },
+    "toast": {
+      "connected": "Connected as {{username}}",
+      "welcome": "Welcome to Moddy Dashboard"
     }
+  },
+  "navUser": {
+    "upgradeToMax": "Upgrade to Max",
+    "settings": "Settings",
+    "billing": "Billing",
+    "notifications": "Notifications",
+    "myPunishments": "My Punishments",
+    "logOut": "Log out",
+    "logoutDialog": {
+      "title": "Log out",
+      "description": "Are you sure you want to log out of your Moddy account?",
+      "cancel": "Cancel",
+      "confirm": "Log out"
+    }
+  },
+  "commandMenu": {
+    "placeholder": "Search for a command or page...",
+    "noResults": "No results found.",
+    "groups": {
+      "myServers": "My Servers",
+      "usefulLinks": "Useful Links",
+      "myAccount": "My Account"
+    },
+    "items": {
+      "addModdyToServer": "Add Moddy to a server",
+      "addModdy": "Add Moddy",
+      "openTicket": "Open a ticket",
+      "documentation": "Documentation",
+      "subscriptions": "Subscriptions",
+      "servicesStatus": "Services Status",
+      "myPunishments": "My Punishments",
+      "notifications": "Notifications",
+      "billing": "Billing",
+      "accountSettings": "Account Settings",
+      "logOut": "Log out"
+    }
+  },
+  "notFound": {
+    "title": "404 — Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "searchPlaceholder": "Search for a page...",
+    "contactSupport": "Contact support",
+    "backToDashboard": "Back to dashboard"
   },
   "sidebar": {
     "getHelp": "Get Help",
@@ -112,7 +166,8 @@
   },
   "pageTitle": {
     "dashboard": "Dashboard",
-    "debug": "Debug"
+    "debug": "Debug",
+    "notFound": "404 — Not Found"
   },
   "common": {
     "yes": "Yes",

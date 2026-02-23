@@ -94,11 +94,11 @@ const data = {
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   userInfo: UserInfo | null
-  onLogout?: () => void
+  onLogoutRequest?: () => void
   onOpenCommandMenu?: () => void
 }
 
-export function AppSidebar({ userInfo, onLogout, onOpenCommandMenu, ...props }: AppSidebarProps) {
+export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, ...props }: AppSidebarProps) {
   const { t } = useTranslation()
 
   const user = {
@@ -140,7 +140,7 @@ export function AppSidebar({ userInfo, onLogout, onOpenCommandMenu, ...props }: 
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <NavUser user={user} onLogout={onLogout} />
+        <NavUser user={user} onLogoutRequest={onLogoutRequest} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
