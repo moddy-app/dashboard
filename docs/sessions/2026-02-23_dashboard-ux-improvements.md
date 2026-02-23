@@ -7,17 +7,19 @@ Refonte de plusieurs aspects du dashboard : sidebar, menus, navigation, états v
 
 1. **Footer sidebar réorganisé** — Nouvel ordre : Documentation → Obtenir de l'aide → Search (remplace Commandes), items légèrement resserrés avec `gap-0.5`
 2. **Suppression de la catégorie Projects** — `NavProjects` retiré de `AppSidebar`, import supprimé
-3. **Dialogue de confirmation de déconnexion** — Composant `Dialog` shadcn utilisé dans `NavUser`
+3. **Dialogue de confirmation de déconnexion** — État remonté dans `DashboardPage` (source unique), accessible via `onLogoutRequest` depuis `NavUser` ET `CommandMenu`
 4. **Menu nav-user refait** :
    - Retrait du bouton "Command Menu"
-   - "Account" renommé en "Settings" (avec `SettingsIcon`)
-   - "My Cases" ajouté (pour les affaires de modération)
-   - "Upgrade to Max" ajouté tout en haut avec `SparklesIcon`, redirige vers `https://www.moddy.app/navigation/subscriptions/`
-5. **Command menu entièrement réécrit** — 4 groupes :
-   - *Mes serveurs* : liste ou lien "Ajouter Moddy"
-   - *Navigation* : Dashboard, Modération, Paramètres
-   - *Liens utiles* : Ajouter Moddy, Ouvrir un ticket, Documentation, Abonnements, Statut des services
-   - *Mon compte* : Mes affaires, Notifications, Facturation, Paramètres du compte, Se déconnecter
+   - "Account" → "Settings" (`SettingsIcon`)
+   - "My Cases" → "My Punishments" (`GavelIcon`)
+   - "Upgrade to Max" en haut avec `SparklesIcon`, redirige vers `https://www.moddy.app/navigation/subscriptions/`
+   - Logout en rouge : `text-destructive focus:text-destructive focus:bg-destructive/10` + `text-destructive` sur l'icône
+5. **Command menu entièrement réécrit** — 3 groupes (Navigation supprimée) :
+   - *Mes serveurs* : liste dynamique ou lien "Ajouter Moddy à un serveur"
+   - *Liens utiles* : Ajouter Moddy, Ouvrir un ticket, Documentation, Abonnements, Statut des services (InfoIcon)
+   - *Mon compte* : Mes sanctions (GavelIcon), Notifications, Facturation, Paramètres du compte, Se déconnecter
+   - Logout rouge : `!text-destructive` sur le SVG (Tailwind important) + `data-selected:text-destructive data-selected:bg-destructive/10`
+   - Logout déclenche `onLogoutRequest` → ouvre le dialog dans DashboardPage
 6. **"Add server"** → redirige vers `https://discord.com/oauth2/authorize?client_id=1373916203814490194`
 7. **Page 404** — `NotFoundPage.tsx` créée avec composants `Empty`, `InputGroup`, `Button`, route `*` ajoutée dans `App.tsx`
 8. **Auto-ouverture du Command Menu** — Délai de 300ms au chargement du dashboard
@@ -25,7 +27,7 @@ Refonte de plusieurs aspects du dashboard : sidebar, menus, navigation, états v
 10. **Spinner remplacé** — `LoaderIcon` de Lucide avec `animate-spin` (loading + redirecting dans `HomePage`)
 11. **Toaster sonner** — Ajouté dans `main.tsx` avec `position="bottom-right" richColors`
 12. **Empty state** — Affiché dans `DashboardPage` quand aucun serveur sélectionné, avec boutons "Ajouter Moddy" et "Parcourir les serveurs"
-13. **Traductions** — Clé `sidebar.search` ajoutée en EN et FR
+13. **i18n complet** — Toutes les clés traduites EN+FR : `navUser.*`, `commandMenu.*`, `dashboard.noServer.*`, `dashboard.toast.*`, `notFound.*`, `pageTitle.notFound`
 
 ## Fichiers créés
 
