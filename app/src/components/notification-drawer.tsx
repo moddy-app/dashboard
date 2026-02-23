@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -9,7 +7,6 @@ import {
   CircleAlertIcon,
   CircleCheckIcon,
   InfoIcon,
-  XIcon,
 } from "lucide-react"
 
 import { useMediaQuery } from "@/hooks/use-media-query"
@@ -37,31 +34,27 @@ import { Separator } from "@/components/ui/separator"
 
 const criticalityConfig: Record<
   NotificationCriticality,
-  { icon: React.ElementType; className: string; badgeClassName: string; label: string }
+  { Icon: React.ElementType; badgeClassName: string }
 > = {
   info: {
-    icon: InfoIcon,
-    className: "text-blue-500",
-    badgeClassName: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
-    label: "Info",
+    Icon: InfoIcon,
+    badgeClassName:
+      "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
   },
   success: {
-    icon: CircleCheckIcon,
-    className: "text-green-500",
-    badgeClassName: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
-    label: "Succès",
+    Icon: CircleCheckIcon,
+    badgeClassName:
+      "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
   },
   warning: {
-    icon: AlertTriangleIcon,
-    className: "text-amber-500",
-    badgeClassName: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-    label: "Avertissement",
+    Icon: AlertTriangleIcon,
+    badgeClassName:
+      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
   },
   critical: {
-    icon: CircleAlertIcon,
-    className: "text-destructive",
-    badgeClassName: "bg-destructive/10 text-destructive border-destructive/20",
-    label: "Critique",
+    Icon: CircleAlertIcon,
+    badgeClassName:
+      "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
   },
 }
 
@@ -89,36 +82,44 @@ interface NotificationItemProps {
 function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
   const { t } = useTranslation()
   const config = criticalityConfig[notification.criticality]
-  const Icon = config.icon
+  const { Icon } = config
 
   return (
     <div
       className={cn(
-        "relative flex flex-col gap-2 rounded-lg border p-4 transition-colors",
+        "flex flex-col gap-2 rounded-lg border p-4 transition-colors",
         notification.read
           ? "bg-muted/30 border-border/50"
           : "bg-background border-border shadow-sm"
       )}
     >
-      {/* Indicateur non-lu */}
-      {!notification.read && (
-        <span className="absolute top-3 right-3 size-2 rounded-full bg-primary" />
-      )}
-
-      {/* En-tête : criticité + expéditeur + timestamp */}
-      <div className="flex items-center gap-2 flex-wrap pr-4">
-        <Icon className={cn("size-4 shrink-0", config.className)} />
-        <Badge variant="outline" className={cn("text-[11px] px-1.5 py-0", config.badgeClassName)}>
+      {/* En-tête : dot non-lu + badge criticité + expéditeur + timestamp */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {!notification.read && (
+          <span className="size-2 rounded-full bg-primary shrink-0" />
+        )}
+        <Badge
+          variant="outline"
+          className={cn("font-medium", config.badgeClassName)}
+        >
+          <Icon data-icon="inline-start" />
           {t(`notifications.criticality.${notification.criticality}`)}
         </Badge>
-        <span className="text-xs text-muted-foreground font-medium">{notification.sender.name}</span>
+        <span className="text-xs text-muted-foreground font-medium">
+          {notification.sender.name}
+        </span>
         <span className="ml-auto text-xs text-muted-foreground tabular-nums">
           {formatTimestamp(notification.timestamp)}
         </span>
       </div>
 
       {/* Titre */}
-      <p className={cn("text-sm font-semibold leading-snug", notification.read && "text-muted-foreground")}>
+      <p
+        className={cn(
+          "text-sm font-semibold leading-snug",
+          notification.read && "text-muted-foreground"
+        )}
+      >
         {notification.title}
       </p>
 
@@ -127,10 +128,10 @@ function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
         {notification.content}
       </p>
 
-      {/* Actions */}
-      {(notification.actions && notification.actions.length > 0) && (
+      {/* Actions + marquer comme lu */}
+      {(notification.actions && notification.actions.length > 0) ? (
         <div className="flex flex-wrap gap-2 pt-1">
-          {notification.actions.map((action, index) => (
+          {notification.actions.map((action, index) =>
             action.href ? (
               <Button
                 key={index}
@@ -152,7 +153,7 @@ function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
                 {action.label}
               </Button>
             )
-          ))}
+          )}
           {!notification.read && (
             <Button
               variant="ghost"
@@ -160,14 +161,11 @@ function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
               className="ml-auto text-muted-foreground"
               onClick={() => onMarkRead(notification.id)}
             >
-              {t('notifications.markAsRead')}
+              {t("notifications.markAsRead")}
             </Button>
           )}
         </div>
-      )}
-
-      {/* Mark as read si pas d'actions */}
-      {(!notification.actions || notification.actions.length === 0) && !notification.read && (
+      ) : !notification.read ? (
         <div className="flex justify-end pt-1">
           <Button
             variant="ghost"
@@ -175,10 +173,10 @@ function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
             className="text-muted-foreground"
             onClick={() => onMarkRead(notification.id)}
           >
-            {t('notifications.markAsRead')}
+            {t("notifications.markAsRead")}
           </Button>
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -203,19 +201,24 @@ function NotificationList({
 
   if (notifications.length === 0) {
     return (
-      <div className={cn("flex flex-col items-center justify-center gap-3 py-16 text-center", className)}>
+      <div
+        className={cn(
+          "flex flex-col items-center justify-center gap-3 py-16 text-center",
+          className
+        )}
+      >
         <BellIcon className="size-10 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">{t('notifications.empty')}</p>
+        <p className="text-sm text-muted-foreground">{t("notifications.empty")}</p>
       </div>
     )
   }
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {unreadCount > 0 && (
+      {unreadCount > 0 ? (
         <div className="flex items-center justify-between px-1 py-2">
           <span className="text-xs text-muted-foreground">
-            {t('notifications.unreadCount', { count: unreadCount })}
+            {t("notifications.unreadCount", { count: unreadCount })}
           </span>
           <Button
             variant="ghost"
@@ -224,9 +227,11 @@ function NotificationList({
             onClick={onMarkAllRead}
           >
             <CheckCheckIcon className="size-3.5" />
-            {t('notifications.markAllAsRead')}
+            {t("notifications.markAllAsRead")}
           </Button>
         </div>
+      ) : (
+        <div className="pt-2" />
       )}
       <div className="flex flex-col gap-2 pb-2">
         {notifications.map((notification) => (
@@ -264,7 +269,7 @@ export function NotificationDrawer({
 
   const title = (
     <span className="flex items-center gap-2">
-      {t('notifications.title')}
+      {t("notifications.title")}
       {unreadCount > 0 && (
         <Badge variant="outline" className="tabular-nums px-1.5 py-0 text-[11px]">
           {unreadCount}
@@ -278,18 +283,7 @@ export function NotificationDrawer({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="sm:max-w-lg flex flex-col max-h-[85vh] p-0 gap-0">
           <DialogHeader className="px-6 pt-6 pb-4">
-            <div className="flex items-center justify-between">
-              <DialogTitle>{title}</DialogTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-7 text-muted-foreground -mr-1"
-                onClick={() => onOpenChange(false)}
-              >
-                <XIcon className="size-4" />
-                <span className="sr-only">{t('notifications.close')}</span>
-              </Button>
-            </div>
+            <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
           <Separator />
           <div className="overflow-y-auto flex-1 px-6">
@@ -319,7 +313,7 @@ export function NotificationDrawer({
         </div>
         <DrawerFooter className="pt-2">
           <DrawerClose asChild>
-            <Button variant="outline">{t('notifications.close')}</Button>
+            <Button variant="outline">{t("notifications.close")}</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

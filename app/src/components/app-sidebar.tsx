@@ -1,7 +1,6 @@
 import * as React from "react"
 import {
   AudioWaveformIcon,
-  BellIcon,
   BookOpenIcon,
   BotIcon,
   CommandIcon,
@@ -139,12 +138,6 @@ export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, onOpe
             <SidebarMenuButton tooltip={t('sidebar.search')} onClick={onOpenCommandMenu}>
               <SearchIcon />
               <span>{t('sidebar.search')}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton tooltip={t('sidebar.notifications')} onClick={onOpenNotifications}>
-              <BellIcon />
-              <span>{t('sidebar.notifications')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
