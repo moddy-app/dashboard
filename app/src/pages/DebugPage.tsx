@@ -2,6 +2,7 @@ import { ComponentExample } from '@/components/component-example'
 import { useAuth } from '@/hooks/useAuth'
 import { signInWithDiscord, logout } from '@/lib/auth'
 import { getPreferences, setPreferences, detectBrowserLanguage } from '@/lib/preferences'
+import { useTheme } from '@/components/theme-provider'
 import { useState, useEffect, useCallback } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
@@ -64,6 +65,7 @@ export function DebugPage() {
   const location = useLocation()
   const { t, i18n } = useTranslation()
   usePageTitle(t('pageTitle.debug'))
+  const { theme, setTheme } = useTheme()
   const [languageMode, setLanguageMode] = useState<'auto' | 'en' | 'fr'>(() => {
     const pref = getPreferences().language
     return (pref as 'en' | 'fr') ?? 'auto'
@@ -152,6 +154,20 @@ export function DebugPage() {
                   className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${languageMode === mode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
                 >
                   {mode === 'auto' ? t('debug.languageAuto') : mode.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{t('debug.themeSwitcher')}:</span>
+            <div className="flex gap-1">
+              {(['system', 'light', 'dark'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setTheme(mode)}
+                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${theme === mode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                >
+                  {mode === 'system' ? t('debug.themeAuto') : t(`debug.theme${mode.charAt(0).toUpperCase() + mode.slice(1)}`)}
                 </button>
               ))}
             </div>

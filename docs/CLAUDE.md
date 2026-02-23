@@ -212,6 +212,7 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - `nav-user.tsx` - Profil utilisateur en bas de la sidebar (avec dropdown : command menu, account, logout, notifications)
 - `command-menu.tsx` - Palette de commandes globale (⌘K)
 - `notification-drawer.tsx` - Panneau de notifications responsive (Dialog sur desktop, Drawer sur mobile)
+- `theme-provider.tsx` - Provider de thème (dark/light/system) avec persistance dans le cookie `moddy_preferences`
 
 ### Types et données (dans `/app/src/types/` et `/app/src/data/`)
 
@@ -335,9 +336,9 @@ Le système utilise :
 - **Palette de commandes** (CommandMenu, raccourci ⌘K)
 - **TooltipProvider** wrappant l'app dans `main.tsx`
 - **Système de notifications** (NotificationDrawer responsive, types, données exemple, hook use-media-query)
+- **Dark mode** (ThemeProvider, cookie `moddy_preferences.theme`, sélecteur dans `/debug`)
 
 ### 🚧 Prêt pour le développement
-- Logique de changement de thème
 - Gestion et validation de formulaires
 - Contenu du dashboard (pages fonctionnelles, remplir les placeholders)
 
@@ -421,7 +422,7 @@ La page d'accueil vérifie l'authentification :
 - **Fichier de config** : `src/i18n.ts` (importé dans `main.tsx` avant le render)
 - **Langue de secours** : `en` (anglais)
 - **Détection auto** : détecte la langue du navigateur (`navigator.languages`)
-- **Cookie de préférences** : `moddy_preferences` (JSON, 1 an, extensible pour futur dark mode etc.)
+- **Cookie de préférences** : `moddy_preferences` (JSON, 1 an, contient `language` et `theme`)
 - **Interpolation** : `escapeValue: false` (React gère l'échappement)
 
 ### Logique de résolution de la langue
@@ -433,7 +434,7 @@ La page d'accueil vérifie l'authentification :
 - **Format** : JSON encodé (`{ "language": "fr" }`)
 - **Durée** : 1 an (`max-age=31536000`)
 - **Attributs** : `path=/; SameSite=Lax`
-- **Extensible** : prévu pour accueillir d'autres préférences (ex: `theme: "dark"`)
+- **Clés** : `language` (langue) et `theme` (`"light"` | `"dark"` | absent = system)
 - **Mode Auto** : si l'utilisateur choisit "Auto", la clé `language` est supprimée du cookie
 - **Utilitaires** : `src/lib/preferences.ts` (`getPreferences()`, `setPreferences()`, `detectBrowserLanguage()`)
 
@@ -570,4 +571,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-23 (système de notifications avec drawer responsive)*
+*Dernière mise à jour : 2026-02-23 (dark mode avec ThemeProvider et cookie de préférences)*

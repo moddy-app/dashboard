@@ -96,7 +96,11 @@
       "title": "Composants UI (Showcase)"
     },
     "languageSwitcher": "Langue",
-    "languageAuto": "Auto"
+    "languageAuto": "Auto",
+    "themeSwitcher": "Thème",
+    "themeAuto": "Auto",
+    "themeLight": "Clair",
+    "themeDark": "Sombre"
   },
   "dashboard": {
     "breadcrumb": {

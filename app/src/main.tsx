@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom"
 import * as Sentry from "@sentry/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
+import { ThemeProvider } from "@/components/theme-provider"
 
 import "./index.css"
 import "./i18n"
@@ -17,10 +18,12 @@ Sentry.init({
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <TooltipProvider>
-        <App />
-        <Toaster position="bottom-right" richColors />
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="system">
+        <TooltipProvider>
+          <App />
+          <Toaster position="bottom-right" richColors />
+        </TooltipProvider>
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>
 )

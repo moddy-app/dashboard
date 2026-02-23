@@ -3,6 +3,7 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 365 // 1 year
 
 export interface UserPreferences {
   language?: string // 'en' | 'fr' | undefined (auto)
+  theme?: 'light' | 'dark' // undefined = system/auto
 }
 
 export function getPreferences(): UserPreferences {

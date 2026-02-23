@@ -96,7 +96,11 @@
       "title": "UI Components (Showcase)"
     },
     "languageSwitcher": "Language",
-    "languageAuto": "Auto"
+    "languageAuto": "Auto",
+    "themeSwitcher": "Theme",
+    "themeAuto": "Auto",
+    "themeLight": "Light",
+    "themeDark": "Dark"
   },
   "dashboard": {
     "breadcrumb": {
