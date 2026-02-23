@@ -114,11 +114,8 @@ export function NavUser({ user, onLogoutRequest }: NavUserProps) {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={onLogoutRequest}
-              className="text-destructive focus:text-destructive focus:bg-destructive/10"
-            >
-              <LogOutIcon className="text-destructive" />
+            <DropdownMenuItem variant="destructive" onClick={onLogoutRequest}>
+              <LogOutIcon />
               {t('navUser.logOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>

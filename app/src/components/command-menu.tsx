@@ -15,13 +15,13 @@ import {
   BookOpenIcon,
   CreditCardIcon,
   GavelIcon,
-  HeadphonesIcon,
   InfoIcon,
   LogOutIcon,
   PlusIcon,
   ServerIcon,
   SettingsIcon,
   SparklesIcon,
+  TicketIcon,
 } from "lucide-react"
 
 interface Server {
@@ -80,9 +80,9 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest 
                 </CommandItem>
               ))
             ) : (
-              <CommandItem onSelect={() => runCommand(() => openExternal("https://discord.com/oauth2/authorize?client_id=1373916203814490194"))}>
-                <PlusIcon />
-                <span>{t('commandMenu.items.addModdyToServer')}</span>
+              <CommandItem disabled>
+                <ServerIcon />
+                <span className="text-muted-foreground">{t('commandMenu.noServers')}</span>
               </CommandItem>
             )}
           </CommandGroup>
@@ -96,7 +96,7 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest 
               <span>{t('commandMenu.items.addModdy')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://moddy.app/support"))}>
-              <HeadphonesIcon />
+              <TicketIcon />
               <span>{t('commandMenu.items.openTicket')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => openExternal("https://docs.moddy.app"))}>
@@ -131,7 +131,7 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest 
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => {})}>
               <SettingsIcon />
-              <span>{t('commandMenu.items.accountSettings')}</span>
+              <span>{t('commandMenu.items.settings')}</span>
             </CommandItem>
             <CommandItem
               onSelect={() => runCommand(() => onLogoutRequest?.())}

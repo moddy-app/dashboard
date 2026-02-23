@@ -132,6 +132,7 @@
   "commandMenu": {
     "placeholder": "Search for a command or page...",
     "noResults": "No results found.",
+    "noServers": "No servers connected yet",
     "groups": {
       "myServers": "My Servers",
       "usefulLinks": "Useful Links",
@@ -147,7 +148,7 @@
       "myPunishments": "My Punishments",
       "notifications": "Notifications",
       "billing": "Billing",
-      "accountSettings": "Account Settings",
+      "settings": "Settings",
       "logOut": "Log out"
     }
   },
