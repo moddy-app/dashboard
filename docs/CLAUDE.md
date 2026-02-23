@@ -178,7 +178,7 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - Styling avec Tailwind CSS
 - Support de la prop `asChild` via le composant Slot de Radix UI
 
-**Composants disponibles** (21 composants) :
+**Composants disponibles** (22 composants) :
 - `button.tsx` - Boutons avec variantes (default, outline, secondary, ghost, destructive, link)
 - `card.tsx` - Cartes de contenu
 - `field.tsx` - Champs de formulaire avec label et description
@@ -201,6 +201,7 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - `dialog.tsx` - Dialogues modaux (Dialog, DialogContent, DialogHeader, etc.)
 - `skeleton.tsx` - Squelettes de chargement
 - `sheet.tsx` - Panneaux latéraux (Sheet, SheetContent, etc.)
+- `drawer.tsx` - Panneaux tiroirs (Drawer, DrawerContent, DrawerHeader, DrawerFooter, etc.) — via vaul
 
 ### Composants métier (dans `/app/src/components/`)
 
@@ -208,8 +209,14 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - `team-switcher.tsx` - Sélecteur de serveur/équipe dans la sidebar
 - `nav-main.tsx` - Navigation principale avec sous-menus collapsibles
 - `nav-projects.tsx` - Navigation des projets/raccourcis
-- `nav-user.tsx` - Profil utilisateur en bas de la sidebar (avec dropdown : command menu, account, logout)
+- `nav-user.tsx` - Profil utilisateur en bas de la sidebar (avec dropdown : command menu, account, logout, notifications)
 - `command-menu.tsx` - Palette de commandes globale (⌘K)
+- `notification-drawer.tsx` - Panneau de notifications responsive (Dialog sur desktop, Drawer sur mobile)
+
+### Types et données (dans `/app/src/types/` et `/app/src/data/`)
+
+- `types/notification.ts` - Types TypeScript : `Notification`, `NotificationCriticality`, `NotificationAction`, `NotificationSender`
+- `data/notifications.ts` - Données d'exemple de notifications (à remplacer par l'API backend)
 
 ### Exemple de variantes de composant
 
@@ -253,6 +260,10 @@ variants: {
 - Hook `useAuth()` - Gère l'état d'authentification de l'utilisateur
 - 3 états possibles : `loading`, `authenticated`, `unauthenticated`
 - Vérifie automatiquement la session au chargement
+
+**`src/hooks/use-media-query.ts`** :
+- Hook `useMediaQuery(query)` - Réagit aux media queries CSS (SSR-safe)
+- Utilisé par `notification-drawer.tsx` pour le comportement responsive Dialog/Drawer
 
 ## Intégration Backend
 
@@ -323,6 +334,7 @@ Le système utilise :
 - **Layout dashboard avec sidebar** (AppSidebar, TeamSwitcher, NavMain, NavProjects, NavUser)
 - **Palette de commandes** (CommandMenu, raccourci ⌘K)
 - **TooltipProvider** wrappant l'app dans `main.tsx`
+- **Système de notifications** (NotificationDrawer responsive, types, données exemple, hook use-media-query)
 
 ### 🚧 Prêt pour le développement
 - Logique de changement de thème
@@ -558,4 +570,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-22 (ajout dashboard layout avec sidebar, command menu, composants shadcn supplémentaires)*
+*Dernière mise à jour : 2026-02-23 (système de notifications avec drawer responsive)*

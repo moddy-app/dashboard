@@ -163,7 +163,22 @@
     "getHelp": "Get Help",
     "commands": "Commands",
     "documentation": "Documentation",
-    "search": "Search"
+    "search": "Search",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You have no notifications",
+    "unreadCount": "{{count}} unread",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "close": "Close",
+    "criticality": {
+      "info": "Info",
+      "success": "Success",
+      "warning": "Warning",
+      "critical": "Critical"
+    }
   },
   "pageTitle": {
     "dashboard": "Dashboard",

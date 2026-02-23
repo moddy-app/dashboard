@@ -37,9 +37,10 @@ interface NavUserProps {
     avatar: string
   }
   onLogoutRequest?: () => void
+  onOpenNotifications?: () => void
 }
 
-export function NavUser({ user, onLogoutRequest }: NavUserProps) {
+export function NavUser({ user, onLogoutRequest, onOpenNotifications }: NavUserProps) {
   const { isMobile } = useSidebar()
   const { t } = useTranslation()
 
@@ -104,7 +105,7 @@ export function NavUser({ user, onLogoutRequest }: NavUserProps) {
                 <CreditCardIcon />
                 {t('navUser.billing')}
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenNotifications}>
                 <BellIcon />
                 {t('navUser.notifications')}
               </DropdownMenuItem>

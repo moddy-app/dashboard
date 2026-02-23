@@ -163,7 +163,22 @@
     "getHelp": "Obtenir de l'aide",
     "commands": "Commandes",
     "documentation": "Documentation",
-    "search": "Rechercher"
+    "search": "Rechercher",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Vous n'avez aucune notification",
+    "unreadCount": "{{count}} non lue(s)",
+    "markAsRead": "Marquer comme lu",
+    "markAllAsRead": "Tout marquer comme lu",
+    "close": "Fermer",
+    "criticality": {
+      "info": "Info",
+      "success": "Succès",
+      "warning": "Avertissement",
+      "critical": "Critique"
+    }
   },
   "pageTitle": {
     "dashboard": "Tableau de bord",

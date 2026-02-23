@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   AudioWaveformIcon,
+  BellIcon,
   BookOpenIcon,
   BotIcon,
   CommandIcon,
@@ -96,9 +97,10 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   userInfo: UserInfo | null
   onLogoutRequest?: () => void
   onOpenCommandMenu?: () => void
+  onOpenNotifications?: () => void
 }
 
-export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, ...props }: AppSidebarProps) {
+export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, onOpenNotifications, ...props }: AppSidebarProps) {
   const { t } = useTranslation()
 
   const user = {
@@ -139,8 +141,14 @@ export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, ...pr
               <span>{t('sidebar.search')}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip={t('sidebar.notifications')} onClick={onOpenNotifications}>
+              <BellIcon />
+              <span>{t('sidebar.notifications')}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
         </SidebarMenu>
-        <NavUser user={user} onLogoutRequest={onLogoutRequest} />
+        <NavUser user={user} onLogoutRequest={onLogoutRequest} onOpenNotifications={onOpenNotifications} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

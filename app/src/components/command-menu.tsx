@@ -34,9 +34,10 @@ interface CommandMenuProps {
   onOpenChange: (open: boolean) => void
   servers?: Server[]
   onLogoutRequest?: () => void
+  onOpenNotifications?: () => void
 }
 
-export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest }: CommandMenuProps) {
+export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest, onOpenNotifications }: CommandMenuProps) {
   const { t } = useTranslation()
 
   React.useEffect(() => {
@@ -121,7 +122,7 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest 
               <GavelIcon />
               <span>{t('commandMenu.items.myPunishments')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => {})}>
+            <CommandItem onSelect={() => runCommand(() => onOpenNotifications?.())}>
               <BellIcon />
               <span>{t('commandMenu.items.notifications')}</span>
             </CommandItem>

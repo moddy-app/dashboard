@@ -19,6 +19,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { CommandMenu } from "@/components/command-menu"
+import { NotificationDrawer } from "@/components/notification-drawer"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -38,6 +39,8 @@ import {
 } from "@/components/ui/empty"
 import { logout } from "@/lib/auth"
 import type { UserInfo } from "@/lib/auth"
+import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
+import type { Notification } from "@/types/notification"
 
 interface DashboardPageProps {
   userInfo: UserInfo | null
@@ -49,6 +52,8 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
+  const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
 
   // Auto-ouvrir le command menu au premier chargement
@@ -86,6 +91,20 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
     setCommandMenuOpen(true)
   }, [])
 
+  const handleOpenNotifications = useCallback(() => {
+    setNotificationDrawerOpen(true)
+  }, [])
+
+  const handleMarkRead = useCallback((id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+    )
+  }, [])
+
+  const handleMarkAllRead = useCallback(() => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }, [])
+
   // Aucun serveur sélectionné — empty state
   const noServerSelected = true // TODO: remplacer par la vraie logique de sélection de serveur
 
@@ -95,6 +114,7 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
         userInfo={userInfo}
         onLogoutRequest={handleLogoutRequest}
         onOpenCommandMenu={handleOpenCommandMenu}
+        onOpenNotifications={handleOpenNotifications}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -172,6 +192,15 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
         open={commandMenuOpen}
         onOpenChange={setCommandMenuOpen}
         onLogoutRequest={handleLogoutRequest}
+        onOpenNotifications={handleOpenNotifications}
+      />
+
+      <NotificationDrawer
+        open={notificationDrawerOpen}
+        onOpenChange={setNotificationDrawerOpen}
+        notifications={notifications}
+        onMarkRead={handleMarkRead}
+        onMarkAllRead={handleMarkAllRead}
       />
 
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
