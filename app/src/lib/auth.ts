@@ -1,8 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  status: number
+  constructor(status: number, message: string) {
     super(message)
+    this.status = status
   }
   get isUnauthorized() { return this.status === 401 }
   get isForbidden() { return this.status === 403 }

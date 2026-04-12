@@ -74,7 +74,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         duration: 4000,
       })
     }
-  }, [userInfo, t])
+  }, [user, t])
 
   const handleLogout = useCallback(async () => {
     setLogoutDialogOpen(false)
