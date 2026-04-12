@@ -1,0 +1,198 @@
+{
+  "home": {
+    "checkingSession": "Vérification de la session...",
+    "redirecting": "Redirection...",
+    "loggedIn": "Vous êtes connecté"
+  },
+  "debug": {
+    "title": "Panneau de debug",
+    "auth": {
+      "title": "Authentification",
+      "checkingSession": "Vérification de la session...",
+      "authenticated": "Authentifié",
+      "avatar": "Avatar",
+      "id": "ID : {{id}}",
+      "userInfoRaw": "Infos utilisateur (brut)",
+      "sessionData": "Données de session",
+      "discordId": "ID Discord",
+      "email": "E-mail",
+      "notProvided": "Non fourni",
+      "logout": "Se déconnecter",
+      "notLoggedIn": "Non connecté",
+      "signInDiscord": "Se connecter avec Discord"
+    },
+    "api": {
+      "title": "Connectivité API",
+      "pingDirect": "Ping API directe",
+      "pingProxy": "Ping Proxy Vercel",
+      "directApi": "API directe :",
+      "vercelProxy": "Proxy Vercel :"
+    },
+    "environment": {
+      "title": "Environnement"
+    },
+    "router": {
+      "title": "Routeur",
+      "pathname": "Chemin",
+      "search": "Recherche",
+      "hash": "Hash",
+      "origin": "Origine",
+      "fullUrl": "URL complète"
+    },
+    "browser": {
+      "title": "Navigateur",
+      "userAgent": "User Agent",
+      "language": "Langue",
+      "languages": "Langues",
+      "online": "En ligne",
+      "cookiesEnabled": "Cookies activés",
+      "cpuCores": "Cœurs CPU",
+      "platform": "Plateforme",
+      "screen": "Écran",
+      "window": "Fenêtre",
+      "timezone": "Fuseau horaire"
+    },
+    "performance": {
+      "title": "Performance",
+      "domContentLoaded": "DOM Content Loaded",
+      "pageLoad": "Chargement de la page",
+      "dnsLookup": "Résolution DNS",
+      "tcpConnect": "Connexion TCP",
+      "ttfb": "TTFB",
+      "domInteractive": "DOM Interactif",
+      "transferSize": "Taille du transfert",
+      "type": "Type",
+      "notAvailable": "Données de performance non disponibles",
+      "memory": "Mémoire",
+      "notSupported": "Non supporté"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "httpOnlyNote": "Le cookie <code>moddy_session</code> est HttpOnly et n'apparaîtra pas ici.",
+      "noCookies": "Aucun cookie visible (les cookies HttpOnly ne sont pas accessibles via JavaScript)."
+    },
+    "storage": {
+      "title": "Stockage",
+      "localStorage": "LocalStorage ({{count}} entrées)",
+      "sessionStorage": "SessionStorage ({{count}} entrées)",
+      "empty": "Vide"
+    },
+    "logs": {
+      "title": "Logs en direct ({{count}})",
+      "noLogs": "Aucun log pour l'instant..."
+    },
+    "sentry": {
+      "title": "Suivi d'erreurs Sentry",
+      "dsn": "DSN",
+      "notConfigured": "Non configuré",
+      "status": "Statut",
+      "initialized": "Initialisé",
+      "notInitialized": "Non initialisé",
+      "throwTestError": "Lancer une erreur test",
+      "sendTestMessage": "Envoyer un message test",
+      "description": "« Lancer une erreur test » va crasher cette section (capturé par Sentry). « Envoyer un message test » envoie un événement non-erreur à Sentry."
+    },
+    "components": {
+      "title": "Composants UI (Showcase)"
+    },
+    "languageSwitcher": "Langue",
+    "languageAuto": "Auto",
+    "themeSwitcher": "Thème",
+    "themeAuto": "Auto",
+    "themeLight": "Clair",
+    "themeDark": "Sombre"
+  },
+  "dashboard": {
+    "breadcrumb": {
+      "app": "Tableau de bord",
+      "overview": "Vue d'ensemble"
+    },
+    "noServer": {
+      "title": "Aucun serveur sélectionné",
+      "description": "Sélectionnez un serveur dans la barre latérale ou ajoutez Moddy à l'un de vos serveurs Discord pour commencer.",
+      "addModdy": "Ajouter Moddy",
+      "browseServers": "Parcourir les serveurs",
+      "learnMore": "En savoir plus"
+    },
+    "toast": {
+      "connected": "Connecté en tant que {{username}}",
+      "welcome": "Bienvenue sur le dashboard Moddy"
+    }
+  },
+  "navUser": {
+    "upgradeToMax": "Passer à Max",
+    "settings": "Paramètres",
+    "billing": "Facturation",
+    "notifications": "Notifications",
+    "myPunishments": "Mes sanctions",
+    "logOut": "Se déconnecter",
+    "logoutDialog": {
+      "title": "Se déconnecter",
+      "description": "Êtes-vous sûr de vouloir vous déconnecter de votre compte Moddy ?",
+      "cancel": "Annuler",
+      "confirm": "Se déconnecter"
+    }
+  },
+  "commandMenu": {
+    "placeholder": "Rechercher une action ou une page...",
+    "noResults": "Aucun résultat trouvé.",
+    "noServers": "Aucun serveur connecté pour l'instant",
+    "groups": {
+      "myServers": "Mes serveurs",
+      "usefulLinks": "Liens utiles",
+      "myAccount": "Mon compte"
+    },
+    "items": {
+      "addModdyToServer": "Ajouter Moddy à un serveur",
+      "addModdy": "Ajouter Moddy",
+      "openTicket": "Ouvrir un ticket",
+      "documentation": "Documentation",
+      "subscriptions": "Abonnements",
+      "servicesStatus": "Statut des services",
+      "myPunishments": "Mes sanctions",
+      "notifications": "Notifications",
+      "billing": "Facturation",
+      "settings": "Paramètres",
+      "logOut": "Se déconnecter"
+    }
+  },
+  "notFound": {
+    "title": "404 — Page introuvable",
+    "description": "La page que vous cherchez n'existe pas ou a été déplacée.",
+    "searchPlaceholder": "Rechercher une page...",
+    "contactSupport": "Contacter le support",
+    "backToDashboard": "Retour au tableau de bord"
+  },
+  "sidebar": {
+    "getHelp": "Obtenir de l'aide",
+    "commands": "Commandes",
+    "documentation": "Documentation",
+    "search": "Rechercher",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Vous n'avez aucune notification",
+    "unreadCount": "{{count}} non lue(s)",
+    "markAsRead": "Marquer comme lu",
+    "markAllAsRead": "Tout marquer comme lu",
+    "close": "Fermer",
+    "criticality": {
+      "info": "Info",
+      "success": "Succès",
+      "warning": "Avertissement",
+      "critical": "Critique"
+    }
+  },
+  "pageTitle": {
+    "dashboard": "Tableau de bord",
+    "debug": "Debug",
+    "notFound": "404 — Introuvable"
+  },
+  "common": {
+    "yes": "Oui",
+    "no": "Non",
+    "empty": "(vide)",
+    "clear": "Effacer"
+  }
+}

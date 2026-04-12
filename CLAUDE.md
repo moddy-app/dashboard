@@ -22,14 +22,21 @@
 │   │   ├── components/     # Composants React réutilisables
 │   │   │   ├── ui/        # Bibliothèque shadcn/ui
 │   │   │   └── *.tsx      # Composants d'exemple
-│   │   ├── pages/         # Composants de pages (vide, prêt à être développé)
+│   │   ├── pages/         # Pages de l'application
+│   │   │   ├── HomePage.tsx      # Page d'accueil (auth guard + redirect → DashboardPage)
+│   │   │   ├── DashboardPage.tsx # Dashboard principal (sidebar + breadcrumb + command menu)
+│   │   │   └── DebugPage.tsx     # Page de debug (/debug)
 │   │   ├── layouts/       # Composants de mise en page (vide)
 │   │   ├── hooks/         # Hooks React personnalisés (useAuth, etc.)
 │   │   ├── services/      # Services API (prêt pour extension)
-│   │   ├── lib/          # Fonctions utilitaires (auth, utils)
+│   │   ├── lib/          # Fonctions utilitaires (auth, utils, preferences)
+│   │   ├── locales/      # Fichiers de traduction i18n
+│   │   │   ├── en/translation.json  # Traductions anglais
+│   │   │   └── fr/translation.json  # Traductions français
 │   │   ├── assets/       # Ressources statiques
-│   │   ├── App.tsx       # Composant racine
-│   │   ├── main.tsx      # Point d'entrée React
+│   │   ├── App.tsx       # Routeur principal (react-router-dom)
+│   │   ├── main.tsx      # Point d'entrée React (BrowserRouter)
+│   │   ├── i18n.ts       # Configuration react-i18next
 │   │   └── index.css     # Styles globaux + design tokens
 │   ├── public/           # Fichiers statiques publics
 │   ├── .env.local        # Variables d'environnement (dev local uniquement)
@@ -38,7 +45,9 @@
 │   ├── vite.config.ts    # Configuration Vite
 │   ├── components.json   # Configuration shadcn/ui
 │   ├── eslint.config.js  # Configuration ESLint
+│   ├── vercel.json       # Rewrites SPA pour Vercel
 │   └── tsconfig.*.json   # Configurations TypeScript
+├── vercel.json           # Rewrites SPA pour Vercel (racine)
 ├── docs/                 # Documentation
 │   ├── CLAUDE.md         # Documentation technique pour Claude (ce fichier)
 │   ├── backend-integration/  # Documentation d'intégration API
@@ -67,6 +76,16 @@
 - **ESLint 9.39.1** - Linting du code avec support TypeScript
 - **TypeScript ESLint 8.46.4** - Règles de linting spécifiques à TypeScript
 - **Vite React Plugin 5.1.1** - Support JSX dans Vite
+
+### Routing
+- **react-router-dom 7.13.0** - Routing côté client (SPA)
+
+### Monitoring & Error Tracking
+- **@sentry/react** - Capture et reporting d'erreurs en production (Sentry)
+
+### Internationalisation (i18n)
+- **react-i18next** - Intégration React pour i18next (hook `useTranslation`)
+- **i18next** - Moteur de traduction (gestion des langues, interpolation, fallback)
 
 ### Autres dépendances
 - **@base-ui/react 1.1.0** - Composants UI headless légers
@@ -159,7 +178,7 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - Styling avec Tailwind CSS
 - Support de la prop `asChild` via le composant Slot de Radix UI
 
-**Composants disponibles** (13 composants) :
+**Composants disponibles** (22 composants) :
 - `button.tsx` - Boutons avec variantes (default, outline, secondary, ghost, destructive, link)
 - `card.tsx` - Cartes de contenu
 - `field.tsx` - Champs de formulaire avec label et description
@@ -173,6 +192,32 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - `badge.tsx` - Badges et étiquettes
 - `label.tsx` - Labels de formulaire
 - `separator.tsx` - Séparateurs visuels
+- `sidebar.tsx` - Sidebar responsive avec collapse/expand (SidebarProvider, Sidebar, SidebarTrigger, etc.)
+- `breadcrumb.tsx` - Fil d'Ariane (Breadcrumb, BreadcrumbItem, BreadcrumbLink, etc.)
+- `command.tsx` - Palette de commandes (Command, CommandDialog, CommandInput, etc.)
+- `collapsible.tsx` - Sections collapsibles (Collapsible, CollapsibleTrigger, CollapsibleContent)
+- `avatar.tsx` - Avatars avec fallback (Avatar, AvatarImage, AvatarFallback)
+- `tooltip.tsx` - Infobulles (Tooltip, TooltipContent, TooltipProvider, TooltipTrigger)
+- `dialog.tsx` - Dialogues modaux (Dialog, DialogContent, DialogHeader, etc.)
+- `skeleton.tsx` - Squelettes de chargement
+- `sheet.tsx` - Panneaux latéraux (Sheet, SheetContent, etc.)
+- `drawer.tsx` - Panneaux tiroirs (Drawer, DrawerContent, DrawerHeader, DrawerFooter, etc.) — via vaul
+
+### Composants métier (dans `/app/src/components/`)
+
+- `app-sidebar.tsx` - Sidebar principale de l'application (assemble team-switcher, nav-main, nav-projects, nav-user)
+- `team-switcher.tsx` - Sélecteur de serveur/équipe dans la sidebar
+- `nav-main.tsx` - Navigation principale avec sous-menus collapsibles
+- `nav-projects.tsx` - Navigation des projets/raccourcis
+- `nav-user.tsx` - Profil utilisateur en bas de la sidebar (avec dropdown : command menu, account, logout, notifications)
+- `command-menu.tsx` - Palette de commandes globale (⌘K)
+- `notification-drawer.tsx` - Panneau de notifications responsive (Dialog sur desktop, Drawer sur mobile)
+- `theme-provider.tsx` - Provider de thème (dark/light/system) avec persistance dans le cookie `moddy_preferences`
+
+### Types et données (dans `/app/src/types/` et `/app/src/data/`)
+
+- `types/notification.ts` - Types TypeScript : `Notification`, `NotificationCriticality`, `NotificationAction`, `NotificationSender`
+- `data/notifications.ts` - Données d'exemple de notifications (à remplacer par l'API backend)
 
 ### Exemple de variantes de composant
 
@@ -188,6 +233,11 @@ variants: {
 
 **`src/lib/utils.ts`** :
 - Fonction `cn()` - Fusionne intelligemment les classes Tailwind avec clsx et tailwind-merge
+
+**`src/lib/preferences.ts`** :
+- Fonction `getPreferences()` - Lit le cookie `moddy_preferences` et retourne un objet `UserPreferences`
+- Fonction `setPreferences()` - Met à jour le cookie avec les nouvelles préférences (merge)
+- Fonction `detectBrowserLanguage()` - Détecte la langue du navigateur parmi les langues supportées
 
 **`src/lib/auth.ts`** :
 - Fonction `verifySession()` - Vérifie si l'utilisateur est connecté
@@ -211,6 +261,10 @@ variants: {
 - Hook `useAuth()` - Gère l'état d'authentification de l'utilisateur
 - 3 états possibles : `loading`, `authenticated`, `unauthenticated`
 - Vérifie automatiquement la session au chargement
+
+**`src/hooks/use-media-query.ts`** :
+- Hook `useMediaQuery(query)` - Réagit aux media queries CSS (SSR-safe)
+- Utilisé par `notification-drawer.tsx` pour le comportement responsive Dialog/Drawer
 
 ## Intégration Backend
 
@@ -263,21 +317,30 @@ Le système utilise :
 ## Statut du développement
 
 ### ✅ Actuellement implémenté
-- Bibliothèque complète de composants shadcn/ui (13+ composants)
+- Bibliothèque complète de composants shadcn/ui (21+ composants)
 - Configuration Tailwind CSS avec design tokens
 - Configuration ESLint pour la qualité du code
 - TypeScript en mode strict
 - Showcase de composants d'exemple
-- **Intégration backend complète (HMAC, auth Discord, gestion de session)**
+- **Intégration backend complète (proxy Vercel sécurisé, auth Discord, gestion de session)**
 - **Hook useAuth pour la gestion d'état d'authentification**
-- **Test de connexion au démarrage de l'application**
+- **Récupération des informations complètes de l'utilisateur (avatar, email, etc.)**
+- **Routing SPA avec react-router-dom** (`/` et `/debug`)
+- **Auth guard sur la page d'accueil** (redirect vers `moddy.app/sign-in` si non connecté)
+- **Sentry intégré** pour le suivi des erreurs en production (initialisé dans `main.tsx`)
+- **Internationalisation (i18n)** avec react-i18next (EN par défaut, FR en fallback, sélecteur de langue dans `/debug`)
+- **Page de debug complète** (`/debug`) avec 11 sections : auth, API ping, env, router, browser, performance, cookies, storage, live logs, Sentry, UI showcase
+- **Configuration Vercel SPA** (rewrites pour éviter les 404 sur les routes client-side)
+
+- **Layout dashboard avec sidebar** (AppSidebar, TeamSwitcher, NavMain, NavProjects, NavUser)
+- **Palette de commandes** (CommandMenu, raccourci ⌘K)
+- **TooltipProvider** wrappant l'app dans `main.tsx`
+- **Système de notifications** (NotificationDrawer responsive, types, données exemple, hook use-media-query)
+- **Dark mode** (ThemeProvider, cookie `moddy_preferences.theme`, sélecteur dans `/debug`)
 
 ### 🚧 Prêt pour le développement
-- Routing des pages et navigation
-- Layouts de pages
-- Logique de changement de thème
 - Gestion et validation de formulaires
-- Pages protégées nécessitant l'authentification
+- Contenu du dashboard (pages fonctionnelles, remplir les placeholders)
 
 ## Guidelines de développement
 
@@ -299,8 +362,9 @@ npx shadcn@latest add [component-name]
 ### Ajout de nouvelles pages
 
 1. Créer le composant dans `src/pages/`
-2. Configurer le routing (à venir)
+2. Ajouter la `<Route>` dans `src/App.tsx`
 3. Ajouter les layouts nécessaires dans `src/layouts/`
+4. **Obligatoire : supporter l'i18n** — Utiliser `useTranslation()` pour tous les textes affichés, ajouter les clés dans `locales/en/translation.json` et `locales/fr/translation.json`
 
 ### Ajout de services API
 
@@ -315,6 +379,108 @@ npx shadcn@latest add [component-name]
 - **Responsive** : Utiliser les breakpoints Tailwind (`sm:`, `md:`, `lg:`, etc.)
 - **Performance** : Lazy loading pour les pages, memo pour les composants lourds
 - **Tests** : À implémenter (React Testing Library recommandé)
+
+## Routing
+
+### Architecture
+- **`main.tsx`** — `<BrowserRouter>` wrapping l'app
+- **`App.tsx`** — `<Routes>` avec les routes définies
+- **`vercel.json`** — Rewrites SPA (`/*` → `index.html`, `/api/*` → serverless)
+
+### Routes actuelles
+| Route | Page | Auth requise | Description |
+|-------|------|-------------|-------------|
+| `/` | `HomePage` → `DashboardPage` | Oui (redirect vers `moddy.app/sign-in`) | Dashboard avec sidebar, breadcrumb et command menu |
+| `/debug` | `DebugPage` | Non | Panneau de debug complet |
+
+### Auth Guard
+La page d'accueil vérifie l'authentification :
+- **Loading** → Spinner centré
+- **Non connecté** → Redirect vers `https://moddy.app/sign-in?url=<URL actuelle encodée>`
+- **Connecté** → Affiche le contenu de la page
+
+## Monitoring & Error Tracking (Sentry)
+
+### Configuration
+- **SDK** : `@sentry/react`
+- **Initialisation** : Dans `main.tsx`, avant le rendu de l'app
+- **DSN** : Configuré en dur (projet Sentry dédié au dashboard Moddy)
+- **PII** : `sendDefaultPii: true` (collecte les IP et données utilisateur par défaut)
+
+### Fonctionnement
+- Sentry capture automatiquement les erreurs JavaScript non gérées
+- Les erreurs sont envoyées au projet Sentry sur `o4510617959202816.ingest.de.sentry.io`
+- La DebugPage (`/debug`) contient une section "Sentry Error Tracking" avec :
+  - Affichage du DSN et du statut d'initialisation
+  - Bouton "Throw Test Error" pour tester la capture d'erreurs
+  - Bouton "Send Test Message" pour envoyer un message de test via `Sentry.captureMessage()`
+
+## Internationalisation (i18n)
+
+### Configuration
+- **Moteur** : i18next + react-i18next
+- **Fichier de config** : `src/i18n.ts` (importé dans `main.tsx` avant le render)
+- **Langue de secours** : `en` (anglais)
+- **Détection auto** : détecte la langue du navigateur (`navigator.languages`)
+- **Cookie de préférences** : `moddy_preferences` (JSON, 1 an, contient `language` et `theme`)
+- **Interpolation** : `escapeValue: false` (React gère l'échappement)
+
+### Logique de résolution de la langue
+1. Si le cookie `moddy_preferences` contient une clé `language` → utilise cette langue
+2. Sinon, détecte la langue du navigateur parmi les langues supportées (en, fr)
+3. Si aucune langue supportée n'est détectée → fallback `en`
+
+### Cookie `moddy_preferences`
+- **Format** : JSON encodé (`{ "language": "fr" }`)
+- **Durée** : 1 an (`max-age=31536000`)
+- **Attributs** : `path=/; SameSite=Lax`
+- **Clés** : `language` (langue) et `theme` (`"light"` | `"dark"` | absent = system)
+- **Mode Auto** : si l'utilisateur choisit "Auto", la clé `language` est supprimée du cookie
+- **Utilitaires** : `src/lib/preferences.ts` (`getPreferences()`, `setPreferences()`, `detectBrowserLanguage()`)
+
+### Structure des traductions
+```
+src/locales/
+├── en/translation.json   # Textes anglais (source)
+└── fr/translation.json   # Textes français
+```
+
+Les clés sont organisées par page/section :
+- `home.*` — Page d'accueil
+- `debug.*` — Page de debug (auth, api, router, browser, performance, cookies, storage, logs, sentry, components)
+- `common.*` — Textes communs (yes, no, empty, clear)
+
+### Utilisation dans les composants
+```tsx
+import { useTranslation } from 'react-i18next'
+
+const { t, i18n } = useTranslation()
+
+// Traduction simple
+<p>{t('home.loggedIn')}</p>
+
+// Avec interpolation
+<p>{t('debug.auth.id', { id: userId })}</p>
+<p>{t('debug.storage.localStorage', { count: 5 })}</p>
+
+// Changer la langue
+i18n.changeLanguage('fr')
+```
+
+### Fichiers traduits
+- `HomePage.tsx` — 3 textes traduits
+- `DebugPage.tsx` — ~60 textes traduits + sélecteur de langue Auto/EN/FR avec persistance cookie
+
+### Fichiers exclus de la traduction
+- `component-example.tsx` — Textes de démonstration (showcase), restent en anglais
+- `auth.ts` / `useAuth.ts` — Logs console développeur, restent en anglais
+
+### Conventions i18n
+1. **Clés en camelCase** organisées par page puis par section
+2. **Interpolation** avec double accolades : `{{variable}}`
+3. **Hook `useTranslation()`** dans chaque composant qui affiche du texte
+4. **Pas de traduction des logs console** (messages développeur)
+5. **Ajouter les nouvelles clés** dans les deux fichiers JSON (en + fr) simultanément
 
 ## Intégration Git
 
@@ -405,4 +571,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-12*
+*Dernière mise à jour : 2026-02-23 (dark mode avec ThemeProvider et cookie de préférences)*

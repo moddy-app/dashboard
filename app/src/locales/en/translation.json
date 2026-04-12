@@ -1,0 +1,198 @@
+{
+  "home": {
+    "checkingSession": "Checking session...",
+    "redirecting": "Redirecting...",
+    "loggedIn": "You are logged in"
+  },
+  "debug": {
+    "title": "Debug Panel",
+    "auth": {
+      "title": "Authentication",
+      "checkingSession": "Checking session...",
+      "authenticated": "Authenticated",
+      "avatar": "Avatar",
+      "id": "ID: {{id}}",
+      "userInfoRaw": "User Info (raw)",
+      "sessionData": "Session Data",
+      "discordId": "Discord ID",
+      "email": "Email",
+      "notProvided": "Not provided",
+      "logout": "Log out",
+      "notLoggedIn": "Not logged in",
+      "signInDiscord": "Sign in with Discord"
+    },
+    "api": {
+      "title": "API Connectivity",
+      "pingDirect": "Ping Direct API",
+      "pingProxy": "Ping Vercel Proxy",
+      "directApi": "Direct API:",
+      "vercelProxy": "Vercel Proxy:"
+    },
+    "environment": {
+      "title": "Environment"
+    },
+    "router": {
+      "title": "Router",
+      "pathname": "Pathname",
+      "search": "Search",
+      "hash": "Hash",
+      "origin": "Origin",
+      "fullUrl": "Full URL"
+    },
+    "browser": {
+      "title": "Browser",
+      "userAgent": "User Agent",
+      "language": "Language",
+      "languages": "Languages",
+      "online": "Online",
+      "cookiesEnabled": "Cookies Enabled",
+      "cpuCores": "CPU Cores",
+      "platform": "Platform",
+      "screen": "Screen",
+      "window": "Window",
+      "timezone": "Timezone"
+    },
+    "performance": {
+      "title": "Performance",
+      "domContentLoaded": "DOM Content Loaded",
+      "pageLoad": "Page Load",
+      "dnsLookup": "DNS Lookup",
+      "tcpConnect": "TCP Connect",
+      "ttfb": "TTFB",
+      "domInteractive": "DOM Interactive",
+      "transferSize": "Transfer Size",
+      "type": "Type",
+      "notAvailable": "Performance data not available",
+      "memory": "Memory",
+      "notSupported": "Not supported"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "httpOnlyNote": "The <code>moddy_session</code> cookie is HttpOnly and won't appear here.",
+      "noCookies": "No visible cookies (HttpOnly cookies are not accessible via JavaScript)."
+    },
+    "storage": {
+      "title": "Storage",
+      "localStorage": "LocalStorage ({{count}} entries)",
+      "sessionStorage": "SessionStorage ({{count}} entries)",
+      "empty": "Empty"
+    },
+    "logs": {
+      "title": "Live Logs ({{count}})",
+      "noLogs": "No logs yet..."
+    },
+    "sentry": {
+      "title": "Sentry Error Tracking",
+      "dsn": "DSN",
+      "notConfigured": "Not configured",
+      "status": "Status",
+      "initialized": "Initialized",
+      "notInitialized": "Not initialized",
+      "throwTestError": "Throw Test Error",
+      "sendTestMessage": "Send Test Message",
+      "description": "\"Throw Test Error\" will crash this section (caught by Sentry). \"Send Test Message\" sends a non-error event to Sentry."
+    },
+    "components": {
+      "title": "UI Components (Showcase)"
+    },
+    "languageSwitcher": "Language",
+    "languageAuto": "Auto",
+    "themeSwitcher": "Theme",
+    "themeAuto": "Auto",
+    "themeLight": "Light",
+    "themeDark": "Dark"
+  },
+  "dashboard": {
+    "breadcrumb": {
+      "app": "Dashboard",
+      "overview": "Overview"
+    },
+    "noServer": {
+      "title": "No server selected",
+      "description": "Select a server from the sidebar or add Moddy to one of your Discord servers to get started.",
+      "addModdy": "Add Moddy",
+      "browseServers": "Browse servers",
+      "learnMore": "Learn more"
+    },
+    "toast": {
+      "connected": "Connected as {{username}}",
+      "welcome": "Welcome to Moddy Dashboard"
+    }
+  },
+  "navUser": {
+    "upgradeToMax": "Upgrade to Max",
+    "settings": "Settings",
+    "billing": "Billing",
+    "notifications": "Notifications",
+    "myPunishments": "My Punishments",
+    "logOut": "Log out",
+    "logoutDialog": {
+      "title": "Log out",
+      "description": "Are you sure you want to log out of your Moddy account?",
+      "cancel": "Cancel",
+      "confirm": "Log out"
+    }
+  },
+  "commandMenu": {
+    "placeholder": "Search for a command or page...",
+    "noResults": "No results found.",
+    "noServers": "No servers connected yet",
+    "groups": {
+      "myServers": "My Servers",
+      "usefulLinks": "Useful Links",
+      "myAccount": "My Account"
+    },
+    "items": {
+      "addModdyToServer": "Add Moddy to a server",
+      "addModdy": "Add Moddy",
+      "openTicket": "Open a ticket",
+      "documentation": "Documentation",
+      "subscriptions": "Subscriptions",
+      "servicesStatus": "Services Status",
+      "myPunishments": "My Punishments",
+      "notifications": "Notifications",
+      "billing": "Billing",
+      "settings": "Settings",
+      "logOut": "Log out"
+    }
+  },
+  "notFound": {
+    "title": "404 — Page not found",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "searchPlaceholder": "Search for a page...",
+    "contactSupport": "Contact support",
+    "backToDashboard": "Back to dashboard"
+  },
+  "sidebar": {
+    "getHelp": "Get Help",
+    "commands": "Commands",
+    "documentation": "Documentation",
+    "search": "Search",
+    "notifications": "Notifications"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "You have no notifications",
+    "unreadCount": "{{count}} unread",
+    "markAsRead": "Mark as read",
+    "markAllAsRead": "Mark all as read",
+    "close": "Close",
+    "criticality": {
+      "info": "Info",
+      "success": "Success",
+      "warning": "Warning",
+      "critical": "Critical"
+    }
+  },
+  "pageTitle": {
+    "dashboard": "Dashboard",
+    "debug": "Debug",
+    "notFound": "404 — Not Found"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No",
+    "empty": "(empty)",
+    "clear": "Clear"
+  }
+}
