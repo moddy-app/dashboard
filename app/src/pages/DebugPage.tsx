@@ -1,6 +1,6 @@
 import { ComponentExample } from '@/components/component-example'
 import { useAuth } from '@/hooks/useAuth'
-import { signInWithDiscord, logout } from '@/lib/auth'
+import { login, logout, getAvatarUrl } from '@/lib/auth'
 import { getPreferences, setPreferences, detectBrowserLanguage } from '@/lib/preferences'
 import { useTheme } from '@/components/theme-provider'
 import { useState, useEffect, useCallback } from 'react'
@@ -106,7 +106,7 @@ export function DebugPage() {
     setApiPing({ status: 'loading', latency: null })
     const start = performance.now()
     try {
-      const res = await fetch(`${apiUrl}/auth/verify`, { credentials: 'include' })
+      const res = await fetch(`${apiUrl}/auth/me`, { credentials: 'include' })
       const latency = Math.round(performance.now() - start)
       setApiPing({ status: res.ok ? 'ok' : `http ${res.status}`, latency })
     } catch (e) {
@@ -116,12 +116,15 @@ export function DebugPage() {
   }, [])
 
   const pingProxy = useCallback(async () => {
+    const apiUrl = import.meta.env.VITE_API_URL
+    if (!apiUrl) { setProxyPing({ status: 'error', latency: null, error: 'VITE_API_URL not set' }); return }
     setProxyPing({ status: 'loading', latency: null })
     const start = performance.now()
     try {
-      const res = await fetch('/api/backend-proxy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: '/api/website/ping', body: {} }) })
+      const res = await fetch(`${apiUrl}/auth/refresh`, { method: 'POST', credentials: 'include' })
       const latency = Math.round(performance.now() - start)
-      setProxyPing({ status: res.ok ? 'ok' : `http ${res.status}`, latency })
+      // 401 = serveur accessible mais session expirée (normal si non connecté)
+      setProxyPing({ status: res.ok || res.status === 401 ? 'ok' : `http ${res.status}`, latency })
     } catch (e) {
       const latency = Math.round(performance.now() - start)
       setProxyPing({ status: 'error', latency, error: e instanceof Error ? e.message : 'Unknown' })
@@ -190,30 +193,25 @@ export function DebugPage() {
               <StatusDot ok />
               <span className="font-semibold">{t('debug.auth.authenticated')}</span>
             </div>
-            {auth.userInfo && (
-              <>
-                <div className="flex items-center gap-3">
-                  {auth.userInfo.avatar_url && (
-                    <img src={auth.userInfo.avatar_url} alt={t('debug.auth.avatar')} className="h-10 w-10 rounded-full" />
-                  )}
-                  <div>
-                    <p className="font-medium text-primary">
-                      {auth.userInfo.username}
-                      {auth.userInfo.discriminator !== '0' && `#${auth.userInfo.discriminator}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{t('debug.auth.id', { id: auth.userInfo.id })}</p>
-                  </div>
-                </div>
-                <div className="rounded bg-muted p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.userInfoRaw')}</p>
-                  <pre className="overflow-x-auto text-xs">{JSON.stringify(auth.userInfo, null, 2)}</pre>
-                </div>
-              </>
-            )}
+            <div className="flex items-center gap-3">
+              <img
+                src={getAvatarUrl(auth.user.user_id, auth.user.avatar)}
+                alt={t('debug.auth.avatar')}
+                className="h-10 w-10 rounded-full"
+              />
+              <div>
+                <p className="font-medium text-primary">{auth.user.username}</p>
+                <p className="text-xs text-muted-foreground">{t('debug.auth.id', { id: auth.user.user_id })}</p>
+              </div>
+            </div>
+            <div className="rounded bg-muted p-3">
+              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.userInfoRaw')}</p>
+              <pre className="overflow-x-auto text-xs">{JSON.stringify(auth.user, null, 2)}</pre>
+            </div>
             <div className="rounded bg-muted p-3">
               <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.sessionData')}</p>
-              <KeyValue label={t('debug.auth.discordId')} value={auth.user.discord_id} mono />
-              <KeyValue label={t('debug.auth.email')} value={auth.user.email || t('debug.auth.notProvided')} />
+              <KeyValue label={t('debug.auth.discordId')} value={auth.user.user_id} mono />
+              <KeyValue label="Staff" value={String(auth.user.is_staff)} />
             </div>
             <button
               onClick={async () => { if (await logout()) window.location.reload() }}
@@ -230,7 +228,7 @@ export function DebugPage() {
               <span className="font-semibold">{t('debug.auth.notLoggedIn')}</span>
             </div>
             <button
-              onClick={() => signInWithDiscord()}
+              onClick={() => login()}
               className="flex items-center gap-2 rounded-md bg-[#5865F2] px-4 py-2 font-medium text-white hover:bg-[#4752C4]"
             >
               {t('debug.auth.signInDiscord')}

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoaderIcon } from 'lucide-react'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { login } from '@/lib/auth'
 
 export function HomePage() {
   const auth = useAuth()
@@ -10,8 +11,7 @@ export function HomePage() {
 
   useEffect(() => {
     if (auth.status === 'unauthenticated') {
-      const currentUrl = window.location.href
-      window.location.href = `https://moddy.app/sign-in?url=${encodeURIComponent(currentUrl)}`
+      login()
     }
   }, [auth.status])
 
@@ -37,5 +37,5 @@ export function HomePage() {
     )
   }
 
-  return <DashboardPage userInfo={auth.userInfo} />
+  return <DashboardPage user={auth.user} />
 }

@@ -38,16 +38,16 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { logout } from "@/lib/auth"
-import type { UserInfo } from "@/lib/auth"
+import type { User } from "@/lib/auth"
 import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
 import { isNotificationExpired } from "@/types/notification"
 import type { Notification } from "@/types/notification"
 
 interface DashboardPageProps {
-  userInfo: UserInfo | null
+  user: User | null
 }
 
-export function DashboardPage({ userInfo }: DashboardPageProps) {
+export function DashboardPage({ user }: DashboardPageProps) {
   const { t } = useTranslation()
   usePageTitle(t('pageTitle.dashboard'))
 
@@ -67,9 +67,9 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
 
   // Toast de bienvenue à la connexion
   useEffect(() => {
-    if (userInfo && !welcomeToastShown.current) {
+    if (user && !welcomeToastShown.current) {
       welcomeToastShown.current = true
-      toast.success(t('dashboard.toast.connected', { username: userInfo.username }), {
+      toast.success(t('dashboard.toast.connected', { username: user.username }), {
         description: t('dashboard.toast.welcome'),
         duration: 4000,
       })
@@ -114,7 +114,7 @@ export function DashboardPage({ userInfo }: DashboardPageProps) {
   return (
     <SidebarProvider>
       <AppSidebar
-        userInfo={userInfo}
+        user={user}
         onLogoutRequest={handleLogoutRequest}
         onOpenCommandMenu={handleOpenCommandMenu}
         onOpenNotifications={handleOpenNotifications}

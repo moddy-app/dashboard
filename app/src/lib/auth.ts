@@ -1,119 +1,81 @@
-const API_URL = import.meta.env.VITE_API_URL || ''
-const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || ''
-const REDIRECT_URI = `${API_URL}/auth/discord/callback`
+const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
 
-/**
- * Appelle le proxy Vercel pour signer les requêtes de manière sécurisée
- * La clé API n'est jamais exposée au client
- */
-async function callBackendProxy(endpoint: string, body: any = {}) {
-  const response = await fetch('/api/backend-proxy', {
-    method: 'POST',
+export class ApiError extends Error {
+  constructor(public status: number, message: string) {
+    super(message)
+  }
+  get isUnauthorized() { return this.status === 401 }
+  get isForbidden() { return this.status === 403 }
+  get isNotFound() { return this.status === 404 }
+  get isServerError() { return this.status >= 500 }
+}
+
+export async function api(path: string, options: RequestInit = {}): Promise<unknown> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...options.headers,
     },
-    body: JSON.stringify({
-      endpoint,
-      body,
-    }),
   })
 
   if (!response.ok) {
-    throw new Error(`Proxy request failed: ${response.status}`)
+    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
+    throw new ApiError(response.status, (error as { error: string }).error)
   }
 
-  return response.json()
+  const text = await response.text()
+  return text ? JSON.parse(text) : null
+}
+
+export interface Guild {
+  id: number
+  name: string
+  icon: string | null
 }
 
 export interface User {
-  discord_id: number
-  email: string | null
-}
-
-export interface VerifyResponse {
-  valid: boolean
-  discord_id?: number
-  email?: string | null
-}
-
-export interface UserInfo {
-  id: string
+  user_id: string
   username: string
-  discriminator: string
   avatar: string | null
-  email: string | null
-  verified: boolean | null
-  locale: string | null
-  mfa_enabled: boolean | null
-  premium_type: number | null
-  public_flags: number | null
-  avatar_url: string | null
+  guilds: Guild[]
+  is_staff: boolean
+  staff_roles: string[]
+}
+
+export function getAvatarUrl(userId: string, avatarHash: string | null): string {
+  if (!avatarHash) {
+    const defaultIndex = (BigInt(userId) >> 22n) % 6n
+    return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`
+  }
+  const ext = avatarHash.startsWith('a_') ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${ext}?size=128`
+}
+
+export function getGuildIconUrl(guildId: number | string, iconHash: string | null): string | null {
+  if (!iconHash) return null
+  const ext = iconHash.startsWith('a_') ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${ext}?size=128`
 }
 
 /**
- * Vérifie si l'utilisateur est connecté
+ * Récupère les infos de l'utilisateur connecté. Retourne null si 401.
  */
-export async function verifySession(): Promise<VerifyResponse> {
+export async function getMe(): Promise<User | null> {
   try {
-    console.log('[verifySession] Calling', `${API_URL}/auth/verify`)
-    console.log('[verifySession] Current origin:', window.location.origin)
-    console.log('[verifySession] Cookies in browser:', document.cookie || '(none visible)')
-
-    const response = await fetch(`${API_URL}/auth/verify`, {
-      credentials: 'include', // Important: envoie les cookies
-    })
-
-    console.log('[verifySession] Response status:', response.status)
-    console.log('[verifySession] Response ok?:', response.ok)
-    console.log('[verifySession] Response headers:', Object.fromEntries(response.headers.entries()))
-
-    // Lire le texte brut de la réponse
-    const responseText = await response.text()
-    console.log('[verifySession] Response text (raw):', responseText)
-
-    if (!response.ok) {
-      console.error('[verifySession] Failed to verify session:', response.status)
-      return { valid: false }
-    }
-
-    // Parser le JSON depuis le texte
-    const data: VerifyResponse = JSON.parse(responseText)
-    console.log('[verifySession] Response data (parsed):', data)
-    return data
-  } catch (error) {
-    console.error('[verifySession] Error verifying session:', error)
-    console.error('[verifySession] Error type:', typeof error)
-    console.error('[verifySession] Error message:', error instanceof Error ? error.message : 'Unknown error')
-    console.error('[verifySession] Error stack:', error instanceof Error ? error.stack : 'No stack')
-    return { valid: false }
+    return await api('/auth/me') as User
+  } catch (e) {
+    if (e instanceof ApiError && e.isUnauthorized) return null
+    throw e
   }
 }
 
 /**
- * Démarre le flow d'authentification Discord
- * Utilise le proxy Vercel pour signer les requêtes de manière sécurisée
+ * Redirige vers Discord OAuth2
  */
-export async function signInWithDiscord() {
-  try {
-    // 1. Initialiser l'auth via le proxy (signature côté serveur)
-    const { state } = await callBackendProxy('/api/website/auth/init', {
-      current_page: window.location.href,
-    })
-
-    // 2. Construire l'URL Discord OAuth
-    const discordUrl = new URL('https://discord.com/api/oauth2/authorize')
-    discordUrl.searchParams.set('client_id', DISCORD_CLIENT_ID)
-    discordUrl.searchParams.set('redirect_uri', REDIRECT_URI)
-    discordUrl.searchParams.set('response_type', 'code')
-    discordUrl.searchParams.set('scope', 'identify email')
-    discordUrl.searchParams.set('state', state)
-
-    // 3. Rediriger vers Discord
-    window.location.href = discordUrl.toString()
-  } catch (error) {
-    console.error('Error signing in with Discord:', error)
-    throw error
-  }
+export function login() {
+  window.location.href = `${API_BASE}/auth/login`
 }
 
 /**
@@ -121,47 +83,24 @@ export async function signInWithDiscord() {
  */
 export async function logout(): Promise<boolean> {
   try {
-    const response = await fetch(`${API_URL}/auth/logout`, {
-      credentials: 'include', // Important: envoie les cookies
-    })
-
-    if (!response.ok) {
-      console.error('Failed to logout:', response.status)
-      return false
-    }
-
-    const data = await response.json()
-    return data.success === true
-  } catch (error) {
-    console.error('Error logging out:', error)
+    await api('/auth/logout', { method: 'POST' })
+    return true
+  } catch {
     return false
   }
 }
 
 /**
- * Récupère les informations complètes de l'utilisateur depuis Discord
+ * Maintient la session active (appeler toutes les 24h)
  */
-export async function getUserInfo(): Promise<UserInfo | null> {
-  try {
-    const response = await fetch(`${API_URL}/auth/user-info`, {
-      credentials: 'include',
-    })
+export async function refreshSession(): Promise<void> {
+  await api('/auth/refresh', { method: 'POST' })
+}
 
-    if (response.status === 401) {
-      // Session invalide ou refresh token révoqué
-      console.log('Session expired or invalid')
-      return null
-    }
-
-    if (!response.ok) {
-      console.error('Failed to get user info:', response.status)
-      return null
-    }
-
-    const userInfo: UserInfo = await response.json()
-    return userInfo
-  } catch (error) {
-    console.error('Error getting user info:', error)
-    return null
-  }
+/**
+ * Rafraîchit la liste des serveurs de l'utilisateur
+ */
+export async function refreshGuilds(): Promise<Guild[]> {
+  const data = await api('/auth/refresh-guilds', { method: 'POST' }) as { guilds: Guild[] }
+  return data.guilds
 }

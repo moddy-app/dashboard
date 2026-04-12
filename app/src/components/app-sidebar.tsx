@@ -26,7 +26,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import type { UserInfo } from "@/lib/auth"
+import { getAvatarUrl, type User } from "@/lib/auth"
 
 const data = {
   teams: [
@@ -93,19 +93,19 @@ const data = {
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  userInfo: UserInfo | null
+  user: User | null
   onLogoutRequest?: () => void
   onOpenCommandMenu?: () => void
   onOpenNotifications?: () => void
 }
 
-export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, onOpenNotifications, ...props }: AppSidebarProps) {
+export function AppSidebar({ user, onLogoutRequest, onOpenCommandMenu, onOpenNotifications, ...props }: AppSidebarProps) {
   const { t } = useTranslation()
 
-  const user = {
-    name: userInfo?.username ?? "User",
-    email: userInfo?.email ?? "",
-    avatar: userInfo?.avatar_url ?? "",
+  const navUser = {
+    name: user?.username ?? "User",
+    email: "",
+    avatar: user ? getAvatarUrl(user.user_id, user.avatar) : "",
   }
 
   return (
@@ -141,7 +141,7 @@ export function AppSidebar({ userInfo, onLogoutRequest, onOpenCommandMenu, onOpe
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <NavUser user={user} onLogoutRequest={onLogoutRequest} onOpenNotifications={onOpenNotifications} />
+        <NavUser user={navUser} onLogoutRequest={onLogoutRequest} onOpenNotifications={onOpenNotifications} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
