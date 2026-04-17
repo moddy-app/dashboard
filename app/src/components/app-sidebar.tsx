@@ -57,7 +57,7 @@ export function AppSidebar({
 
   const navUser = {
     name: user?.username ?? "User",
-    email: "",
+    email: user?.email ?? null,
     avatar: user ? getAvatarUrl(user.user_id, user.avatar) : "",
     isStaff: user?.is_staff ?? false,
   }

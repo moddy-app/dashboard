@@ -38,7 +38,7 @@ import type { User } from "@/lib/auth"
 interface NavUserProps {
   user: {
     name: string
-    email: string
+    email: string | null
     avatar: string
     isStaff?: boolean
   }
@@ -72,7 +72,7 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, 
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">@{user.name}</span>
                   <span className="truncate text-xs text-muted-foreground">
-                    {user.email || t('navUser.discordAccount')}
+                    {user.email ?? t('navUser.discordAccount')}
                   </span>
                 </div>
                 <ChevronsUpDownIcon className="ml-auto size-4" />
@@ -95,7 +95,7 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, 
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">@{user.name}</span>
                     <span className="truncate text-xs text-muted-foreground">
-                      {user.email || t('navUser.discordAccount')}
+                      {user.email ?? t('navUser.discordAccount')}
                     </span>
                   </div>
                 </div>

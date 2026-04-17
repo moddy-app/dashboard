@@ -55,6 +55,7 @@ export interface User {
   user_id: string
   username: string
   avatar: string | null
+  email?: string | null   // présent si renvoyé par l'API
   guilds: Guild[]
   is_staff: boolean
   staff_roles: string[]

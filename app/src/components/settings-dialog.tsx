@@ -100,7 +100,10 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
                 </Avatar>
                 <div>
                   <p className="font-medium">@{user.username}</p>
-                  <p className="text-xs text-muted-foreground font-mono">{user.user_id}</p>
+                  {user.email && (
+                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground/50 font-mono">{user.user_id}</p>
                   {user.is_staff && (
                     <Badge variant="secondary" className="text-xs mt-1">
                       {t('settings.account.staffBadge')}
