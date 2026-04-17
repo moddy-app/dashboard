@@ -6,6 +6,8 @@ import {
   ScrollTextIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { handleSaveError } from "@/lib/handle-error"
+import { ErrorState } from "@/components/error-state"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -62,6 +64,8 @@ export function LoggingPage() {
     channels,
     modules,
     isLoadingGuild,
+    guildError,
+    refreshGuildData,
     disableModule,
   } = useGuildContext()
 
@@ -144,8 +148,8 @@ export function LoggingPage() {
       setSavedChannelId(channelId)
       setSavedEvents(new Set(selectedEvents))
       toast.success(t('modules.saved'))
-    } catch {
-      toast.error(t('modules.saveError'))
+    } catch (e) {
+      handleSaveError(e, { title: t('modules.saveError') })
     } finally {
       setSaving(false)
     }
@@ -168,8 +172,8 @@ export function LoggingPage() {
       setChannelId('')
       setSelectedEvents(new Set())
       toast.success(t('modules.logging.disabledSuccess'))
-    } catch {
-      toast.error(t('modules.saveError'))
+    } catch (e) {
+      handleSaveError(e, { title: t('modules.saveError') })
     } finally {
       setSaving(false)
     }
@@ -177,15 +181,19 @@ export function LoggingPage() {
 
   if (isLoadingGuild) {
     return (
-      <div className="flex flex-col gap-4 max-w-2xl">
+      <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
     )
   }
 
+  if (guildError) {
+    return <ErrorState error={guildError} onRetry={refreshGuildData} className="min-h-[40vh]" />
+  }
+
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">

@@ -151,9 +151,12 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
   const selectGuild = useCallback(
     (id: string) => {
       setSelectedGuildId(id)
-      navigate(`/servers/${id}`)
+      // Préserve ?debug=true si présent dans l'URL actuelle
+      const debugParam = new URLSearchParams(location.search).get('debug')
+      const query = debugParam ? `?debug=${debugParam}` : ''
+      navigate(`/servers/${id}${query}`)
     },
-    [navigate]
+    [navigate, location.search]
   )
 
   const refreshGuildData = useCallback(async () => {

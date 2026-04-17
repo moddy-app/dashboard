@@ -6,6 +6,7 @@ import { z } from "zod"
 import { toast } from "sonner"
 import { Trash2Icon, MessageSquareIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { handleSaveError } from "@/lib/handle-error"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -36,6 +37,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { ErrorState } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
 import type { WelcomeChannelConfig } from "@/types/api"
@@ -68,6 +70,8 @@ export function WelcomeChannelPage() {
     channels,
     modules,
     isLoadingGuild,
+    guildError,
+    refreshGuildData,
     updateModule,
     disableModule,
   } = useGuildContext()
@@ -140,8 +144,8 @@ export function WelcomeChannelPage() {
       await updateModule('welcome_channel', payload)
       form.reset(values)
       toast.success(t('modules.saved'))
-    } catch {
-      toast.error(t('modules.saveError'))
+    } catch (e) {
+      handleSaveError(e, { title: t('modules.saveError') })
     }
   }
 
@@ -151,8 +155,8 @@ export function WelcomeChannelPage() {
       const values = form.getValues()
       form.reset({ ...values, enabled: false })
       toast.success(t('modules.welcome_channel.disabledSuccess'))
-    } catch {
-      toast.error(t('modules.saveError'))
+    } catch (e) {
+      handleSaveError(e, { title: t('modules.saveError') })
     }
   }
 
@@ -162,15 +166,19 @@ export function WelcomeChannelPage() {
 
   if (isLoadingGuild) {
     return (
-      <div className="flex flex-col gap-4 max-w-2xl">
+      <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
     )
   }
 
+  if (guildError) {
+    return <ErrorState error={guildError} onRetry={refreshGuildData} className="min-h-[40vh]" />
+  }
+
   return (
-    <div className="flex flex-col gap-6 max-w-2xl">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">

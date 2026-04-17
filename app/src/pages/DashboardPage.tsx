@@ -35,6 +35,7 @@ import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
 import { isNotificationExpired } from "@/types/notification"
 import type { Notification } from "@/types/notification"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { DebugModeBadge } from "@/components/debug-error-overlay"
 
 interface DashboardPageProps {
   user: User | null
@@ -207,6 +208,9 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}
       />
+
+      {/* Badge debug — visible uniquement si ?debug=true dans l'URL */}
+      <DebugModeBadge />
 
       <Dialog open={logoutDialogOpen} onOpenChange={setLogoutDialogOpen}>
         <DialogContent>

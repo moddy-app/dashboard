@@ -1,7 +1,6 @@
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import {
-  AlertCircleIcon,
   LoaderIcon,
   RefreshCwIcon,
   SparklesIcon,
@@ -25,6 +24,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { ErrorState } from "@/components/error-state"
+import { DebugErrorOverlay } from "@/components/debug-error-overlay"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -154,17 +155,8 @@ export function GuildOverviewPage() {
   if (guildError) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[40vh]">
-        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
-          <AlertCircleIcon className="size-10 text-destructive" />
-          <div>
-            <p className="font-medium">{t('guildOverview.error.title')}</p>
-            <p className="text-sm text-muted-foreground mt-1">{guildError}</p>
-          </div>
-          <Button variant="outline" onClick={refreshGuildData}>
-            <RefreshCwIcon className="size-4 mr-2" />
-            {t('guildOverview.error.retry')}
-          </Button>
-        </div>
+        <ErrorState error={guildError} onRetry={refreshGuildData} />
+        <DebugErrorOverlay error={guildError} context="guild/load" />
       </div>
     )
   }

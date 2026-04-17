@@ -395,6 +395,29 @@
     "debug": "Debug",
     "notFound": "404 — Not Found"
   },
+  "errors": {
+    "retry": "Try again",
+    "notFound": {
+      "title": "Resource not found",
+      "description": "This server may not be configured yet. Add Moddy and set it up first."
+    },
+    "forbidden": {
+      "title": "Access denied",
+      "description": "You don't have permission to manage this server. You need to be an admin."
+    },
+    "network": {
+      "title": "Connection error",
+      "description": "Could not reach the server. Check your internet connection and try again."
+    },
+    "server": {
+      "title": "Server error",
+      "description": "The Moddy API encountered an error. Please try again in a few moments."
+    },
+    "generic": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred. Please try again."
+    }
+  },
   "unsavedBar": {
     "message": "You have unsaved changes",
     "discard": "Discard",

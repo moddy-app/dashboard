@@ -10,21 +10,35 @@ export class ApiError extends Error {
   get isForbidden() { return this.status === 403 }
   get isNotFound() { return this.status === 404 }
   get isServerError() { return this.status >= 500 }
+  get isNetworkError() { return this.status === 0 }
 }
 
 export async function api(path: string, options: RequestInit = {}): Promise<unknown> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  })
+  let response: Response
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    })
+  } catch (networkErr) {
+    // Erreur réseau (pas de connexion, CORS, timeout…)
+    throw new ApiError(0, 'Network error — check your connection')
+  }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }))
-    throw new ApiError(response.status, (error as { error: string }).error)
+    // 401 → session expirée → redirection login
+    if (response.status === 401) {
+      window.location.href = `${API_BASE}/auth/login`
+      throw new ApiError(401, 'Unauthorized')
+    }
+
+    const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+    throw new ApiError(response.status, (error as { error: string }).error ?? `HTTP ${response.status}`)
   }
 
   const text = await response.text()
