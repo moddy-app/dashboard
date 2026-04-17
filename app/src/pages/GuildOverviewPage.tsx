@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
-import { ErrorState } from "@/components/error-state"
+import { ErrorPage } from "@/components/error-state"
 import { DebugErrorOverlay } from "@/components/debug-error-overlay"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { getGuildIconUrl } from "@/lib/auth"
@@ -114,6 +114,7 @@ export function GuildOverviewPage() {
     isLoadingGuild,
     guildError,
     refreshGuildData,
+    refreshGuildList,
     selectedGuildId,
   } = useGuildContext()
 
@@ -155,10 +156,15 @@ export function GuildOverviewPage() {
 
   if (guildError) {
     return (
-      <div className="flex flex-1 items-center justify-center min-h-[40vh]">
-        <ErrorState error={guildError} onRetry={refreshGuildData} />
+      <>
+        <ErrorPage
+          error={guildError}
+          onRetry={refreshGuildData}
+          onSecondaryAction={refreshGuildList}
+          secondaryActionLabel={t('errors.refreshServers')}
+        />
         <DebugErrorOverlay error={guildError} context="guild/load" />
-      </div>
+      </>
     )
   }
 
@@ -214,7 +220,7 @@ export function GuildOverviewPage() {
           <Avatar className="size-14 rounded-xl">
             <AvatarImage src={iconUrl ?? undefined} alt={guildDetail.name} />
             <AvatarFallback className="rounded-xl text-lg font-bold">
-              {guildDetail.name.slice(0, 2).toUpperCase()}
+              {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1.5">

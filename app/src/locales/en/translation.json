@@ -403,9 +403,10 @@
   },
   "errors": {
     "retry": "Try again",
+    "refreshServers": "Refresh my servers",
     "notFound": {
-      "title": "Resource not found",
-      "description": "This server may not be configured yet. Add Moddy and set it up first."
+      "title": "Server not found",
+      "description": "Moddy may have been removed from this server, or it no longer exists. Try refreshing your server list."
     },
     "forbidden": {
       "title": "Access denied",

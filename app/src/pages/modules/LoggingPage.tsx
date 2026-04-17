@@ -7,7 +7,7 @@ import {
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
-import { ErrorState } from "@/components/error-state"
+import { ErrorPage } from "@/components/error-state"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -189,7 +189,7 @@ export function LoggingPage() {
   }
 
   if (guildError) {
-    return <ErrorState error={guildError} onRetry={refreshGuildData} className="min-h-[40vh]" />
+    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
   }
 
   return (

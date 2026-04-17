@@ -91,7 +91,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
             {guilds.length > 0 ? (
               guilds.map((guild) => {
                 const iconUrl = getGuildIconUrl(guild.id, guild.icon)
-                const initials = guild.name.slice(0, 2).toUpperCase()
+                const initials = guild.name?.slice(0, 2)?.toUpperCase() ?? '??'
                 const isActive = String(guild.id) === selectedGuildId
 
                 return (

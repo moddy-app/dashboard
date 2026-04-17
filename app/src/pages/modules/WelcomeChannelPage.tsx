@@ -37,7 +37,7 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
-import { ErrorState } from "@/components/error-state"
+import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
 import type { WelcomeChannelConfig } from "@/types/api"
@@ -194,7 +194,7 @@ export function WelcomeChannelPage() {
   }
 
   if (guildError) {
-    return <ErrorState error={guildError} onRetry={refreshGuildData} className="min-h-[40vh]" />
+    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
   }
 
   return (

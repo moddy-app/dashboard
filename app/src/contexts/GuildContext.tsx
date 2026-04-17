@@ -19,7 +19,7 @@ import {
   updateModule as apiUpdateModule,
   disableModule as apiDisableModule,
 } from '@/services/guilds'
-import { ApiError } from '@/lib/auth'
+import { ApiError, refreshGuilds as apiRefreshGuilds } from '@/lib/auth'
 
 // ─── Types du contexte ────────────────────────────────────────────────────────
 
@@ -40,6 +40,8 @@ interface GuildContextValue {
   guildError: string | null
   // Actions
   refreshGuildData: () => Promise<void>
+  /** Rafraîchit la liste des guilds depuis Discord puis recharge la page */
+  refreshGuildList: () => Promise<void>
   updateModule: (moduleId: string, config: Record<string, unknown>) => Promise<void>
   disableModule: (moduleId: string) => Promise<void>
 }
@@ -165,6 +167,17 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     }
   }, [selectedGuildId, loadGuildData])
 
+  const refreshGuildList = useCallback(async () => {
+    try {
+      await apiRefreshGuilds()
+      // Recharge la page pour que useAuth récupère les nouvelles guilds depuis /auth/me
+      window.location.href = '/'
+    } catch {
+      // Si ça échoue, on recharge quand même pour avoir des données fraîches
+      window.location.href = '/'
+    }
+  }, [])
+
   const updateModule = useCallback(
     async (moduleId: string, config: Record<string, unknown>) => {
       if (!selectedGuildId) return
@@ -202,6 +215,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         isLoadingGuild,
         guildError,
         refreshGuildData,
+        refreshGuildList,
         updateModule,
         disableModule,
       }}

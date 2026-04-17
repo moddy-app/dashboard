@@ -403,6 +403,7 @@
   },
   "errors": {
     "retry": "Réessayer",
+    "refreshServers": "Rafraîchir mes serveurs",
     "notFound": {
       "title": "Ressource introuvable",
       "description": "Ce serveur n'est peut-être pas encore configuré. Ajoutez Moddy et configurez-le d'abord."

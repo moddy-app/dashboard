@@ -70,7 +70,7 @@ export function GuildSelectionView() {
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {guilds.map((guild) => {
           const iconUrl = getGuildIconUrl(guild.id, guild.icon)
-          const initials = guild.name.slice(0, 2).toUpperCase()
+          const initials = guild.name?.slice(0, 2)?.toUpperCase() ?? '??'
 
           return (
             <Card

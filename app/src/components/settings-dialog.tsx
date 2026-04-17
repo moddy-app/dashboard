@@ -115,7 +115,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
                 <Avatar className="size-14 rounded-xl">
                   <AvatarImage src={avatarUrl} alt={displayName} />
                   <AvatarFallback className="rounded-xl text-lg font-bold">
-                    {displayName.slice(0, 2).toUpperCase()}
+                    {displayName?.slice(0, 2)?.toUpperCase() ?? '??'}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-1 min-w-0">
