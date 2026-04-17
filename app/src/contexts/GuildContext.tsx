@@ -11,11 +11,15 @@ import type { Guild, User } from '@/lib/auth'
 import type { GuildDetail, Channel, Role, ModuleConfig, GuildStats } from '@/types/api'
 import {
   getGuildDiscordData,
+  getGuild,
+  getChannels,
+  getRoles,
   getModules,
   getGuildStats,
   updateModule as apiUpdateModule,
   disableModule as apiDisableModule,
 } from '@/services/guilds'
+import { ApiError } from '@/lib/auth'
 
 // ─── Types du contexte ────────────────────────────────────────────────────────
 
@@ -72,16 +76,46 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     setIsLoadingGuild(true)
     setGuildError(null)
     try {
-      const [discordData, modulesData, statsData] = await Promise.all([
-        getGuildDiscordData(guildId),
+      // Essaie l'endpoint combiné /discord d'abord (guild + channels + roles en 1 appel)
+      // Si 404 (guild pas en base), fallback sur les appels séparés
+      let guildInfo = null
+      let channelList: Channel[] = []
+      let roleList: Role[] = []
+
+      try {
+        const discordData = await getGuildDiscordData(guildId)
+        guildInfo = discordData.guild
+        channelList = discordData.channels
+        roleList = discordData.roles
+      } catch (e) {
+        if (e instanceof ApiError && e.isNotFound) {
+          // Guild pas en base → on récupère juste les infos de base Discord
+          guildInfo = await getGuild(guildId)
+          // Channels et roles peuvent ne pas être disponibles non plus
+          try {
+            [channelList, roleList] = await Promise.all([
+              getChannels(guildId),
+              getRoles(guildId),
+            ])
+          } catch {
+            // Pas grave si channels/roles ne chargent pas
+          }
+        } else {
+          throw e
+        }
+      }
+
+      // Modules et stats — pas critiques, on les charge en parallèle
+      const [modulesData, statsData] = await Promise.allSettled([
         getModules(guildId),
         getGuildStats(guildId),
       ])
-      setGuildDetail(discordData.guild)
-      setChannels(discordData.channels)
-      setRoles(discordData.roles)
-      setModules(modulesData ?? {})
-      setStats(statsData)
+
+      setGuildDetail(guildInfo)
+      setChannels(channelList)
+      setRoles(roleList)
+      setModules(modulesData.status === 'fulfilled' ? (modulesData.value ?? {}) : {})
+      setStats(statsData.status === 'fulfilled' ? statsData.value : null)
     } catch (e) {
       setGuildError(e instanceof Error ? e.message : 'Failed to load guild data')
       setGuildDetail(null)
