@@ -134,6 +134,8 @@
     },
     "stats": {
       "members": "Members",
+      "online": "Online",
+      "cases": "Cases (open/total)",
       "totalCases": "Total Cases",
       "activeModules": "Active Modules"
     },
@@ -198,6 +200,10 @@
       "embedTitle": "Embed title",
       "embedBody": "Embed body",
       "embedColor": "Embed color",
+      "embedFooter": "Footer text",
+      "embedImageUrl": "Image URL",
+      "embedThumbnail": "Show avatar as thumbnail",
+      "embedAuthor": "Show author name",
       "disabledSuccess": "Welcome channel disabled."
     },
     "welcome_dm": {

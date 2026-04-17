@@ -50,6 +50,10 @@ const schema = z.object({
   embed_title: z.string().max(256).optional(),
   embed_description: z.string().max(4096).nullable().optional(),
   embed_color: z.string().optional(),
+  embed_footer: z.string().max(2048).nullable().optional(),
+  embed_image_url: z.string().url().nullable().optional().or(z.literal('')),
+  embed_thumbnail_enabled: z.boolean().optional(),
+  embed_author_enabled: z.boolean().optional(),
   enabled: z.boolean(),
 })
 
@@ -95,6 +99,10 @@ export function WelcomeChannelPage() {
       embed_color: currentConfig?.embed_color
         ? decimalToHex(currentConfig.embed_color)
         : '#5865F2',
+      embed_footer: currentConfig?.embed_footer ?? '',
+      embed_image_url: currentConfig?.embed_image_url ?? '',
+      embed_thumbnail_enabled: currentConfig?.embed_thumbnail_enabled ?? false,
+      embed_author_enabled: currentConfig?.embed_author_enabled ?? false,
       enabled: isEnabled,
     },
   })
@@ -111,6 +119,10 @@ export function WelcomeChannelPage() {
         embed_color: currentConfig.embed_color
           ? decimalToHex(currentConfig.embed_color)
           : '#5865F2',
+        embed_footer: currentConfig.embed_footer ?? '',
+        embed_image_url: currentConfig.embed_image_url ?? '',
+        embed_thumbnail_enabled: currentConfig.embed_thumbnail_enabled ?? false,
+        embed_author_enabled: currentConfig.embed_author_enabled ?? false,
         enabled: true,
       })
     }
@@ -122,8 +134,14 @@ export function WelcomeChannelPage() {
     if (!selectedGuildId) return
 
     if (!values.enabled) {
-      await disableModule('welcome_channel')
-      toast.success(t('modules.welcome_channel.disabledSuccess'))
+      try {
+        await disableModule('welcome_channel')
+        const v = form.getValues()
+        form.reset({ ...v, enabled: false })
+        toast.success(t('modules.welcome_channel.disabledSuccess'))
+      } catch (e) {
+        handleSaveError(e, { title: t('modules.saveError') })
+      }
       return
     }
 
@@ -140,6 +158,10 @@ export function WelcomeChannelPage() {
         payload.embed_color = values.embed_color
           ? hexToDecimal(values.embed_color)
           : undefined
+        payload.embed_footer = values.embed_footer || null
+        payload.embed_image_url = values.embed_image_url || null
+        payload.embed_thumbnail_enabled = values.embed_thumbnail_enabled ?? false
+        payload.embed_author_enabled = values.embed_author_enabled ?? false
       }
       await updateModule('welcome_channel', payload)
       form.reset(values)
@@ -152,17 +174,15 @@ export function WelcomeChannelPage() {
   const handleDisable = async () => {
     try {
       await disableModule('welcome_channel')
-      const values = form.getValues()
-      form.reset({ ...values, enabled: false })
+      const v = form.getValues()
+      form.reset({ ...v, enabled: false })
       toast.success(t('modules.welcome_channel.disabledSuccess'))
     } catch (e) {
       handleSaveError(e, { title: t('modules.saveError') })
     }
   }
 
-  const handleDiscard = () => {
-    form.reset()
-  }
+  const handleDiscard = () => { form.reset() }
 
   if (isLoadingGuild) {
     return (
@@ -199,7 +219,7 @@ export function WelcomeChannelPage() {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          {/* Toggle */}
+          {/* Toggle activation */}
           <Card>
             <CardContent className="flex items-center justify-between p-4">
               <div>
@@ -229,7 +249,6 @@ export function WelcomeChannelPage() {
               <CardDescription>{t('modules.welcome_channel.configDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              {/* Salon */}
               <FormField
                 control={form.control}
                 name="channel_id"
@@ -255,7 +274,6 @@ export function WelcomeChannelPage() {
                 )}
               />
 
-              {/* Message template */}
               <FormField
                 control={form.control}
                 name="message_template"
@@ -263,11 +281,7 @@ export function WelcomeChannelPage() {
                   <FormItem>
                     <FormLabel>{t('modules.welcome_channel.messageTemplate')}</FormLabel>
                     <FormControl>
-                      <Textarea
-                        {...field}
-                        rows={3}
-                        placeholder="Welcome {user} to the server!"
-                      />
+                      <Textarea {...field} rows={3} placeholder="Welcome {user} to the server!" />
                     </FormControl>
                     <FormDescription>
                       {t('modules.welcome_channel.messageTemplateDescription')}
@@ -277,7 +291,6 @@ export function WelcomeChannelPage() {
                 )}
               />
 
-              {/* Mention */}
               <FormField
                 control={form.control}
                 name="mention_user"
@@ -321,6 +334,7 @@ export function WelcomeChannelPage() {
             </CardHeader>
             {watchEmbedEnabled && (
               <CardContent className="flex flex-col gap-4 pt-0">
+                {/* Titre */}
                 <FormField
                   control={form.control}
                   name="embed_title"
@@ -334,6 +348,8 @@ export function WelcomeChannelPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Description */}
                 <FormField
                   control={form.control}
                   name="embed_description"
@@ -352,6 +368,43 @@ export function WelcomeChannelPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Footer */}
+                <FormField
+                  control={form.control}
+                  name="embed_footer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('modules.welcome_channel.embedFooter')}</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value ?? ''} maxLength={2048} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Image URL */}
+                <FormField
+                  control={form.control}
+                  name="embed_image_url"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('modules.welcome_channel.embedImageUrl')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          value={field.value ?? ''}
+                          placeholder="https://..."
+                          type="url"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Couleur */}
                 <FormField
                   control={form.control}
                   name="embed_color"
@@ -360,7 +413,12 @@ export function WelcomeChannelPage() {
                       <FormLabel>{t('modules.welcome_channel.embedColor')}</FormLabel>
                       <div className="flex items-center gap-2">
                         <FormControl>
-                          <Input {...field} type="color" className="h-10 w-20 p-1 cursor-pointer" />
+                          <Input
+                            type="color"
+                            className="h-10 w-20 p-1 cursor-pointer"
+                            value={field.value ?? '#5865F2'}
+                            onChange={(e) => field.onChange(e.target.value)}
+                          />
                         </FormControl>
                         <Input
                           value={field.value ?? ''}
@@ -374,10 +432,49 @@ export function WelcomeChannelPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Options d'affichage */}
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField
+                    control={form.control}
+                    name="embed_thumbnail_enabled"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                        <FormLabel className="text-sm cursor-pointer">
+                          {t('modules.welcome_channel.embedThumbnail')}
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value ?? false}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="embed_author_enabled"
+                    render={({ field }) => (
+                      <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                        <FormLabel className="text-sm cursor-pointer">
+                          {t('modules.welcome_channel.embedAuthor')}
+                        </FormLabel>
+                        <FormControl>
+                          <Switch
+                            checked={field.value ?? false}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             )}
           </Card>
 
+          {/* Bouton désactiver */}
           {isEnabled && (
             <Button
               type="button"

@@ -134,6 +134,8 @@
     },
     "stats": {
       "members": "Membres",
+      "online": "En ligne",
+      "cases": "Sanctions (ouvertes/total)",
       "totalCases": "Sanctions totales",
       "activeModules": "Modules actifs"
     },
@@ -198,6 +200,10 @@
       "embedTitle": "Titre de l'embed",
       "embedBody": "Corps de l'embed",
       "embedColor": "Couleur de l'embed",
+      "embedFooter": "Texte de pied de page",
+      "embedImageUrl": "URL de l'image",
+      "embedThumbnail": "Afficher l'avatar en miniature",
+      "embedAuthor": "Afficher le nom de l'auteur",
       "disabledSuccess": "Message de bienvenue désactivé."
     },
     "welcome_dm": {
