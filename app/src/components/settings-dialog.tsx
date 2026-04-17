@@ -19,12 +19,30 @@ import {
   CreditCardIcon,
   UserIcon,
   SparklesIcon,
+  ShieldCheckIcon,
 } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { getPreferences, setPreferences, detectBrowserLanguage } from "@/lib/preferences"
+import { getAvatarUrl, getDisplayName, getNitroLabel } from "@/lib/auth"
 import { openBillingPortal } from "@/services/guilds"
 import { toast } from "sonner"
 import type { User } from "@/lib/auth"
+
+// Labels lisibles pour les badges Discord
+const BADGE_LABELS: Record<string, string> = {
+  DISCORD_STAFF: 'Discord Staff',
+  PARTNERED_SERVER_OWNER: 'Serveur Partenaire',
+  HYPESQUAD_EVENTS: 'HypeSquad Events',
+  BUG_HUNTER_LEVEL_1: 'Bug Hunter',
+  BUG_HUNTER_LEVEL_2: 'Bug Hunter Gold',
+  HYPESQUAD_HOUSE_BRAVERY: 'HypeSquad Bravery',
+  HYPESQUAD_HOUSE_BRILLIANCE: 'HypeSquad Brilliance',
+  HYPESQUAD_HOUSE_BALANCE: 'HypeSquad Balance',
+  EARLY_SUPPORTER: 'Early Supporter',
+  EARLY_VERIFIED_BOT_DEVELOPER: 'Early Bot Developer',
+  DISCORD_CERTIFIED_MODERATOR: 'Certified Moderator',
+  ACTIVE_DEVELOPER: 'Active Developer',
+}
 
 interface SettingsDialogProps {
   open: boolean
@@ -60,10 +78,12 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
   }
 
   const avatarUrl = user
-    ? user.avatar
-      ? `https://cdn.discordapp.com/avatars/${user.user_id}/${user.avatar}.${user.avatar.startsWith('a_') ? 'gif' : 'png'}?size=128`
-      : `https://cdn.discordapp.com/embed/avatars/${(BigInt(user.user_id) >> 22n) % 6n}.png`
+    ? getAvatarUrl(user.user_id, user.avatar, user.avatar_url)
     : ''
+
+  const displayName = user ? getDisplayName(user) : ''
+  const nitroLabel = user ? getNitroLabel(user.premium_type) : null
+  const badges = user?.discord_badges ?? []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -88,48 +108,105 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
             </TabsTrigger>
           </TabsList>
 
-          {/* Compte */}
+          {/* ── Compte ─────────────────────────────────────────────────── */}
           <TabsContent value="account" className="mt-4 flex flex-col gap-4">
             {user && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <Avatar className="size-12 rounded-lg">
-                  <AvatarImage src={avatarUrl} alt={user.username} />
-                  <AvatarFallback className="rounded-lg">
-                    {user.username.slice(0, 2).toUpperCase()}
+                <Avatar className="size-14 rounded-xl">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="rounded-xl text-lg font-bold">
+                    {displayName.slice(0, 2).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div>
-                  <p className="font-medium">@{user.username}</p>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-semibold truncate">
+                      {displayName}
+                      {user.global_name && user.global_name !== user.username && (
+                        <span className="text-muted-foreground font-normal text-sm ml-1.5">
+                          @{user.username}
+                        </span>
+                      )}
+                    </p>
+                    {nitroLabel && (
+                      <Badge variant="secondary" className="text-xs shrink-0 bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300 border-purple-200 dark:border-purple-800">
+                        <SparklesIcon className="size-3 mr-1" />
+                        {nitroLabel}
+                      </Badge>
+                    )}
+                  </div>
                   {user.email && (
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   )}
-                  <p className="text-xs text-muted-foreground/50 font-mono">{user.user_id}</p>
-                  {user.is_staff && (
-                    <Badge variant="secondary" className="text-xs mt-1">
-                      {t('settings.account.staffBadge')}
+                  {user.locale && (
+                    <p className="text-xs text-muted-foreground/60">
+                      {user.locale} {user.verified && '· Email vérifié'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Badges Discord */}
+            {badges.length > 0 && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {t('settings.account.discordBadges')}
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {badges.map((badge) => (
+                    <Badge key={badge} variant="secondary" className="text-xs gap-1">
+                      <ShieldCheckIcon className="size-3" />
+                      {BADGE_LABELS[badge] ?? badge}
                     </Badge>
-                  )}
+                  ))}
                 </div>
               </div>
             )}
 
             <Separator />
 
+            {/* Staff Moddy */}
+            {user?.is_staff && (
+              <div className="flex flex-col gap-2">
+                <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                  {t('settings.account.staffBadge')}
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {user.staff_roles.map((role) => (
+                    <Badge key={role} variant="default" className="text-xs">
+                      {role}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {/* Connexion Discord */}
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">{t('settings.account.connectedWith')}</p>
+              <Label className="text-sm font-medium">{t('settings.account.connectedWith')}</Label>
               <div className="flex items-center gap-2 p-2 rounded-lg border">
-                <div className="size-6 rounded-full bg-[#5865F2] flex items-center justify-center">
+                <div className="size-6 rounded-full bg-[#5865F2] flex items-center justify-center shrink-0">
                   <svg viewBox="0 0 24 24" className="size-4 fill-white">
                     <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057.1 18.1.12 18.14.143 18.163a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
                   </svg>
                 </div>
-                <span className="text-sm font-medium">Discord</span>
-                <span className="text-xs text-muted-foreground ml-auto">@{user?.username}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium">Discord</span>
+                  {user?.discriminator && user.discriminator !== '0' && (
+                    <span className="text-xs text-muted-foreground ml-1">#{user.discriminator}</span>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground font-mono truncate">
+                  {user?.user_id}
+                </span>
               </div>
             </div>
           </TabsContent>
 
-          {/* Apparence */}
+          {/* ── Apparence ──────────────────────────────────────────────── */}
           <TabsContent value="appearance" className="mt-4 flex flex-col gap-4">
             {/* Thème */}
             <div className="flex flex-col gap-2">
@@ -172,9 +249,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
                   { value: 'fr', label: 'Français' },
                 ].map(({ value, label }) => {
                   const isActive =
-                    value === 'auto'
-                      ? !prefs.language
-                      : currentLang === value
+                    value === 'auto' ? !prefs.language : currentLang === value
                   return (
                     <button
                       key={value}
@@ -194,7 +269,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
             </div>
           </TabsContent>
 
-          {/* Facturation */}
+          {/* ── Facturation ────────────────────────────────────────────── */}
           <TabsContent value="billing" className="mt-4 flex flex-col gap-4">
             <div className="rounded-lg border p-4 flex items-center gap-3">
               <SparklesIcon className="size-8 text-amber-500 shrink-0" />

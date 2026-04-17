@@ -25,8 +25,7 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
         ...options.headers,
       },
     })
-  } catch (networkErr) {
-    // Erreur réseau (pas de connexion, CORS, timeout…)
+  } catch {
     throw new ApiError(0, 'Network error — check your connection')
   }
 
@@ -45,23 +44,48 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   return text ? JSON.parse(text) : null
 }
 
+// ─── Types basés sur la vraie réponse de /auth/me ─────────────────────────────
+
+/** Serveur Discord (depuis /auth/me et /auth/refresh-guilds) */
 export interface Guild {
-  id: number
+  id: number | string  // Snowflake Discord — peut être number ou string selon l'endpoint
   name: string
   icon: string | null
 }
 
+/** Profil complet de l'utilisateur connecté (GET /auth/me) */
 export interface User {
-  user_id: string
-  username: string
-  avatar: string | null
-  email?: string | null   // présent si renvoyé par l'API
+  // Identité Discord
+  user_id: string            // Snowflake string
+  username: string           // Nom unique Discord
+  global_name: string | null // Nom d'affichage (peut différer du username)
+  discriminator?: string     // "0" sur les nouveaux comptes
+  avatar: string | null      // Hash avatar
+  avatar_url: string | null  // URL CDN complète pré-construite par le backend
+  banner: string | null      // Hash bannière
+  banner_url: string | null  // URL CDN bannière
+  accent_color: number | null
+  avatar_decoration_data?: { asset: string; sku_id: string } | null
+  // Compte
+  email: string | null
+  verified: boolean | null
+  locale: string | null
+  mfa_enabled: boolean | null
+  premium_type: number | null  // 0=Aucun, 1=Classic, 2=Nitro, 3=Basic
+  public_flags: number | null
+  flags: number | null
+  discord_badges: string[]     // Noms lisibles des flags actifs
+  // Moddy
   guilds: Guild[]
   is_staff: boolean
   staff_roles: string[]
 }
 
-export function getAvatarUrl(userId: string, avatarHash: string | null): string {
+// ─── Helpers URL ──────────────────────────────────────────────────────────────
+
+export function getAvatarUrl(userId: string, avatarHash: string | null, avatarUrl?: string | null): string {
+  // Utilise l'URL pré-construite par le backend si disponible
+  if (avatarUrl) return avatarUrl
   if (!avatarHash) {
     const defaultIndex = (BigInt(userId) >> 22n) % 6n
     return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`
@@ -76,9 +100,23 @@ export function getGuildIconUrl(guildId: number | string, iconHash: string | nul
   return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${ext}?size=128`
 }
 
-/**
- * Récupère les infos de l'utilisateur connecté. Retourne null si 401.
- */
+/** Nom d'affichage — préfère global_name, sinon username */
+export function getDisplayName(user: User): string {
+  return user.global_name ?? user.username
+}
+
+/** Description du niveau Nitro */
+export function getNitroLabel(premiumType: number | null | undefined): string | null {
+  switch (premiumType) {
+    case 1: return 'Nitro Classic'
+    case 2: return 'Nitro'
+    case 3: return 'Nitro Basic'
+    default: return null
+  }
+}
+
+// ─── Appels API auth ──────────────────────────────────────────────────────────
+
 export async function getMe(): Promise<User | null> {
   try {
     return await api('/auth/me') as User
@@ -88,16 +126,10 @@ export async function getMe(): Promise<User | null> {
   }
 }
 
-/**
- * Redirige vers Discord OAuth2
- */
 export function login() {
   window.location.href = `${API_BASE}/auth/login`
 }
 
-/**
- * Déconnecte l'utilisateur
- */
 export async function logout(): Promise<boolean> {
   try {
     await api('/auth/logout', { method: 'POST' })
@@ -107,16 +139,10 @@ export async function logout(): Promise<boolean> {
   }
 }
 
-/**
- * Maintient la session active (appeler toutes les 24h)
- */
 export async function refreshSession(): Promise<void> {
   await api('/auth/refresh', { method: 'POST' })
 }
 
-/**
- * Rafraîchit la liste des serveurs de l'utilisateur
- */
 export async function refreshGuilds(): Promise<Guild[]> {
   const data = await api('/auth/refresh-guilds', { method: 'POST' }) as { guilds: Guild[] }
   return data.guilds

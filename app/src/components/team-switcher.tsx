@@ -28,21 +28,15 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
   const { t } = useTranslation()
   const { guilds, selectedGuildId, selectGuild, guildDetail } = useGuildContext()
 
-  // Serveur actif — utilise guildDetail si chargé, sinon trouve dans la liste
-  const activeGuild =
-    guildDetail ??
-    guilds.find((g) => String(g.id) === selectedGuildId) ??
-    null
+  // Serveur actif — utilise guildDetail si chargé, sinon trouve dans la liste basique
+  const activeGuildBase = guilds.find((g) => String(g.id) === selectedGuildId) ?? null
+  const activeName = guildDetail?.name ?? activeGuildBase?.name ?? null
+  const activeIcon = guildDetail?.icon ?? activeGuildBase?.icon ?? null
+  const activeId = guildDetail?.guild_id ?? activeGuildBase?.id ?? null
 
-  // GuildDetail a guild_id, Guild a id
-  const activeGuildNumericId = activeGuild
-    ? ('guild_id' in activeGuild ? activeGuild.guild_id : activeGuild.id)
-    : null
-  const activeIconUrl = activeGuild && activeGuildNumericId !== null
-    ? getGuildIconUrl(activeGuildNumericId, activeGuild.icon)
-    : null
+  const activeIconUrl = activeId != null ? getGuildIconUrl(activeId, activeIcon) : null
 
-  const activeInitial = activeGuild?.name?.slice(0, 2).toUpperCase() ?? "??"
+  const activeInitial = activeName?.slice(0, 2).toUpperCase() ?? "??"
 
   return (
     <SidebarMenu>
@@ -53,16 +47,16 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              {activeGuild ? (
+              {activeName ? (
                 <>
                   <Avatar className="size-8 rounded-lg">
-                    <AvatarImage src={activeIconUrl ?? undefined} alt={activeGuild.name} />
+                    <AvatarImage src={activeIconUrl ?? undefined} alt={activeName} />
                     <AvatarFallback className="rounded-lg text-xs">
                       {activeInitial}
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">{activeGuild.name}</span>
+                    <span className="truncate font-medium">{activeName}</span>
                     <span className="truncate text-xs text-muted-foreground">
                       {t('teamSwitcher.server')}
                     </span>

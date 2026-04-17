@@ -21,18 +21,30 @@ export async function getGuild(guildId: string | number): Promise<GuildDetail> {
 
 /**
  * Récupère guild + channels + roles en un seul appel.
- * À utiliser pour initialiser une page de config.
+ * Normalise la réponse : l'endpoint /discord retourne guild.id (string),
+ * on le mappe vers guild_id pour cohérence avec le reste de l'app.
  */
 export async function getGuildDiscordData(guildId: string | number): Promise<{
   guild: GuildDetail
   channels: Channel[]
   roles: Role[]
 }> {
-  return (await api(`/guilds/${guildId}/discord`)) as {
-    guild: GuildDetail
+  const raw = (await api(`/guilds/${guildId}/discord`)) as {
+    guild: Record<string, unknown>
     channels: Channel[]
     roles: Role[]
   }
+
+  // L'endpoint /discord retourne { guild: { id: "...", ... } }
+  // On normalise vers { guild_id: number, ... } pour rester cohérent
+  const guild: GuildDetail = {
+    ...(raw.guild as unknown as GuildDetail),
+    guild_id: raw.guild.guild_id != null
+      ? Number(raw.guild.guild_id)
+      : Number(raw.guild.id ?? guildId),
+  }
+
+  return { guild, channels: raw.channels, roles: raw.roles }
 }
 
 export async function getChannels(guildId: string | number): Promise<Channel[]> {

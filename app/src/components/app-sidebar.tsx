@@ -31,7 +31,7 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { getAvatarUrl, type User } from "@/lib/auth"
+import { getAvatarUrl, getDisplayName, type User } from "@/lib/auth"
 import { useGuildContext } from "@/contexts/GuildContext"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
@@ -56,9 +56,9 @@ export function AppSidebar({
   const { selectedGuildId, guildDetail } = useGuildContext()
 
   const navUser = {
-    name: user?.username ?? "User",
+    name: user ? getDisplayName(user) : "User",
     email: user?.email ?? null,
-    avatar: user ? getAvatarUrl(user.user_id, user.avatar) : "",
+    avatar: user ? getAvatarUrl(user.user_id, user.avatar, user.avatar_url) : "",
     isStaff: user?.is_staff ?? false,
   }
 

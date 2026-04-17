@@ -432,7 +432,8 @@
     },
     "account": {
       "connectedWith": "Connecté avec",
-      "staffBadge": "Staff"
+      "staffBadge": "Rôles staff",
+      "discordBadges": "Badges Discord"
     },
     "billing": {
       "title": "Abonnement & Facturation",
