@@ -11,6 +11,11 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import {
   BellIcon,
   BookOpenIcon,
   CreditCardIcon,
@@ -23,21 +28,31 @@ import {
   SparklesIcon,
   TicketIcon,
 } from "lucide-react"
+import { getGuildIconUrl } from "@/lib/auth"
 
 interface Server {
   name: string
   id: string
+  icon?: string | null
 }
 
 interface CommandMenuProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   servers?: Server[]
+  onSelectServer?: (id: string) => void
   onLogoutRequest?: () => void
   onOpenNotifications?: () => void
 }
 
-export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest, onOpenNotifications }: CommandMenuProps) {
+export function CommandMenu({
+  open,
+  onOpenChange,
+  servers = [],
+  onSelectServer,
+  onLogoutRequest,
+  onOpenNotifications,
+}: CommandMenuProps) {
   const { t } = useTranslation()
 
   React.useEffect(() => {
@@ -71,15 +86,26 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest,
           {/* Mes serveurs */}
           <CommandGroup heading={t('commandMenu.groups.myServers')}>
             {servers.length > 0 ? (
-              servers.map((server) => (
-                <CommandItem
-                  key={server.id}
-                  onSelect={() => runCommand(() => {})}
-                >
-                  <ServerIcon />
-                  <span>{server.name}</span>
-                </CommandItem>
-              ))
+              servers.map((server) => {
+                const iconUrl = server.icon !== undefined
+                  ? getGuildIconUrl(server.id, server.icon ?? null)
+                  : null
+                return (
+                  <CommandItem
+                    key={server.id}
+                    value={server.name}
+                    onSelect={() => runCommand(() => onSelectServer?.(server.id))}
+                  >
+                    <Avatar className="size-5 rounded-sm">
+                      <AvatarImage src={iconUrl ?? undefined} alt={server.name} />
+                      <AvatarFallback className="rounded-sm text-[10px]">
+                        {server.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{server.name}</span>
+                  </CommandItem>
+                )
+              })
             ) : (
               <CommandItem disabled>
                 <ServerIcon />
@@ -92,23 +118,43 @@ export function CommandMenu({ open, onOpenChange, servers = [], onLogoutRequest,
 
           {/* Liens utiles */}
           <CommandGroup heading={t('commandMenu.groups.usefulLinks')}>
-            <CommandItem onSelect={() => runCommand(() => openExternal("https://discord.com/oauth2/authorize?client_id=1373916203814490194"))}>
+            <CommandItem
+              onSelect={() =>
+                runCommand(() =>
+                  openExternal(
+                    "https://discord.com/oauth2/authorize?client_id=1373916203814490194"
+                  )
+                )
+              }
+            >
               <PlusIcon />
               <span>{t('commandMenu.items.addModdy')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => openExternal("https://moddy.app/support"))}>
+            <CommandItem
+              onSelect={() => runCommand(() => openExternal("https://moddy.app/support"))}
+            >
               <TicketIcon />
               <span>{t('commandMenu.items.openTicket')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => openExternal("https://docs.moddy.app"))}>
+            <CommandItem
+              onSelect={() => runCommand(() => openExternal("https://docs.moddy.app"))}
+            >
               <BookOpenIcon />
               <span>{t('commandMenu.items.documentation')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => openExternal("https://www.moddy.app/navigation/subscriptions/"))}>
+            <CommandItem
+              onSelect={() =>
+                runCommand(() =>
+                  openExternal("https://www.moddy.app/navigation/subscriptions/")
+                )
+              }
+            >
               <SparklesIcon />
               <span>{t('commandMenu.items.subscriptions')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => openExternal("https://status.moddy.app"))}>
+            <CommandItem
+              onSelect={() => runCommand(() => openExternal("https://status.moddy.app"))}
+            >
               <InfoIcon />
               <span>{t('commandMenu.items.servicesStatus')}</span>
             </CommandItem>

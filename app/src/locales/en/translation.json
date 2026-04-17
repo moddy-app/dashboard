@@ -119,6 +119,201 @@
       "welcome": "Welcome to Moddy Dashboard"
     }
   },
+  "guildSelection": {
+    "title": "My Servers",
+    "description": "Select a server to manage its configuration.",
+    "manage": "Manage server",
+    "addDescription": "Add Moddy to a new server"
+  },
+  "guildOverview": {
+    "refresh": "Refresh",
+    "blacklisted": "Blacklisted",
+    "error": {
+      "title": "Failed to load server",
+      "retry": "Retry"
+    },
+    "stats": {
+      "members": "Members",
+      "totalCases": "Total Cases",
+      "activeModules": "Active Modules"
+    },
+    "premium": {
+      "title": "Unlock Premium features",
+      "description": "Get access to advanced modules, increased limits and priority support.",
+      "cta": "Upgrade to Premium",
+      "checkoutError": "Could not open checkout, please try again."
+    },
+    "modules": {
+      "title": "Modules",
+      "description": "Configure the bot features for this server.",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "configure": "Configure",
+      "comingSoon": "Coming soon"
+    }
+  },
+  "teamSwitcher": {
+    "server": "Discord Server",
+    "selectServer": "Select a server",
+    "myServers": "My Servers",
+    "noServers": "No servers found",
+    "addServer": "Add server",
+    "refreshServers": "Refresh list"
+  },
+  "modules": {
+    "save": "Save",
+    "saved": "Settings saved successfully.",
+    "saveError": "Failed to save settings.",
+    "disable": "Disable module",
+    "enableModule": "Enable module",
+    "selectChannel": "Select a channel",
+    "noChannels": "No channels found",
+    "starboard": {
+      "name": "Starboard",
+      "description": "Pin popular messages to a dedicated channel via reactions.",
+      "enableDescription": "Automatically pin messages that receive enough reactions.",
+      "configTitle": "Starboard Configuration",
+      "configDescription": "Configure the channel and reaction threshold.",
+      "channel": "Starboard channel",
+      "channelDescription": "Channel where starred messages will be posted.",
+      "emoji": "Reaction emoji",
+      "emojiDescription": "Emoji that triggers the starboard.",
+      "reactionCount": "Required reactions",
+      "reactionCountDescription": "Number of reactions needed to pin a message.",
+      "disabledSuccess": "Starboard disabled."
+    },
+    "welcome_channel": {
+      "name": "Welcome Channel",
+      "description": "Send a welcome message when a member joins the server.",
+      "enableDescription": "Send an automatic message when someone joins.",
+      "configTitle": "Welcome Configuration",
+      "configDescription": "Set the channel and message for new members.",
+      "channel": "Welcome channel",
+      "messageTemplate": "Message template",
+      "messageTemplateDescription": "Use {user} to mention the new member.",
+      "mentionUser": "Mention the user",
+      "mentionUserDescription": "Ping the new member in the message.",
+      "embed": "Embed",
+      "embedDescription": "Display the message as a rich embed.",
+      "embedTitle": "Embed title",
+      "embedBody": "Embed body",
+      "embedColor": "Embed color",
+      "disabledSuccess": "Welcome channel disabled."
+    },
+    "welcome_dm": {
+      "name": "Welcome DM",
+      "description": "Send a private welcome message to new members.",
+      "disabledSuccess": "Welcome DM disabled."
+    },
+    "auto_role": {
+      "name": "Auto Role",
+      "description": "Automatically assign roles to members when they join.",
+      "enableDescription": "Assign roles automatically when a member joins.",
+      "configTitle": "Role Configuration",
+      "configDescription": "Select the roles to assign to new members.",
+      "addRole": "Add a role...",
+      "noRoles": "No roles selected. Add roles to assign on join.",
+      "disabledSuccess": "Auto Role disabled."
+    },
+    "auto_restore_roles": {
+      "name": "Auto Restore Roles",
+      "description": "Restore roles when a member rejoins after leaving."
+    },
+    "interserver": {
+      "name": "Interserver",
+      "description": "Connect your server to the inter-server chat network."
+    },
+    "youtube_notifications": {
+      "name": "YouTube Notifications",
+      "description": "Get notified when your favorite YouTubers upload."
+    },
+    "logging": {
+      "name": "Logging",
+      "description": "Log server events to a dedicated channel.",
+      "enableDescription": "Track server events automatically.",
+      "channelTitle": "Log channel",
+      "channelDescription": "Select the channel where logs will be sent.",
+      "eventsTitle": "Events to log",
+      "eventsDescription": "{{count}} of {{total}} events selected.",
+      "groups": {
+        "messages": "Messages",
+        "members": "Members",
+        "roles": "Roles",
+        "channels": "Channels",
+        "voice": "Voice"
+      },
+      "events": {
+        "message_delete": "Message deleted",
+        "message_edit": "Message edited",
+        "message_bulk_delete": "Bulk delete",
+        "member_join": "Member joined",
+        "member_leave": "Member left",
+        "member_ban": "Member banned",
+        "member_unban": "Member unbanned",
+        "member_kick": "Member kicked",
+        "member_timeout": "Member timed out",
+        "role_create": "Role created",
+        "role_delete": "Role deleted",
+        "role_update": "Role updated",
+        "channel_create": "Channel created",
+        "channel_delete": "Channel deleted",
+        "channel_update": "Channel updated",
+        "voice_join": "Voice join",
+        "voice_leave": "Voice leave",
+        "voice_move": "Voice move"
+      },
+      "disabledSuccess": "Logging disabled."
+    }
+  },
+  "staff": {
+    "title": "Staff Panel",
+    "accessDenied": {
+      "title": "Access Denied",
+      "description": "You need staff permissions to access this page."
+    },
+    "tabs": {
+      "stats": "Statistics",
+      "users": "Users",
+      "guilds": "Servers",
+      "cases": "Cases"
+    },
+    "stats": {
+      "totalUsers": "Total Users",
+      "premiumUsers": "Premium Users",
+      "totalGuilds": "Total Servers",
+      "openCases": "Open Cases"
+    },
+    "bot": {
+      "title": "Bot Status",
+      "shards": "Shards",
+      "latency": "Latency",
+      "uptime": "Uptime",
+      "memory": "Memory"
+    },
+    "users": {
+      "searchPlaceholder": "Search by username or ID...",
+      "id": "User ID",
+      "email": "Email",
+      "roles": "Staff Roles",
+      "cases": "Cases (open/total)",
+      "attributes": "Attributes"
+    },
+    "guilds": {
+      "searchPlaceholder": "Search by name or ID...",
+      "id": "Guild ID",
+      "name": "Name",
+      "attributes": "Attributes"
+    },
+    "cases": {
+      "id": "Case ID",
+      "type": "Sanction",
+      "entity": "Entity",
+      "status": "Status",
+      "reason": "Reason",
+      "date": "Date",
+      "empty": "No cases found."
+    }
+  },
   "navUser": {
     "upgradeToMax": "Upgrade to Max",
     "settings": "Settings",
@@ -126,6 +321,8 @@
     "notifications": "Notifications",
     "myPunishments": "My Punishments",
     "logOut": "Log out",
+    "discordAccount": "Discord Account",
+    "staffPanel": "Staff Panel",
     "logoutDialog": {
       "title": "Log out",
       "description": "Are you sure you want to log out of your Moddy account?",
@@ -168,7 +365,16 @@
     "commands": "Commands",
     "documentation": "Documentation",
     "search": "Search",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "general": "General",
+    "staffLabel": "Staff",
+    "guild": {
+      "label": "Server",
+      "overview": "Overview",
+      "modules": "Modules",
+      "stats": "Statistics",
+      "premium": "Premium"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -188,6 +394,30 @@
     "dashboard": "Dashboard",
     "debug": "Debug",
     "notFound": "404 — Not Found"
+  },
+  "unsavedBar": {
+    "message": "You have unsaved changes",
+    "discard": "Discard",
+    "save": "Save changes"
+  },
+  "settings": {
+    "title": "Settings",
+    "tabs": {
+      "account": "Account",
+      "appearance": "Appearance",
+      "billing": "Billing"
+    },
+    "account": {
+      "connectedWith": "Connected with",
+      "staffBadge": "Staff"
+    },
+    "billing": {
+      "title": "Subscription & Billing",
+      "description": "Manage your Moddy Premium subscription.",
+      "manageButton": "Manage subscription",
+      "portalError": "Could not open billing portal. Please try again.",
+      "note": "You will be redirected to Stripe to manage your subscription."
+    }
   },
   "common": {
     "yes": "Yes",

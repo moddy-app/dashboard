@@ -1,5 +1,5 @@
-import * as React from "react"
-import { ChevronsUpDownIcon, PlusIcon } from "lucide-react"
+import { ChevronsUpDownIcon, PlusIcon, RefreshCwIcon, ServerIcon } from "lucide-react"
+import { useTranslation } from "react-i18next"
 
 import {
   DropdownMenu,
@@ -7,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -16,22 +15,34 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useGuildContext } from "@/contexts/GuildContext"
+import { getGuildIconUrl } from "@/lib/auth"
 
-interface Team {
-  name: string
-  logo: React.ElementType
-  plan: string
+interface TeamSwitcherProps {
+  onRefreshGuilds?: () => void
 }
 
-export function TeamSwitcher({
-  teams,
-}: {
-  teams: Team[]
-}) {
+export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
   const { isMobile } = useSidebar()
-  const [activeTeam, setActiveTeam] = React.useState(teams[0])
+  const { t } = useTranslation()
+  const { guilds, selectedGuildId, selectGuild, guildDetail } = useGuildContext()
 
-  if (!activeTeam) return null
+  // Serveur actif — utilise guildDetail si chargé, sinon trouve dans la liste
+  const activeGuild =
+    guildDetail ??
+    guilds.find((g) => String(g.id) === selectedGuildId) ??
+    null
+
+  // GuildDetail a guild_id, Guild a id
+  const activeGuildNumericId = activeGuild
+    ? ('guild_id' in activeGuild ? activeGuild.guild_id : activeGuild.id)
+    : null
+  const activeIconUrl = activeGuild && activeGuildNumericId !== null
+    ? getGuildIconUrl(activeGuildNumericId, activeGuild.icon)
+    : null
+
+  const activeInitial = activeGuild?.name?.slice(0, 2).toUpperCase() ?? "??"
 
   return (
     <SidebarMenu>
@@ -42,13 +53,34 @@ export function TeamSwitcher({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                <activeTeam.logo className="size-4" />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{activeTeam.name}</span>
-                <span className="truncate text-xs">{activeTeam.plan}</span>
-              </div>
+              {activeGuild ? (
+                <>
+                  <Avatar className="size-8 rounded-lg">
+                    <AvatarImage src={activeIconUrl ?? undefined} alt={activeGuild.name} />
+                    <AvatarFallback className="rounded-lg text-xs">
+                      {activeInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{activeGuild.name}</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {t('teamSwitcher.server')}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <ServerIcon className="size-4" />
+                  </div>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">Moddy</span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {t('teamSwitcher.selectServer')}
+                    </span>
+                  </div>
+                </>
+              )}
               <ChevronsUpDownIcon className="ml-auto" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -59,31 +91,74 @@ export function TeamSwitcher({
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-xs text-muted-foreground">
-              Servers
+              {t('teamSwitcher.myServers')}
             </DropdownMenuLabel>
-            {teams.map((team, index) => (
-              <DropdownMenuItem
-                key={team.name}
-                onClick={() => setActiveTeam(team)}
-                className="gap-2 p-2"
-              >
-                <div className="flex size-6 items-center justify-center rounded-sm border">
-                  <team.logo className="size-4 shrink-0" />
-                </div>
-                {team.name}
-                <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
+
+            {guilds.length > 0 ? (
+              guilds.map((guild) => {
+                const iconUrl = getGuildIconUrl(guild.id, guild.icon)
+                const initials = guild.name.slice(0, 2).toUpperCase()
+                const isActive = String(guild.id) === selectedGuildId
+
+                return (
+                  <DropdownMenuItem
+                    key={guild.id}
+                    onClick={() => selectGuild(String(guild.id))}
+                    className="gap-2 p-2"
+                    data-active={isActive}
+                  >
+                    <Avatar className="size-6 rounded-sm">
+                      <AvatarImage src={iconUrl ?? undefined} alt={guild.name} />
+                      <AvatarFallback className="rounded-sm text-[10px]">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="truncate">{guild.name}</span>
+                    {isActive && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
+                  </DropdownMenuItem>
+                )
+              })
+            ) : (
+              <DropdownMenuItem disabled className="gap-2 p-2">
+                <ServerIcon className="size-4 text-muted-foreground" />
+                <span className="text-muted-foreground text-sm">
+                  {t('teamSwitcher.noServers')}
+                </span>
               </DropdownMenuItem>
-            ))}
+            )}
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem
               className="gap-2 p-2"
-              onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1373916203814490194", "_blank", "noopener,noreferrer")}
+              onClick={() =>
+                window.open(
+                  "https://discord.com/oauth2/authorize?client_id=1373916203814490194",
+                  "_blank",
+                  "noopener,noreferrer"
+                )
+              }
             >
               <div className="bg-background flex size-6 items-center justify-center rounded-md border">
                 <PlusIcon className="size-4" />
               </div>
-              <div className="text-muted-foreground font-medium">Add server</div>
+              <span className="font-medium text-muted-foreground">
+                {t('teamSwitcher.addServer')}
+              </span>
             </DropdownMenuItem>
+
+            {onRefreshGuilds && (
+              <DropdownMenuItem className="gap-2 p-2" onClick={onRefreshGuilds}>
+                <div className="bg-background flex size-6 items-center justify-center rounded-md border">
+                  <RefreshCwIcon className="size-4" />
+                </div>
+                <span className="font-medium text-muted-foreground">
+                  {t('teamSwitcher.refreshServers')}
+                </span>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

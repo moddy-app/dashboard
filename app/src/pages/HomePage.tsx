@@ -1,9 +1,10 @@
 import { useAuth } from '@/hooks/useAuth'
-import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { LoaderIcon } from 'lucide-react'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { GuildProvider } from '@/contexts/GuildContext'
 import { login } from '@/lib/auth'
+import { useEffect } from 'react'
 
 export function HomePage() {
   const auth = useAuth()
@@ -37,5 +38,10 @@ export function HomePage() {
     )
   }
 
-  return <DashboardPage user={auth.user} />
+  // Authentifié — fourni le GuildProvider et affiche le layout dashboard
+  return (
+    <GuildProvider guilds={auth.user.guilds} user={auth.user}>
+      <DashboardPage user={auth.user} />
+    </GuildProvider>
+  )
 }

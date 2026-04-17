@@ -1,0 +1,144 @@
+import { api } from '@/lib/auth'
+import type {
+  GuildListItem,
+  GuildDetail,
+  Channel,
+  Role,
+  ModuleConfig,
+  GuildStats,
+  LoggingConfig,
+} from '@/types/api'
+
+// ─── Guilds ───────────────────────────────────────────────────────────────────
+
+export async function getGuilds(): Promise<GuildListItem[]> {
+  return (await api('/guilds')) as GuildListItem[]
+}
+
+export async function getGuild(guildId: string | number): Promise<GuildDetail> {
+  return (await api(`/guilds/${guildId}`)) as GuildDetail
+}
+
+/**
+ * Récupère guild + channels + roles en un seul appel.
+ * À utiliser pour initialiser une page de config.
+ */
+export async function getGuildDiscordData(guildId: string | number): Promise<{
+  guild: GuildDetail
+  channels: Channel[]
+  roles: Role[]
+}> {
+  return (await api(`/guilds/${guildId}/discord`)) as {
+    guild: GuildDetail
+    channels: Channel[]
+    roles: Role[]
+  }
+}
+
+export async function getChannels(guildId: string | number): Promise<Channel[]> {
+  return (await api(`/guilds/${guildId}/channels`)) as Channel[]
+}
+
+export async function getRoles(guildId: string | number): Promise<Role[]> {
+  return (await api(`/guilds/${guildId}/roles`)) as Role[]
+}
+
+export async function updateGuildSettings(
+  guildId: string | number,
+  settings: Record<string, unknown>
+): Promise<void> {
+  await api(`/guilds/${guildId}/settings`, {
+    method: 'PATCH',
+    body: JSON.stringify(settings),
+  })
+}
+
+// ─── Modules ──────────────────────────────────────────────────────────────────
+
+export async function getModules(
+  guildId: string | number
+): Promise<Record<string, ModuleConfig>> {
+  return (await api(`/guilds/${guildId}/modules`)) as Record<string, ModuleConfig>
+}
+
+export async function getModule(
+  guildId: string | number,
+  moduleId: string
+): Promise<ModuleConfig> {
+  return (await api(`/guilds/${guildId}/modules/${moduleId}`)) as ModuleConfig
+}
+
+export async function updateModule(
+  guildId: string | number,
+  moduleId: string,
+  config: Record<string, unknown>
+): Promise<void> {
+  await api(`/guilds/${guildId}/modules/${moduleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(config),
+  })
+}
+
+export async function disableModule(
+  guildId: string | number,
+  moduleId: string
+): Promise<void> {
+  await api(`/guilds/${guildId}/modules/${moduleId}`, { method: 'DELETE' })
+}
+
+// ─── Logging (endpoint dédié) ─────────────────────────────────────────────────
+
+export async function getLoggingConfig(
+  guildId: string | number
+): Promise<LoggingConfig> {
+  const data = (await api(`/guilds/${guildId}/logging`)) as {
+    guild_id: number
+    config: LoggingConfig
+  }
+  return data.config
+}
+
+export async function updateLogging(
+  guildId: string | number,
+  config: LoggingConfig
+): Promise<void> {
+  await api(`/guilds/${guildId}/logging`, {
+    method: 'PATCH',
+    body: JSON.stringify(config),
+  })
+}
+
+// ─── Stats ────────────────────────────────────────────────────────────────────
+
+export async function getGuildStats(
+  guildId: string | number
+): Promise<GuildStats> {
+  return (await api(`/guilds/${guildId}/stats`)) as GuildStats
+}
+
+// ─── Stripe / Premium ─────────────────────────────────────────────────────────
+
+export async function createCheckout(
+  guildId: number,
+  plan: 'monthly' | 'yearly' = 'monthly'
+): Promise<string> {
+  const { url } = (await api('/stripe/create-checkout', {
+    method: 'POST',
+    body: JSON.stringify({ guild_id: guildId, plan }),
+  })) as { url: string }
+  return url
+}
+
+export async function openBillingPortal(): Promise<string> {
+  const { url } = (await api('/stripe/portal', { method: 'POST' })) as {
+    url: string
+  }
+  return url
+}
+
+export async function getSubscriptionStatus(guildId: number): Promise<boolean> {
+  const { premium } = (await api(
+    `/stripe/subscription?guild_id=${guildId}`
+  )) as { premium: boolean }
+  return premium
+}

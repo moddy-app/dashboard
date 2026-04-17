@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react"
+import { Outlet, useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { ServerIcon, PlusIcon, ArrowUpRightIcon } from "lucide-react"
 import { usePageTitle } from "@/hooks/usePageTitle"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
@@ -29,19 +29,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import {
-  Empty,
-  EmptyContent,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@/components/ui/empty"
-import { logout } from "@/lib/auth"
+import { logout, refreshGuilds } from "@/lib/auth"
 import type { User } from "@/lib/auth"
 import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
 import { isNotificationExpired } from "@/types/notification"
 import type { Notification } from "@/types/notification"
+import { useGuildContext } from "@/contexts/GuildContext"
 
 interface DashboardPageProps {
   user: User | null
@@ -49,6 +42,8 @@ interface DashboardPageProps {
 
 export function DashboardPage({ user }: DashboardPageProps) {
   const { t } = useTranslation()
+  const location = useLocation()
+  const { selectGuild, guilds, guildDetail, selectedGuildId } = useGuildContext()
   usePageTitle(t('pageTitle.dashboard'))
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
@@ -56,14 +51,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
-
-  // Auto-ouvrir le command menu au premier chargement
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setCommandMenuOpen(true)
-    }, 300)
-    return () => clearTimeout(timer)
-  }, [])
 
   // Toast de bienvenue à la connexion
   useEffect(() => {
@@ -106,10 +93,59 @@ export function DashboardPage({ user }: DashboardPageProps) {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
   }, [])
 
+  const handleRefreshGuilds = useCallback(async () => {
+    await refreshGuilds()
+    window.location.reload()
+  }, [])
+
   const activeNotifications = notifications.filter((n) => !isNotificationExpired(n))
 
-  // Aucun serveur sélectionné — empty state
-  const noServerSelected = true // TODO: remplacer par la vraie logique de sélection de serveur
+  // Détermine le breadcrumb selon la route courante
+  const getBreadcrumb = () => {
+    const path = location.pathname
+
+    // /servers/:guildId/modules/:moduleId
+    const moduleMatch = path.match(/^\/servers\/\d+\/modules\/(.+)$/)
+    if (moduleMatch && guildDetail) {
+      const moduleId = moduleMatch[1]
+      const moduleName = t(`modules.${moduleId}.name`, { defaultValue: moduleId })
+      return {
+        parent: guildDetail.name,
+        parentHref: `/servers/${selectedGuildId}`,
+        current: moduleName,
+      }
+    }
+
+    // /servers/:guildId
+    if (path.match(/^\/servers\/\d+/) && guildDetail) {
+      return {
+        parent: t('dashboard.breadcrumb.app'),
+        parentHref: '/',
+        current: guildDetail.name,
+      }
+    }
+
+    // /staff
+    if (path === '/staff') {
+      return {
+        parent: t('dashboard.breadcrumb.app'),
+        parentHref: '/',
+        current: t('staff.title'),
+      }
+    }
+
+    // /
+    return {
+      parent: t('dashboard.breadcrumb.app'),
+      parentHref: null,
+      current: t('dashboard.breadcrumb.overview'),
+    }
+  }
+
+  const breadcrumb = getBreadcrumb()
+
+  // Prépare la liste des serveurs pour le command menu
+  const servers = guilds.map((g) => ({ name: g.name, id: String(g.id) }))
 
   return (
     <SidebarProvider>
@@ -118,6 +154,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onLogoutRequest={handleLogoutRequest}
         onOpenCommandMenu={handleOpenCommandMenu}
         onOpenNotifications={handleOpenNotifications}
+        onRefreshGuilds={handleRefreshGuilds}
       />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -130,70 +167,35 @@ export function DashboardPage({ user }: DashboardPageProps) {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    {t('dashboard.breadcrumb.app')}
-                  </BreadcrumbLink>
+                  {breadcrumb.parentHref ? (
+                    <BreadcrumbLink href={breadcrumb.parentHref}>
+                      {breadcrumb.parent}
+                    </BreadcrumbLink>
+                  ) : (
+                    <span className="text-foreground font-medium">
+                      {breadcrumb.parent}
+                    </span>
+                  )}
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>{t('dashboard.breadcrumb.overview')}</BreadcrumbPage>
+                  <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
         </header>
+        {/* Contenu de la route courante via Outlet */}
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          {noServerSelected ? (
-            <div className="flex flex-1 items-center justify-center min-h-[60vh]">
-              <Empty className="border border-dashed max-w-md">
-                <EmptyHeader>
-                  <EmptyMedia variant="icon">
-                    <ServerIcon />
-                  </EmptyMedia>
-                  <EmptyTitle>{t('dashboard.noServer.title')}</EmptyTitle>
-                  <EmptyDescription>
-                    {t('dashboard.noServer.description')}
-                  </EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent className="flex-row justify-center gap-2">
-                  <Button
-                    onClick={() => window.open("https://discord.com/oauth2/authorize?client_id=1373916203814490194", "_blank", "noopener,noreferrer")}
-                  >
-                    <PlusIcon className="size-4" />
-                    {t('dashboard.noServer.addModdy')}
-                  </Button>
-                  <Button variant="outline" onClick={handleOpenCommandMenu}>
-                    {t('dashboard.noServer.browseServers')}
-                  </Button>
-                </EmptyContent>
-                <Button
-                  variant="link"
-                  asChild
-                  className="text-muted-foreground"
-                  size="sm"
-                >
-                  <a href="https://docs.moddy.app" target="_blank" rel="noopener noreferrer">
-                    {t('dashboard.noServer.learnMore')} <ArrowUpRightIcon className="size-3" />
-                  </a>
-                </Button>
-              </Empty>
-            </div>
-          ) : (
-            <>
-              <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                <div className="bg-muted/50 aspect-video rounded-xl" />
-                <div className="bg-muted/50 aspect-video rounded-xl" />
-                <div className="bg-muted/50 aspect-video rounded-xl" />
-              </div>
-              <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
-            </>
-          )}
+          <Outlet />
         </div>
       </SidebarInset>
 
       <CommandMenu
         open={commandMenuOpen}
         onOpenChange={setCommandMenuOpen}
+        servers={servers}
+        onSelectServer={selectGuild}
         onLogoutRequest={handleLogoutRequest}
         onOpenNotifications={handleOpenNotifications}
       />

@@ -119,6 +119,201 @@
       "welcome": "Bienvenue sur le dashboard Moddy"
     }
   },
+  "guildSelection": {
+    "title": "Mes serveurs",
+    "description": "Sélectionnez un serveur pour gérer sa configuration.",
+    "manage": "Gérer le serveur",
+    "addDescription": "Ajouter Moddy à un nouveau serveur"
+  },
+  "guildOverview": {
+    "refresh": "Actualiser",
+    "blacklisted": "Blacklisté",
+    "error": {
+      "title": "Impossible de charger le serveur",
+      "retry": "Réessayer"
+    },
+    "stats": {
+      "members": "Membres",
+      "totalCases": "Sanctions totales",
+      "activeModules": "Modules actifs"
+    },
+    "premium": {
+      "title": "Débloquer les fonctionnalités Premium",
+      "description": "Accédez à des modules avancés, des limites augmentées et un support prioritaire.",
+      "cta": "Passer Premium",
+      "checkoutError": "Impossible d'ouvrir le paiement, veuillez réessayer."
+    },
+    "modules": {
+      "title": "Modules",
+      "description": "Configurez les fonctionnalités du bot pour ce serveur.",
+      "enabled": "Activé",
+      "disabled": "Désactivé",
+      "configure": "Configurer",
+      "comingSoon": "Bientôt disponible"
+    }
+  },
+  "teamSwitcher": {
+    "server": "Serveur Discord",
+    "selectServer": "Sélectionner un serveur",
+    "myServers": "Mes serveurs",
+    "noServers": "Aucun serveur trouvé",
+    "addServer": "Ajouter un serveur",
+    "refreshServers": "Actualiser la liste"
+  },
+  "modules": {
+    "save": "Enregistrer",
+    "saved": "Paramètres enregistrés avec succès.",
+    "saveError": "Impossible d'enregistrer les paramètres.",
+    "disable": "Désactiver le module",
+    "enableModule": "Activer le module",
+    "selectChannel": "Sélectionner un salon",
+    "noChannels": "Aucun salon trouvé",
+    "starboard": {
+      "name": "Starboard",
+      "description": "Épingle les messages populaires dans un salon dédié via des réactions.",
+      "enableDescription": "Épingle automatiquement les messages qui reçoivent assez de réactions.",
+      "configTitle": "Configuration du Starboard",
+      "configDescription": "Configurez le salon et le seuil de réactions.",
+      "channel": "Salon Starboard",
+      "channelDescription": "Salon où les messages étoilés seront publiés.",
+      "emoji": "Emoji de réaction",
+      "emojiDescription": "Emoji qui déclenche le starboard.",
+      "reactionCount": "Réactions requises",
+      "reactionCountDescription": "Nombre de réactions nécessaires pour épingler un message.",
+      "disabledSuccess": "Starboard désactivé."
+    },
+    "welcome_channel": {
+      "name": "Message de bienvenue",
+      "description": "Envoie un message de bienvenue quand un membre rejoint le serveur.",
+      "enableDescription": "Envoie automatiquement un message quand quelqu'un rejoint.",
+      "configTitle": "Configuration du message de bienvenue",
+      "configDescription": "Définissez le salon et le message pour les nouveaux membres.",
+      "channel": "Salon de bienvenue",
+      "messageTemplate": "Modèle de message",
+      "messageTemplateDescription": "Utilisez {user} pour mentionner le nouveau membre.",
+      "mentionUser": "Mentionner l'utilisateur",
+      "mentionUserDescription": "Ping le nouveau membre dans le message.",
+      "embed": "Embed",
+      "embedDescription": "Afficher le message sous forme d'embed riche.",
+      "embedTitle": "Titre de l'embed",
+      "embedBody": "Corps de l'embed",
+      "embedColor": "Couleur de l'embed",
+      "disabledSuccess": "Message de bienvenue désactivé."
+    },
+    "welcome_dm": {
+      "name": "Message privé de bienvenue",
+      "description": "Envoie un message privé de bienvenue aux nouveaux membres.",
+      "disabledSuccess": "Message privé de bienvenue désactivé."
+    },
+    "auto_role": {
+      "name": "Rôle automatique",
+      "description": "Attribue automatiquement des rôles aux membres qui rejoignent.",
+      "enableDescription": "Attribue des rôles automatiquement quand un membre rejoint.",
+      "configTitle": "Configuration des rôles",
+      "configDescription": "Sélectionnez les rôles à attribuer aux nouveaux membres.",
+      "addRole": "Ajouter un rôle...",
+      "noRoles": "Aucun rôle sélectionné. Ajoutez des rôles à attribuer à l'arrivée.",
+      "disabledSuccess": "Rôle automatique désactivé."
+    },
+    "auto_restore_roles": {
+      "name": "Restauration des rôles",
+      "description": "Restaure les rôles quand un membre revient après être parti."
+    },
+    "interserver": {
+      "name": "Interserveur",
+      "description": "Connectez votre serveur au réseau de chat inter-serveurs."
+    },
+    "youtube_notifications": {
+      "name": "Notifications YouTube",
+      "description": "Soyez notifié quand vos YouTubeurs préférés publient une vidéo."
+    },
+    "logging": {
+      "name": "Logs",
+      "description": "Enregistre les événements du serveur dans un salon dédié.",
+      "enableDescription": "Suit automatiquement les événements du serveur.",
+      "channelTitle": "Salon de logs",
+      "channelDescription": "Sélectionnez le salon où les logs seront envoyés.",
+      "eventsTitle": "Événements à logger",
+      "eventsDescription": "{{count}} sur {{total}} événements sélectionnés.",
+      "groups": {
+        "messages": "Messages",
+        "members": "Membres",
+        "roles": "Rôles",
+        "channels": "Salons",
+        "voice": "Vocal"
+      },
+      "events": {
+        "message_delete": "Message supprimé",
+        "message_edit": "Message modifié",
+        "message_bulk_delete": "Suppression en masse",
+        "member_join": "Membre arrivé",
+        "member_leave": "Membre parti",
+        "member_ban": "Membre banni",
+        "member_unban": "Membre débanni",
+        "member_kick": "Membre expulsé",
+        "member_timeout": "Membre mis en sourdine",
+        "role_create": "Rôle créé",
+        "role_delete": "Rôle supprimé",
+        "role_update": "Rôle modifié",
+        "channel_create": "Salon créé",
+        "channel_delete": "Salon supprimé",
+        "channel_update": "Salon modifié",
+        "voice_join": "Connexion vocale",
+        "voice_leave": "Déconnexion vocale",
+        "voice_move": "Déplacement vocal"
+      },
+      "disabledSuccess": "Logs désactivés."
+    }
+  },
+  "staff": {
+    "title": "Panel Staff",
+    "accessDenied": {
+      "title": "Accès refusé",
+      "description": "Vous devez avoir des permissions staff pour accéder à cette page."
+    },
+    "tabs": {
+      "stats": "Statistiques",
+      "users": "Utilisateurs",
+      "guilds": "Serveurs",
+      "cases": "Sanctions"
+    },
+    "stats": {
+      "totalUsers": "Utilisateurs totaux",
+      "premiumUsers": "Utilisateurs Premium",
+      "totalGuilds": "Serveurs totaux",
+      "openCases": "Sanctions ouvertes"
+    },
+    "bot": {
+      "title": "Statut du bot",
+      "shards": "Shards",
+      "latency": "Latence",
+      "uptime": "Uptime",
+      "memory": "Mémoire"
+    },
+    "users": {
+      "searchPlaceholder": "Rechercher par pseudo ou ID...",
+      "id": "ID Utilisateur",
+      "email": "E-mail",
+      "roles": "Rôles Staff",
+      "cases": "Sanctions (ouvertes/total)",
+      "attributes": "Attributs"
+    },
+    "guilds": {
+      "searchPlaceholder": "Rechercher par nom ou ID...",
+      "id": "ID Serveur",
+      "name": "Nom",
+      "attributes": "Attributs"
+    },
+    "cases": {
+      "id": "ID Sanction",
+      "type": "Type",
+      "entity": "Entité",
+      "status": "Statut",
+      "reason": "Raison",
+      "date": "Date",
+      "empty": "Aucune sanction trouvée."
+    }
+  },
   "navUser": {
     "upgradeToMax": "Passer à Max",
     "settings": "Paramètres",
@@ -126,6 +321,8 @@
     "notifications": "Notifications",
     "myPunishments": "Mes sanctions",
     "logOut": "Se déconnecter",
+    "discordAccount": "Compte Discord",
+    "staffPanel": "Panel Staff",
     "logoutDialog": {
       "title": "Se déconnecter",
       "description": "Êtes-vous sûr de vouloir vous déconnecter de votre compte Moddy ?",
@@ -168,7 +365,16 @@
     "commands": "Commandes",
     "documentation": "Documentation",
     "search": "Rechercher",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "general": "Général",
+    "staffLabel": "Staff",
+    "guild": {
+      "label": "Serveur",
+      "overview": "Vue d'ensemble",
+      "modules": "Modules",
+      "stats": "Statistiques",
+      "premium": "Premium"
+    }
   },
   "notifications": {
     "title": "Notifications",
@@ -188,6 +394,30 @@
     "dashboard": "Tableau de bord",
     "debug": "Debug",
     "notFound": "404 — Introuvable"
+  },
+  "unsavedBar": {
+    "message": "Vous avez des modifications non enregistrées",
+    "discard": "Annuler",
+    "save": "Enregistrer"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "tabs": {
+      "account": "Compte",
+      "appearance": "Apparence",
+      "billing": "Facturation"
+    },
+    "account": {
+      "connectedWith": "Connecté avec",
+      "staffBadge": "Staff"
+    },
+    "billing": {
+      "title": "Abonnement & Facturation",
+      "description": "Gérez votre abonnement Moddy Premium.",
+      "manageButton": "Gérer l'abonnement",
+      "portalError": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer.",
+      "note": "Vous serez redirigé vers Stripe pour gérer votre abonnement."
+    }
   },
   "common": {
     "yes": "Oui",
