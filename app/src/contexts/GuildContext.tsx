@@ -20,6 +20,7 @@ import {
   disableModule as apiDisableModule,
 } from '@/services/guilds'
 import { ApiError, refreshGuilds as apiRefreshGuilds } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // ─── Types du contexte ────────────────────────────────────────────────────────
 
@@ -75,6 +76,8 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
 
   // Charge les données du serveur sélectionné
   const loadGuildData = useCallback(async (guildId: string) => {
+    logger.event('guild', `Loading data for guild ${guildId}`)
+    const start = performance.now()
     setIsLoadingGuild(true)
     setGuildError(null)
     try {
@@ -91,6 +94,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         roleList = discordData.roles
       } catch (e) {
         if (e instanceof ApiError && e.isNotFound) {
+          logger.warn('guild', `Guild ${guildId} not in DB — falling back to separate calls`)
           // Guild pas en base → on récupère juste les infos de base Discord
           guildInfo = await getGuild(guildId)
           // Channels et roles peuvent ne pas être disponibles non plus
@@ -99,8 +103,8 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
               getChannels(guildId),
               getRoles(guildId),
             ])
-          } catch {
-            // Pas grave si channels/roles ne chargent pas
+          } catch (err) {
+            logger.warn('guild', `Channels/roles unavailable for ${guildId}`, err)
           }
         } else {
           throw e
@@ -113,12 +117,26 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         getGuildStats(guildId),
       ])
 
+      if (modulesData.status === 'rejected') logger.warn('guild', `Modules failed for ${guildId}`, modulesData.reason)
+      if (statsData.status === 'rejected') logger.warn('guild', `Stats failed for ${guildId}`, statsData.reason)
+
       setGuildDetail(guildInfo)
       setChannels(channelList)
       setRoles(roleList)
-      setModules(modulesData.status === 'fulfilled' ? (modulesData.value ?? {}) : {})
+      const loadedModules = modulesData.status === 'fulfilled' ? (modulesData.value ?? {}) : {}
+      setModules(loadedModules)
       setStats(statsData.status === 'fulfilled' ? statsData.value : null)
+
+      const duration = Math.round(performance.now() - start)
+      logger.success('guild', `Loaded guild ${guildId} in ${duration}ms`, {
+        channels: channelList.length,
+        roles: roleList.length,
+        modules: Object.keys(loadedModules).length,
+        hasStats: statsData.status === 'fulfilled',
+      })
     } catch (e) {
+      const duration = Math.round(performance.now() - start)
+      logger.error('guild', `Failed to load guild ${guildId} after ${duration}ms`, e)
       setGuildError(e instanceof Error ? e.message : 'Failed to load guild data')
       setGuildDetail(null)
       setChannels([])
@@ -152,6 +170,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
 
   const selectGuild = useCallback(
     (id: string) => {
+      logger.event('guild', `Selecting guild ${id}`)
       setSelectedGuildId(id)
       // Préserve ?debug=true si présent dans l'URL actuelle
       const debugParam = new URLSearchParams(location.search).get('debug')
@@ -163,16 +182,20 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
 
   const refreshGuildData = useCallback(async () => {
     if (selectedGuildId) {
+      logger.event('guild', `Manually refreshing guild ${selectedGuildId}`)
       await loadGuildData(selectedGuildId)
     }
   }, [selectedGuildId, loadGuildData])
 
   const refreshGuildList = useCallback(async () => {
+    logger.event('guild', 'Refreshing guild list from Discord')
     try {
       await apiRefreshGuilds()
+      logger.success('guild', 'Guild list refreshed — reloading page')
       // Recharge la page pour que useAuth récupère les nouvelles guilds depuis /auth/me
       window.location.href = '/'
-    } catch {
+    } catch (e) {
+      logger.error('guild', 'Guild list refresh failed — reloading anyway', e)
       // Si ça échoue, on recharge quand même pour avoir des données fraîches
       window.location.href = '/'
     }
@@ -181,8 +204,15 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
   const updateModule = useCallback(
     async (moduleId: string, config: Record<string, unknown>) => {
       if (!selectedGuildId) return
-      await apiUpdateModule(selectedGuildId, moduleId, config)
-      setModules((prev) => ({ ...prev, [moduleId]: config as unknown as ModuleConfig }))
+      logger.event('module', `Updating ${moduleId} for guild ${selectedGuildId}`, config)
+      try {
+        await apiUpdateModule(selectedGuildId, moduleId, config)
+        setModules((prev) => ({ ...prev, [moduleId]: config as unknown as ModuleConfig }))
+        logger.success('module', `Updated ${moduleId} for guild ${selectedGuildId}`)
+      } catch (e) {
+        logger.error('module', `Failed to update ${moduleId} for guild ${selectedGuildId}`, e)
+        throw e
+      }
     },
     [selectedGuildId]
   )
@@ -190,12 +220,19 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
   const disableModule = useCallback(
     async (moduleId: string) => {
       if (!selectedGuildId) return
-      await apiDisableModule(selectedGuildId, moduleId)
-      setModules((prev) => {
-        const next = { ...prev }
-        delete next[moduleId]
-        return next
-      })
+      logger.event('module', `Disabling ${moduleId} for guild ${selectedGuildId}`)
+      try {
+        await apiDisableModule(selectedGuildId, moduleId)
+        setModules((prev) => {
+          const next = { ...prev }
+          delete next[moduleId]
+          return next
+        })
+        logger.success('module', `Disabled ${moduleId} for guild ${selectedGuildId}`)
+      } catch (e) {
+        logger.error('module', `Failed to disable ${moduleId} for guild ${selectedGuildId}`, e)
+        throw e
+      }
     },
     [selectedGuildId]
   )

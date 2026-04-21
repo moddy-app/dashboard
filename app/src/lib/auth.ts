@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger'
+
 const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
 
 export class ApiError extends Error {
@@ -14,34 +16,42 @@ export class ApiError extends Error {
 }
 
 export async function api(path: string, options: RequestInit = {}): Promise<unknown> {
+  const method = (options.method ?? 'GET').toUpperCase()
+  const url = `${API_BASE}${path}`
+  const start = performance.now()
+  logger.api('api', `→ ${method} ${path}`, options.body ? { body: options.body } : '')
+
   let response: Response
 
   try {
-    response = await fetch(`${API_BASE}${path}`, {
+    response = await fetch(url, {
       ...options,
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers: { 'Content-Type': 'application/json', ...options.headers },
     })
-  } catch {
+  } catch (e) {
+    logger.error('api', `✗ ${method} ${path} — network error`, e)
     throw new ApiError(0, 'Network error — check your connection')
   }
 
+  const duration = Math.round(performance.now() - start)
+
   if (!response.ok) {
-    // 401 → session expirée → redirection login
     if (response.status === 401) {
+      logger.warn('api', `← ${method} ${path} 401 ${duration}ms — redirecting to /auth/login`)
       window.location.href = `${API_BASE}/auth/login`
       throw new ApiError(401, 'Unauthorized')
     }
-
     const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
-    throw new ApiError(response.status, (error as { error: string }).error ?? `HTTP ${response.status}`)
+    const message = (error as { error: string }).error ?? `HTTP ${response.status}`
+    logger.error('api', `← ${method} ${path} ${response.status} ${duration}ms`, message)
+    throw new ApiError(response.status, message)
   }
 
   const text = await response.text()
-  return text ? JSON.parse(text) : null
+  const parsed = text ? JSON.parse(text) : null
+  logger.success('api', `← ${method} ${path} ${response.status} ${duration}ms`, parsed)
+  return parsed
 }
 
 // ─── Types basés sur la vraie réponse de /auth/me ─────────────────────────────
@@ -119,22 +129,31 @@ export function getNitroLabel(premiumType: number | null | undefined): string | 
 
 export async function getMe(): Promise<User | null> {
   try {
-    return await api('/auth/me') as User
+    const user = await api('/auth/me') as User
+    logger.success('auth', `Logged in as @${user.username} (${user.user_id})`, { guilds: user.guilds.length, is_staff: user.is_staff })
+    return user
   } catch (e) {
-    if (e instanceof ApiError && e.isUnauthorized) return null
+    if (e instanceof ApiError && e.isUnauthorized) {
+      logger.warn('auth', 'No active session')
+      return null
+    }
     throw e
   }
 }
 
 export function login() {
+  logger.event('auth', 'Redirecting to Discord login')
   window.location.href = `${API_BASE}/auth/login`
 }
 
 export async function logout(): Promise<boolean> {
+  logger.event('auth', 'Logout requested')
   try {
     await api('/auth/logout', { method: 'POST' })
+    logger.success('auth', 'Logged out')
     return true
-  } catch {
+  } catch (e) {
+    logger.error('auth', 'Logout failed', e)
     return false
   }
 }
@@ -144,6 +163,8 @@ export async function refreshSession(): Promise<void> {
 }
 
 export async function refreshGuilds(): Promise<Guild[]> {
+  logger.event('auth', 'Refreshing guild list from Discord')
   const data = await api('/auth/refresh-guilds', { method: 'POST' }) as { guilds: Guild[] }
+  logger.success('auth', `Refreshed ${data.guilds.length} guilds`)
   return data.guilds
 }
