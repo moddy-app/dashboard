@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import {
@@ -9,9 +10,6 @@ import {
   StarIcon,
   MessageSquareIcon,
   ScrollTextIcon,
-  GlobeIcon,
-  BellIcon,
-  ShieldIcon,
   CheckCircleIcon,
   XCircleIcon,
   ExternalLinkIcon,
@@ -49,20 +47,19 @@ interface ModuleCardProps {
   description: string
   icon: LucideIcon
   isEnabled: boolean
-  isAvailable: boolean
   guildId: string
   onNavigate: (path: string) => void
 }
 
 function ModuleCard({
   moduleId, name, description, icon: Icon,
-  isEnabled, isAvailable, guildId, onNavigate,
+  isEnabled, guildId, onNavigate,
 }: ModuleCardProps) {
   const { t } = useTranslation()
   return (
     <Card
-      className={`transition-colors ${isAvailable ? "cursor-pointer hover:bg-accent/50" : "opacity-60"}`}
-      onClick={() => isAvailable && onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
+      className="cursor-pointer transition-colors hover:bg-accent/50"
+      onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
@@ -87,16 +84,10 @@ function ModuleCard({
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-xs text-muted-foreground">{description}</p>
-        {isAvailable ? (
-          <div className="flex items-center gap-1 mt-2 text-xs text-primary">
-            <ExternalLinkIcon className="size-3" />
-            <span>{t('guildOverview.modules.configure')}</span>
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground/60 mt-2 italic">
-            {t('guildOverview.modules.comingSoon')}
-          </p>
-        )}
+        <div className="flex items-center gap-1 mt-2 text-xs text-primary">
+          <ExternalLinkIcon className="size-3" />
+          <span>{t('guildOverview.modules.configure')}</span>
+        </div>
       </CardContent>
     </Card>
   )
@@ -118,13 +109,27 @@ export function GuildOverviewPage() {
     selectedGuildId,
   } = useGuildContext()
 
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isUpgrading, setIsUpgrading] = useState(false)
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshGuildData()
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
   const handleUpgrade = async () => {
     if (!guildDetail) return
+    setIsUpgrading(true)
     try {
       const url = await createCheckout(guildDetail.guild_id, 'monthly')
       window.location.href = url
     } catch (e) {
       handleSaveError(e, { title: t('guildOverview.premium.checkoutError') })
+      setIsUpgrading(false)
     }
   }
 
@@ -197,14 +202,12 @@ export function GuildOverviewPage() {
     MONETIZATION_ENABLED: 'Monétisation',
   }
 
+  // Uniquement les modules disponibles — les modules en dev ne sont pas listés
   const allModules = [
-    { id: 'starboard', icon: StarIcon, available: true },
-    { id: 'welcome_channel', icon: MessageSquareIcon, available: true },
-    { id: 'auto_role', icon: UsersIcon, available: true },
-    { id: 'logging', icon: ScrollTextIcon, available: true },
-    { id: 'auto_restore_roles', icon: ShieldIcon, available: false },
-    { id: 'interserver', icon: GlobeIcon, available: false },
-    { id: 'youtube_notifications', icon: BellIcon, available: false },
+    { id: 'starboard', icon: StarIcon },
+    { id: 'welcome_channel', icon: MessageSquareIcon },
+    { id: 'auto_role', icon: UsersIcon },
+    { id: 'logging', icon: ScrollTextIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null
@@ -217,9 +220,9 @@ export function GuildOverviewPage() {
       {/* ── En-tête serveur ─────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
-          <Avatar className="size-14 rounded-xl">
+          <Avatar className="size-16 rounded-2xl shadow-sm ring-1 ring-border">
             <AvatarImage src={iconUrl ?? undefined} alt={guildDetail.name} />
-            <AvatarFallback className="rounded-xl text-lg font-bold">
+            <AvatarFallback className="rounded-2xl text-lg font-bold">
               {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
             </AvatarFallback>
           </Avatar>
@@ -278,88 +281,62 @@ export function GuildOverviewPage() {
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={refreshGuildData}>
-          <RefreshCwIcon className="size-4 mr-1.5" />
+        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
+          {isRefreshing ? (
+            <LoaderIcon className="size-4 mr-1.5 animate-spin" />
+          ) : (
+            <RefreshCwIcon className="size-4 mr-1.5" />
+          )}
           {t('guildOverview.refresh')}
         </Button>
       </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="size-9 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center shrink-0">
-              <UsersIcon className="size-4 text-blue-600 dark:text-blue-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xl font-bold leading-none">
-                {guildDetail.member_count?.toLocaleString() ?? '—'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.stats.members')}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="size-9 rounded-lg bg-green-100 dark:bg-green-950 flex items-center justify-center shrink-0">
-              <RadioIcon className="size-4 text-green-600 dark:text-green-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xl font-bold leading-none">
-                {guildDetail.presence_count?.toLocaleString() ?? '—'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.stats.online')}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="size-9 rounded-lg bg-orange-100 dark:bg-orange-950 flex items-center justify-center shrink-0">
-              <ShieldAlertIcon className="size-4 text-orange-600 dark:text-orange-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xl font-bold leading-none">
-                {stats ? `${stats.open_cases}/${stats.total_cases}` : '—'}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.stats.cases')}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="size-9 rounded-lg bg-purple-100 dark:bg-purple-950 flex items-center justify-center shrink-0">
-              <HashIcon className="size-4 text-purple-600 dark:text-purple-400" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xl font-bold leading-none">
-                {Object.keys(modules).length}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.stats.activeModules')}</p>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' },
+          { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' },
+          { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' },
+          { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' },
+        ].map(({ label, value, icon: Icon, color }) => (
+          <Card key={label}>
+            <CardContent className="flex items-center gap-4 p-5">
+              <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
+                <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
+                <p className="text-xs text-muted-foreground mt-1">{label}</p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* ── CTA Premium ─────────────────────────────────────────────────── */}
       {!isPremium && (
-        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20 dark:border-amber-800">
-          <CardContent className="flex items-center justify-between gap-4 p-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <CrownIcon className="size-6 text-amber-500 shrink-0" />
+        <Card className="border-amber-200/60 bg-gradient-to-r from-amber-50/60 to-amber-50/20 dark:from-amber-950/30 dark:to-amber-950/10 dark:border-amber-800/40">
+          <CardContent className="flex items-center justify-between gap-4 p-5 flex-wrap">
+            <div className="flex items-center gap-4">
+              <div className="size-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
+                <CrownIcon className="size-5 text-amber-500" />
+              </div>
               <div>
-                <p className="font-medium text-sm">{t('guildOverview.premium.title')}</p>
-                <p className="text-xs text-muted-foreground">{t('guildOverview.premium.description')}</p>
+                <p className="font-semibold text-sm">{t('guildOverview.premium.title')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.premium.description')}</p>
               </div>
             </div>
             <Button
               size="sm"
-              className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+              className="bg-amber-500 hover:bg-amber-600 text-white shrink-0 shadow-sm"
               onClick={handleUpgrade}
+              disabled={isUpgrading}
             >
-              <SparklesIcon className="size-4 mr-1.5" />
+              {isUpgrading ? (
+                <LoaderIcon className="size-4 animate-spin" />
+              ) : (
+                <SparklesIcon className="size-4" />
+              )}
               {t('guildOverview.premium.cta')}
             </Button>
           </CardContent>
@@ -370,14 +347,14 @@ export function GuildOverviewPage() {
 
       {/* ── Modules ─────────────────────────────────────────────────────── */}
       <div>
-        <div className="mb-4">
+        <div className="mb-5">
           <h2 className="text-base font-semibold">{t('guildOverview.modules.title')}</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-1">
             {t('guildOverview.modules.description')}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {allModules.map(({ id, icon, available }) => (
+          {allModules.map(({ id, icon }) => (
             <ModuleCard
               key={id}
               moduleId={id}
@@ -385,7 +362,6 @@ export function GuildOverviewPage() {
               description={t(`modules.${id}.description`)}
               icon={icon}
               isEnabled={id in modules}
-              isAvailable={available}
               guildId={selectedGuildId}
               onNavigate={navigate}
             />

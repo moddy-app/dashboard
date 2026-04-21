@@ -17,19 +17,22 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
   const [shaking, setShaking] = useState(false)
   const shakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Bloque la navigation si des modifications non sauvegardées existent
-  const blocker = useBlocker(isDirty && !isSaving)
+  // Separate blocking state we control manually to prevent React Router from
+  // auto-proceeding blocked navigations when isDirty turns false after save.
+  const [blockingEnabled, setBlockingEnabled] = useState(false)
 
-  // Quand le bloqueur est activé → shake + allow anyway after confirm or shake
   useEffect(() => {
-    if (blocker.state === 'blocked') {
-      // Animation de tremblement
+    if (isDirty) setBlockingEnabled(true)
+  }, [isDirty])
+
+  const blocker = useBlocker(blockingEnabled && !isSaving)
+
+  // Shake animation when a navigation is blocked
+  useEffect(() => {
+    if (blocker.state === "blocked") {
       setShaking(true)
       if (shakeTimer.current) clearTimeout(shakeTimer.current)
-      shakeTimer.current = setTimeout(() => {
-        setShaking(false)
-        // L'utilisateur a été informé visuellement — on peut laisser le choix
-      }, 600)
+      shakeTimer.current = setTimeout(() => setShaking(false), 500)
     }
     return () => {
       if (shakeTimer.current) clearTimeout(shakeTimer.current)
@@ -37,86 +40,81 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
   }, [blocker.state])
 
   const handleSave = async () => {
-    await onSave()
-    if (blocker.state === 'blocked') {
-      blocker.proceed()
+    // Disable blocker synchronously BEFORE the state commit so that the
+    // pending navigation is cancelled via blocker.reset() — not auto-proceeded.
+    if (blocker.state === "blocked") {
+      blocker.reset() // Cancel the blocked navigation; user stays on page
     }
+    setBlockingEnabled(false)
+    await onSave()
   }
 
   const handleDiscard = () => {
+    const wasBlocked = blocker.state === "blocked"
+    setBlockingEnabled(false)
     onDiscard()
-    if (blocker.state === 'blocked') {
-      blocker.proceed()
+    if (wasBlocked) {
+      blocker.proceed() // Navigate away after discarding changes
     }
   }
 
-  // Shake global de la page
-  useEffect(() => {
-    if (shaking) {
-      document.body.style.animation = 'shake 0.4s ease-in-out'
-      const t = setTimeout(() => {
-        document.body.style.animation = ''
-      }, 400)
-      return () => clearTimeout(t)
-    }
-  }, [shaking])
+  const isVisible = isDirty || blocker.state === "blocked"
 
-  if (!isDirty && blocker.state !== 'blocked') return null
+  if (!isVisible) return null
 
   return (
     <>
-      {/* Styles keyframes injectés une seule fois */}
       <style>{`
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-6px); }
-          40% { transform: translateX(6px); }
-          60% { transform: translateX(-4px); }
-          80% { transform: translateX(4px); }
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          20%       { transform: translateX(calc(-50% - 6px)) translateY(0); }
+          40%       { transform: translateX(calc(-50% + 6px)) translateY(0); }
+          60%       { transform: translateX(calc(-50% - 3px)) translateY(0); }
+          80%       { transform: translateX(calc(-50% + 3px)) translateY(0); }
         }
         @keyframes slideUp {
-          from { transform: translateY(100%); opacity: 0; }
-          to   { transform: translateY(0);   opacity: 1; }
+          from { transform: translateX(-50%) translateY(16px); opacity: 0; }
+          to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
         }
       `}</style>
 
       <div
         className={cn(
-          "fixed bottom-4 left-1/2 -translate-x-1/2 z-50",
-          "flex items-center gap-3 px-4 py-2.5",
-          "rounded-xl border border-border bg-card shadow-lg shadow-black/10",
+          "fixed bottom-5 left-1/2 z-50",
+          "flex items-center gap-2 pl-4 pr-2 py-2",
+          "rounded-xl border border-border bg-card shadow-xl shadow-black/10",
           "backdrop-blur-sm",
-          "min-w-[320px] max-w-sm w-full sm:w-auto",
-          shaking && "animate-[shake_0.4s_ease-in-out]"
+          "w-[calc(100vw-2rem)] max-w-[420px]",
+          shaking ? "animate-[shake_0.5s_ease-in-out]" : "animate-[slideUp_0.25s_cubic-bezier(0.34,1.56,0.64,1)_forwards]"
         )}
-        style={{ animation: isDirty ? 'slideUp 0.2s ease-out forwards' : undefined }}
       >
         <AlertCircleIcon className="size-4 text-amber-500 shrink-0" />
-        <p className="text-sm font-medium flex-1">
-          {t('unsavedBar.message')}
+        <p className="text-sm font-medium flex-1 min-w-0 truncate">
+          {t("unsavedBar.message")}
         </p>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 shrink-0 ml-1">
           <Button
             variant="ghost"
             size="sm"
             onClick={handleDiscard}
             disabled={isSaving}
-            className="text-muted-foreground hover:text-foreground"
+            className="h-8 px-3 text-muted-foreground hover:text-foreground gap-1.5"
           >
-            <UndoIcon className="size-4 mr-1.5" />
-            {t('unsavedBar.discard')}
+            <UndoIcon className="size-3.5" />
+            <span className="hidden sm:inline">{t("unsavedBar.discard")}</span>
           </Button>
           <Button
             size="sm"
             onClick={handleSave}
             disabled={isSaving}
+            className="h-8 px-3 gap-1.5"
           >
             {isSaving ? (
-              <LoaderIcon className="size-4 mr-1.5 animate-spin" />
+              <LoaderIcon className="size-3.5 animate-spin" />
             ) : (
-              <SaveIcon className="size-4 mr-1.5" />
+              <SaveIcon className="size-3.5" />
             )}
-            {t('unsavedBar.save')}
+            {t("unsavedBar.save")}
           </Button>
         </div>
       </div>

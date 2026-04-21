@@ -107,26 +107,27 @@ export function WelcomeChannelPage() {
     },
   })
 
+  // Re-populate quand la config ou la liste de salons est chargée
   useEffect(() => {
-    if (currentConfig) {
-      form.reset({
-        channel_id: String(currentConfig.channel_id),
-        message_template: currentConfig.message_template,
-        mention_user: currentConfig.mention_user,
-        embed_enabled: currentConfig.embed_enabled,
-        embed_title: currentConfig.embed_title ?? '',
-        embed_description: currentConfig.embed_description ?? '',
-        embed_color: currentConfig.embed_color
-          ? decimalToHex(currentConfig.embed_color)
-          : '#5865F2',
-        embed_footer: currentConfig.embed_footer ?? '',
-        embed_image_url: currentConfig.embed_image_url ?? '',
-        embed_thumbnail_enabled: currentConfig.embed_thumbnail_enabled ?? false,
-        embed_author_enabled: currentConfig.embed_author_enabled ?? false,
-        enabled: true,
-      })
-    }
-  }, [currentConfig, form])
+    if (!currentConfig) return
+    if (form.formState.isDirty) return
+    form.reset({
+      channel_id: String(currentConfig.channel_id ?? ''),
+      message_template: currentConfig.message_template ?? 'Welcome {user} to the server!',
+      mention_user: currentConfig.mention_user ?? true,
+      embed_enabled: currentConfig.embed_enabled ?? false,
+      embed_title: currentConfig.embed_title ?? '',
+      embed_description: currentConfig.embed_description ?? '',
+      embed_color: currentConfig.embed_color
+        ? decimalToHex(currentConfig.embed_color)
+        : '#5865F2',
+      embed_footer: currentConfig.embed_footer ?? '',
+      embed_image_url: currentConfig.embed_image_url ?? '',
+      embed_thumbnail_enabled: currentConfig.embed_thumbnail_enabled ?? false,
+      embed_author_enabled: currentConfig.embed_author_enabled ?? false,
+      enabled: true,
+    })
+  }, [currentConfig, channels.length, form])
 
   const watchEmbedEnabled = form.watch('embed_enabled')
 

@@ -43,6 +43,7 @@ interface CommandMenuProps {
   onSelectServer?: (id: string) => void
   onLogoutRequest?: () => void
   onOpenNotifications?: () => void
+  onOpenSettings?: () => void
 }
 
 export function CommandMenu({
@@ -52,6 +53,7 @@ export function CommandMenu({
   onSelectServer,
   onLogoutRequest,
   onOpenNotifications,
+  onOpenSettings,
 }: CommandMenuProps) {
   const { t } = useTranslation()
 
@@ -176,7 +178,7 @@ export function CommandMenu({
               <CreditCardIcon />
               <span>{t('commandMenu.items.billing')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => {})}>
+            <CommandItem onSelect={() => runCommand(() => onOpenSettings?.())}>
               <SettingsIcon />
               <span>{t('commandMenu.items.settings')}</span>
             </CommandItem>

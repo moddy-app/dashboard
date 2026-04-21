@@ -160,7 +160,8 @@
     "myServers": "Mes serveurs",
     "noServers": "Aucun serveur trouvé",
     "addServer": "Ajouter un serveur",
-    "refreshServers": "Actualiser la liste"
+    "refreshServers": "Actualiser la liste",
+    "staffPanel": "Moddy Staff"
   },
   "modules": {
     "save": "Enregistrer",

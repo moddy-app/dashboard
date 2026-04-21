@@ -66,13 +66,14 @@ export function AutoRolePage() {
     (r) => !r.managed && r.name !== '@everyone'
   )
 
+  // Re-populate quand config ou liste de rôles chargée
   useEffect(() => {
     const ids = currentConfig?.role_ids.map(String) ?? []
     setSelectedRoleIds(ids)
     setSavedRoleIds(ids)
     setEnabled(isEnabled)
     setSavedEnabled(isEnabled)
-  }, [currentConfig, isEnabled])
+  }, [currentConfig, isEnabled, roles.length])
 
   // Calcul du dirty state
   const isDirty = useMemo(() => {

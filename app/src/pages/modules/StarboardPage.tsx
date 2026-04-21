@@ -80,17 +80,17 @@ export function StarboardPage() {
     },
   })
 
-  // Re-populate when data loads
+  // Re-populate quand la config ou la liste de salons est chargée
   useEffect(() => {
-    if (currentConfig) {
-      form.reset({
-        channel_id: String(currentConfig.channel_id),
-        reaction_count: currentConfig.reaction_count,
-        emoji: currentConfig.emoji,
-        enabled: true,
-      })
-    }
-  }, [currentConfig, form])
+    if (!currentConfig) return
+    if (form.formState.isDirty) return // Ne pas écraser les modifs en cours
+    form.reset({
+      channel_id: String(currentConfig.channel_id ?? ''),
+      reaction_count: currentConfig.reaction_count ?? 5,
+      emoji: currentConfig.emoji ?? '⭐',
+      enabled: true,
+    })
+  }, [currentConfig, channels.length, form])
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedGuildId) return
@@ -144,19 +144,22 @@ export function StarboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-20">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+        <div className="flex items-center gap-4">
+          <div className="size-11 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center shrink-0">
             <StarIcon className="size-5 text-amber-500" />
           </div>
           <div>
-            <h1 className="text-xl font-semibold">{t('modules.starboard.name')}</h1>
-            <p className="text-sm text-muted-foreground">{t('modules.starboard.description')}</p>
+            <h1 className="text-xl font-semibold leading-none">{t('modules.starboard.name')}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{t('modules.starboard.description')}</p>
           </div>
         </div>
-        <Badge variant={isEnabled ? "default" : "secondary"}>
+        <Badge
+          variant={isEnabled ? "default" : "secondary"}
+          className={isEnabled ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800" : ""}
+        >
           {isEnabled ? t('guildOverview.modules.enabled') : t('guildOverview.modules.disabled')}
         </Badge>
       </div>
@@ -167,10 +170,10 @@ export function StarboardPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Toggle d'activation */}
           <Card>
-            <CardContent className="flex items-center justify-between p-4">
+            <CardContent className="flex items-center justify-between gap-4 p-5">
               <div>
                 <p className="font-medium text-sm">{t('modules.enableModule')}</p>
-                <p className="text-xs text-muted-foreground">{t('modules.starboard.enableDescription')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('modules.starboard.enableDescription')}</p>
               </div>
               <FormField
                 control={form.control}
@@ -191,11 +194,11 @@ export function StarboardPage() {
 
           {/* Config */}
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-4">
               <CardTitle className="text-base">{t('modules.starboard.configTitle')}</CardTitle>
               <CardDescription>{t('modules.starboard.configDescription')}</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
+            <CardContent className="flex flex-col gap-5">
               {/* Salon */}
               <FormField
                 control={form.control}

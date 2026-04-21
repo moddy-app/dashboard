@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sidebar"
 import { CommandMenu } from "@/components/command-menu"
 import { NotificationDrawer } from "@/components/notification-drawer"
+import { SettingsDialog } from "@/components/settings-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -50,6 +51,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
 
@@ -82,6 +84,10 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   const handleOpenNotifications = useCallback(() => {
     setNotificationDrawerOpen(true)
+  }, [])
+
+  const handleOpenSettings = useCallback(() => {
+    setSettingsOpen(true)
   }, [])
 
   const handleMarkRead = useCallback((id: string) => {
@@ -145,8 +151,8 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   const breadcrumb = getBreadcrumb()
 
-  // Prépare la liste des serveurs pour le command menu
-  const servers = guilds.map((g) => ({ name: g.name, id: String(g.id) }))
+  // Prépare la liste des serveurs pour le command menu (avec icône)
+  const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
 
   return (
     <SidebarProvider>
@@ -163,7 +169,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
-              className="mr-2 data-[orientation=vertical]:h-4"
+              className="mx-1 self-center data-[orientation=vertical]:h-4"
             />
             <Breadcrumb>
               <BreadcrumbList>
@@ -187,7 +193,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
           </div>
         </header>
         {/* Contenu de la route courante via Outlet */}
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <div className="flex flex-1 flex-col p-6 pt-2">
           <Outlet />
         </div>
       </SidebarInset>
@@ -199,6 +205,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onSelectServer={selectGuild}
         onLogoutRequest={handleLogoutRequest}
         onOpenNotifications={handleOpenNotifications}
+        onOpenSettings={handleOpenSettings}
       />
 
       <NotificationDrawer
@@ -207,6 +214,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
         notifications={activeNotifications}
         onMarkRead={handleMarkRead}
         onMarkAllRead={handleMarkAllRead}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        user={user}
       />
 
       {/* Badge debug — visible uniquement si ?debug=true dans l'URL */}

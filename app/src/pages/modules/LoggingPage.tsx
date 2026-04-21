@@ -91,22 +91,22 @@ export function LoggingPage() {
   )
 
   // Charge la config logging depuis l'endpoint dédié
+  // On re-exécute aussi quand channels se chargent pour que le Select se mette à jour
   useEffect(() => {
     if (!selectedGuildId || !isEnabled) return
     getLoggingConfig(selectedGuildId)
       .then((config) => {
-        const ch = String(config.channel_id)
+        const ch = String(config.channel_id ?? '')
         const evs = new Set(config.events as LogEvent[])
         setChannelId(ch)
         setSelectedEvents(evs)
         setEnabled(true)
-        // init saved state
         setSavedChannelId(ch)
         setSavedEvents(new Set(evs))
         setSavedEnabled(true)
       })
       .catch(() => {/* silent — module n'est peut-être pas configuré */})
-  }, [selectedGuildId, isEnabled])
+  }, [selectedGuildId, isEnabled, channels.length])
 
   const toggleEvent = (eventId: LogEvent) => {
     setSelectedEvents((prev) => {

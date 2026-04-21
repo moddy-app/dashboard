@@ -57,12 +57,12 @@ export function GuildSelectionView() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">
           {t('guildSelection.title')}
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="text-sm text-muted-foreground mt-1.5">
           {t('guildSelection.description')}
         </p>
       </div>
@@ -75,19 +75,19 @@ export function GuildSelectionView() {
           return (
             <Card
               key={guild.id}
-              className="cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground group"
+              className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm group"
               onClick={() => selectGuild(String(guild.id))}
             >
-              <CardContent className="flex items-center gap-3 p-4">
-                <Avatar className="size-10 rounded-lg">
+              <CardContent className="flex items-center gap-3.5 p-5">
+                <Avatar className="size-11 rounded-xl shrink-0">
                   <AvatarImage src={iconUrl ?? undefined} alt={guild.name} />
-                  <AvatarFallback className="rounded-lg text-sm font-medium">
+                  <AvatarFallback className="rounded-xl text-sm font-semibold">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{guild.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-semibold truncate">{guild.name}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {t('guildSelection.manage')}
                   </p>
                 </div>
@@ -99,7 +99,7 @@ export function GuildSelectionView() {
 
         {/* Carte "Ajouter Moddy" */}
         <Card
-          className="cursor-pointer transition-colors hover:bg-accent hover:text-accent-foreground border-dashed"
+          className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm border-dashed group"
           onClick={() =>
             window.open(
               "https://discord.com/oauth2/authorize?client_id=1373916203814490194",
@@ -108,15 +108,15 @@ export function GuildSelectionView() {
             )
           }
         >
-          <CardContent className="flex items-center gap-3 p-4">
-            <div className="size-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+          <CardContent className="flex items-center gap-3.5 p-5">
+            <div className="size-11 rounded-xl bg-muted flex items-center justify-center shrink-0 transition-colors group-hover:bg-background">
               <PlusIcon className="size-5 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-muted-foreground">
+              <p className="font-semibold text-muted-foreground">
                 {t('dashboard.noServer.addModdy')}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {t('guildSelection.addDescription')}
               </p>
             </div>
