@@ -100,6 +100,7 @@ export function GuildOverviewPage() {
   const navigate = useNavigate()
   const {
     guildDetail,
+    guilds,
     stats,
     modules,
     isLoadingGuild,
@@ -183,7 +184,10 @@ export function GuildOverviewPage() {
 
   // ── Données ────────────────────────────────────────────────────────────────
 
-  const iconUrl = getGuildIconUrl(guildDetail.guild_id, guildDetail.icon)
+  // Fallback sur l'icône depuis /auth/me si la DB n'en a pas (ou est stale)
+  const guildListItem = guilds.find((g) => String(g.id) === String(guildDetail.guild_id))
+  const iconHash = guildDetail.icon ?? guildListItem?.icon ?? null
+  const iconUrl = getGuildIconUrl(guildDetail.guild_id, iconHash)
   const isPremium = guildDetail.attributes?.PREMIUM === true || stats?.is_premium === true
   const isBeta = guildDetail.attributes?.BETA === true
   const isBlacklisted = guildDetail.attributes?.BLACKLISTED === true

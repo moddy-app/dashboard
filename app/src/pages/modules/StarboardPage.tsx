@@ -195,16 +195,16 @@ export function StarboardPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Toggle d'activation */}
           <Card>
-            <CardContent className="flex items-center justify-between gap-4 p-5">
-              <div>
-                <p className="font-medium text-sm">{t('modules.enableModule')}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t('modules.starboard.enableDescription')}</p>
+            <CardContent className="flex items-center justify-between gap-6 px-5 py-4">
+              <div className="flex flex-col gap-1 min-w-0">
+                <p className="font-medium text-sm leading-none">{t('modules.enableModule')}</p>
+                <p className="text-sm text-muted-foreground leading-snug">{t('modules.starboard.enableDescription')}</p>
               </div>
               <FormField
                 control={form.control}
                 name="enabled"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="shrink-0">
                     <FormControl>
                       <Switch
                         checked={field.value}
@@ -232,12 +232,12 @@ export function StarboardPage() {
                   <FormItem>
                     <FormLabel>{t('modules.starboard.channel')}</FormLabel>
                     <Select
-                      key={textChannels.length > 0 ? 'ready' : 'loading'}
-                      value={field.value}
+                      key={`${textChannels.length}:${String(currentConfig?.channel_id ?? '')}`}
+                      value={field.value || undefined}
                       onValueChange={field.onChange}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger disabled={textChannels.length === 0}>
                           <SelectValue placeholder={t('modules.selectChannel')} />
                         </SelectTrigger>
                       </FormControl>
@@ -253,6 +253,17 @@ export function StarboardPage() {
                             # {c.name}
                           </SelectItem>
                         ))}
+                        {/* Fallback item for saved value that no longer exists
+                            in the channel list (deleted, wrong type, snowflake
+                            precision mismatch) — keeps SelectValue displaying
+                            something instead of falling through to placeholder. */}
+                        {field.value &&
+                          textChannels.length > 0 &&
+                          !textChannels.find((c) => c.id === field.value) && (
+                            <SelectItem key={`fallback-${field.value}`} value={field.value} disabled>
+                              # {field.value}
+                            </SelectItem>
+                          )}
                       </SelectContent>
                     </Select>
                     <FormDescription>{t('modules.starboard.channelDescription')}</FormDescription>

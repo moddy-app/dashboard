@@ -223,14 +223,14 @@ export function LoggingPage() {
 
       {/* Toggle */}
       <Card>
-        <CardContent className="flex items-center justify-between p-4">
-          <div>
-            <p className="font-medium text-sm">{t('modules.enableModule')}</p>
-            <p className="text-xs text-muted-foreground">
+        <CardContent className="flex items-center justify-between gap-6 px-5 py-4">
+          <div className="flex flex-col gap-1 min-w-0">
+            <p className="font-medium text-sm leading-none">{t('modules.enableModule')}</p>
+            <p className="text-sm text-muted-foreground leading-snug">
               {t('modules.logging.enableDescription')}
             </p>
           </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} />
+          <Switch checked={enabled} onCheckedChange={setEnabled} className="shrink-0" />
         </CardContent>
       </Card>
 
@@ -242,11 +242,11 @@ export function LoggingPage() {
         </CardHeader>
         <CardContent>
           <Select
-            key={textChannels.length > 0 ? 'ready' : 'loading'}
-            value={channelId}
+            key={`${textChannels.length}:${savedChannelId}`}
+            value={channelId || undefined}
             onValueChange={setChannelId}
           >
-            <SelectTrigger>
+            <SelectTrigger disabled={textChannels.length === 0}>
               <SelectValue placeholder={t('modules.selectChannel')} />
             </SelectTrigger>
             <SelectContent>
@@ -255,6 +255,13 @@ export function LoggingPage() {
                   # {c.name}
                 </SelectItem>
               ))}
+              {channelId &&
+                textChannels.length > 0 &&
+                !textChannels.find((c) => c.id === channelId) && (
+                  <SelectItem key={`fallback-${channelId}`} value={channelId} disabled>
+                    # {channelId}
+                  </SelectItem>
+                )}
             </SelectContent>
           </Select>
         </CardContent>

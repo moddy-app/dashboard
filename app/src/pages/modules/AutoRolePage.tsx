@@ -186,14 +186,14 @@ export function AutoRolePage() {
 
       {/* Toggle */}
       <Card>
-        <CardContent className="flex items-center justify-between p-4">
-          <div>
-            <p className="font-medium text-sm">{t('modules.enableModule')}</p>
-            <p className="text-xs text-muted-foreground">
+        <CardContent className="flex items-center justify-between gap-6 px-5 py-4">
+          <div className="flex flex-col gap-1 min-w-0">
+            <p className="font-medium text-sm leading-none">{t('modules.enableModule')}</p>
+            <p className="text-sm text-muted-foreground leading-snug">
               {t('modules.auto_role.enableDescription')}
             </p>
           </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} />
+          <Switch checked={enabled} onCheckedChange={setEnabled} className="shrink-0" />
         </CardContent>
       </Card>
 
