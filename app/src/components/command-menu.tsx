@@ -29,6 +29,7 @@ import {
   TicketIcon,
 } from "lucide-react"
 import { getGuildIconUrl } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 interface Server {
   name: string
@@ -71,7 +72,10 @@ export function CommandMenu({
 
   const runCommand = (fn: () => void) => {
     onOpenChange(false)
-    fn()
+    // Delay to let the Radix Dialog fully unmount its Portal/focus trap
+    // before the next Dialog (Settings, etc.) tries to mount — otherwise
+    // the focus trap of the dying dialog can swallow the open.
+    setTimeout(fn, 50)
   }
 
   const openExternal = (url: string) => {
@@ -89,9 +93,7 @@ export function CommandMenu({
           <CommandGroup heading={t('commandMenu.groups.myServers')}>
             {servers.length > 0 ? (
               servers.map((server) => {
-                const iconUrl = server.icon !== undefined
-                  ? getGuildIconUrl(server.id, server.icon ?? null)
-                  : null
+                const iconUrl = getGuildIconUrl(server.id, server.icon ?? null)
                 return (
                   <CommandItem
                     key={server.id}
@@ -99,7 +101,12 @@ export function CommandMenu({
                     onSelect={() => runCommand(() => onSelectServer?.(server.id))}
                   >
                     <Avatar className="size-5 rounded-sm">
-                      <AvatarImage src={iconUrl ?? undefined} alt={server.name} />
+                      <AvatarImage
+                        src={iconUrl ?? undefined}
+                        alt={server.name}
+                        referrerPolicy="no-referrer"
+                        onError={() => logger.warn("avatar", `CommandMenu: failed to load guild icon ${server.id}`, iconUrl)}
+                      />
                       <AvatarFallback className="rounded-sm text-[10px]">
                         {server.name.slice(0, 2).toUpperCase()}
                       </AvatarFallback>

@@ -4,6 +4,7 @@ import { useBlocker } from "react-router-dom"
 import { LoaderIcon, SaveIcon, UndoIcon, AlertCircleIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { logger } from "@/lib/logger"
 
 interface UnsavedBarProps {
   isDirty: boolean
@@ -17,15 +18,14 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
   const [shaking, setShaking] = useState(false)
   const shakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Separate blocking state we control manually to prevent React Router from
-  // auto-proceeding blocked navigations when isDirty turns false after save.
-  const [blockingEnabled, setBlockingEnabled] = useState(false)
+  // Block navigation while there are unsaved edits. `isSaving` disables the
+  // blocker during save flight — the blocker re-arms automatically next
+  // render once isDirty flips back to false via parent's form.reset().
+  const blocker = useBlocker(isDirty && !isSaving)
 
   useEffect(() => {
-    if (isDirty) setBlockingEnabled(true)
-  }, [isDirty])
-
-  const blocker = useBlocker(blockingEnabled && !isSaving)
+    logger.debug("unsaved-bar", `state: isDirty=${isDirty} isSaving=${isSaving} blocker=${blocker.state}`)
+  }, [isDirty, isSaving, blocker.state])
 
   // Shake animation when a navigation is blocked
   useEffect(() => {
@@ -40,22 +40,18 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
   }, [blocker.state])
 
   const handleSave = async () => {
-    // Disable blocker synchronously BEFORE the state commit so that the
-    // pending navigation is cancelled via blocker.reset() — not auto-proceeded.
-    if (blocker.state === "blocked") {
-      blocker.reset() // Cancel the blocked navigation; user stays on page
-    }
-    setBlockingEnabled(false)
+    logger.event("unsaved-bar", "Save clicked")
+    // Cancel any blocked navigation — user wants to stay on this page
+    // and save. The blocker auto-disarms when isDirty → false next render.
+    if (blocker.state === "blocked") blocker.reset()
     await onSave()
   }
 
   const handleDiscard = () => {
+    logger.event("unsaved-bar", "Discard clicked")
     const wasBlocked = blocker.state === "blocked"
-    setBlockingEnabled(false)
     onDiscard()
-    if (wasBlocked) {
-      blocker.proceed() // Navigate away after discarding changes
-    }
+    if (wasBlocked) blocker.proceed()
   }
 
   const isVisible = isDirty || blocker.state === "blocked"
@@ -84,7 +80,7 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
           "flex items-center gap-2 pl-4 pr-2 py-2",
           "rounded-xl border border-border bg-card shadow-xl shadow-black/10",
           "backdrop-blur-sm",
-          "w-[calc(100vw-2rem)] max-w-[420px]",
+          "w-[calc(100vw-2rem)] max-w-[560px]",
           shaking ? "animate-[shake_0.5s_ease-in-out]" : "animate-[slideUp_0.25s_cubic-bezier(0.34,1.56,0.64,1)_forwards]"
         )}
       >

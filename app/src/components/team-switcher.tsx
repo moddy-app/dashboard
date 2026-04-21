@@ -1,4 +1,5 @@
-import { ChevronsUpDownIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
+import { useState } from "react"
+import { ChevronsUpDownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -19,6 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { getGuildIconUrl } from "@/lib/auth"
+import { logger } from "@/lib/logger"
 
 interface TeamSwitcherProps {
   onRefreshGuilds?: () => void
@@ -30,6 +32,17 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { guilds, selectedGuildId, selectGuild, guildDetail, user } = useGuildContext()
+  const [isRefreshing, setIsRefreshing] = useState(false)
+
+  const handleRefreshClick = async () => {
+    if (!onRefreshGuilds || isRefreshing) return
+    setIsRefreshing(true)
+    try {
+      await onRefreshGuilds()
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
 
   const isOnStaffPage = location.pathname === "/staff"
 
@@ -65,7 +78,13 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
       return (
         <>
           <Avatar className="size-8 rounded-lg shrink-0">
-            <AvatarImage src={activeIconUrl ?? undefined} alt={activeName} />
+            <AvatarImage
+              src={activeIconUrl ?? undefined}
+              alt={activeName}
+              referrerPolicy="no-referrer"
+              onError={() => logger.warn("avatar", `Failed to load guild icon ${activeId}`, activeIconUrl)}
+              onLoad={() => logger.debug("avatar", `Loaded guild icon ${activeId}`)}
+            />
             <AvatarFallback className="rounded-lg text-xs">
               {activeInitial}
             </AvatarFallback>
@@ -87,7 +106,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
           <ServerIcon className="size-4" />
         </div>
         <div className="grid flex-1 text-left text-sm leading-tight">
-          <span className="truncate font-medium">Moddy</span>
+          <span className="truncate font-medium">{t("teamSwitcher.noServerSelected")}</span>
           <span className="truncate text-xs text-muted-foreground">
             {t("teamSwitcher.selectServer")}
           </span>
@@ -134,7 +153,12 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                     data-active={isActive}
                   >
                     <Avatar className="size-6 rounded-sm shrink-0">
-                      <AvatarImage src={iconUrl ?? undefined} alt={guild.name} />
+                      <AvatarImage
+                        src={iconUrl ?? undefined}
+                        alt={guild.name}
+                        referrerPolicy="no-referrer"
+                        onError={() => logger.warn("avatar", `Failed to load guild icon ${guild.id}`, iconUrl)}
+                      />
                       <AvatarFallback className="rounded-sm text-[10px]">
                         {initials}
                       </AvatarFallback>
@@ -176,9 +200,20 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
             </DropdownMenuItem>
 
             {onRefreshGuilds && (
-              <DropdownMenuItem className="gap-2 p-2" onClick={onRefreshGuilds}>
+              <DropdownMenuItem
+                className="gap-2 p-2"
+                onClick={(e) => {
+                  e.preventDefault()
+                  handleRefreshClick()
+                }}
+                disabled={isRefreshing}
+              >
                 <div className="bg-background flex size-6 items-center justify-center rounded-md border shrink-0">
-                  <RefreshCwIcon className="size-4" />
+                  {isRefreshing ? (
+                    <LoaderIcon className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCwIcon className="size-4" />
+                  )}
                 </div>
                 <span className="font-medium text-muted-foreground">
                   {t("teamSwitcher.refreshServers")}

@@ -1,12 +1,13 @@
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Trash2Icon, MessageSquareIcon } from "lucide-react"
+import { Trash2Icon, MessageSquareIcon, LoaderIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
+import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -107,8 +108,15 @@ export function WelcomeChannelPage() {
     },
   })
 
+  const [isDisabling, setIsDisabling] = useState(false)
+  const justSavedRef = useRef(false)
+
   // Re-populate quand la config ou la liste de salons est chargée
   useEffect(() => {
+    if (justSavedRef.current) {
+      justSavedRef.current = false
+      return
+    }
     if (!currentConfig) return
     if (form.formState.isDirty) return
     form.reset({
@@ -133,14 +141,17 @@ export function WelcomeChannelPage() {
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedGuildId) return
+    logger.event('module:welcome_channel', 'Submit', values)
 
     if (!values.enabled) {
       try {
         await disableModule('welcome_channel')
         const v = form.getValues()
+        justSavedRef.current = true
         form.reset({ ...v, enabled: false })
         toast.success(t('modules.welcome_channel.disabledSuccess'))
       } catch (e) {
+        logger.error('module:welcome_channel', 'Disable via submit failed', e)
         handleSaveError(e, { title: t('modules.saveError') })
       }
       return
@@ -165,25 +176,38 @@ export function WelcomeChannelPage() {
         payload.embed_author_enabled = values.embed_author_enabled ?? false
       }
       await updateModule('welcome_channel', payload)
+      justSavedRef.current = true
       form.reset(values)
+      logger.success('module:welcome_channel', 'Saved')
       toast.success(t('modules.saved'))
     } catch (e) {
+      logger.error('module:welcome_channel', 'Save failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
     }
   }
 
   const handleDisable = async () => {
+    logger.event('module:welcome_channel', 'Disable clicked')
+    setIsDisabling(true)
     try {
       await disableModule('welcome_channel')
       const v = form.getValues()
+      justSavedRef.current = true
       form.reset({ ...v, enabled: false })
+      logger.success('module:welcome_channel', 'Disabled')
       toast.success(t('modules.welcome_channel.disabledSuccess'))
     } catch (e) {
+      logger.error('module:welcome_channel', 'Disable failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
+    } finally {
+      setIsDisabling(false)
     }
   }
 
-  const handleDiscard = () => { form.reset() }
+  const handleDiscard = () => {
+    logger.event('module:welcome_channel', 'Discard clicked')
+    form.reset()
+  }
 
   if (isLoadingGuild) {
     return (
@@ -199,7 +223,7 @@ export function WelcomeChannelPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -256,7 +280,11 @@ export function WelcomeChannelPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t('modules.welcome_channel.channel')}</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      key={textChannels.length > 0 ? 'ready' : 'loading'}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={t('modules.selectChannel')} />
@@ -482,9 +510,13 @@ export function WelcomeChannelPage() {
               variant="outline"
               className="text-destructive hover:text-destructive w-fit"
               onClick={handleDisable}
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || isDisabling}
             >
-              <Trash2Icon className="size-4 mr-2" />
+              {isDisabling ? (
+                <LoaderIcon className="size-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2Icon className="size-4 mr-2" />
+              )}
               {t('modules.disable')}
             </Button>
           )}

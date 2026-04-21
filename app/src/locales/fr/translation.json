@@ -161,7 +161,8 @@
     "noServers": "Aucun serveur trouvé",
     "addServer": "Ajouter un serveur",
     "refreshServers": "Actualiser la liste",
-    "staffPanel": "Moddy Staff"
+    "staffPanel": "Moddy Staff",
+    "noServerSelected": "Aucun serveur sélectionné"
   },
   "modules": {
     "save": "Enregistrer",

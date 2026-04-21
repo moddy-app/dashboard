@@ -4,9 +4,11 @@ import { toast } from "sonner"
 import {
   Trash2Icon,
   ScrollTextIcon,
+  LoaderIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
+import { logger } from "@/lib/logger"
 import { ErrorPage } from "@/components/error-state"
 import { Button } from "@/components/ui/button"
 import {
@@ -130,6 +132,7 @@ export function LoggingPage() {
 
   const handleSave = async () => {
     if (!selectedGuildId || !channelId) return
+    logger.event('module:logging', 'Submit', { enabled, channelId, events: [...selectedEvents] })
     setSaving(true)
     try {
       if (!enabled) {
@@ -147,8 +150,10 @@ export function LoggingPage() {
       setSavedEnabled(enabled)
       setSavedChannelId(channelId)
       setSavedEvents(new Set(selectedEvents))
+      logger.success('module:logging', 'Saved')
       toast.success(t('modules.saved'))
     } catch (e) {
+      logger.error('module:logging', 'Save failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
     } finally {
       setSaving(false)
@@ -156,12 +161,14 @@ export function LoggingPage() {
   }
 
   const handleDiscard = () => {
+    logger.event('module:logging', 'Discard clicked')
     setEnabled(savedEnabled)
     setChannelId(savedChannelId)
     setSelectedEvents(new Set(savedEvents))
   }
 
   const handleDisable = async () => {
+    logger.event('module:logging', 'Disable clicked')
     setSaving(true)
     try {
       await disableModule('logging')
@@ -171,8 +178,10 @@ export function LoggingPage() {
       setSavedEvents(new Set())
       setChannelId('')
       setSelectedEvents(new Set())
+      logger.success('module:logging', 'Disabled')
       toast.success(t('modules.logging.disabledSuccess'))
     } catch (e) {
+      logger.error('module:logging', 'Disable failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
     } finally {
       setSaving(false)
@@ -193,7 +202,7 @@ export function LoggingPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -232,7 +241,11 @@ export function LoggingPage() {
           <CardDescription>{t('modules.logging.channelDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
-          <Select value={channelId} onValueChange={setChannelId}>
+          <Select
+            key={textChannels.length > 0 ? 'ready' : 'loading'}
+            value={channelId}
+            onValueChange={setChannelId}
+          >
             <SelectTrigger>
               <SelectValue placeholder={t('modules.selectChannel')} />
             </SelectTrigger>
@@ -306,7 +319,11 @@ export function LoggingPage() {
           onClick={handleDisable}
           disabled={saving}
         >
-          <Trash2Icon className="size-4 mr-2" />
+          {saving ? (
+            <LoaderIcon className="size-4 mr-2 animate-spin" />
+          ) : (
+            <Trash2Icon className="size-4 mr-2" />
+          )}
           {t('modules.disable')}
         </Button>
       )}

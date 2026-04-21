@@ -80,7 +80,12 @@ export function GuildSelectionView() {
             >
               <CardContent className="flex items-center gap-3.5 p-5">
                 <Avatar className="size-11 rounded-xl shrink-0">
-                  <AvatarImage src={iconUrl ?? undefined} alt={guild.name} />
+                  <AvatarImage
+                    src={iconUrl ?? undefined}
+                    alt={guild.name}
+                    referrerPolicy="no-referrer"
+                    onError={() => console.warn('[avatar] GuildSelection failed to load', guild.id, iconUrl)}
+                  />
                   <AvatarFallback className="rounded-xl text-sm font-semibold">
                     {initials}
                   </AvatarFallback>

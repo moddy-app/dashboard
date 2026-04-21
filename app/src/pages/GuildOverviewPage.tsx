@@ -221,7 +221,12 @@ export function GuildOverviewPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
           <Avatar className="size-16 rounded-2xl shadow-sm ring-1 ring-border">
-            <AvatarImage src={iconUrl ?? undefined} alt={guildDetail.name} />
+            <AvatarImage
+              src={iconUrl ?? undefined}
+              alt={guildDetail.name}
+              referrerPolicy="no-referrer"
+              onError={() => console.warn('[avatar] GuildOverview failed to load', iconUrl)}
+            />
             <AvatarFallback className="rounded-2xl text-lg font-bold">
               {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
             </AvatarFallback>

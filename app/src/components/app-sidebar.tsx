@@ -5,7 +5,6 @@ import {
   LifeBuoyIcon,
   SearchIcon,
   Settings2Icon,
-  SparklesIcon,
   StarIcon,
   UsersIcon,
   MessageSquareIcon,
@@ -52,7 +51,7 @@ export function AppSidebar({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { selectedGuildId, guildDetail } = useGuildContext()
+  const { selectedGuildId } = useGuildContext()
 
   const isOnStaffPage = location.pathname === "/staff"
 
@@ -99,18 +98,6 @@ export function AppSidebar({
               icon: ScrollTextIcon,
             },
           ],
-        },
-        {
-          title: t("sidebar.guild.stats"),
-          url: "#",
-          icon: ActivityIcon,
-          disabled: true,
-        },
-        {
-          title: t("sidebar.guild.premium"),
-          url: "#",
-          icon: SparklesIcon,
-          disabled: !guildDetail?.attributes?.PREMIUM,
         },
       ]
     : !isOnStaffPage

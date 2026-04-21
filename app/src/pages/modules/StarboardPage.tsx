@@ -1,12 +1,13 @@
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Trash2Icon, StarIcon, AlertCircleIcon } from "lucide-react"
+import { Trash2Icon, StarIcon, AlertCircleIcon, LoaderIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
+import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -80,8 +81,19 @@ export function StarboardPage() {
     },
   })
 
+  const [isDisabling, setIsDisabling] = useState(false)
+  // Guards against the post-save useEffect reset loop: when onSubmit calls
+  // form.reset(values), the parent's `currentConfig` reference updates,
+  // which re-triggers this effect — without the ref, the effect would
+  // reset form state back to a "dirty" diff of server vs local values.
+  const justSavedRef = useRef(false)
+
   // Re-populate quand la config ou la liste de salons est chargée
   useEffect(() => {
+    if (justSavedRef.current) {
+      justSavedRef.current = false
+      return
+    }
     if (!currentConfig) return
     if (form.formState.isDirty) return // Ne pas écraser les modifs en cours
     form.reset({
@@ -94,10 +106,12 @@ export function StarboardPage() {
 
   const onSubmit = async (values: FormValues) => {
     if (!selectedGuildId) return
+    logger.event('module:starboard', 'Submit', values)
 
     if (!values.enabled) {
       await disableModule('starboard')
-      form.reset(values) // reset dirty state
+      justSavedRef.current = true
+      form.reset(values)
       toast.success(t('modules.starboard.disabledSuccess'))
       return
     }
@@ -108,25 +122,36 @@ export function StarboardPage() {
         reaction_count: values.reaction_count,
         emoji: values.emoji,
       })
-      form.reset(values) // reset dirty state after save
+      justSavedRef.current = true
+      form.reset(values)
+      logger.success('module:starboard', 'Saved')
       toast.success(t('modules.saved'))
     } catch (e) {
+      logger.error('module:starboard', 'Save failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
     }
   }
 
   const handleDisable = async () => {
+    logger.event('module:starboard', 'Disable clicked')
+    setIsDisabling(true)
     try {
       await disableModule('starboard')
       const values = form.getValues()
+      justSavedRef.current = true
       form.reset({ ...values, enabled: false })
+      logger.success('module:starboard', 'Disabled')
       toast.success(t('modules.starboard.disabledSuccess'))
     } catch (e) {
+      logger.error('module:starboard', 'Disable failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
+    } finally {
+      setIsDisabling(false)
     }
   }
 
   const handleDiscard = () => {
+    logger.event('module:starboard', 'Discard clicked')
     form.reset()
   }
 
@@ -144,7 +169,7 @@ export function StarboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-20">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -206,7 +231,11 @@ export function StarboardPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t('modules.starboard.channel')}</FormLabel>
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select
+                      key={textChannels.length > 0 ? 'ready' : 'loading'}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder={t('modules.selectChannel')} />
@@ -280,9 +309,13 @@ export function StarboardPage() {
               variant="outline"
               className="text-destructive hover:text-destructive w-fit"
               onClick={handleDisable}
-              disabled={form.formState.isSubmitting}
+              disabled={form.formState.isSubmitting || isDisabling}
             >
-              <Trash2Icon className="size-4 mr-2" />
+              {isDisabling ? (
+                <LoaderIcon className="size-4 mr-2 animate-spin" />
+              ) : (
+                <Trash2Icon className="size-4 mr-2" />
+              )}
               {t('modules.disable')}
             </Button>
           )}

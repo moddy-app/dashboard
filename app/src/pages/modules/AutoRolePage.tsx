@@ -6,9 +6,11 @@ import {
   UsersIcon,
   XIcon,
   PlusIcon,
+  LoaderIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
+import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -95,6 +97,7 @@ export function AutoRolePage() {
 
   const handleSave = async () => {
     if (!selectedGuildId) return
+    logger.event('module:auto_role', 'Submit', { enabled, roleIds: selectedRoleIds })
     setSaving(true)
     try {
       if (!enabled) {
@@ -109,8 +112,10 @@ export function AutoRolePage() {
       })
       setSavedEnabled(enabled)
       setSavedRoleIds([...selectedRoleIds])
+      logger.success('module:auto_role', 'Saved')
       toast.success(t('modules.saved'))
     } catch (e) {
+      logger.error('module:auto_role', 'Save failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
     } finally {
       setSaving(false)
@@ -118,11 +123,13 @@ export function AutoRolePage() {
   }
 
   const handleDiscard = () => {
+    logger.event('module:auto_role', 'Discard clicked')
     setEnabled(savedEnabled)
     setSelectedRoleIds([...savedRoleIds])
   }
 
   const handleDisable = async () => {
+    logger.event('module:auto_role', 'Disable clicked')
     setSaving(true)
     try {
       await disableModule('auto_role')
@@ -130,8 +137,10 @@ export function AutoRolePage() {
       setSavedEnabled(false)
       setSavedRoleIds([])
       setSelectedRoleIds([])
+      logger.success('module:auto_role', 'Disabled')
       toast.success(t('modules.auto_role.disabledSuccess'))
     } catch (e) {
+      logger.error('module:auto_role', 'Disable failed', e)
       handleSaveError(e, { title: t('modules.saveError') })
     } finally {
       setSaving(false)
@@ -156,7 +165,7 @@ export function AutoRolePage() {
   )
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -267,7 +276,11 @@ export function AutoRolePage() {
           onClick={handleDisable}
           disabled={saving}
         >
-          <Trash2Icon className="size-4 mr-2" />
+          {saving ? (
+            <LoaderIcon className="size-4 mr-2 animate-spin" />
+          ) : (
+            <Trash2Icon className="size-4 mr-2" />
+          )}
           {t('modules.disable')}
         </Button>
       )}

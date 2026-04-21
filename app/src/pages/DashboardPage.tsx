@@ -169,7 +169,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
-              className="mx-1 self-center data-[orientation=vertical]:h-4"
+              className="mx-1 data-[orientation=vertical]:h-6"
             />
             <Breadcrumb>
               <BreadcrumbList>
@@ -193,7 +193,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
           </div>
         </header>
         {/* Contenu de la route courante via Outlet */}
-        <div className="flex flex-1 flex-col p-6 pt-2">
+        <div className="flex flex-1 flex-col p-6">
           <Outlet />
         </div>
       </SidebarInset>
