@@ -50,8 +50,12 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
 
   const text = await response.text()
   // Snowflakes Discord sont des entiers 64-bit (> 2^53) — JSON.parse les arrondirait.
-  // On les convertit en strings avant parsing en les quotant dans le JSON brut.
-  const safe = text ? text.replace(/:(\s*)(\d{15,})/g, ': "$2"') : text
+  // La regex alterne : soit elle consomme un string literal entier (→ inchangé),
+  // soit elle wrappe un grand entier nu (après :, [, ou ,) dans des quotes.
+  const safe = text ? text.replace(
+    /"(?:[^"\\]|\\.)*"|([:\[,]\s*)(-?\d{15,})/g,
+    (match, prefix, digits) => prefix !== undefined ? `${prefix}"${digits}"` : match
+  ) : text
   const parsed = safe ? JSON.parse(safe) : null
   logger.success('api', `← ${method} ${path} ${response.status} ${duration}ms`, parsed)
   return parsed
