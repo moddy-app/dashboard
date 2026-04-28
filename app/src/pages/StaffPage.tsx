@@ -260,14 +260,14 @@ function UsersTab() {
 function GuildsTab() {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
-  const [guilds, setGuilds] = useState<{ guild_id: number; name?: string; attributes: Record<string, unknown> }[]>([])
+  const [guilds, setGuilds] = useState<{ guild_id: string; name?: string; attributes: Record<string, unknown> }[]>([])
   const [loading, setLoading] = useState(false)
 
   const fetchGuilds = useCallback(async (q?: string) => {
     setLoading(true)
     try {
       const result = await getAllGuilds({ search: q || undefined, limit: 50 })
-      setGuilds(result as unknown as { guild_id: number; name?: string; attributes: Record<string, unknown> }[])
+      setGuilds(result as unknown as { guild_id: string; name?: string; attributes: Record<string, unknown> }[])
     } catch (e) {
       console.error('[Staff] getAllGuilds error:', e)
       toast.error('Failed to load guilds')

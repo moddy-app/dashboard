@@ -19,7 +19,7 @@ export interface UserAttributes {
 // ─── Guilds ───────────────────────────────────────────────────────────────────
 
 export interface GuildListItem {
-  guild_id: number
+  guild_id: string
   name: string
   icon: string | null
   attributes: GuildAttributes
@@ -28,7 +28,7 @@ export interface GuildListItem {
 }
 
 export interface GuildDetail {
-  guild_id: number
+  guild_id: string
   name: string
   icon: string | null
   banner: string | null
@@ -84,7 +84,7 @@ export function roleColorToHex(color: number): string {
 }
 
 export interface GuildStats {
-  guild_id: number
+  guild_id: string
   is_premium: boolean
   total_cases: number
   open_cases: number
@@ -103,13 +103,13 @@ export type ModuleId =
   | 'logging'
 
 export interface StarboardConfig {
-  channel_id: number
+  channel_id: string
   reaction_count: number
   emoji: string
 }
 
 export interface WelcomeChannelConfig {
-  channel_id: number
+  channel_id: string
   message_template: string
   mention_user: boolean
   embed_enabled: boolean
@@ -131,22 +131,22 @@ export interface WelcomeDmConfig {
 }
 
 export interface AutoRoleConfig {
-  role_ids: number[]
+  role_ids: string[]
 }
 
 export interface AutoRestoreRolesConfig {
   enabled: boolean
-  ignored_role_ids: number[]
+  ignored_role_ids: string[]
 }
 
 export interface InterserverConfig {
-  channel_id: number
+  channel_id: string
   network_id: string
   webhook_url: string
 }
 
 export interface LoggingConfig {
-  channel_id: number
+  channel_id: string
   events: string[]
 }
 
@@ -183,7 +183,7 @@ export interface GlobalStats {
 }
 
 export interface UserFullProfile {
-  user_id: number
+  user_id: string
   attributes: Record<string, boolean | string>
   stripe_customer_id: string | null
   email: string | null
@@ -199,17 +199,17 @@ export interface ModerationCase {
   case_type: 'global' | 'interserver'
   sanction_type: string
   entity_type: 'user' | 'guild'
-  entity_id: number
+  entity_id: string
   status: 'open' | 'closed'
   reason: string
   evidence: string | null
   duration: number | null
-  staff_notes: { staff_id: number; note: string; timestamp: string }[]
-  created_by: number
+  staff_notes: { staff_id: string; note: string; timestamp: string }[]
+  created_by: string
   created_at: string
-  updated_by: number | null
+  updated_by: string | null
   updated_at: string
-  closed_by: number | null
+  closed_by: string | null
   closed_at: string | null
   close_reason: string | null
 }
@@ -217,7 +217,7 @@ export interface ModerationCase {
 export interface BlacklistEntry {
   case_id: string
   entity_type: 'user' | 'guild'
-  entity_id: number
+  entity_id: string
   reason?: string
   sanction_type: 'global_blacklist' | 'guild_blacklist'
   created_at: string

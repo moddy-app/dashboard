@@ -36,12 +36,10 @@ export async function getGuildDiscordData(guildId: string | number): Promise<{
   }
 
   // L'endpoint /discord retourne { guild: { id: "...", ... } }
-  // On normalise vers { guild_id: number, ... } pour rester cohérent
+  // On normalise vers { guild_id: string, ... } pour rester cohérent
   const guild: GuildDetail = {
     ...(raw.guild as unknown as GuildDetail),
-    guild_id: raw.guild.guild_id != null
-      ? Number(raw.guild.guild_id)
-      : Number(raw.guild.id ?? guildId),
+    guild_id: String(raw.guild.guild_id ?? raw.guild.id ?? guildId),
   }
 
   return { guild, channels: raw.channels, roles: raw.roles }
@@ -131,7 +129,7 @@ export async function getGuildStats(
 // ─── Stripe / Premium ─────────────────────────────────────────────────────────
 
 export async function createCheckout(
-  guildId: number,
+  guildId: string,
   plan: 'monthly' | 'yearly' = 'monthly'
 ): Promise<string> {
   const { url } = (await api('/stripe/create-checkout', {
@@ -148,7 +146,7 @@ export async function openBillingPortal(): Promise<string> {
   return url
 }
 
-export async function getSubscriptionStatus(guildId: number): Promise<boolean> {
+export async function getSubscriptionStatus(guildId: string): Promise<boolean> {
   const { premium } = (await api(
     `/stripe/subscription?guild_id=${guildId}`
   )) as { premium: boolean }

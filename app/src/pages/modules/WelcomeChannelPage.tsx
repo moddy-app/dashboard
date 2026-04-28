@@ -159,7 +159,7 @@ export function WelcomeChannelPage() {
 
     try {
       const payload: Record<string, unknown> = {
-        channel_id: Number(values.channel_id),
+        channel_id: values.channel_id,
         message_template: values.message_template,
         mention_user: values.mention_user,
         embed_enabled: values.embed_enabled,

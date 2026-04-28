@@ -126,7 +126,7 @@ export function GuildOverviewPage() {
     if (!guildDetail) return
     setIsUpgrading(true)
     try {
-      const url = await createCheckout(guildDetail.guild_id, 'monthly')
+      const url = await createCheckout(selectedGuildId!, 'monthly')
       window.location.href = url
     } catch (e) {
       handleSaveError(e, { title: t('guildOverview.premium.checkoutError') })
@@ -184,10 +184,12 @@ export function GuildOverviewPage() {
 
   // ── Données ────────────────────────────────────────────────────────────────
 
-  // Fallback sur l'icône depuis /auth/me si la DB n'en a pas (ou est stale)
-  const guildListItem = guilds.find((g) => String(g.id) === String(guildDetail.guild_id))
-  const iconHash = guildDetail.icon ?? guildListItem?.icon ?? null
-  const iconUrl = getGuildIconUrl(guildDetail.guild_id, iconHash)
+  // IMPORTANT: utiliser selectedGuildId (source Discord via /auth/me) et NON
+  // guildDetail.guild_id qui peut être corrompu si stocké en DB avant le fix
+  // SafeJSONResponse (précision JS perdue sur snowflakes > 2^53 à l'insert).
+  const guildListItem = guilds.find((g) => String(g.id) === String(selectedGuildId))
+  const iconHash = guildListItem?.icon ?? guildDetail.icon ?? null
+  const iconUrl = getGuildIconUrl(selectedGuildId, iconHash)
   const isPremium = guildDetail.attributes?.PREMIUM === true || stats?.is_premium === true
   const isBeta = guildDetail.attributes?.BETA === true
   const isBlacklisted = guildDetail.attributes?.BLACKLISTED === true

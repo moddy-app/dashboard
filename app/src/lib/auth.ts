@@ -49,7 +49,10 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   }
 
   const text = await response.text()
-  const parsed = text ? JSON.parse(text) : null
+  // Snowflakes Discord sont des entiers 64-bit (> 2^53) — JSON.parse les arrondirait.
+  // On les convertit en strings avant parsing en les quotant dans le JSON brut.
+  const safe = text ? text.replace(/:(\s*)(\d{15,})/g, ': "$2"') : text
+  const parsed = safe ? JSON.parse(safe) : null
   logger.success('api', `← ${method} ${path} ${response.status} ${duration}ms`, parsed)
   return parsed
 }

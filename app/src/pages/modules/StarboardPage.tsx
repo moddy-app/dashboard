@@ -118,7 +118,7 @@ export function StarboardPage() {
 
     try {
       await updateModule('starboard', {
-        channel_id: Number(values.channel_id),
+        channel_id: values.channel_id,
         reaction_count: values.reaction_count,
         emoji: values.emoji,
       })

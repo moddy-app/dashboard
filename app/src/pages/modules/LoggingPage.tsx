@@ -144,7 +144,7 @@ export function LoggingPage() {
         return
       }
       await updateLogging(selectedGuildId, {
-        channel_id: Number(channelId),
+        channel_id: channelId,
         events: Array.from(selectedEvents),
       })
       setSavedEnabled(enabled)

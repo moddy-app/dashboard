@@ -108,7 +108,7 @@ export function AutoRolePage() {
         return
       }
       await updateModule('auto_role', {
-        role_ids: selectedRoleIds.map(Number),
+        role_ids: selectedRoleIds,
       })
       setSavedEnabled(enabled)
       setSavedRoleIds([...selectedRoleIds])
