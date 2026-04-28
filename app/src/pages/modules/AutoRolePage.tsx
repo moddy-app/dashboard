@@ -11,6 +11,7 @@ import {
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
+import { resolveRoleIds } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -51,26 +52,26 @@ export function AutoRolePage() {
   const currentConfig = modules['auto_role'] as AutoRoleConfig | undefined
   const isEnabled = 'auto_role' in modules
 
+  // Exclure les rôles gérés par des intégrations (bots)
+  const manageableRoles = roles.filter(
+    (r) => !r.managed && r.name !== '@everyone'
+  )
+
   const [enabled, setEnabled] = useState(isEnabled)
   const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(
-    currentConfig?.role_ids.map(String) ?? []
+    resolveRoleIds(currentConfig?.role_ids ?? [], manageableRoles.map((r) => r.id))
   )
   const [saving, setSaving] = useState(false)
 
   // Valeurs enregistrées — pour calculer isDirty
   const [savedEnabled, setSavedEnabled] = useState(isEnabled)
   const [savedRoleIds, setSavedRoleIds] = useState<string[]>(
-    currentConfig?.role_ids.map(String) ?? []
-  )
-
-  // Exclure les rôles gérés par des intégrations (bots)
-  const manageableRoles = roles.filter(
-    (r) => !r.managed && r.name !== '@everyone'
+    resolveRoleIds(currentConfig?.role_ids ?? [], manageableRoles.map((r) => r.id))
   )
 
   // Re-populate quand config ou liste de rôles chargée
   useEffect(() => {
-    const ids = currentConfig?.role_ids.map(String) ?? []
+    const ids = resolveRoleIds(currentConfig?.role_ids ?? [], manageableRoles.map((r) => r.id))
     setSelectedRoleIds(ids)
     setSavedRoleIds(ids)
     setEnabled(isEnabled)

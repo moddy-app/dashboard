@@ -9,6 +9,7 @@ import {
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
+import { resolveChannelId } from "@/lib/utils"
 import { ErrorPage } from "@/components/error-state"
 import { Button } from "@/components/ui/button"
 import {
@@ -98,7 +99,7 @@ export function LoggingPage() {
     if (!selectedGuildId || !isEnabled) return
     getLoggingConfig(selectedGuildId)
       .then((config) => {
-        const ch = String(config.channel_id ?? '')
+        const ch = resolveChannelId(config.channel_id, textChannels.map((c) => c.id))
         const evs = new Set(config.events as LogEvent[])
         setChannelId(ch)
         setSelectedEvents(evs)

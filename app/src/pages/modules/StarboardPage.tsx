@@ -8,6 +8,7 @@ import { Trash2Icon, StarIcon, AlertCircleIcon, LoaderIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
+import { resolveChannelId } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -74,7 +75,7 @@ export function StarboardPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      channel_id: String(currentConfig?.channel_id ?? ''),
+      channel_id: resolveChannelId(currentConfig?.channel_id, textChannels.map((c) => c.id)),
       reaction_count: currentConfig?.reaction_count ?? 5,
       emoji: currentConfig?.emoji ?? '⭐',
       enabled: isEnabled,
