@@ -428,7 +428,7 @@
     }
   },
   "unsavedBar": {
-    "message": "You have unsaved changes",
+    "message": "Unsaved changes",
     "discard": "Discard",
     "save": "Save changes"
   },

@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Trash2Icon, StarIcon, AlertCircleIcon, LoaderIcon } from "lucide-react"
+import { Trash2Icon, StarIcon, AlertCircleIcon, LoaderIcon, ChevronDownIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
@@ -28,6 +28,11 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -40,6 +45,60 @@ import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
 import type { StarboardConfig } from "@/types/api"
+
+const COMMON_REACTION_EMOJI = [
+  '⭐', '🌟', '💫', '✨', '👍', '❤️', '🔥', '🎉',
+  '😂', '😍', '🤩', '💯', '🏆', '👑', '💎', '🚀',
+  '🎯', '💪', '🙌', '👏', '🥇', '🌈', '💜', '🤣',
+]
+
+interface EmojiPickerProps {
+  value: string
+  onChange: (emoji: string) => void
+}
+
+function EmojiPicker({ value, onChange }: EmojiPickerProps) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-24 h-10 flex items-center gap-1.5 px-3 font-normal"
+        >
+          <span className="text-xl leading-none">{value || '⭐'}</span>
+          <ChevronDownIcon className="size-3.5 text-muted-foreground ml-auto shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start">
+        <div className="grid grid-cols-8 gap-1">
+          {COMMON_REACTION_EMOJI.map((emoji) => (
+            <button
+              key={emoji}
+              type="button"
+              onClick={() => { onChange(emoji); setOpen(false) }}
+              className={`size-8 flex items-center justify-center text-lg rounded-md hover:bg-accent transition-colors ${value === emoji ? 'bg-accent ring-1 ring-primary' : ''}`}
+              title={emoji}
+            >
+              {emoji}
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 pt-2 border-t">
+          <Input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="Coller un emoji…"
+            className="h-8 text-sm"
+            maxLength={8}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
 
 const schema = z.object({
   channel_id: z.string().min(1, { message: "Required" }),
@@ -241,13 +300,7 @@ export function StarboardPage() {
                   <FormItem>
                     <FormLabel>{t('modules.starboard.emoji')}</FormLabel>
                     <FormControl>
-                      <Input
-                        {...field}
-                        className="w-20 text-xl text-center"
-                        maxLength={8}
-                        placeholder="⭐"
-                        inputMode="text"
-                      />
+                      <EmojiPicker value={field.value} onChange={field.onChange} />
                     </FormControl>
                     <FormDescription>{t('modules.starboard.emojiDescription')}</FormDescription>
                     <FormMessage />

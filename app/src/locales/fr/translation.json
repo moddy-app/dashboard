@@ -428,7 +428,7 @@
     }
   },
   "unsavedBar": {
-    "message": "Vous avez des modifications non enregistrées",
+    "message": "Modifications non enregistrées",
     "discard": "Annuler",
     "save": "Enregistrer"
   },

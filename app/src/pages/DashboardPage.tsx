@@ -137,12 +137,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
       }
     }
 
-    // /staff — affiche le nom de l'onglet actif
+    // /staff — affiche seulement l'onglet actif, sans répéter le titre du panel
     if (path === '/staff') {
       const staffTab = new URLSearchParams(location.search).get("tab") ?? "stats"
       return {
-        parent: t('staff.title'),
-        parentHref: '/staff',
+        parent: null,
+        parentHref: null,
         current: t(`staff.tabs.${staffTab}`),
       }
     }
@@ -175,22 +175,26 @@ export function DashboardPage({ user }: DashboardPageProps) {
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
-              className="h-4 mx-1"
+              className="mx-1 h-4 self-center"
             />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  {breadcrumb.parentHref ? (
-                    <BreadcrumbLink href={breadcrumb.parentHref}>
-                      {breadcrumb.parent}
-                    </BreadcrumbLink>
-                  ) : (
-                    <span className="text-foreground font-medium">
-                      {breadcrumb.parent}
-                    </span>
-                  )}
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
+                {breadcrumb.parent && (
+                  <>
+                    <BreadcrumbItem className="hidden md:block">
+                      {breadcrumb.parentHref ? (
+                        <BreadcrumbLink href={breadcrumb.parentHref}>
+                          {breadcrumb.parent}
+                        </BreadcrumbLink>
+                      ) : (
+                        <span className="text-foreground font-medium">
+                          {breadcrumb.parent}
+                        </span>
+                      )}
+                    </BreadcrumbItem>
+                    <BreadcrumbSeparator className="hidden md:block" />
+                  </>
+                )}
                 <BreadcrumbItem>
                   <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
                 </BreadcrumbItem>

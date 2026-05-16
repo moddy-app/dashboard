@@ -56,11 +56,11 @@ function ModuleCard({
   const { t } = useTranslation()
   return (
     <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50"
+      className="cursor-pointer transition-colors hover:bg-accent/50 py-0"
       onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
     >
       <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2">
             <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
               <Icon className="size-3.5 text-muted-foreground" />
@@ -80,7 +80,7 @@ function ModuleCard({
           )}
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-        <div className="flex items-center gap-1 mt-2.5 text-xs text-primary">
+        <div className="flex items-center gap-1 mt-2 text-xs text-primary">
           <ExternalLinkIcon className="size-3" />
           <span>{t('guildOverview.modules.configure')}</span>
         </div>
@@ -216,6 +216,7 @@ export function GuildOverviewPage() {
               src={iconUrl ?? undefined}
               alt={guildDetail.name}
               referrerPolicy="no-referrer"
+              className="rounded-xl"
               onError={() => console.warn('[avatar] GuildOverview failed to load', iconUrl)}
             />
             <AvatarFallback className="rounded-xl text-lg font-bold">
@@ -286,7 +287,7 @@ export function GuildOverviewPage() {
           { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' },
           { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' },
         ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label}>
+          <Card key={label} className="py-0">
             <CardContent className="flex items-center gap-4 p-5">
               <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
                 <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
@@ -302,15 +303,15 @@ export function GuildOverviewPage() {
 
       {/* ── CTA Premium ─────────────────────────────────────────────────── */}
       {!isPremium && (
-        <Card className="border-amber-300/50 dark:border-amber-700/40 bg-amber-50/40 dark:bg-amber-950/20">
+        <Card className="py-0 border-amber-400/60 dark:border-amber-600/40 bg-amber-400/15 dark:bg-amber-900/25">
           <CardContent className="flex items-center justify-between gap-4 p-5 flex-wrap">
             <div className="flex items-center gap-4">
-              <div className="size-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">
-                <CrownIcon className="size-5 text-amber-500" />
+              <div className="size-10 rounded-xl bg-amber-400/30 dark:bg-amber-700/40 flex items-center justify-center shrink-0">
+                <CrownIcon className="size-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div>
-                <p className="font-semibold text-sm">{t('guildOverview.premium.title')}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.premium.description')}</p>
+                <p className="font-semibold text-sm text-amber-900 dark:text-amber-100">{t('guildOverview.premium.title')}</p>
+                <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
               </div>
             </div>
             <Button
