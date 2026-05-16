@@ -7,7 +7,6 @@ import {
   SparklesIcon,
   ChevronsUpDownIcon,
   SettingsIcon,
-  ShieldIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { NavigateFunction } from "react-router-dom"
@@ -48,7 +47,7 @@ interface NavUserProps {
   onNavigate?: NavigateFunction
 }
 
-export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, onNavigate }: NavUserProps) {
+export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }: NavUserProps) {
   const { isMobile } = useSidebar()
   const { t } = useTranslation()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -127,12 +126,6 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, 
                   <GavelIcon />
                   {t('navUser.myPunishments')}
                 </DropdownMenuItem>
-                {user.isStaff && (
-                  <DropdownMenuItem onClick={() => onNavigate?.('/staff')}>
-                    <ShieldIcon />
-                    {t('navUser.staffPanel')}
-                  </DropdownMenuItem>
-                )}
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" onClick={onLogoutRequest}>

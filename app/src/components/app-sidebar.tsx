@@ -3,6 +3,7 @@ import {
   BookOpenIcon,
   LayoutDashboardIcon,
   LifeBuoyIcon,
+  RefreshCwIcon,
   SearchIcon,
   Settings2Icon,
   StarIcon,
@@ -51,7 +52,9 @@ export function AppSidebar({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { selectedGuildId } = useGuildContext()
+  const { selectedGuildId, refreshGuildData } = useGuildContext()
+
+  const [isRefreshing, setIsRefreshing] = React.useState(false)
 
   const isOnStaffPage = location.pathname === "/staff"
 
@@ -60,6 +63,15 @@ export function AppSidebar({
     email: user?.email ?? null,
     avatar: user ? getAvatarUrl(user.user_id, user.avatar, user.avatar_url) : "",
     isStaff: user?.is_staff ?? false,
+  }
+
+  const handleRefreshGuildData = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshGuildData()
+    } finally {
+      setIsRefreshing(false)
+    }
   }
 
   // Navigation quand un serveur est sélectionné (modules disponibles uniquement)
@@ -176,6 +188,18 @@ export function AppSidebar({
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          {selectedGuildId && !isOnStaffPage && (
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tooltip={t("guildOverview.refresh")}
+                onClick={handleRefreshGuildData}
+                disabled={isRefreshing}
+              >
+                <RefreshCwIcon className={isRefreshing ? "animate-spin" : ""} />
+                <span>{t("guildOverview.refresh")}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={t("sidebar.search")} onClick={onOpenCommandMenu}>
               <SearchIcon />

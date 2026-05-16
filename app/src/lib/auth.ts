@@ -53,7 +53,7 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   // La regex alterne : soit elle consomme un string literal entier (→ inchangé),
   // soit elle wrappe un grand entier nu (après :, [, ou ,) dans des quotes.
   const safe = text ? text.replace(
-    /"(?:[^"\\]|\\.)*"|([:\[,]\s*)(-?\d{15,})/g,
+    /"(?:[^"\\]|\\.)*"|((?::|,|\[)\s*)(-?\d{15,})/g,
     (match, prefix, digits) => prefix !== undefined ? `${prefix}"${digits}"` : match
   ) : text
   const parsed = safe ? JSON.parse(safe) : null

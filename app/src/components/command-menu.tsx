@@ -25,6 +25,7 @@ import {
   PlusIcon,
   ServerIcon,
   SettingsIcon,
+  ShieldIcon,
   SparklesIcon,
   TicketIcon,
 } from "lucide-react"
@@ -45,6 +46,8 @@ interface CommandMenuProps {
   onLogoutRequest?: () => void
   onOpenNotifications?: () => void
   onOpenSettings?: () => void
+  onNavigateToStaff?: () => void
+  isStaff?: boolean
 }
 
 export function CommandMenu({
@@ -55,6 +58,8 @@ export function CommandMenu({
   onLogoutRequest,
   onOpenNotifications,
   onOpenSettings,
+  onNavigateToStaff,
+  isStaff = false,
 }: CommandMenuProps) {
   const { t } = useTranslation()
 
@@ -72,9 +77,6 @@ export function CommandMenu({
 
   const runCommand = (fn: () => void) => {
     onOpenChange(false)
-    // Delay to let the Radix Dialog fully unmount its Portal/focus trap
-    // before the next Dialog (Settings, etc.) tries to mount — otherwise
-    // the focus trap of the dying dialog can swallow the open.
     setTimeout(fn, 50)
   }
 
@@ -189,6 +191,12 @@ export function CommandMenu({
               <SettingsIcon />
               <span>{t('commandMenu.items.settings')}</span>
             </CommandItem>
+            {isStaff && (
+              <CommandItem onSelect={() => runCommand(() => onNavigateToStaff?.())}>
+                <ShieldIcon />
+                <span>{t('navUser.staffPanel')}</span>
+              </CommandItem>
+            )}
             <CommandItem
               onSelect={() => runCommand(() => onLogoutRequest?.())}
               className="text-destructive data-selected:text-destructive data-selected:bg-destructive/10"

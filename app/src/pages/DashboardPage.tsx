@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react"
-import { Outlet, useLocation } from "react-router-dom"
+import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { usePageTitle } from "@/hooks/usePageTitle"
@@ -45,6 +45,7 @@ interface DashboardPageProps {
 export function DashboardPage({ user }: DashboardPageProps) {
   const { t } = useTranslation()
   const location = useLocation()
+  const navigate = useNavigate()
   const { selectGuild, guilds, guildDetail, selectedGuildId } = useGuildContext()
   usePageTitle(t('pageTitle.dashboard'))
 
@@ -105,6 +106,10 @@ export function DashboardPage({ user }: DashboardPageProps) {
     window.location.reload()
   }, [])
 
+  const handleNavigateToStaff = useCallback(() => {
+    navigate('/staff')
+  }, [navigate])
+
   const activeNotifications = notifications.filter((n) => !isNotificationExpired(n))
 
   // Détermine le breadcrumb selon la route courante
@@ -132,12 +137,13 @@ export function DashboardPage({ user }: DashboardPageProps) {
       }
     }
 
-    // /staff
+    // /staff — affiche le nom de l'onglet actif
     if (path === '/staff') {
+      const staffTab = new URLSearchParams(location.search).get("tab") ?? "stats"
       return {
-        parent: t('dashboard.breadcrumb.app'),
-        parentHref: '/',
-        current: t('staff.title'),
+        parent: t('staff.title'),
+        parentHref: '/staff',
+        current: t(`staff.tabs.${staffTab}`),
       }
     }
 
@@ -169,7 +175,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
             <SidebarTrigger className="-ml-1" />
             <Separator
               orientation="vertical"
-              className="mx-1 data-[orientation=vertical]:h-6"
+              className="h-4 mx-1"
             />
             <Breadcrumb>
               <BreadcrumbList>
@@ -206,6 +212,8 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onLogoutRequest={handleLogoutRequest}
         onOpenNotifications={handleOpenNotifications}
         onOpenSettings={handleOpenSettings}
+        onNavigateToStaff={handleNavigateToStaff}
+        isStaff={user?.is_staff ?? false}
       />
 
       <NotificationDrawer

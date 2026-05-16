@@ -441,6 +441,7 @@
     },
     "account": {
       "connectedWith": "Connecté avec",
+      "connected": "Connecté",
       "staffBadge": "Rôles staff",
       "discordBadges": "Badges Discord"
     },

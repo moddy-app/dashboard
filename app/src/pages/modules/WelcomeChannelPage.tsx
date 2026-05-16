@@ -38,7 +38,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
@@ -144,20 +143,6 @@ export function WelcomeChannelPage() {
     if (!selectedGuildId) return
     logger.event('module:welcome_channel', 'Submit', values)
 
-    if (!values.enabled) {
-      try {
-        await disableModule('welcome_channel')
-        const v = form.getValues()
-        justSavedRef.current = true
-        form.reset({ ...v, enabled: false })
-        toast.success(t('modules.welcome_channel.disabledSuccess'))
-      } catch (e) {
-        logger.error('module:welcome_channel', 'Disable via submit failed', e)
-        handleSaveError(e, { title: t('modules.saveError') })
-      }
-      return
-    }
-
     try {
       const payload: Record<string, unknown> = {
         channel_id: values.channel_id,
@@ -212,7 +197,7 @@ export function WelcomeChannelPage() {
 
   if (isLoadingGuild) {
     return (
-      <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
+      <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -224,49 +209,22 @@ export function WelcomeChannelPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
+    <div className="flex flex-col gap-6 w-full pb-24">
       {/* En-tête */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-            <MessageSquareIcon className="size-5 text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold">{t('modules.welcome_channel.name')}</h1>
-            <p className="text-sm text-muted-foreground">{t('modules.welcome_channel.description')}</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="size-10 rounded-lg bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+          <MessageSquareIcon className="size-5 text-blue-600 dark:text-blue-400" />
         </div>
-        <Badge variant={isEnabled ? "default" : "secondary"}>
-          {isEnabled ? t('guildOverview.modules.enabled') : t('guildOverview.modules.disabled')}
-        </Badge>
+        <div>
+          <h1 className="text-xl font-semibold">{t('modules.welcome_channel.name')}</h1>
+          <p className="text-sm text-muted-foreground">{t('modules.welcome_channel.description')}</p>
+        </div>
       </div>
 
       <Separator />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          {/* Toggle activation */}
-          <Card>
-            <CardContent className="flex items-center justify-between gap-6 px-5 py-4">
-              <div className="flex flex-col gap-1 min-w-0">
-                <p className="font-medium text-sm leading-none">{t('modules.enableModule')}</p>
-                <p className="text-sm text-muted-foreground leading-snug">
-                  {t('modules.welcome_channel.enableDescription')}
-                </p>
-              </div>
-              <FormField
-                control={form.control}
-                name="enabled"
-                render={({ field }) => (
-                  <FormItem className="shrink-0">
-                    <FormControl>
-                      <Switch checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
 
           {/* Config de base */}
           <Card>

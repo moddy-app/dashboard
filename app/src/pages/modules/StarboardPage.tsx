@@ -35,9 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
@@ -109,14 +107,6 @@ export function StarboardPage() {
     if (!selectedGuildId) return
     logger.event('module:starboard', 'Submit', values)
 
-    if (!values.enabled) {
-      await disableModule('starboard')
-      justSavedRef.current = true
-      form.reset(values)
-      toast.success(t('modules.starboard.disabledSuccess'))
-      return
-    }
-
     try {
       await updateModule('starboard', {
         channel_id: values.channel_id,
@@ -158,7 +148,7 @@ export function StarboardPage() {
 
   if (isLoadingGuild) {
     return (
-      <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
+      <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
@@ -170,7 +160,7 @@ export function StarboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
+    <div className="flex flex-col gap-6 w-full pb-24">
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -182,42 +172,12 @@ export function StarboardPage() {
             <p className="text-sm text-muted-foreground mt-1">{t('modules.starboard.description')}</p>
           </div>
         </div>
-        <Badge
-          variant={isEnabled ? "default" : "secondary"}
-          className={isEnabled ? "bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800" : ""}
-        >
-          {isEnabled ? t('guildOverview.modules.enabled') : t('guildOverview.modules.disabled')}
-        </Badge>
       </div>
 
       <Separator />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
-          {/* Toggle d'activation */}
-          <Card>
-            <CardContent className="flex items-center justify-between gap-6 px-5 py-4">
-              <div className="flex flex-col gap-1 min-w-0">
-                <p className="font-medium text-sm leading-none">{t('modules.enableModule')}</p>
-                <p className="text-sm text-muted-foreground leading-snug">{t('modules.starboard.enableDescription')}</p>
-              </div>
-              <FormField
-                control={form.control}
-                name="enabled"
-                render={({ field }) => (
-                  <FormItem className="shrink-0">
-                    <FormControl>
-                      <Switch
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
           {/* Config */}
           <Card>
             <CardHeader className="pb-4">
@@ -281,7 +241,13 @@ export function StarboardPage() {
                   <FormItem>
                     <FormLabel>{t('modules.starboard.emoji')}</FormLabel>
                     <FormControl>
-                      <Input {...field} className="w-24" maxLength={8} />
+                      <Input
+                        {...field}
+                        className="w-20 text-xl text-center"
+                        maxLength={8}
+                        placeholder="⭐"
+                        inputMode="text"
+                      />
                     </FormControl>
                     <FormDescription>{t('modules.starboard.emojiDescription')}</FormDescription>
                     <FormMessage />

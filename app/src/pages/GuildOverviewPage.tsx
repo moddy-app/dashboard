@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import {
   LoaderIcon,
-  RefreshCwIcon,
   SparklesIcon,
   ShieldAlertIcon,
   UsersIcon,
@@ -24,7 +23,6 @@ import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -61,11 +59,11 @@ function ModuleCard({
       className="cursor-pointer transition-colors hover:bg-accent/50"
       onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between gap-2">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex items-center gap-2">
-            <div className="size-8 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <Icon className="size-4 text-muted-foreground" />
+            <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
+              <Icon className="size-3.5 text-muted-foreground" />
             </div>
             <CardTitle className="text-sm font-medium">{name}</CardTitle>
           </div>
@@ -81,10 +79,8 @@ function ModuleCard({
             </Badge>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <p className="text-xs text-muted-foreground">{description}</p>
-        <div className="flex items-center gap-1 mt-2 text-xs text-primary">
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+        <div className="flex items-center gap-1 mt-2.5 text-xs text-primary">
           <ExternalLinkIcon className="size-3" />
           <span>{t('guildOverview.modules.configure')}</span>
         </div>
@@ -110,17 +106,7 @@ export function GuildOverviewPage() {
     selectedGuildId,
   } = useGuildContext()
 
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [isUpgrading, setIsUpgrading] = useState(false)
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true)
-    try {
-      await refreshGuildData()
-    } finally {
-      setIsRefreshing(false)
-    }
-  }
 
   const handleUpgrade = async () => {
     if (!guildDetail) return
@@ -224,16 +210,15 @@ export function GuildOverviewPage() {
     <div className="flex flex-col gap-6">
 
       {/* ── En-tête serveur ─────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4">
-          <Avatar className="size-16 rounded-2xl shadow-sm ring-1 ring-border">
+      <div className="flex items-center gap-4">
+          <Avatar className="size-16 rounded-xl shadow-sm ring-1 ring-border">
             <AvatarImage
               src={iconUrl ?? undefined}
               alt={guildDetail.name}
               referrerPolicy="no-referrer"
               onError={() => console.warn('[avatar] GuildOverview failed to load', iconUrl)}
             />
-            <AvatarFallback className="rounded-2xl text-lg font-bold">
+            <AvatarFallback className="rounded-xl text-lg font-bold">
               {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
             </AvatarFallback>
           </Avatar>
@@ -292,15 +277,6 @@ export function GuildOverviewPage() {
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isRefreshing}>
-          {isRefreshing ? (
-            <LoaderIcon className="size-4 mr-1.5 animate-spin" />
-          ) : (
-            <RefreshCwIcon className="size-4 mr-1.5" />
-          )}
-          {t('guildOverview.refresh')}
-        </Button>
-      </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -326,7 +302,7 @@ export function GuildOverviewPage() {
 
       {/* ── CTA Premium ─────────────────────────────────────────────────── */}
       {!isPremium && (
-        <Card className="border-amber-200/60 bg-gradient-to-r from-amber-50/60 to-amber-50/20 dark:from-amber-950/30 dark:to-amber-950/10 dark:border-amber-800/40">
+        <Card className="border-amber-300/50 dark:border-amber-700/40 bg-amber-50/40 dark:bg-amber-950/20">
           <CardContent className="flex items-center justify-between gap-4 p-5 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="size-10 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center shrink-0">

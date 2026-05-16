@@ -6,7 +6,6 @@ import {
   UsersIcon,
   ServerIcon,
   AlertTriangleIcon,
-  ActivityIcon,
   SearchIcon,
   LoaderIcon,
   BotIcon,
@@ -22,16 +21,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Separator } from "@/components/ui/separator"
 import {
   Table,
   TableBody,
@@ -431,13 +423,9 @@ function CasesTab() {
 export function StaffPage() {
   const { t } = useTranslation()
   const { user } = useGuildContext()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
 
   const activeTab = searchParams.get('tab') ?? 'stats'
-
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value }, { replace: true })
-  }
 
   if (!user.is_staff) {
     return (
@@ -457,73 +445,26 @@ export function StaffPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* En-tête */}
-      <div className="flex items-center gap-4">
-        <div className="size-11 rounded-xl bg-red-100 dark:bg-red-950 flex items-center justify-center shrink-0">
-          <ShieldIcon className="size-5 text-red-600 dark:text-red-400" />
-        </div>
-        <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-semibold leading-none">{t('staff.title')}</h1>
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-            {staffRoles.map((role) => (
-              <Badge key={role} variant="secondary" className="text-xs">{role}</Badge>
-            ))}
-          </div>
-        </div>
+      {/* Badges rôles staff */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {staffRoles.map((role) => (
+          <Badge key={role} variant="secondary" className="text-xs">{role}</Badge>
+        ))}
       </div>
 
-      <Separator />
-
-      {/* Onglets selon les permissions — synchronisés avec l'URL */}
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="flex-wrap h-auto gap-1">
-          {hasRole(staffRoles, CAN_ACCESS_STATS) && (
-            <TabsTrigger value="stats" className="gap-1.5">
-              <ActivityIcon className="size-3.5" />
-              {t('staff.tabs.stats')}
-            </TabsTrigger>
-          )}
-          {hasRole(staffRoles, CAN_MANAGE_USERS) && (
-            <TabsTrigger value="users" className="gap-1.5">
-              <UsersIcon className="size-3.5" />
-              {t('staff.tabs.users')}
-            </TabsTrigger>
-          )}
-          {hasRole(staffRoles, CAN_MANAGE_GUILDS) && (
-            <TabsTrigger value="guilds" className="gap-1.5">
-              <ServerIcon className="size-3.5" />
-              {t('staff.tabs.guilds')}
-            </TabsTrigger>
-          )}
-          {hasRole(staffRoles, CAN_VIEW_CASES) && (
-            <TabsTrigger value="cases" className="gap-1.5">
-              <AlertTriangleIcon className="size-3.5" />
-              {t('staff.tabs.cases')}
-            </TabsTrigger>
-          )}
-        </TabsList>
-
-        {hasRole(staffRoles, CAN_ACCESS_STATS) && (
-          <TabsContent value="stats" className="mt-5">
-            <StatsTab staffRoles={staffRoles} />
-          </TabsContent>
-        )}
-        {hasRole(staffRoles, CAN_MANAGE_USERS) && (
-          <TabsContent value="users" className="mt-5">
-            <UsersTab />
-          </TabsContent>
-        )}
-        {hasRole(staffRoles, CAN_MANAGE_GUILDS) && (
-          <TabsContent value="guilds" className="mt-5">
-            <GuildsTab />
-          </TabsContent>
-        )}
-        {hasRole(staffRoles, CAN_VIEW_CASES) && (
-          <TabsContent value="cases" className="mt-5">
-            <CasesTab />
-          </TabsContent>
-        )}
-      </Tabs>
+      {/* Contenu de l'onglet actif — navigation gérée par la sidebar */}
+      {activeTab === 'stats' && hasRole(staffRoles, CAN_ACCESS_STATS) && (
+        <StatsTab staffRoles={staffRoles} />
+      )}
+      {activeTab === 'users' && hasRole(staffRoles, CAN_MANAGE_USERS) && (
+        <UsersTab />
+      )}
+      {activeTab === 'guilds' && hasRole(staffRoles, CAN_MANAGE_GUILDS) && (
+        <GuildsTab />
+      )}
+      {activeTab === 'cases' && hasRole(staffRoles, CAN_VIEW_CASES) && (
+        <CasesTab />
+      )}
     </div>
   )
 }

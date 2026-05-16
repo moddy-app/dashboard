@@ -21,9 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
 import { ErrorPage } from "@/components/error-state"
 import {
   Select,
@@ -150,7 +148,7 @@ export function AutoRolePage() {
 
   if (isLoadingGuild) {
     return (
-      <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
+      <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-48 rounded-xl" />
       </div>
@@ -166,37 +164,19 @@ export function AutoRolePage() {
   )
 
   return (
-    <div className="flex flex-col gap-6 w-full max-w-2xl mx-auto pb-24">
+    <div className="flex flex-col gap-6 w-full pb-24">
       {/* En-tête */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-lg bg-green-100 dark:bg-green-950 flex items-center justify-center">
-            <UsersIcon className="size-5 text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold">{t('modules.auto_role.name')}</h1>
-            <p className="text-sm text-muted-foreground">{t('modules.auto_role.description')}</p>
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="size-10 rounded-lg bg-green-100 dark:bg-green-950 flex items-center justify-center">
+          <UsersIcon className="size-5 text-green-600 dark:text-green-400" />
         </div>
-        <Badge variant={isEnabled ? "default" : "secondary"}>
-          {isEnabled ? t('guildOverview.modules.enabled') : t('guildOverview.modules.disabled')}
-        </Badge>
+        <div>
+          <h1 className="text-xl font-semibold">{t('modules.auto_role.name')}</h1>
+          <p className="text-sm text-muted-foreground">{t('modules.auto_role.description')}</p>
+        </div>
       </div>
 
       <Separator />
-
-      {/* Toggle */}
-      <Card>
-        <CardContent className="flex items-center justify-between gap-6 px-5 py-4">
-          <div className="flex flex-col gap-1 min-w-0">
-            <p className="font-medium text-sm leading-none">{t('modules.enableModule')}</p>
-            <p className="text-sm text-muted-foreground leading-snug">
-              {t('modules.auto_role.enableDescription')}
-            </p>
-          </div>
-          <Switch checked={enabled} onCheckedChange={setEnabled} className="shrink-0" />
-        </CardContent>
-      </Card>
 
       {/* Config rôles */}
       <Card>
