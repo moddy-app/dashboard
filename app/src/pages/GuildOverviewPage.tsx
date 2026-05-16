@@ -211,7 +211,7 @@ export function GuildOverviewPage() {
 
       {/* ── En-tête serveur ─────────────────────────────────────────────── */}
       <div className="flex items-center gap-4">
-          <Avatar className="size-16 rounded-xl shadow-sm ring-1 ring-border">
+          <Avatar className="size-16 rounded-xl shadow-sm ring-1 ring-border after:rounded-xl">
             <AvatarImage
               src={iconUrl ?? undefined}
               alt={guildDetail.name}

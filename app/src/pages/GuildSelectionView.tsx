@@ -75,15 +75,16 @@ export function GuildSelectionView() {
           return (
             <Card
               key={guild.id}
-              className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm group"
+              className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm group py-0"
               onClick={() => selectGuild(String(guild.id))}
             >
               <CardContent className="flex items-center gap-3.5 p-5">
-                <Avatar className="size-11 rounded-xl shrink-0">
+                <Avatar className="size-11 rounded-xl shrink-0 after:rounded-xl">
                   <AvatarImage
                     src={iconUrl ?? undefined}
                     alt={guild.name}
                     referrerPolicy="no-referrer"
+                    className="rounded-xl"
                     onError={() => console.warn('[avatar] GuildSelection failed to load', guild.id, iconUrl)}
                   />
                   <AvatarFallback className="rounded-xl text-sm font-semibold">
@@ -104,7 +105,7 @@ export function GuildSelectionView() {
 
         {/* Carte "Ajouter Moddy" */}
         <Card
-          className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm border-dashed group"
+          className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm border-dashed group py-0"
           onClick={() =>
             window.open(
               "https://discord.com/oauth2/authorize?client_id=1373916203814490194",

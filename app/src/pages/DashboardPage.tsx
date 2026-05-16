@@ -12,7 +12,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
 import {
   SidebarInset,
   SidebarProvider,
@@ -173,10 +172,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <Separator
-              orientation="vertical"
-              className="mx-1 h-4 self-center"
-            />
+            <div aria-hidden className="mx-1 h-4 w-px shrink-0 self-center bg-border" />
             <Breadcrumb>
               <BreadcrumbList>
                 {breadcrumb.parent && (

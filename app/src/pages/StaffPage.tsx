@@ -106,7 +106,7 @@ function StatsTab({ staffRoles }: { staffRoles: string[] }) {
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {statCards.map(({ label, value, icon: Icon, color }) => (
-            <Card key={label}>
+            <Card key={label} className="py-0">
               <CardContent className="flex items-center gap-4 p-5">
                 <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
                   <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
@@ -445,13 +445,6 @@ export function StaffPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Badges rôles staff */}
-      <div className="flex items-center gap-2 flex-wrap">
-        {staffRoles.map((role) => (
-          <Badge key={role} variant="secondary" className="text-xs">{role}</Badge>
-        ))}
-      </div>
-
       {/* Contenu de l'onglet actif — navigation gérée par la sidebar */}
       {activeTab === 'stats' && hasRole(staffRoles, CAN_ACCESS_STATS) && (
         <StatsTab staffRoles={staffRoles} />

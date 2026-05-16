@@ -39,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
@@ -232,8 +231,6 @@ export function StarboardPage() {
           </div>
         </div>
       </div>
-
-      <Separator />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">

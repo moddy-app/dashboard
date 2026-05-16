@@ -20,7 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorPage } from "@/components/error-state"
 import {
@@ -175,8 +174,6 @@ export function AutoRolePage() {
           <p className="text-sm text-muted-foreground">{t('modules.auto_role.description')}</p>
         </div>
       </div>
-
-      <Separator />
 
       {/* Config rôles */}
       <Card>

@@ -19,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Label } from "@/components/ui/label"
@@ -213,8 +212,6 @@ export function LoggingPage() {
           <p className="text-sm text-muted-foreground">{t('modules.logging.description')}</p>
         </div>
       </div>
-
-      <Separator />
 
       {/* Salon de logs */}
       <Card>

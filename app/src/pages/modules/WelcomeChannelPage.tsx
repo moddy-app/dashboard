@@ -35,7 +35,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorPage } from "@/components/error-state"
@@ -220,8 +219,6 @@ export function WelcomeChannelPage() {
           <p className="text-sm text-muted-foreground">{t('modules.welcome_channel.description')}</p>
         </div>
       </div>
-
-      <Separator />
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
