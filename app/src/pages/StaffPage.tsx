@@ -98,7 +98,7 @@ function StatsTab({ staffRoles }: { staffRoles: string[] }) {
     { label: t('staff.stats.totalUsers'), value: stats.total_users.toLocaleString(), icon: UsersIcon, color: 'blue' },
     { label: t('staff.stats.premiumUsers'), value: stats.premium_users.toLocaleString(), icon: TrendingUpIcon, color: 'amber' },
     { label: t('staff.stats.totalGuilds'), value: stats.total_guilds.toLocaleString(), icon: ServerIcon, color: 'purple' },
-    { label: t('staff.stats.openCases'), value: stats.open_cases.toLocaleString(), icon: AlertTriangleIcon, color: 'red' },
+    { label: t('staff.stats.openCases'), value: stats.open_cases.toLocaleString(), icon: AlertTriangleIcon, color: 'orange' },
   ] : []
 
   return (
@@ -107,7 +107,7 @@ function StatsTab({ staffRoles }: { staffRoles: string[] }) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {statCards.map(({ label, value, icon: Icon, color }) => (
             <Card key={label} className="py-0">
-              <CardContent className="flex items-center gap-4 p-5">
+              <CardContent className="flex items-center gap-4 p-6">
                 <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
                   <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
                 </div>
@@ -302,17 +302,19 @@ function GuildsTab() {
                   <TableCell className="font-medium">{g.name ?? <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
-                      {Object.entries(g.attributes).map(([k, v]) =>
-                        v ? (
-                          <Badge
-                            key={k}
-                            variant={k === 'BLACKLISTED' ? 'destructive' : k === 'PREMIUM' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
-                            {k}
-                          </Badge>
-                        ) : null
-                      )}
+                      {Object.entries(g.attributes).map(([k, v]) => {
+                        if (!v) return null
+                        if (k === 'BLACKLISTED') return (
+                          <Badge key={k} variant="destructive" className="text-xs">{k}</Badge>
+                        )
+                        if (k === 'PREMIUM') return (
+                          <Badge key={k} className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">Max</Badge>
+                        )
+                        if (k === 'OFFICIAL_SERVER') return (
+                          <Badge key={k} variant="outline" className="text-xs text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">Official</Badge>
+                        )
+                        return null
+                      })}
                     </div>
                   </TableCell>
                 </TableRow>

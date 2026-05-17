@@ -84,7 +84,7 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }
               sideOffset={4}
             >
               <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm text-foreground">
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user.avatar} alt={user.name} referrerPolicy="no-referrer" />
                     <AvatarFallback className="rounded-lg">
@@ -92,8 +92,8 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }
                     </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">@{user.name}</span>
-                    <span className="truncate text-xs">
+                    <span className="truncate font-medium text-foreground">@{user.name}</span>
+                    <span className="truncate text-xs text-foreground/70">
                       {user.email ?? fullUser?.user_id ?? t('navUser.discordAccount')}
                     </span>
                   </div>

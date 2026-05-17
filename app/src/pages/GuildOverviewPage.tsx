@@ -57,7 +57,7 @@ function ModuleCard({
       className="cursor-pointer transition-colors hover:bg-accent/50 py-0"
       onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-6">
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-2">
             <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
@@ -198,8 +198,8 @@ export function GuildOverviewPage() {
     <div className="flex flex-col gap-6">
 
       {/* ── En-tête serveur ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4">
-          <Avatar className="size-16 rounded-xl shadow-sm ring-1 ring-border after:rounded-xl">
+      <div className="flex items-center gap-4 min-w-0">
+          <Avatar className="size-16 rounded-xl shadow-sm ring-1 ring-border after:rounded-xl shrink-0">
             <AvatarImage
               src={iconUrl ?? undefined}
               alt={guildDetail.name}
@@ -211,7 +211,7 @@ export function GuildOverviewPage() {
               {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 min-w-0">
             {/* Nom + badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
@@ -241,16 +241,16 @@ export function GuildOverviewPage() {
               )}
             </div>
             {/* Infos secondaires */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground w-full overflow-hidden">
               {guildDetail.description && (
-                <span className="truncate max-w-[180px] sm:max-w-xs">{guildDetail.description}</span>
+                <span className="truncate max-w-[200px]">{guildDetail.description}</span>
               )}
               {guildDetail.vanity_url_code && (
                 <a
                   href={`https://discord.gg/${guildDetail.vanity_url_code}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-foreground transition-colors min-w-0 shrink-0"
+                  className="flex items-center gap-1 hover:text-foreground transition-colors min-w-0 max-w-full"
                 >
                   <LinkIcon className="size-3 shrink-0" />
                   <span className="truncate">discord.gg/{guildDetail.vanity_url_code}</span>
@@ -267,7 +267,7 @@ export function GuildOverviewPage() {
         </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' },
           { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' },
@@ -275,7 +275,7 @@ export function GuildOverviewPage() {
           { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="py-0">
-            <CardContent className="flex items-center gap-4 p-5">
+            <CardContent className="flex items-center gap-4 p-6">
               <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
                 <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
               </div>
@@ -291,7 +291,7 @@ export function GuildOverviewPage() {
       {/* ── CTA Premium ─────────────────────────────────────────────────── */}
       {!isPremium && (
         <Card className="py-0 border-amber-400/60 dark:border-amber-600/40 bg-amber-400/15 dark:bg-amber-900/25">
-          <CardContent className="flex items-center justify-between gap-4 p-5 flex-wrap">
+          <CardContent className="flex items-center justify-between gap-4 p-6 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="size-10 rounded-xl bg-amber-400/30 dark:bg-amber-700/40 flex items-center justify-center shrink-0">
                 <CrownIcon className="size-5 text-amber-600 dark:text-amber-400" />
@@ -326,7 +326,7 @@ export function GuildOverviewPage() {
             {t('guildOverview.modules.description')}
           </p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {allModules.map(({ id, icon }) => (
             <ModuleCard
               key={id}

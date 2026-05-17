@@ -67,7 +67,7 @@ export function GuildSelectionView() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {guilds.map((guild) => {
           const iconUrl = getGuildIconUrl(guild.id, guild.icon)
           const initials = guild.name?.slice(0, 2)?.toUpperCase() ?? '??'
@@ -78,7 +78,7 @@ export function GuildSelectionView() {
               className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm group py-0"
               onClick={() => selectGuild(String(guild.id))}
             >
-              <CardContent className="flex items-center gap-3.5 p-5">
+              <CardContent className="flex items-center gap-3.5 p-6">
                 <Avatar className="size-11 rounded-xl shrink-0 after:rounded-xl">
                   <AvatarImage
                     src={iconUrl ?? undefined}

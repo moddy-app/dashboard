@@ -60,7 +60,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
     if (isOnStaffPage) {
       return (
         <>
-          <div className="bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400 flex aspect-square size-8 items-center justify-center rounded-lg shrink-0">
+          <div className="bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex aspect-square size-8 items-center justify-center rounded-lg shrink-0">
             <ShieldIcon className="size-4" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
@@ -233,8 +233,8 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                   onClick={() => navigate("/staff")}
                   data-active={isOnStaffPage}
                 >
-                  <div className="bg-red-100 dark:bg-red-950 flex size-6 items-center justify-center rounded-md shrink-0">
-                    <ShieldIcon className="size-3.5 text-red-600 dark:text-red-400" />
+                  <div className="bg-violet-100 dark:bg-violet-950 flex size-6 items-center justify-center rounded-md shrink-0">
+                    <ShieldIcon className="size-3.5 text-violet-600 dark:text-violet-400" />
                   </div>
                   <span className="truncate">{t("staff.title")}</span>
                   {isOnStaffPage && (

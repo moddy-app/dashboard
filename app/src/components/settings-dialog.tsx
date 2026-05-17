@@ -73,7 +73,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="account" className="gap-4">
+        <Tabs defaultValue="account" className="gap-6">
           <TabsList className="w-full">
             <TabsTrigger value="account" className="flex-1">
               <UserIcon className="size-4 mr-1.5" />
@@ -93,9 +93,9 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           <TabsContent value="account" className="flex flex-col gap-4">
             {user && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <Avatar className="size-14">
-                  <AvatarImage src={avatarUrl} alt={displayName} />
-                  <AvatarFallback className="text-lg font-bold">
+                <Avatar className="size-14 rounded-full">
+                  <AvatarImage src={avatarUrl} alt={displayName} className="rounded-full" />
+                  <AvatarFallback className="rounded-full text-lg font-bold">
                     {displayName?.slice(0, 2)?.toUpperCase() ?? '??'}
                   </AvatarFallback>
                 </Avatar>

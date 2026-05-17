@@ -447,7 +447,7 @@
     },
     "billing": {
       "title": "Subscription & Billing",
-      "description": "Manage your Moddy Premium subscription.",
+      "description": "Manage your Moddy Max subscription.",
       "manageButton": "Manage subscription",
       "portalError": "Could not open billing portal. Please try again.",
       "note": "You will be redirected to Stripe to manage your subscription."

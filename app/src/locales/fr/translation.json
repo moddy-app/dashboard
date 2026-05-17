@@ -447,7 +447,7 @@
     },
     "billing": {
       "title": "Abonnement & Facturation",
-      "description": "Gérez votre abonnement Moddy Premium.",
+      "description": "Gérez votre abonnement Moddy Max.",
       "manageButton": "Gérer l'abonnement",
       "portalError": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer.",
       "note": "Vous serez redirigé vers Stripe pour gérer votre abonnement."
