@@ -136,12 +136,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
       }
     }
 
-    // /staff — affiche seulement l'onglet actif, sans répéter le titre du panel
+    // /staff — Panel Staff > onglet actif
     if (path === '/staff') {
       const staffTab = new URLSearchParams(location.search).get("tab") ?? "stats"
       return {
-        parent: null,
-        parentHref: null,
+        parent: t('staff.title'),
+        parentHref: '/staff',
         current: t(`staff.tabs.${staffTab}`),
       }
     }
@@ -172,7 +172,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
-            <div aria-hidden className="mx-1 h-4 w-px shrink-0 self-center bg-border" />
+            <div aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
             <Breadcrumb>
               <BreadcrumbList>
                 {breadcrumb.parent && (
