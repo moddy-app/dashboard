@@ -73,7 +73,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="account" className="gap-6">
+        <Tabs defaultValue="account" className="gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="account" className="flex-1">
               <UserIcon className="size-4 mr-1.5" />

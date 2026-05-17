@@ -236,7 +236,7 @@ export function StarboardPage() {
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-6">
           {/* Config */}
           <Card>
-            <CardHeader className="pb-4">
+            <CardHeader>
               <CardTitle className="text-base">{t('modules.starboard.configTitle')}</CardTitle>
               <CardDescription>{t('modules.starboard.configDescription')}</CardDescription>
             </CardHeader>

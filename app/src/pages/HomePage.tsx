@@ -22,7 +22,7 @@ function AuthScreen({ phase }: { phase: AuthPhase }) {
       <div className="flex flex-col items-center gap-5">
         {/* Spinner — légèrement plus rapide */}
         <div
-          className="w-7 h-7 rounded-full border-2 border-black/[0.08] border-t-black/80 animate-spin"
+          className="w-7 h-7 rounded-full border-2 border-black/12 border-t-black animate-spin"
           style={{ animationDuration: '0.55s', animationTimingFunction: 'linear' }}
         />
 
