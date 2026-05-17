@@ -17,7 +17,6 @@ import {
   RadioIcon,
   HashIcon,
   LinkIcon,
-  BadgeCheckIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,7 +27,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Separator } from "@/components/ui/separator"
 import { ErrorPage } from "@/components/error-state"
 import { DebugErrorOverlay } from "@/components/debug-error-overlay"
 import { useGuildContext } from "@/contexts/GuildContext"
@@ -182,17 +180,7 @@ export function GuildOverviewPage() {
   const boostTier = guildDetail.premium_tier ?? 0
   const boostCount = guildDetail.premium_subscription_count ?? 0
 
-  // Features Discord pertinentes à afficher
-  const interestingFeatures = (guildDetail.features ?? []).filter((f) =>
-    ['COMMUNITY', 'PARTNERED', 'VERIFIED', 'DISCOVERABLE', 'MONETIZATION_ENABLED'].includes(f)
-  )
-  const featureLabels: Record<string, string> = {
-    COMMUNITY: 'Community',
-    PARTNERED: 'Partenaire',
-    VERIFIED: 'Vérifié',
-    DISCOVERABLE: 'Découvrable',
-    MONETIZATION_ENABLED: 'Monétisation',
-  }
+  const isOfficialServer = (guildDetail.features ?? []).includes('OFFICIAL_SERVER')
 
   // Uniquement les modules disponibles — les modules en dev ne sont pas listés
   const allModules = [
@@ -230,7 +218,12 @@ export function GuildOverviewPage() {
               {isPremium && (
                 <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-xs">
                   <CrownIcon className="size-3 mr-1" />
-                  Moddy Premium
+                  Moddy Max
+                </Badge>
+              )}
+              {isOfficialServer && (
+                <Badge variant="outline" className="text-xs text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">
+                  Official
                 </Badge>
               )}
               {boostTierLabel && (
@@ -239,12 +232,6 @@ export function GuildOverviewPage() {
                   {boostTierLabel}
                 </Badge>
               )}
-              {interestingFeatures.map((f) => (
-                <Badge key={f} variant="secondary" className="text-xs">
-                  <BadgeCheckIcon className="size-3 mr-1" />
-                  {featureLabels[f] ?? f}
-                </Badge>
-              ))}
               {isBeta && <Badge variant="secondary" className="text-xs">Beta</Badge>}
               {isBlacklisted && (
                 <Badge variant="destructive" className="text-xs">
@@ -254,23 +241,23 @@ export function GuildOverviewPage() {
               )}
             </div>
             {/* Infos secondaires */}
-            <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground min-w-0">
               {guildDetail.description && (
-                <span className="max-w-xs truncate">{guildDetail.description}</span>
+                <span className="truncate max-w-[180px] sm:max-w-xs">{guildDetail.description}</span>
               )}
               {guildDetail.vanity_url_code && (
                 <a
                   href={`https://discord.gg/${guildDetail.vanity_url_code}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-foreground transition-colors"
+                  className="flex items-center gap-1 hover:text-foreground transition-colors min-w-0 shrink-0"
                 >
-                  <LinkIcon className="size-3" />
-                  discord.gg/{guildDetail.vanity_url_code}
+                  <LinkIcon className="size-3 shrink-0" />
+                  <span className="truncate">discord.gg/{guildDetail.vanity_url_code}</span>
                 </a>
               )}
               {boostCount > 0 && (
-                <span className="flex items-center gap-1">
+                <span className="flex items-center gap-1 shrink-0">
                   <ZapIcon className="size-3 text-purple-400" />
                   {boostCount} {boostCount > 1 ? 'boosts' : 'boost'}
                 </span>
@@ -331,11 +318,9 @@ export function GuildOverviewPage() {
         </Card>
       )}
 
-      <Separator />
-
       {/* ── Modules ─────────────────────────────────────────────────────── */}
-      <div>
-        <div className="mb-5">
+      <div className="flex flex-col gap-4">
+        <div>
           <h2 className="text-base font-semibold">{t('guildOverview.modules.title')}</h2>
           <p className="text-sm text-muted-foreground mt-1">
             {t('guildOverview.modules.description')}

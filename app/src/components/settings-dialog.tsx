@@ -73,7 +73,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="account">
+        <Tabs defaultValue="account" className="gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="account" className="flex-1">
               <UserIcon className="size-4 mr-1.5" />
@@ -90,12 +90,12 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           </TabsList>
 
           {/* ── Compte ─────────────────────────────────────────────────── */}
-          <TabsContent value="account" className="mt-4 flex flex-col gap-4">
+          <TabsContent value="account" className="flex flex-col gap-4">
             {user && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <Avatar className="size-14 rounded-xl">
-                  <AvatarImage src={avatarUrl} alt={displayName} className="rounded-xl" />
-                  <AvatarFallback className="rounded-xl text-lg font-bold">
+                <Avatar className="size-14">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="text-lg font-bold">
                     {displayName?.slice(0, 2)?.toUpperCase() ?? '??'}
                   </AvatarFallback>
                 </Avatar>
@@ -110,7 +110,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
                       )}
                     </p>
                     {user.is_staff && (
-                      <Badge variant="secondary" className="text-xs shrink-0 bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border-red-200 dark:border-red-800">
+                      <Badge variant="outline" className="text-xs shrink-0 text-violet-600 border-violet-300 dark:text-violet-400 dark:border-violet-700">
                         Staff
                       </Badge>
                     )}
@@ -148,7 +148,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           </TabsContent>
 
           {/* ── Apparence ──────────────────────────────────────────────── */}
-          <TabsContent value="appearance" className="mt-4 flex flex-col gap-4">
+          <TabsContent value="appearance" className="flex flex-col gap-4">
             {/* Thème */}
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">{t('debug.themeSwitcher')}</Label>
@@ -211,7 +211,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           </TabsContent>
 
           {/* ── Facturation ────────────────────────────────────────────── */}
-          <TabsContent value="billing" className="mt-4 flex flex-col gap-4">
+          <TabsContent value="billing" className="flex flex-col gap-4">
             <div className="rounded-lg border p-4 flex items-center gap-3">
               <SparklesIcon className="size-8 text-amber-500 shrink-0" />
               <div>

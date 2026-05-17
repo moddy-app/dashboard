@@ -5,7 +5,6 @@ import {
   LifeBuoyIcon,
   RefreshCwIcon,
   SearchIcon,
-  Settings2Icon,
   StarIcon,
   UsersIcon,
   MessageSquareIcon,
@@ -84,32 +83,28 @@ export function AppSidebar({
           isActive: location.pathname === `/servers/${selectedGuildId}`,
         },
         {
-          title: t("sidebar.guild.modules"),
-          url: "#",
-          icon: Settings2Icon,
-          isActive: location.pathname.includes("/modules/"),
-          items: [
-            {
-              title: t("modules.starboard.name"),
-              url: `/servers/${selectedGuildId}/modules/starboard`,
-              icon: StarIcon,
-            },
-            {
-              title: t("modules.welcome_channel.name"),
-              url: `/servers/${selectedGuildId}/modules/welcome_channel`,
-              icon: MessageSquareIcon,
-            },
-            {
-              title: t("modules.auto_role.name"),
-              url: `/servers/${selectedGuildId}/modules/auto_role`,
-              icon: UsersIcon,
-            },
-            {
-              title: t("modules.logging.name"),
-              url: `/servers/${selectedGuildId}/modules/logging`,
-              icon: ScrollTextIcon,
-            },
-          ],
+          title: t("modules.starboard.name"),
+          url: `/servers/${selectedGuildId}/modules/starboard`,
+          icon: StarIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/starboard`,
+        },
+        {
+          title: t("modules.welcome_channel.name"),
+          url: `/servers/${selectedGuildId}/modules/welcome_channel`,
+          icon: MessageSquareIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_channel`,
+        },
+        {
+          title: t("modules.auto_role.name"),
+          url: `/servers/${selectedGuildId}/modules/auto_role`,
+          icon: UsersIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/auto_role`,
+        },
+        {
+          title: t("modules.logging.name"),
+          url: `/servers/${selectedGuildId}/modules/logging`,
+          icon: ScrollTextIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/logging`,
         },
       ]
     : !isOnStaffPage
@@ -172,22 +167,6 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu className="gap-0.5">
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={t("sidebar.documentation")}>
-              <a href="https://docs.moddy.app" target="_blank" rel="noopener noreferrer">
-                <BookOpenIcon />
-                <span>{t("sidebar.documentation")}</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip={t("sidebar.getHelp")}>
-              <a href="https://moddy.app/support" target="_blank" rel="noopener noreferrer">
-                <LifeBuoyIcon />
-                <span>{t("sidebar.getHelp")}</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           {selectedGuildId && !isOnStaffPage && (
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -204,6 +183,22 @@ export function AppSidebar({
             <SidebarMenuButton tooltip={t("sidebar.search")} onClick={onOpenCommandMenu}>
               <SearchIcon />
               <span>{t("sidebar.search")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={t("sidebar.getHelp")}>
+              <a href="https://moddy.app/support" target="_blank" rel="noopener noreferrer">
+                <LifeBuoyIcon />
+                <span>{t("sidebar.getHelp")}</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip={t("sidebar.documentation")}>
+              <a href="https://docs.moddy.app" target="_blank" rel="noopener noreferrer">
+                <BookOpenIcon />
+                <span>{t("sidebar.documentation")}</span>
+              </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

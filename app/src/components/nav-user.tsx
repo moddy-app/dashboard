@@ -93,7 +93,7 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">@{user.name}</span>
-                    <span className="truncate text-xs text-muted-foreground">
+                    <span className="truncate text-xs">
                       {user.email ?? fullUser?.user_id ?? t('navUser.discordAccount')}
                     </span>
                   </div>

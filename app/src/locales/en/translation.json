@@ -140,9 +140,9 @@
       "activeModules": "Active Modules"
     },
     "premium": {
-      "title": "Unlock Premium features",
+      "title": "Unlock Max features",
       "description": "Get access to advanced modules, increased limits and priority support.",
-      "cta": "Upgrade to Premium",
+      "cta": "Upgrade to Max",
       "checkoutError": "Could not open checkout, please try again."
     },
     "modules": {

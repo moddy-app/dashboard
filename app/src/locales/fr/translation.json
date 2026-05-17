@@ -140,9 +140,9 @@
       "activeModules": "Modules actifs"
     },
     "premium": {
-      "title": "Débloquer les fonctionnalités Premium",
+      "title": "Débloquer les fonctionnalités Max",
       "description": "Accédez à des modules avancés, des limites augmentées et un support prioritaire.",
-      "cta": "Passer Premium",
+      "cta": "Passer à Max",
       "checkoutError": "Impossible d'ouvrir le paiement, veuillez réessayer."
     },
     "modules": {
