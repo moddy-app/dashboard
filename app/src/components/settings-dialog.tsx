@@ -73,18 +73,18 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="account" className="gap-4">
+        <Tabs defaultValue="account" className="flex-col gap-4">
           <TabsList className="w-full">
-            <TabsTrigger value="account" className="flex-1">
-              <UserIcon className="size-4 mr-1.5" />
+            <TabsTrigger value="account">
+              <UserIcon />
               {t('settings.tabs.account')}
             </TabsTrigger>
-            <TabsTrigger value="appearance" className="flex-1">
-              <MonitorIcon className="size-4 mr-1.5" />
+            <TabsTrigger value="appearance">
+              <MonitorIcon />
               {t('settings.tabs.appearance')}
             </TabsTrigger>
-            <TabsTrigger value="billing" className="flex-1">
-              <CreditCardIcon className="size-4 mr-1.5" />
+            <TabsTrigger value="billing">
+              <CreditCardIcon />
               {t('settings.tabs.billing')}
             </TabsTrigger>
           </TabsList>
