@@ -583,24 +583,32 @@ Stats de base d'un serveur.
 
 ## Stripe
 
+Les abonnements Stripe sont lies a l'**utilisateur** (pas au serveur).
+
 ### `POST /stripe/create-checkout`
 
-Cree une session Stripe Checkout pour un abonnement premium.
+Cree une session Stripe Checkout pour un abonnement premium utilisateur.
 
 **Auth :** session cookie
 **Body :**
 
 ```json
 {
-  "guild_id": 123456789,
-  "plan": "monthly"
+  "plan": "monthly",
+  "return_url": "https://moddy.app/dashboard"
 }
 ```
 
 | Champ | Type | Obligatoire | Description |
 |---|---|---|---|
-| `guild_id` | int | oui | ID du serveur a passer premium |
 | `plan` | string | non | `"monthly"` (defaut) ou `"yearly"` |
+| `return_url` | string | non | URL de retour apres paiement (defaut: `https://moddy.app/dashboard`) |
+
+**Flux interne :**
+1. Recherche le `stripe_customer_id` de l'utilisateur dans `users`
+2. Si absent : cree un client Stripe avec l'email Discord + metadata `discord_id`; sauvegarde l'ID en DB
+3. Cree la session Checkout liee a ce client (l'email est pre-rempli, l'utilisateur ne peut pas le modifier)
+4. `success_url` = `{return_url}?premium=success`, `cancel_url` = `{return_url}?premium=cancel`
 
 **Reponse :**
 
@@ -619,14 +627,15 @@ Webhook Stripe. **Pas d'auth session** — authentifie via le header `Stripe-Sig
 **Headers requis :** `Stripe-Signature: t=...,v1=...`
 **Body :** raw Stripe event JSON (ne pas parser avant la verification de signature)
 
-**Events geres :**
+**Events recus (validation uniquement — logique metier a implementer) :**
 
-| Event | Action |
+| Event | Description |
 |---|---|
-| `checkout.session.completed` | `UPDATE users SET stripe_customer_id` + `SET PREMIUM` sur guild + `INSERT attribute_changes` + `PUBLISH moddy:bot premium_activated` |
-| `customer.subscription.updated` | Si canceled/unpaid/past_due → `REMOVE PREMIUM` + log + `PUBLISH premium_deactivated` |
-| `customer.subscription.deleted` | Idem |
-| `invoice.payment_failed` | `PUBLISH moddy:bot payment_failed` |
+| `checkout.session.completed` | Paiement initial reussi |
+| `customer.subscription.updated` | Statut d'abonnement modifie |
+| `customer.subscription.deleted` | Abonnement supprime |
+| `invoice.payment_failed` | Echec de paiement |
+| `invoice.payment_succeeded` | Paiement de renouvellement reussi |
 
 **Reponse :**
 
@@ -636,21 +645,16 @@ Webhook Stripe. **Pas d'auth session** — authentifie via le header `Stripe-Sig
 
 ---
 
-### `GET /stripe/subscription?guild_id={guild_id}`
+### `GET /stripe/subscription`
 
-Statut premium d'un serveur.
+Statut premium de l'utilisateur connecte.
 
 **Auth :** session cookie
-**Query params :**
-
-| Param | Type | Description |
-|---|---|---|
-| `guild_id` | int | ID du serveur |
 
 **Reponse :**
 
 ```json
-{"guild_id": 123456789, "premium": true}
+{"user_id": "123456789012345678", "premium": true}
 ```
 
 ---
@@ -660,13 +664,15 @@ Statut premium d'un serveur.
 Cree une session Stripe Customer Portal pour gerer/annuler l'abonnement.
 
 **Auth :** session cookie
-**Body :**
+**Body (optionnel) :**
 
 ```json
-{}
+{"return_url": "https://moddy.app/dashboard"}
 ```
 
-Pas besoin de `guild_id` — utilise le `stripe_customer_id` du user connecte.
+| Champ | Type | Obligatoire | Description |
+|---|---|---|---|
+| `return_url` | string | non | URL de retour depuis le portail (defaut: `https://moddy.app/dashboard`) |
 
 **Reponse :**
 
