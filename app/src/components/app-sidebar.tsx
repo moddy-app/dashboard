@@ -1,6 +1,7 @@
 import * as React from "react"
 import {
   BookOpenIcon,
+  CrownIcon,
   LayoutDashboardIcon,
   LifeBuoyIcon,
   RefreshCwIcon,
@@ -179,6 +180,17 @@ export function AppSidebar({
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Moddy Max"
+              onClick={() => navigate("/premium")}
+              isActive={location.pathname === "/premium"}
+              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950/60 data-[active=true]:bg-amber-50 data-[active=true]:text-amber-700 dark:data-[active=true]:bg-amber-950/60 dark:data-[active=true]:text-amber-300"
+            >
+              <CrownIcon />
+              <span>Moddy Max</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={t("sidebar.search")} onClick={onOpenCommandMenu}>
               <SearchIcon />

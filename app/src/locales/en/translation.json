@@ -398,9 +398,62 @@
       "critical": "Critical"
     }
   },
+  "premium": {
+    "title": "Choose your plan",
+    "subtitle": "Unlock the full power of Moddy for your Discord servers.",
+    "billing": {
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "yearlyDiscount": "Save 20%"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "For anyone getting started with Moddy.",
+        "cta": "Current plan",
+        "badge": "Your plan"
+      },
+      "max": {
+        "name": "Max",
+        "description": "Unlock the full power of Moddy.",
+        "cta": "Upgrade to Max",
+        "ctaLoading": "Opening checkout...",
+        "manageCta": "Manage subscription",
+        "manageCtaLoading": "Opening portal...",
+        "badge": "Recommended"
+      }
+    },
+    "features": {
+      "botCustomization": "Customize the bot's avatar, name and description",
+      "multiServer": "Premium features on up to 5 Discord servers",
+      "personalApp": "Premium options in personal app",
+      "aiLimits": "Greatly increased AI tool usage limits",
+      "earlyAccess": "Early access to new features",
+      "premiumRole": "Exclusive premium role on the Discord server",
+      "prioritySupport": "Priority support with reduced wait times"
+    },
+    "freeFeatures": {
+      "basicModules": "Access to all standard modules",
+      "standardAi": "Standard AI tool limits",
+      "communitySupport": "Community support"
+    },
+    "serverUpgrade": {
+      "title": "Upgrade a server",
+      "description": "Select the Discord server you want to upgrade to Max.",
+      "selectPlaceholder": "Select a server",
+      "alreadyPremium": "Already on Max",
+      "checkoutError": "Could not open checkout. Please try again.",
+      "portalTitle": "Manage your subscription",
+      "portalDescription": "Access the Stripe billing portal to update your payment method, view invoices or cancel your subscription.",
+      "portalCta": "Manage subscription",
+      "portalCtaLoading": "Opening portal...",
+      "portalError": "Could not open billing portal. Please try again."
+    }
+  },
   "pageTitle": {
     "dashboard": "Dashboard",
     "debug": "Debug",
+    "premium": "Moddy Max",
     "notFound": "404 — Not Found"
   },
   "errors": {

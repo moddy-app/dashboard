@@ -20,6 +20,7 @@ import { WelcomeChannelPage } from "@/pages/modules/WelcomeChannelPage"
 import { AutoRolePage } from "@/pages/modules/AutoRolePage"
 import { LoggingPage } from "@/pages/modules/LoggingPage"
 import { StaffPage } from "@/pages/StaffPage"
+import { PremiumPage } from "@/pages/PremiumPage"
 
 Sentry.init({
   dsn: "https://68314945d5389aff0aae69966e2e46fb@o4510617959202816.ingest.de.sentry.io/4510875563196496",
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/auto_role", element: <AutoRolePage /> },
       { path: "servers/:guildId/modules/logging", element: <LoggingPage /> },
       { path: "staff", element: <StaffPage /> },
+      { path: "premium", element: <PremiumPage /> },
     ],
   },
   { path: "/debug", element: <DebugPage /> },
