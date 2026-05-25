@@ -110,7 +110,7 @@ export function GuildOverviewPage() {
     if (!guildDetail) return
     setIsUpgrading(true)
     try {
-      const url = await createCheckout(selectedGuildId!, 'monthly')
+      const url = await createCheckout('monthly')
       window.location.href = url
     } catch (e) {
       handleSaveError(e, { title: t('guildOverview.premium.checkoutError') })
