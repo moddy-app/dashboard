@@ -7,9 +7,12 @@ import {
   SparklesIcon,
   ChevronsUpDownIcon,
   SettingsIcon,
+  LoaderIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import type { NavigateFunction } from "react-router-dom"
+import { toast } from "sonner"
+import { openBillingPortal } from "@/services/guilds"
 
 import {
   Avatar,
@@ -51,6 +54,19 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }
   const { isMobile } = useSidebar()
   const { t } = useTranslation()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [billingLoading, setBillingLoading] = useState(false)
+
+  const handleOpenBilling = async () => {
+    setBillingLoading(true)
+    try {
+      const url = await openBillingPortal()
+      window.location.href = url
+    } catch {
+      toast.error(t('settings.billing.portalError'))
+    } finally {
+      setBillingLoading(false)
+    }
+  }
 
   return (
     <>
@@ -114,8 +130,12 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }
                   <SettingsIcon />
                   {t('navUser.settings')}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                  <CreditCardIcon />
+                <DropdownMenuItem onClick={handleOpenBilling} disabled={billingLoading}>
+                  {billingLoading ? (
+                    <LoaderIcon className="animate-spin" />
+                  ) : (
+                    <CreditCardIcon />
+                  )}
                   {t('navUser.billing')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onOpenNotifications}>

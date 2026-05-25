@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { logout, refreshGuilds } from "@/lib/auth"
+import { openBillingPortal } from "@/services/guilds"
 import type { User } from "@/lib/auth"
 import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
 import { isNotificationExpired } from "@/types/notification"
@@ -108,6 +109,15 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const handleNavigateToStaff = useCallback(() => {
     navigate('/staff')
   }, [navigate])
+
+  const handleOpenBilling = useCallback(async () => {
+    try {
+      const url = await openBillingPortal()
+      window.location.href = url
+    } catch {
+      toast.error(t('settings.billing.portalError'))
+    }
+  }, [t])
 
   const activeNotifications = notifications.filter((n) => !isNotificationExpired(n))
 
@@ -221,6 +231,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onLogoutRequest={handleLogoutRequest}
         onOpenNotifications={handleOpenNotifications}
         onOpenSettings={handleOpenSettings}
+        onOpenBilling={handleOpenBilling}
         onNavigateToStaff={handleNavigateToStaff}
         isStaff={user?.is_staff ?? false}
       />

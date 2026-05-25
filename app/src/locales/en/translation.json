@@ -399,6 +399,13 @@
     }
   },
   "premium": {
+    "toast": {
+      "successTitle": "Subscription activated!",
+      "successDescription": "Welcome to Moddy Max. Enjoy your premium features.",
+      "cancelTitle": "Payment cancelled",
+      "cancelDescription": "Your subscription was not activated. You can try again anytime.",
+      "checkoutError": "Could not open checkout. Please try again."
+    },
     "title": "Choose your plan",
     "subtitle": "Unlock the full power of Moddy for your Discord servers.",
     "billing": {

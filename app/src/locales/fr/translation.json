@@ -399,6 +399,13 @@
     }
   },
   "premium": {
+    "toast": {
+      "successTitle": "Abonnement activé !",
+      "successDescription": "Bienvenue sur Moddy Max. Profitez de vos fonctionnalités premium.",
+      "cancelTitle": "Paiement annulé",
+      "cancelDescription": "Votre abonnement n'a pas été activé. Vous pouvez réessayer à tout moment.",
+      "checkoutError": "Impossible d'ouvrir le paiement. Veuillez réessayer."
+    },
     "title": "Choisissez votre offre",
     "subtitle": "Exploitez toute la puissance de Moddy pour vos serveurs Discord.",
     "billing": {
