@@ -112,7 +112,7 @@ export function PremiumPage() {
     if (!upgradeGuildId) return
     setIsLoadingCheckout(true)
     try {
-      const url = await createCheckout(upgradeGuildId, billingPeriod)
+      const url = await createCheckout(billingPeriod)
       window.location.href = url
     } catch (e) {
       handleSaveError(e, { title: t("premium.serverUpgrade.checkoutError") })
