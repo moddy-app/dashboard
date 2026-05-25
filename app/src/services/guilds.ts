@@ -129,26 +129,24 @@ export async function getGuildStats(
 // ─── Stripe / Premium ─────────────────────────────────────────────────────────
 
 export async function createCheckout(
-  guildId: string,
   plan: 'monthly' | 'yearly' = 'monthly'
 ): Promise<string> {
   const { url } = (await api('/stripe/create-checkout', {
     method: 'POST',
-    body: JSON.stringify({ guild_id: guildId, plan }),
+    body: JSON.stringify({ plan }),
   })) as { url: string }
   return url
 }
 
-export async function openBillingPortal(): Promise<string> {
-  const { url } = (await api('/stripe/portal', { method: 'POST' })) as {
-    url: string
-  }
+export async function openBillingPortal(returnUrl?: string): Promise<string> {
+  const { url } = (await api('/stripe/portal', {
+    method: 'POST',
+    body: returnUrl ? JSON.stringify({ return_url: returnUrl }) : undefined,
+  })) as { url: string }
   return url
 }
 
-export async function getSubscriptionStatus(guildId: string): Promise<boolean> {
-  const { premium } = (await api(
-    `/stripe/subscription?guild_id=${guildId}`
-  )) as { premium: boolean }
+export async function getSubscriptionStatus(): Promise<boolean> {
+  const { premium } = (await api('/stripe/subscription')) as { premium: boolean }
   return premium
 }
