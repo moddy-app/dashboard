@@ -398,9 +398,62 @@
       "critical": "Critique"
     }
   },
+  "premium": {
+    "title": "Choisissez votre offre",
+    "subtitle": "Exploitez toute la puissance de Moddy pour vos serveurs Discord.",
+    "billing": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "yearlyDiscount": "Économisez 20 %"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Pour débuter avec Moddy.",
+        "cta": "Offre actuelle",
+        "badge": "Votre offre"
+      },
+      "max": {
+        "name": "Max",
+        "description": "Exploitez toute la puissance de Moddy.",
+        "cta": "Passer à Max",
+        "ctaLoading": "Ouverture du paiement...",
+        "manageCta": "Gérer l'abonnement",
+        "manageCtaLoading": "Ouverture du portail...",
+        "badge": "Recommandé"
+      }
+    },
+    "features": {
+      "botCustomization": "Personnalisez l'avatar, le nom et la description du bot",
+      "multiServer": "Fonctionnalités premium sur jusqu'à 5 serveurs Discord",
+      "personalApp": "Options premium en app personnelle",
+      "aiLimits": "Limites d'utilisation des outils IA fortement augmentées",
+      "earlyAccess": "Accès anticipé aux nouvelles fonctionnalités",
+      "premiumRole": "Rôle premium exclusif sur le serveur Discord",
+      "prioritySupport": "Support prioritaire avec temps d'attente réduit"
+    },
+    "freeFeatures": {
+      "basicModules": "Accès à tous les modules standard",
+      "standardAi": "Limites standard des outils IA",
+      "communitySupport": "Support communautaire"
+    },
+    "serverUpgrade": {
+      "title": "Mettre à niveau un serveur",
+      "description": "Sélectionnez le serveur Discord que vous souhaitez passer en Max.",
+      "selectPlaceholder": "Sélectionner un serveur",
+      "alreadyPremium": "Déjà sur Max",
+      "checkoutError": "Impossible d'ouvrir le paiement. Veuillez réessayer.",
+      "portalTitle": "Gérer votre abonnement",
+      "portalDescription": "Accédez au portail de facturation Stripe pour modifier votre moyen de paiement, consulter vos factures ou annuler votre abonnement.",
+      "portalCta": "Gérer l'abonnement",
+      "portalCtaLoading": "Ouverture du portail...",
+      "portalError": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer."
+    }
+  },
   "pageTitle": {
     "dashboard": "Tableau de bord",
     "debug": "Debug",
+    "premium": "Moddy Max",
     "notFound": "404 — Introuvable"
   },
   "errors": {

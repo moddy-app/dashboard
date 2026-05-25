@@ -146,6 +146,15 @@ export function DashboardPage({ user }: DashboardPageProps) {
       }
     }
 
+    // /premium
+    if (path === '/premium') {
+      return {
+        parent: t('dashboard.breadcrumb.app'),
+        parentHref: '/',
+        current: 'Moddy Max',
+      }
+    }
+
     // /
     return {
       parent: t('dashboard.breadcrumb.app'),
