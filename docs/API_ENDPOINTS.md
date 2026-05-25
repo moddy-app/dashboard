@@ -585,6 +585,18 @@ Stats de base d'un serveur.
 
 Les abonnements Stripe sont lies a l'**utilisateur** (pas au serveur).
 
+### Flux client Stripe (commun a checkout et portal)
+
+Les deux endpoints (`/create-checkout` et `/portal`) appliquent le meme flux de resolution du client :
+
+1. Lecture de `users.stripe_customer_id` dans la DB (par `user_id` Discord)
+2. Si present : le client Stripe existant est reutilise
+3. Si absent : creation d'un nouveau client Stripe avec l'email Discord + metadata `discord_id` (ex: `"discord_id": "1164597199594852395"`), puis sauvegarde de `stripe_customer_id` dans `users`
+
+Ce mecanisme garantit qu'un seul client Stripe existe par utilisateur Discord.
+
+---
+
 ### `POST /stripe/create-checkout`
 
 Cree une session Stripe Checkout pour un abonnement premium utilisateur.
@@ -595,20 +607,31 @@ Cree une session Stripe Checkout pour un abonnement premium utilisateur.
 ```json
 {
   "plan": "monthly",
-  "return_url": "https://moddy.app/dashboard"
+  "return_url": "https://dashboard.moddy.app/premium"
 }
 ```
 
 | Champ | Type | Obligatoire | Description |
 |---|---|---|---|
 | `plan` | string | non | `"monthly"` (defaut) ou `"yearly"` |
-| `return_url` | string | non | URL de retour apres paiement (defaut: `https://moddy.app/dashboard`) |
+| `return_url` | string | non | URL de base pour les redirections post-paiement (defaut: `https://moddy.app/dashboard`) |
 
 **Flux interne :**
-1. Recherche le `stripe_customer_id` de l'utilisateur dans `users`
-2. Si absent : cree un client Stripe avec l'email Discord + metadata `discord_id`; sauvegarde l'ID en DB
-3. Cree la session Checkout liee a ce client (l'email est pre-rempli, l'utilisateur ne peut pas le modifier)
-4. `success_url` = `{return_url}?premium=success`, `cancel_url` = `{return_url}?premium=cancel`
+1. Resolution du client Stripe (voir flux commun ci-dessus)
+2. Creation de la session Checkout liee a ce client — l'email est pre-rempli depuis le compte Stripe, l'utilisateur ne peut pas le modifier
+3. `success_url` = `{return_url}?premium=success`
+4. `cancel_url` = `{return_url}?premium=cancel`
+
+**Redirections post-paiement :**
+
+| Query param | Valeur | Declenchement |
+|---|---|---|
+| `premium` | `success` | Paiement valide, abonnement actif |
+| `premium` | `cancel` | Utilisateur a ferme la page Stripe sans payer |
+
+Exemple : si `return_url = https://dashboard.moddy.app/premium`, le frontend recevra :
+- `https://dashboard.moddy.app/premium?premium=success` apres un paiement reussi
+- `https://dashboard.moddy.app/premium?premium=cancel` si l'utilisateur annule
 
 **Reponse :**
 
@@ -627,15 +650,19 @@ Webhook Stripe. **Pas d'auth session** — authentifie via le header `Stripe-Sig
 **Headers requis :** `Stripe-Signature: t=...,v1=...`
 **Body :** raw Stripe event JSON (ne pas parser avant la verification de signature)
 
-**Events recus (validation uniquement — logique metier a implementer) :**
+**Events loggues (logique metier a implementer) :**
 
-| Event | Description |
-|---|---|
-| `checkout.session.completed` | Paiement initial reussi |
-| `customer.subscription.updated` | Statut d'abonnement modifie |
-| `customer.subscription.deleted` | Abonnement supprime |
-| `invoice.payment_failed` | Echec de paiement |
-| `invoice.payment_succeeded` | Paiement de renouvellement reussi |
+| Event | Niveau log | Champs loggues |
+|---|---|---|
+| `checkout.session.completed` | `INFO` | `customer`, `discord_id` (metadata), `plan` (metadata) |
+| `customer.subscription.created` | `INFO` | `customer`, `subscription`, `status` |
+| `customer.subscription.updated` | `INFO` | `customer`, `subscription`, `status` |
+| `customer.subscription.deleted` | `WARNING` | `customer`, `subscription`, `status` |
+| `customer.subscription.paused` | `WARNING` | `customer`, `subscription` |
+| `customer.subscription.resumed` | `INFO` | `customer`, `subscription` |
+| `invoice.payment_succeeded` | `INFO` | `customer`, `invoice`, `amount_paid`, `currency` |
+| `invoice.payment_failed` | `WARNING` | `customer`, `invoice`, `attempt_count` |
+| autres | `INFO` | `event_type`, `customer` |
 
 **Reponse :**
 
@@ -667,20 +694,23 @@ Cree une session Stripe Customer Portal pour gerer/annuler l'abonnement.
 **Body (optionnel) :**
 
 ```json
-{"return_url": "https://moddy.app/dashboard"}
+{"return_url": "https://dashboard.moddy.app/premium"}
 ```
 
 | Champ | Type | Obligatoire | Description |
 |---|---|---|---|
-| `return_url` | string | non | URL de retour depuis le portail (defaut: `https://moddy.app/dashboard`) |
+| `return_url` | string | non | URL vers laquelle Stripe redirige quand l'utilisateur clique "Retour" dans le portail (defaut: `https://moddy.app/dashboard`) |
+
+**Flux interne :**
+1. Resolution du client Stripe (voir flux commun ci-dessus) — le client est cree si inexistant
+2. Creation d'une session Customer Portal liee a ce client
+3. `return_url` est fourni a Stripe comme URL de retour du portail
 
 **Reponse :**
 
 ```json
 {"url": "https://billing.stripe.com/p/session/xxx"}
 ```
-
-**Erreur :** `404 {"error": "Aucun abonnement Stripe trouve"}` si le user n'a pas de `stripe_customer_id`
 
 ---
 
