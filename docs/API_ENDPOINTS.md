@@ -583,7 +583,7 @@ Stats de base d'un serveur.
 
 ## Stripe
 
-Les abonnements Stripe sont lies a l'**utilisateur** (pas au serveur).
+Les abonnements Stripe sont lies a l'**utilisateur** (pas au serveur directement — le lien user ↔ serveurs se fait via `subscription_servers`).
 
 ### Flux client Stripe (commun a checkout et portal)
 
@@ -629,10 +629,6 @@ Cree une session Stripe Checkout pour un abonnement premium utilisateur.
 | `premium` | `success` | Paiement valide, abonnement actif |
 | `premium` | `cancel` | Utilisateur a ferme la page Stripe sans payer |
 
-Exemple : si `return_url = https://dashboard.moddy.app/premium`, le frontend recevra :
-- `https://dashboard.moddy.app/premium?premium=success` apres un paiement reussi
-- `https://dashboard.moddy.app/premium?premium=cancel` si l'utilisateur annule
-
 **Reponse :**
 
 ```json
@@ -643,26 +639,25 @@ Le frontend redirige l'utilisateur vers cette URL.
 
 ---
 
-### `POST /stripe/webhook`
+### `POST /webhooks/stripe`
 
-Webhook Stripe. **Pas d'auth session** — authentifie via le header `Stripe-Signature`.
+Webhook Stripe principal. **Pas d'auth session** — authentifie via `Stripe-Signature`.
 
 **Headers requis :** `Stripe-Signature: t=...,v1=...`
-**Body :** raw Stripe event JSON (ne pas parser avant la verification de signature)
+**Body :** raw JSON (ne pas parser avant la verification de signature)
 
-**Events loggues (logique metier a implementer) :**
+**Comportement :**
+- Verifie la signature → 400 si invalide
+- Controle l'idempotence (Redis SET NX, TTL 7j) — double livraison ignoree silencieusement
+- Retourne 200 immediatement, traite en arriere-plan (`BackgroundTasks`)
 
-| Event | Niveau log | Champs loggues |
-|---|---|---|
-| `checkout.session.completed` | `INFO` | `customer`, `discord_id` (metadata), `plan` (metadata) |
-| `customer.subscription.created` | `INFO` | `customer`, `subscription`, `status` |
-| `customer.subscription.updated` | `INFO` | `customer`, `subscription`, `status` |
-| `customer.subscription.deleted` | `WARNING` | `customer`, `subscription`, `status` |
-| `customer.subscription.paused` | `WARNING` | `customer`, `subscription` |
-| `customer.subscription.resumed` | `INFO` | `customer`, `subscription` |
-| `invoice.payment_succeeded` | `INFO` | `customer`, `invoice`, `amount_paid`, `currency` |
-| `invoice.payment_failed` | `WARNING` | `customer`, `invoice`, `attempt_count` |
-| autres | `INFO` | `event_type`, `customer` |
+**Events traites :**
+
+| Event | Action DB | Redis | Pub/Sub |
+|---|---|---|---|
+| `invoice.payment_succeeded` | `subscription_tier` + `subscription_expires_at` mis a jour | Ecrit `sub:user:{id}` avec TTL | `notify_subscription_started` ou `notify_subscription_renewed` |
+| `customer.subscription.deleted` | `subscription_tier = NULL`, `subscription_expires_at = NOW()` | Supprime `sub:user:{id}` | `refresh` |
+| `invoice.payment_failed` | Aucune modification | Aucune modification | `notify_payment_late` |
 
 **Reponse :**
 
@@ -672,17 +667,123 @@ Webhook Stripe. **Pas d'auth session** — authentifie via le header `Stripe-Sig
 
 ---
 
+### `POST /stripe/webhook` *(legacy)*
+
+Ancien endpoint conserve pour compatibilite. Ne traite plus les evenements — loggue uniquement.
+Privilegier `POST /webhooks/stripe`.
+
+---
+
 ### `GET /stripe/subscription`
 
-Statut premium de l'utilisateur connecte.
+Statut d'abonnement complet de l'utilisateur connecte.
 
 **Auth :** session cookie
 
 **Reponse :**
 
 ```json
-{"user_id": "123456789012345678", "premium": true}
+{
+  "user_id": "123456789012345678",
+  "tier": "monthly",
+  "expires_at": "2026-06-01T00:00:00+00:00",
+  "is_active": true,
+  "stripe_customer_id": "cus_UAf6a2WKTw6yCI",
+  "servers": [
+    {"server_id": "111222333444555666", "added_at": "2026-05-01T00:00:00+00:00"},
+    {"server_id": "999888777666555444", "added_at": "2026-05-10T14:30:00+00:00"}
+  ],
+  "max_servers": 5
+}
 ```
+
+| Champ | Type | Description |
+|---|---|---|
+| `tier` | string\|null | `"monthly"`, `"yearly"`, `"free_trial"` ou `null` si pas d'abonnement |
+| `expires_at` | ISO 8601\|null | Date d'expiration UTC ; `null` = pas d'expiration (lifetime) |
+| `is_active` | bool | `tier != null AND (expires_at == null OR expires_at > now())` |
+| `stripe_customer_id` | string\|null | ID client Stripe |
+| `servers` | array | Serveurs lies a l'abonnement |
+| `max_servers` | int | Limite maximale (actuellement 5) |
+
+---
+
+### `GET /stripe/subscription/servers`
+
+Liste les serveurs lies a l'abonnement de l'utilisateur.
+
+**Auth :** session cookie
+
+**Reponse :**
+
+```json
+{
+  "servers": [
+    {"server_id": "111222333444555666", "added_at": "2026-05-01T00:00:00+00:00"}
+  ],
+  "count": 1,
+  "max_servers": 5
+}
+```
+
+---
+
+### `POST /stripe/subscription/servers`
+
+Lie un serveur a l'abonnement de l'utilisateur.
+
+**Auth :** session cookie
+**Conditions :**
+- L'abonnement doit etre actif
+- Le serveur doit etre dans la liste des guilds de session (admin + bot present)
+- Limite de 5 serveurs par abonnement
+
+**Body :**
+
+```json
+{"server_id": "111222333444555666"}
+```
+
+**Reponse (201-like) :**
+
+```json
+{"server_id": "111222333444555666", "added_at": "2026-05-26T12:00:00+00:00"}
+```
+
+**Erreurs :**
+
+| Code | Description |
+|---|---|
+| `400` | `server_id` manquant ou invalide |
+| `403` | Acces au serveur refuse ou bot absent |
+| `403` | Abonnement inactif |
+| `409` | Limite de 5 serveurs atteinte |
+| `409` | Serveur deja lie |
+
+**Actions :** INSERT dans `subscription_servers` + publie `refresh` sur `moddy:subscription:updates`
+
+---
+
+### `DELETE /stripe/subscription/servers/{server_id}`
+
+Delie un serveur de l'abonnement.
+
+**Auth :** session cookie
+**Path params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `server_id` | string | ID Discord du serveur (snowflake) |
+
+**Reponse :**
+
+```json
+{"server_id": "111222333444555666", "removed": true}
+```
+
+**Erreur :** `404` si le serveur n'est pas dans l'abonnement de l'utilisateur
+
+**Actions :** DELETE dans `subscription_servers` + publie `refresh` sur `moddy:subscription:updates`
 
 ---
 
