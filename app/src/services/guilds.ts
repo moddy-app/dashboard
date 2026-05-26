@@ -131,17 +131,19 @@ export async function getGuildStats(
 export async function createCheckout(
   plan: 'monthly' | 'yearly' = 'monthly'
 ): Promise<string> {
+  const returnUrl = `${window.location.origin}/premium`
   const { url } = (await api('/stripe/create-checkout', {
     method: 'POST',
-    body: JSON.stringify({ plan }),
+    body: JSON.stringify({ plan, return_url: returnUrl }),
   })) as { url: string }
   return url
 }
 
-export async function openBillingPortal(returnUrl?: string): Promise<string> {
+export async function openBillingPortal(): Promise<string> {
+  const returnUrl = window.location.href
   const { url } = (await api('/stripe/portal', {
     method: 'POST',
-    body: returnUrl ? JSON.stringify({ return_url: returnUrl }) : undefined,
+    body: JSON.stringify({ return_url: returnUrl }),
   })) as { url: string }
   return url
 }

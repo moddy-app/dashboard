@@ -46,6 +46,7 @@ interface CommandMenuProps {
   onLogoutRequest?: () => void
   onOpenNotifications?: () => void
   onOpenSettings?: () => void
+  onOpenBilling?: () => void
   onNavigateToStaff?: () => void
   isStaff?: boolean
 }
@@ -58,6 +59,7 @@ export function CommandMenu({
   onLogoutRequest,
   onOpenNotifications,
   onOpenSettings,
+  onOpenBilling,
   onNavigateToStaff,
   isStaff = false,
 }: CommandMenuProps) {
@@ -183,7 +185,7 @@ export function CommandMenu({
               <BellIcon />
               <span>{t('commandMenu.items.notifications')}</span>
             </CommandItem>
-            <CommandItem onSelect={() => runCommand(() => {})}>
+            <CommandItem onSelect={() => runCommand(() => onOpenBilling?.())}>
               <CreditCardIcon />
               <span>{t('commandMenu.items.billing')}</span>
             </CommandItem>
