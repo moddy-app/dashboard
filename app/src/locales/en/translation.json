@@ -510,7 +510,25 @@
       "description": "Manage your Moddy Max subscription.",
       "manageButton": "Manage subscription",
       "portalError": "Could not open billing portal. Please try again.",
-      "note": "You will be redirected to Stripe to manage your subscription."
+      "note": "You will be redirected to Stripe to manage your subscription.",
+      "activeTitle": "Moddy Max — Active",
+      "renewsAt": "Renews on {{date}}",
+      "tier": {
+        "monthly": "Monthly",
+        "yearly": "Yearly",
+        "free_trial": "Free trial"
+      },
+      "servers": {
+        "title": "Premium servers",
+        "usage": "{{count}}/{{max}} servers used",
+        "empty": "No servers linked yet. Add one below.",
+        "addPlaceholder": "Select a server to add...",
+        "noAvailable": "All your servers are already linked.",
+        "addError": "Could not add this server. Please try again.",
+        "removeError": "Could not remove this server. Please try again.",
+        "alreadyLinked": "This server is already linked to your subscription.",
+        "addForbidden": "You must be an admin and Moddy must be on this server."
+      }
     }
   },
   "common": {
