@@ -39,7 +39,8 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   if (!response.ok) {
     if (response.status === 401) {
       logger.warn('api', `← ${method} ${path} 401 ${duration}ms — redirecting to /auth/login`)
-      window.location.href = `${API_BASE}/auth/login`
+      const redirect = encodeURIComponent(window.location.href)
+      window.location.href = `${API_BASE}/auth/login?redirect=${redirect}`
       throw new ApiError(401, 'Unauthorized')
     }
     const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
@@ -148,9 +149,11 @@ export async function getMe(): Promise<User | null> {
   }
 }
 
-export function login() {
-  logger.event('auth', 'Redirecting to Discord login')
-  window.location.href = `${API_BASE}/auth/login`
+export function login(redirectUrl?: string) {
+  const target = redirectUrl ?? window.location.href
+  logger.event('auth', 'Redirecting to Discord login', { redirect: target })
+  const redirect = encodeURIComponent(target)
+  window.location.href = `${API_BASE}/auth/login?redirect=${redirect}`
 }
 
 export async function logout(): Promise<boolean> {

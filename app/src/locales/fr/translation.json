@@ -510,7 +510,25 @@
       "description": "Gérez votre abonnement Moddy Max.",
       "manageButton": "Gérer l'abonnement",
       "portalError": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer.",
-      "note": "Vous serez redirigé vers Stripe pour gérer votre abonnement."
+      "note": "Vous serez redirigé vers Stripe pour gérer votre abonnement.",
+      "activeTitle": "Moddy Max — Actif",
+      "renewsAt": "Renouvellement le {{date}}",
+      "tier": {
+        "monthly": "Mensuel",
+        "yearly": "Annuel",
+        "free_trial": "Essai gratuit"
+      },
+      "servers": {
+        "title": "Serveurs premium",
+        "usage": "{{count}}/{{max}} serveurs utilisés",
+        "empty": "Aucun serveur lié pour l'instant. Ajoutez-en un ci-dessous.",
+        "addPlaceholder": "Sélectionner un serveur à ajouter...",
+        "noAvailable": "Tous vos serveurs sont déjà liés.",
+        "addError": "Impossible d'ajouter ce serveur. Veuillez réessayer.",
+        "removeError": "Impossible de retirer ce serveur. Veuillez réessayer.",
+        "alreadyLinked": "Ce serveur est déjà lié à votre abonnement.",
+        "addForbidden": "Vous devez être administrateur et Moddy doit être présent sur ce serveur."
+      }
     }
   },
   "common": {

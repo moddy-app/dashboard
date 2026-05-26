@@ -7,6 +7,9 @@ import type {
   ModuleConfig,
   GuildStats,
   LoggingConfig,
+  SubscriptionData,
+  SubscriptionServer,
+  SubscriptionServersResponse,
 } from '@/types/api'
 
 // ─── Guilds ───────────────────────────────────────────────────────────────────
@@ -148,7 +151,23 @@ export async function openBillingPortal(): Promise<string> {
   return url
 }
 
-export async function getSubscriptionStatus(): Promise<boolean> {
-  const { premium } = (await api('/stripe/subscription')) as { premium: boolean }
-  return premium
+export async function getSubscriptionStatus(): Promise<SubscriptionData> {
+  return (await api('/stripe/subscription')) as SubscriptionData
+}
+
+export async function getSubscriptionServers(): Promise<SubscriptionServersResponse> {
+  return (await api('/stripe/subscription/servers')) as SubscriptionServersResponse
+}
+
+export async function addSubscriptionServer(serverId: string): Promise<SubscriptionServer> {
+  return (await api('/stripe/subscription/servers', {
+    method: 'POST',
+    body: JSON.stringify({ server_id: serverId }),
+  })) as SubscriptionServer
+}
+
+export async function removeSubscriptionServer(serverId: string): Promise<{ server_id: string; removed: boolean }> {
+  return (await api(`/stripe/subscription/servers/${serverId}`, {
+    method: 'DELETE',
+  })) as { server_id: string; removed: boolean }
 }

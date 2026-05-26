@@ -229,3 +229,26 @@ export interface BotStatus {
   uptime: number
   memory: number
 }
+
+// ─── Stripe / Abonnement ──────────────────────────────────────────────────────
+
+export interface SubscriptionServer {
+  server_id: string
+  added_at: string
+}
+
+export interface SubscriptionData {
+  user_id: string
+  tier: 'monthly' | 'yearly' | 'free_trial' | null
+  expires_at: string | null
+  is_active: boolean
+  stripe_customer_id: string | null
+  servers: SubscriptionServer[]
+  max_servers: number
+}
+
+export interface SubscriptionServersResponse {
+  servers: SubscriptionServer[]
+  count: number
+  max_servers: number
+}

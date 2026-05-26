@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import {
   Dialog,
@@ -11,6 +14,14 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import {
   SunIcon,
   MoonIcon,
@@ -19,13 +30,22 @@ import {
   CreditCardIcon,
   UserIcon,
   SparklesIcon,
+  XIcon,
+  PlusIcon,
+  LoaderIcon,
 } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { getPreferences, setPreferences, detectBrowserLanguage } from "@/lib/preferences"
-import { getAvatarUrl, getDisplayName } from "@/lib/auth"
-import { openBillingPortal } from "@/services/guilds"
+import { getAvatarUrl, getDisplayName, getGuildIconUrl, ApiError } from "@/lib/auth"
+import {
+  openBillingPortal,
+  getSubscriptionStatus,
+  addSubscriptionServer,
+  removeSubscriptionServer,
+} from "@/services/guilds"
 import { toast } from "sonner"
 import type { User } from "@/lib/auth"
+import type { SubscriptionData } from "@/types/api"
 
 interface SettingsDialogProps {
   open: boolean
@@ -39,6 +59,32 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
 
   const prefs = getPreferences()
   const currentLang = prefs.language ?? detectBrowserLanguage(['en', 'fr'], 'en')
+
+  const [activeTab, setActiveTab] = useState('account')
+  const [subscription, setSubscription] = useState<SubscriptionData | null>(null)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false)
+  const [selectedServerId, setSelectedServerId] = useState('')
+  const [addingServer, setAddingServer] = useState(false)
+  const [removingServerId, setRemovingServerId] = useState<string | null>(null)
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setSubscription(null)
+      setSelectedServerId('')
+      setActiveTab('account')
+    }
+  }, [open])
+
+  // Fetch subscription when billing tab is opened
+  useEffect(() => {
+    if (activeTab !== 'billing' || !open) return
+    setSubscriptionLoading(true)
+    getSubscriptionStatus()
+      .then(setSubscription)
+      .catch(() => setSubscription(null))
+      .finally(() => setSubscriptionLoading(false))
+  }, [activeTab, open])
 
   const handleLangChange = (lang: string | 'auto') => {
     if (lang === 'auto') {
@@ -60,11 +106,53 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
     }
   }
 
+  const handleAddServer = useCallback(async () => {
+    if (!selectedServerId) return
+    setAddingServer(true)
+    try {
+      const added = await addSubscriptionServer(selectedServerId)
+      setSubscription(prev =>
+        prev ? { ...prev, servers: [...prev.servers, added] } : prev
+      )
+      setSelectedServerId('')
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) {
+        toast.error(t('settings.billing.servers.alreadyLinked'))
+      } else if (e instanceof ApiError && e.isForbidden) {
+        toast.error(t('settings.billing.servers.addForbidden'))
+      } else {
+        toast.error(t('settings.billing.servers.addError'))
+      }
+    } finally {
+      setAddingServer(false)
+    }
+  }, [selectedServerId, t])
+
+  const handleRemoveServer = useCallback(async (serverId: string) => {
+    setRemovingServerId(serverId)
+    try {
+      await removeSubscriptionServer(serverId)
+      setSubscription(prev =>
+        prev
+          ? { ...prev, servers: prev.servers.filter(s => s.server_id !== serverId) }
+          : prev
+      )
+    } catch {
+      toast.error(t('settings.billing.servers.removeError'))
+    } finally {
+      setRemovingServerId(null)
+    }
+  }, [t])
+
   const avatarUrl = user
     ? getAvatarUrl(user.user_id, user.avatar, user.avatar_url)
     : ''
 
   const displayName = user ? getDisplayName(user) : ''
+
+  const availableGuilds = user?.guilds.filter(
+    g => !subscription?.servers.some(s => s.server_id === String(g.id))
+  ) ?? []
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -73,7 +161,7 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <Tabs defaultValue="account" className="flex-col gap-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="account">
               <UserIcon />
@@ -124,7 +212,6 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
 
             <Separator />
 
-            {/* Connexion Discord */}
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">{t('settings.account.connectedWith')}</Label>
               <div className="flex items-center gap-3 p-3 rounded-lg border">
@@ -149,7 +236,6 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
 
           {/* ── Apparence ──────────────────────────────────────────────── */}
           <TabsContent value="appearance" className="flex flex-col gap-4">
-            {/* Thème */}
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">{t('debug.themeSwitcher')}</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -177,7 +263,6 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
 
             <Separator />
 
-            {/* Langue */}
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">
                 <GlobeIcon className="size-4 inline mr-1.5" />
@@ -212,20 +297,166 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
 
           {/* ── Facturation ────────────────────────────────────────────── */}
           <TabsContent value="billing" className="flex flex-col gap-4">
-            <div className="rounded-lg border p-4 flex items-center gap-3">
-              <SparklesIcon className="size-8 text-amber-500 shrink-0" />
-              <div>
-                <p className="font-medium text-sm">{t('settings.billing.title')}</p>
-                <p className="text-xs text-muted-foreground">{t('settings.billing.description')}</p>
+            {subscriptionLoading ? (
+              <div className="flex flex-col gap-3">
+                <Skeleton className="h-16 w-full rounded-lg" />
+                <Skeleton className="h-9 w-full rounded-lg" />
               </div>
-            </div>
-            <Button onClick={handleOpenBilling} className="w-full" variant="outline">
-              <CreditCardIcon className="size-4 mr-2" />
-              {t('settings.billing.manageButton')}
-            </Button>
-            <p className="text-xs text-muted-foreground text-center">
-              {t('settings.billing.note')}
-            </p>
+            ) : subscription?.is_active ? (
+              <>
+                {/* Statut abonnement */}
+                <div className="rounded-lg border p-4 flex items-center gap-3">
+                  <SparklesIcon className="size-8 text-amber-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm">{t('settings.billing.activeTitle')}</p>
+                    {subscription.expires_at && (
+                      <p className="text-xs text-muted-foreground">
+                        {t('settings.billing.renewsAt', {
+                          date: new Date(subscription.expires_at).toLocaleDateString(),
+                        })}
+                      </p>
+                    )}
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    {t(`settings.billing.tier.${subscription.tier ?? 'free_trial'}`)}
+                  </Badge>
+                </div>
+
+                {/* Gestion des serveurs liés */}
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">
+                      {t('settings.billing.servers.title')}
+                    </Label>
+                    <span className="text-xs text-muted-foreground">
+                      {t('settings.billing.servers.usage', {
+                        count: subscription.servers.length,
+                        max: subscription.max_servers,
+                      })}
+                    </span>
+                  </div>
+
+                  {subscription.servers.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4 rounded-lg border border-dashed">
+                      {t('settings.billing.servers.empty')}
+                    </p>
+                  ) : (
+                    <div className="flex flex-col gap-1.5">
+                      {subscription.servers.map(({ server_id }) => {
+                        const guild = user?.guilds.find(g => String(g.id) === server_id)
+                        const iconUrl = guild ? getGuildIconUrl(guild.id, guild.icon) : null
+                        const name = guild?.name ?? server_id
+                        return (
+                          <div
+                            key={server_id}
+                            className="flex items-center gap-3 p-2.5 rounded-lg border"
+                          >
+                            <Avatar className="size-8 rounded-lg shrink-0">
+                              <AvatarImage
+                                src={iconUrl ?? undefined}
+                                alt={name}
+                                referrerPolicy="no-referrer"
+                                className="rounded-lg"
+                              />
+                              <AvatarFallback className="rounded-lg text-xs font-semibold">
+                                {name.slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="flex-1 text-sm font-medium truncate">{name}</span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 text-muted-foreground hover:text-destructive shrink-0"
+                              onClick={() => handleRemoveServer(server_id)}
+                              disabled={removingServerId === server_id}
+                            >
+                              {removingServerId === server_id ? (
+                                <LoaderIcon className="size-3.5 animate-spin" />
+                              ) : (
+                                <XIcon className="size-3.5" />
+                              )}
+                            </Button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {subscription.servers.length < subscription.max_servers && (
+                    <div className="flex gap-2 mt-1">
+                      <Select value={selectedServerId} onValueChange={setSelectedServerId}>
+                        <SelectTrigger className="flex-1 w-0">
+                          <SelectValue placeholder={t('settings.billing.servers.addPlaceholder')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableGuilds.length === 0 ? (
+                            <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                              {t('settings.billing.servers.noAvailable')}
+                            </div>
+                          ) : (
+                            availableGuilds.map(guild => {
+                              const iconUrl = getGuildIconUrl(guild.id, guild.icon)
+                              return (
+                                <SelectItem key={guild.id} value={String(guild.id)}>
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="size-5 rounded shrink-0">
+                                      <AvatarImage
+                                        src={iconUrl ?? undefined}
+                                        alt={guild.name}
+                                        referrerPolicy="no-referrer"
+                                      />
+                                      <AvatarFallback className="text-[8px] rounded">
+                                        {guild.name.slice(0, 1).toUpperCase()}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    {guild.name}
+                                  </div>
+                                </SelectItem>
+                              )
+                            })
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        onClick={handleAddServer}
+                        disabled={!selectedServerId || addingServer}
+                        className="shrink-0"
+                      >
+                        {addingServer ? (
+                          <LoaderIcon className="size-4 animate-spin" />
+                        ) : (
+                          <PlusIcon className="size-4" />
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
+                <Button onClick={handleOpenBilling} variant="outline" className="w-full">
+                  <CreditCardIcon className="size-4 mr-2" />
+                  {t('settings.billing.manageButton')}
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="rounded-lg border p-4 flex items-center gap-3">
+                  <SparklesIcon className="size-8 text-amber-500 shrink-0" />
+                  <div>
+                    <p className="font-medium text-sm">{t('settings.billing.title')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings.billing.description')}</p>
+                  </div>
+                </div>
+                <Button onClick={handleOpenBilling} className="w-full" variant="outline">
+                  <CreditCardIcon className="size-4 mr-2" />
+                  {t('settings.billing.manageButton')}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center">
+                  {t('settings.billing.note')}
+                </p>
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>
