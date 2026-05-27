@@ -53,8 +53,20 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
+
+  // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tab = params.get('openSettings')
+    if (tab) {
+      setSettingsDefaultTab(tab)
+      setSettingsOpen(true)
+      navigate(location.pathname, { replace: true })
+    }
+  }, [location.search, location.pathname, navigate])
 
   // Toast de bienvenue à la connexion
   useEffect(() => {
@@ -248,6 +260,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         user={user}
+        defaultTab={settingsDefaultTab}
       />
 
       {/* Badge debug — visible uniquement si ?debug=true dans l'URL */}

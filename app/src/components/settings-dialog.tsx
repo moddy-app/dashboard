@@ -51,9 +51,10 @@ interface SettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   user: User | null
+  defaultTab?: string
 }
 
-export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps) {
+export function SettingsDialog({ open, onOpenChange, user, defaultTab }: SettingsDialogProps) {
   const { t, i18n } = useTranslation()
   const { theme, setTheme } = useTheme()
 
@@ -67,14 +68,16 @@ export function SettingsDialog({ open, onOpenChange, user }: SettingsDialogProps
   const [addingServer, setAddingServer] = useState(false)
   const [removingServerId, setRemovingServerId] = useState<string | null>(null)
 
-  // Reset state when dialog closes
+  // Reset state when dialog closes / set tab when it opens
   useEffect(() => {
     if (!open) {
       setSubscription(null)
       setSelectedServerId('')
       setActiveTab('account')
+    } else if (defaultTab) {
+      setActiveTab(defaultTab)
     }
-  }, [open])
+  }, [open, defaultTab])
 
   // Fetch subscription when billing tab is opened
   useEffect(() => {
