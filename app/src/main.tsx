@@ -1,6 +1,6 @@
 import { StrictMode } from "react"
 import { createRoot } from "react-dom/client"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom"
 import * as Sentry from "@sentry/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
@@ -41,6 +41,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/logging", element: <LoggingPage /> },
       { path: "staff", element: <StaffPage /> },
       { path: "premium", element: <PremiumPage /> },
+      { path: "select-premium-servers", element: <Navigate to="/?openSettings=billing" replace /> },
     ],
   },
   { path: "/debug", element: <DebugPage /> },
