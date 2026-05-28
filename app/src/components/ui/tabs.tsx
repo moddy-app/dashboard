@@ -1,3 +1,5 @@
+"use client"
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Tabs as TabsPrimitive } from "radix-ui"
@@ -14,7 +16,7 @@ function Tabs({
       data-slot="tabs"
       data-orientation={orientation}
       className={cn(
-        "group/tabs flex flex-col gap-2 data-vertical:flex-row",
+        "group/tabs flex gap-2 data-horizontal:flex-col",
         className
       )}
       {...props}
