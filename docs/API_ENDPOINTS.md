@@ -6,7 +6,7 @@ Toutes les reponses sont en JSON. Les erreurs suivent le format `{"error": "mess
 
 ## Auth
 
-### `GET /auth/login`
+### `GET /auth/login` 
 
 Redirige vers la page d'autorisation Discord OAuth2.
 
