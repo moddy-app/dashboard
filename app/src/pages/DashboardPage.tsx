@@ -37,6 +37,8 @@ import { isNotificationExpired } from "@/types/notification"
 import type { Notification } from "@/types/notification"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { DebugModeBadge } from "@/components/debug-error-overlay"
+import { InfoBanner } from "@/components/info-banner"
+import { useBanner } from "@/hooks/useBanner"
 
 interface DashboardPageProps {
   user: User | null
@@ -186,6 +188,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   }
 
   const breadcrumb = getBreadcrumb()
+  const banner = useBanner('show_dashboard')
 
   // Prépare la liste des serveurs pour le command menu (avec icône)
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
@@ -229,6 +232,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
             </Breadcrumb>
           </div>
         </header>
+        {banner && <InfoBanner banner={banner} />}
         {/* Contenu de la route courante via Outlet */}
         <div className="flex flex-1 flex-col p-6">
           <Outlet />
