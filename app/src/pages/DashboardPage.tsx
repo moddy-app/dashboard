@@ -194,6 +194,8 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
 
   return (
+    <>
+    {banner && <InfoBanner banner={banner} />}
     <SidebarProvider>
       <AppSidebar
         user={user}
@@ -232,7 +234,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
             </Breadcrumb>
           </div>
         </header>
-        {banner && <InfoBanner banner={banner} />}
         {/* Contenu de la route courante via Outlet */}
         <div className="flex flex-1 flex-col p-6">
           <Outlet />
@@ -289,5 +290,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
         </DialogContent>
       </Dialog>
     </SidebarProvider>
+    </>
   )
 }

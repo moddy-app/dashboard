@@ -126,10 +126,12 @@ export function InfoBanner({ banner }: InfoBannerProps) {
       <div
         role="status"
         aria-live="polite"
-        className={`flex items-start gap-3 border-b px-6 py-3 text-sm ${containerClass}`}
+        className={`flex w-full justify-center border-b px-6 py-3 text-sm ${containerClass}`}
       >
-        <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
-        <p className="leading-relaxed">{nodes}</p>
+        <div className="flex items-start gap-3">
+          <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
+          <p className="leading-relaxed">{nodes}</p>
+        </div>
       </div>
     )
   }
@@ -140,22 +142,24 @@ export function InfoBanner({ banner }: InfoBannerProps) {
     <div
       role="status"
       aria-live="polite"
-      className="flex items-start gap-3 border-b px-6 py-3 text-sm"
+      className="flex w-full justify-center border-b px-6 py-3 text-sm"
       style={{
         backgroundColor: `${accentColor}18`,
         borderColor: `${accentColor}30`,
         color: accentColor,
       }}
     >
-      {banner.icon_svg ? (
-        <span
-          className="mt-0.5 size-4 shrink-0"
-          aria-hidden
-          dangerouslySetInnerHTML={{ __html: banner.icon_svg }}
-          style={{ color: accentColor }}
-        />
-      ) : null}
-      <p className="leading-relaxed">{nodes}</p>
+      <div className="flex items-start gap-3">
+        {banner.icon_svg ? (
+          <span
+            className="mt-0.5 size-4 shrink-0"
+            aria-hidden
+            dangerouslySetInnerHTML={{ __html: banner.icon_svg }}
+            style={{ color: accentColor }}
+          />
+        ) : null}
+        <p className="leading-relaxed">{nodes}</p>
+      </div>
     </div>
   )
 }
