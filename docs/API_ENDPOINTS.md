@@ -6,7 +6,7 @@ Toutes les reponses sont en JSON. Les erreurs suivent le format `{"error": "mess
 
 ## Auth
 
-### `GET /auth/login` 
+### `GET /auth/login`
 
 Redirige vers la page d'autorisation Discord OAuth2.
 
@@ -559,6 +559,81 @@ Stats de base d'un serveur.
 
 ---
 
+## Banners
+
+### `GET /banners/active`
+
+Retourne la banniere actuellement active, ou `null` si aucune n'est active.
+
+**Auth :** aucune
+**Cache :** Redis `moddy:banner:active` TTL 60s (invalide a chaque activation/desactivation/modification/suppression)
+
+**Reponse (banniere active) :**
+
+```json
+{
+  "id": 3,
+  "message": "Maintenance prevue le 28 mai de 02h a 04h UTC.",
+  "type": "maintenance",
+  "icon_svg": null,
+  "color": null,
+  "show_dashboard": true,
+  "show_website": true,
+  "is_active": true,
+  "updated_at": "2026-05-27T10:00:00+00:00"
+}
+```
+
+**Reponse (aucune banniere active) :** `null`
+
+Le frontend doit cacher le bandeau si la reponse est `null` ou si le champ correspondant a sa surface (`show_dashboard` / `show_website`) est `false`.
+
+**Types predéfinis (`type`) :**
+
+| Valeur | Usage |
+|---|---|
+| `announcement` | Annonce generale |
+| `incident` | Incident en cours |
+| `maintenance` | Maintenance planifiee |
+| `information` | Info neutre |
+| `warning` | Avertissement |
+| `resolved` | Incident resolu |
+
+**Banniere custom (`type = null`) :** `icon_svg` contient le SVG brut, `color` contient la couleur hex `#RRGGBB`.
+
+---
+
+## Redirections
+
+### `GET /redirects/lookup?domain={domain}&path={path}`
+
+Retourne une redirection si elle existe pour le couple domaine + path, `null` sinon.
+
+**Auth :** aucune
+**Query params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `domain` | string | Domaine sans protocole, ex : `moddy.app` |
+| `path` | string | Chemin absolu prefixe par `/`, ex : `/privacy` |
+
+**Reponse (redirection trouvee) :**
+
+```json
+{
+  "id": 1,
+  "domain": "moddy.app",
+  "path": "/privacy",
+  "description": "Privacy policy"
+}
+```
+
+**Reponse (aucune redirection) :** `null`
+
+Le site appelle cet endpoint avant d'afficher une 404 pour verifier si le chemin courant est une redirection connue.
+
+---
+
 ## Health
 
 ### `GET /health`
@@ -1054,6 +1129,194 @@ Statut du bot Discord (appel HTTP interne vers le bot).
 **Appel interne :** `GET {BOT_INTERNAL_URL}/status` (timeout 10s)
 **Reponse :** JSON retourne directement par le bot (shards, latence, uptime, memoire, etc.)
 **Erreur :** `502 {"error": "Bot non disponible"}` ou `502 {"error": "Impossible de joindre le bot"}`
+
+---
+
+### `GET /staff/banners`
+
+Liste toutes les bannières (actives et inactives).
+
+**Auth :** staff
+**Query params :** `limit` (max 200, defaut 50), `offset`
+**Reponse :** array de bannières triées par `created_at DESC`
+
+```json
+[
+  {
+    "id": 3,
+    "message": "Maintenance prevue le 28 mai.",
+    "type": "maintenance",
+    "icon_svg": null,
+    "color": null,
+    "show_dashboard": true,
+    "show_website": true,
+    "is_active": true,
+    "created_at": "2026-05-27T09:00:00+00:00",
+    "updated_at": "2026-05-27T10:00:00+00:00"
+  }
+]
+```
+
+---
+
+### `POST /staff/banners`
+
+Creer une nouvelle banniere.
+
+**Auth :** staff
+**Body :**
+
+Mode typé :
+
+```json
+{
+  "message": "Maintenance prevue le 28 mai de 02h a 04h UTC.",
+  "type": "maintenance",
+  "show_dashboard": true,
+  "show_website": true
+}
+```
+
+Mode custom (SVG + couleur) :
+
+```json
+{
+  "message": "Evenement special ce weekend !",
+  "icon_svg": "<svg>...</svg>",
+  "color": "#FF6600",
+  "show_dashboard": false,
+  "show_website": true
+}
+```
+
+| Champ | Type | Description |
+|---|---|---|
+| `message` | string | Contenu du bandeau (Markdown supporte cote frontend) |
+| `type` | string\|null | Type predéfini. Mutuellement exclusif avec `icon_svg`/`color` |
+| `icon_svg` | string\|null | SVG brut. Requis si pas de `type` |
+| `color` | string\|null | Hex `#RRGGBB`. Requis si pas de `type` |
+| `show_dashboard` | bool | Defaut `true` |
+| `show_website` | bool | Defaut `true` |
+
+**Contrainte :** `type` OU (`icon_svg` + `color`) — jamais les deux, jamais ni l'un ni l'autre.
+**Reponse :** la banniere creee (status 201), non active par defaut.
+
+---
+
+### `PATCH /staff/banners/{id}`
+
+Modifier le contenu d'une banniere.
+
+**Auth :** staff
+**Body :** tous les champs sont optionnels
+
+```json
+{
+  "message": "Incident resolu.",
+  "type": "resolved"
+}
+```
+
+**Reponse :** la banniere mise a jour
+**Erreur :** `404` si introuvable
+**Cache :** invalide `moddy:banner:active` si la banniere etait active
+
+---
+
+### `POST /staff/banners/{id}/activate`
+
+Active cette banniere. Desactive automatiquement toute autre banniere active (operation atomique en transaction).
+
+**Auth :** staff
+**Reponse :** la banniere activee
+**Erreur :** `404` si introuvable
+**Cache :** invalide `moddy:banner:active`
+
+---
+
+### `POST /staff/banners/{id}/deactivate`
+
+Desactive cette banniere sans en activer une autre (bandeau cache partout).
+
+**Auth :** staff
+**Reponse :** la banniere desactivee
+**Erreur :** `404` si introuvable
+**Cache :** invalide `moddy:banner:active`
+
+---
+
+### `DELETE /staff/banners/{id}`
+
+Supprime une banniere.
+
+**Auth :** staff
+**Reponse :** 204 No Content
+**Erreur :** `404` si introuvable
+**Cache :** invalide `moddy:banner:active`
+
+---
+
+### `GET /staff/redirects`
+
+Liste toutes les redirections enregistrees.
+
+**Auth :** staff
+**Query params :** `limit` (max 500, defaut 100), `offset`
+**Reponse :** array de redirections triees par `domain, path`
+
+```json
+[
+  {
+    "id": 1,
+    "domain": "moddy.app",
+    "path": "/privacy",
+    "description": "Privacy policy",
+    "added_by": "123456789012345678",
+    "added_at": "2026-05-27T09:00:00+00:00"
+  }
+]
+```
+
+---
+
+### `POST /staff/redirects`
+
+Creer une nouvelle redirection.
+
+**Auth :** staff
+**Body :**
+
+```json
+{
+  "domain": "moddy.app",
+  "path": "/privacy",
+  "description": "Privacy policy"
+}
+```
+
+| Champ | Type | Description |
+|---|---|---|
+| `domain` | string | Sans protocole (ex: `moddy.app`) |
+| `path` | string | Doit commencer par `/` |
+| `description` | string | Description lisible |
+
+**Contraintes :**
+- `domain` sans `http://` ni `https://`
+- `path` toujours prefixe par `/`
+- Paire `(domain, path)` unique — `409` si doublon
+
+**Reponse :** la redirection creee (status 201)
+**Erreur :** `409 {"error": "Redirection moddy.app/privacy existe deja"}`
+
+---
+
+### `DELETE /staff/redirects/{id}`
+
+Supprimer une redirection.
+
+**Auth :** staff
+**Reponse :** 204 No Content
+**Erreur :** `404` si introuvable
 
 ---
 
