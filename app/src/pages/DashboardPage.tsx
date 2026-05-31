@@ -60,33 +60,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const welcomeToastShown = useRef(false)
   const banner = useBanner('show_dashboard')
 
-  // ── Banner offset ──────────────────────────────────────────────────────────
-  const bannerRef = useRef<HTMLDivElement>(null)
-  const [bannerHeight, setBannerHeight] = useState(0)
-
-  useEffect(() => {
-    const el = bannerRef.current
-    if (!el) return
-    const ro = new ResizeObserver(entries => {
-      const h = entries[0]?.borderBoxSize[0]?.blockSize ?? 0
-      setBannerHeight(h)
-      document.documentElement.style.setProperty('--banner-h', `${h}px`)
-    })
-    ro.observe(el)
-    return () => {
-      ro.disconnect()
-      document.documentElement.style.setProperty('--banner-h', '0px')
-    }
-  }, [])
-
-  // Réinitialise quand le bandeau disparaît (dismiss ou API → null)
-  useEffect(() => {
-    if (!banner) {
-      setBannerHeight(0)
-      document.documentElement.style.setProperty('--banner-h', '0px')
-    }
-  }, [banner])
-
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
   useEffect(() => {
     const params = new URLSearchParams(location.search)
@@ -222,13 +195,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   return (
     <>
-      {/* Container fixe tout en haut — la ref mesure la hauteur réelle */}
-      <div ref={bannerRef} className="fixed top-0 left-0 right-0 z-[100]">
-        {banner && <InfoBanner banner={banner} />}
-      </div>
-
-      {/* Décale le layout vers le bas de la hauteur du bandeau */}
-      <div style={{ paddingTop: bannerHeight }}>
+      {banner && <InfoBanner banner={banner} />}
       <SidebarProvider>
       <AppSidebar
         user={user}
@@ -323,7 +290,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
         </DialogContent>
       </Dialog>
     </SidebarProvider>
-      </div>
     </>
   )
 }

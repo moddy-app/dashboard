@@ -139,7 +139,7 @@ export function InfoBanner({ banner }: InfoBannerProps) {
       <div
         role="status"
         aria-live="polite"
-        className={`relative flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
+        className={`sticky top-0 z-[100] flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
       >
         <div className="flex flex-1 items-start justify-center gap-3">
           <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
@@ -162,7 +162,7 @@ export function InfoBanner({ banner }: InfoBannerProps) {
     <div
       role="status"
       aria-live="polite"
-      className="relative flex w-full items-center border-b px-6 py-3 text-sm"
+      className="sticky top-0 z-[100] flex w-full items-center border-b px-6 py-3 text-sm"
       style={{
         backgroundColor: `${accentColor}18`,
         borderColor: `${accentColor}30`,
