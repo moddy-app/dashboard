@@ -57,8 +57,10 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
+  const [dismissedBannerId, setDismissedBannerId] = useState<number | null>(null)
   const welcomeToastShown = useRef(false)
   const banner = useBanner('show_dashboard')
+  const activeBanner = banner && banner.id !== dismissedBannerId ? banner : null
 
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
   useEffect(() => {
@@ -195,7 +197,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   return (
     <>
-      {banner && <InfoBanner banner={banner} />}
+      {activeBanner && (
+        <InfoBanner
+          banner={activeBanner}
+          onDismiss={() => setDismissedBannerId(activeBanner.id)}
+        />
+      )}
       <SidebarProvider>
       <AppSidebar
         user={user}
