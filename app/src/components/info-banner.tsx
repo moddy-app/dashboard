@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Megaphone,
   AlertOctagon,
@@ -124,12 +124,25 @@ const TYPE_STYLES: Record<BannerType, TypeStyle> = {
 
 interface InfoBannerProps {
   banner: Banner
+  onDismiss: () => void
 }
 
-export function InfoBanner({ banner }: InfoBannerProps) {
-  const [dismissed, setDismissed] = useState(false)
+export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
+  const ref = useRef<HTMLDivElement>(null)
 
-  if (dismissed) return null
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const h = entries[0]?.borderBoxSize[0]?.blockSize ?? 0
+      document.documentElement.style.setProperty('--banner-h', `${h}px`)
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      document.documentElement.style.setProperty('--banner-h', '0px')
+    }
+  }, [])
 
   const nodes = parseInlineMarkdown(banner.message)
 
@@ -137,16 +150,17 @@ export function InfoBanner({ banner }: InfoBannerProps) {
     const { Icon, containerClass, iconClass, closeClass } = TYPE_STYLES[banner.type]
     return (
       <div
+        ref={ref}
         role="status"
         aria-live="polite"
-        className={`sticky top-0 z-[100] flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
+        className={`flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
       >
         <div className="flex flex-1 items-start justify-center gap-3">
           <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
           <p className="leading-relaxed">{nodes}</p>
         </div>
         <button
-          onClick={() => setDismissed(true)}
+          onClick={onDismiss}
           aria-label="Fermer"
           className={`ml-4 shrink-0 rounded p-1 transition-colors ${closeClass}`}
         >
@@ -160,9 +174,10 @@ export function InfoBanner({ banner }: InfoBannerProps) {
   const accentColor = banner.color ?? '#6b7280'
   return (
     <div
+      ref={ref}
       role="status"
       aria-live="polite"
-      className="sticky top-0 z-[100] flex w-full items-center border-b px-6 py-3 text-sm"
+      className="flex w-full items-center border-b px-6 py-3 text-sm"
       style={{
         backgroundColor: `${accentColor}18`,
         borderColor: `${accentColor}30`,
@@ -181,12 +196,11 @@ export function InfoBanner({ banner }: InfoBannerProps) {
         <p className="leading-relaxed">{nodes}</p>
       </div>
       <button
-        onClick={() => setDismissed(true)}
+        onClick={onDismiss}
         aria-label="Fermer"
         className="ml-4 shrink-0 rounded p-1 transition-colors"
-        style={{ ['--hover-bg' as string]: `${accentColor}20` }}
-        onMouseEnter={e => (e.currentTarget.style.backgroundColor = `${accentColor}20`)}
-        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${accentColor}20`)}
+        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
         <X className="size-4" aria-hidden />
       </button>
