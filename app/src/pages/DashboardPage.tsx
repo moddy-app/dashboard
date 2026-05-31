@@ -58,6 +58,34 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
+  const banner = useBanner('show_dashboard')
+
+  // ── Banner offset ──────────────────────────────────────────────────────────
+  const bannerRef = useRef<HTMLDivElement>(null)
+  const [bannerHeight, setBannerHeight] = useState(0)
+
+  useEffect(() => {
+    const el = bannerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const h = entries[0]?.borderBoxSize[0]?.blockSize ?? 0
+      setBannerHeight(h)
+      document.documentElement.style.setProperty('--banner-h', `${h}px`)
+    })
+    ro.observe(el)
+    return () => {
+      ro.disconnect()
+      document.documentElement.style.setProperty('--banner-h', '0px')
+    }
+  }, [])
+
+  // Réinitialise quand le bandeau disparaît (dismiss ou API → null)
+  useEffect(() => {
+    if (!banner) {
+      setBannerHeight(0)
+      document.documentElement.style.setProperty('--banner-h', '0px')
+    }
+  }, [banner])
 
   // ── Banner offset ──────────────────────────────────────────────────────────
   const bannerRef = useRef<HTMLDivElement>(null)
@@ -215,7 +243,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
   }
 
   const breadcrumb = getBreadcrumb()
-  const banner = useBanner('show_dashboard')
 
   // Prépare la liste des serveurs pour le command menu (avec icône)
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
