@@ -58,6 +58,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
+  const banner = useBanner('show_dashboard')
 
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
   useEffect(() => {
@@ -188,13 +189,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
   }
 
   const breadcrumb = getBreadcrumb()
-  const banner = useBanner('show_dashboard')
 
   // Prépare la liste des serveurs pour le command menu (avec icône)
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
 
   return (
-    <SidebarProvider>
+    <>
+      {banner && <InfoBanner banner={banner} />}
+      <SidebarProvider>
       <AppSidebar
         user={user}
         onLogoutRequest={handleLogoutRequest}
@@ -232,7 +234,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
             </Breadcrumb>
           </div>
         </header>
-        {banner && <InfoBanner banner={banner} />}
         {/* Contenu de la route courante via Outlet */}
         <div className="flex flex-1 flex-col p-6">
           <Outlet />
@@ -289,5 +290,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
         </DialogContent>
       </Dialog>
     </SidebarProvider>
+    </>
   )
 }
