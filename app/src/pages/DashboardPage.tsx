@@ -58,6 +58,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
   const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const welcomeToastShown = useRef(false)
+  const banner = useBanner('show_dashboard')
 
   // ── Banner offset ──────────────────────────────────────────────────────────
   const bannerRef = useRef<HTMLDivElement>(null)
@@ -215,7 +216,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
   }
 
   const breadcrumb = getBreadcrumb()
-  const banner = useBanner('show_dashboard')
 
   // Prépare la liste des serveurs pour le command menu (avec icône)
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
