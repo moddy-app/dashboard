@@ -7,7 +7,6 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-    --banner-h: 0px;
     --background: oklch(1 0 0);
     --foreground: oklch(0.145 0 0);
     --card: oklch(1 0 0);
@@ -151,10 +150,14 @@
   animation: page-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
-/* Décale le sidebar fixe sous le bandeau — --banner-h est mis à jour par InfoBanner via ResizeObserver */
-@media (min-width: 768px) {
-  [data-slot="sidebar-container"] {
-    top: var(--banner-h) !important;
-    height: calc(100svh - var(--banner-h)) !important;
-  }
+/* Le sidebar shadcn utilise fixed + h-svh par défaut. On le passe en absolute + h-full
+   pour qu'il reste à l'intérieur du conteneur flex du dashboard (bannière au-dessus). */
+[data-slot="sidebar-wrapper"] {
+  min-height: 0 !important;
+  height: 100% !important;
+  position: relative;
+}
+[data-slot="sidebar-container"] {
+  position: absolute !important;
+  height: 100% !important;
 }
