@@ -196,14 +196,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
 
   return (
-    <>
+    <div className="flex h-screen flex-col">
       {activeBanner && (
         <InfoBanner
           banner={activeBanner}
           onDismiss={() => setDismissedBannerId(activeBanner.id)}
         />
       )}
-      <SidebarProvider>
+      <SidebarProvider className="flex-1 min-h-0">
       <AppSidebar
         user={user}
         onLogoutRequest={handleLogoutRequest}
@@ -297,6 +297,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
         </DialogContent>
       </Dialog>
     </SidebarProvider>
-    </>
+    </div>
   )
 }

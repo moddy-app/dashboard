@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import {
   Megaphone,
   AlertOctagon,
@@ -128,32 +127,15 @@ interface InfoBannerProps {
 }
 
 export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const ro = new ResizeObserver((entries) => {
-      const h = entries[0]?.borderBoxSize[0]?.blockSize ?? 0
-      document.documentElement.style.setProperty('--banner-h', `${h}px`)
-    })
-    ro.observe(el)
-    return () => {
-      ro.disconnect()
-      document.documentElement.style.setProperty('--banner-h', '0px')
-    }
-  }, [])
-
   const nodes = parseInlineMarkdown(banner.message)
 
   if (banner.type !== null) {
     const { Icon, containerClass, iconClass, closeClass } = TYPE_STYLES[banner.type]
     return (
       <div
-        ref={ref}
         role="status"
         aria-live="polite"
-        className={`flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
+        className={`shrink-0 flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
       >
         <div className="flex flex-1 items-start justify-center gap-3">
           <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
@@ -174,10 +156,9 @@ export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
   const accentColor = banner.color ?? '#6b7280'
   return (
     <div
-      ref={ref}
       role="status"
       aria-live="polite"
-      className="flex w-full items-center border-b px-6 py-3 text-sm"
+      className="shrink-0 flex w-full items-center border-b px-6 py-3 text-sm"
       style={{
         backgroundColor: `${accentColor}18`,
         borderColor: `${accentColor}30`,
