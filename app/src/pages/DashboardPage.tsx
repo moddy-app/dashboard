@@ -211,8 +211,8 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onOpenNotifications={handleOpenNotifications}
         onRefreshGuilds={handleRefreshGuilds}
       />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <SidebarInset className="overflow-hidden">
+        <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-2 border-b bg-background/95 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <div aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
@@ -242,7 +242,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
           </div>
         </header>
         {/* Contenu de la route courante via Outlet */}
-        <div className="flex flex-1 flex-col p-6">
+        <div className="flex flex-1 flex-col p-6 overflow-y-auto">
           <Outlet />
         </div>
       </SidebarInset>

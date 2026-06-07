@@ -46,7 +46,6 @@ import {
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
 import { Field, FieldTitle, FieldDescription } from "@/components/ui/field"
-import { Separator } from "@/components/ui/separator"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission, registerTallyForm } from "@/services/staff"
 import type { GlobalStats, BotStatus, UserFullProfile, ModerationCase, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
@@ -458,7 +457,7 @@ function StatusBadge({ status }: { status: TallySubmissionStatus }) {
     </Badge>
   )
   return (
-    <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
+    <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800">
       {t('staff.forms.statusLabel.pending')}
     </Badge>
   )
@@ -813,17 +812,26 @@ function SubmissionDetail({
   ) ?? []
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ChevronLeftIcon className="size-4 mr-1" />
+    <div className="flex flex-col gap-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+        <Button variant="ghost" size="sm" className="-ml-2 shrink-0" onClick={onBack}>
+          <ChevronLeftIcon className="size-4" />
           {formTitle}
         </Button>
-        <span className="text-sm text-muted-foreground">/</span>
-        <span className="text-sm font-mono text-muted-foreground truncate">{submissionId}</span>
+        <ChevronRightIcon className="size-3.5 text-muted-foreground shrink-0" />
+        <span className="text-xs font-mono text-muted-foreground truncate">{submissionId}</span>
       </div>
 
-      {loading && <Skeleton className="h-64 rounded-xl" />}
+      {loading && (
+        <div className="flex flex-col-reverse gap-6 lg:flex-row lg:items-start">
+          <Skeleton className="h-96 flex-1 rounded-xl" />
+          <div className="flex flex-col gap-4 lg:w-72 shrink-0">
+            <Skeleton className="h-32 rounded-xl" />
+            <Skeleton className="h-56 rounded-xl" />
+          </div>
+        </div>
+      )}
 
       {error && !loading && (
         <div className="flex flex-col items-center gap-3 py-12 text-center">
@@ -837,65 +845,80 @@ function SubmissionDetail({
       )}
 
       {detail && !loading && (
-        <>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-semibold">{t('staff.forms.generalInfo')}</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-3">
-              <div>
-                <p className="text-xs text-muted-foreground">{t('staff.forms.discordId')}</p>
-                <p className="font-mono text-sm mt-0.5">{detail.discord_id}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t('staff.forms.date')}</p>
-                <p className="text-sm mt-0.5">{new Date(detail.created_at).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{t('staff.forms.status')}</p>
-                <div className="mt-1"><StatusBadge status={detail.status} /></div>
-              </div>
-            </CardContent>
-          </Card>
+        /* flex-col-reverse: on mobile, right panel (info+action) appears ABOVE answers */
+        <div className="flex flex-col-reverse gap-6 lg:flex-row lg:items-start">
 
-          {visibleAnswers.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold">{t('staff.forms.answers')}</CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col divide-y">
-                {visibleAnswers.map((answer) => (
-                  <div key={answer.id} className="py-3 first:pt-0 last:pb-0">
-                    <p className="text-xs font-medium text-muted-foreground mb-1">{answer.label}</p>
-                    <p className="text-sm whitespace-pre-wrap">{answer.value || '—'}</p>
+          {/* LEFT — Answers (flex-1, takes available width) */}
+          <div className="flex-1 min-w-0">
+            {visibleAnswers.length > 0 ? (
+              <Card>
+                <CardHeader className="pb-0">
+                  <CardTitle className="text-sm font-semibold">{t('staff.forms.answers')}</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 mt-2">
+                  <div className="divide-y">
+                    {visibleAnswers.map((answer) => (
+                      <div key={answer.id} className="px-6 py-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                          {answer.label}
+                        </p>
+                        <p className={cn(
+                          "text-sm break-words",
+                          (answer.type === 'TEXTAREA' || answer.type === 'INPUT_TEXT') && "whitespace-pre-wrap leading-relaxed"
+                        )}>
+                          {answer.value || <span className="text-muted-foreground italic">—</span>}
+                        </p>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </CardContent>
+              </Card>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-10">No answers recorded.</p>
+            )}
+          </div>
+
+          {/* RIGHT — Info + Action (fixed width, sticky on desktop) */}
+          <div className="flex flex-col gap-4 lg:w-72 shrink-0 lg:sticky lg:top-0 lg:self-start">
+
+            {/* Info card */}
+            <Card>
+              <CardContent className="pt-5 pb-5">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Discord ID</p>
+                    <p className="font-mono text-xs break-all">{detail.discord_id}</p>
+                  </div>
+                  <StatusBadge status={detail.status} />
+                </div>
+                <div className="pt-4 border-t">
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{t('staff.forms.date')}</p>
+                  <p className="text-xs">{new Date(detail.created_at).toLocaleString()}</p>
+                </div>
               </CardContent>
             </Card>
-          )}
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold">{t('staff.forms.action')}</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              {/* Segmented control statut */}
-              <Field>
-                <FieldTitle>{t('staff.forms.status')}</FieldTitle>
-                <div className="inline-flex rounded-xl border bg-muted/40 p-1 gap-0.5 w-fit mt-2">
+            {/* Action card */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">{t('staff.forms.action')}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {/* Status segmented control */}
+                <div className="inline-flex w-full rounded-xl border bg-muted/40 p-1 gap-0.5">
                   {(['pending', 'done', 'rejected'] as TallySubmissionStatus[]).map((s) => (
                     <button
                       key={s}
                       type="button"
                       onClick={() => setActionStatus(s)}
                       className={cn(
-                        "px-3 py-1.5 text-sm font-medium rounded-lg transition-all select-none cursor-pointer",
+                        "flex-1 px-2 py-1.5 text-xs font-medium rounded-lg transition-all select-none cursor-pointer",
                         actionStatus === s
                           ? s === 'done'
                             ? "bg-green-600 text-white shadow-sm"
                             : s === 'rejected'
                             ? "bg-destructive text-destructive-foreground shadow-sm"
-                            : "bg-amber-500 text-white shadow-sm"
+                            : "bg-blue-600 text-white shadow-sm"
                           : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                       )}
                     >
@@ -903,32 +926,24 @@ function SubmissionDetail({
                     </button>
                   ))}
                 </div>
-              </Field>
 
-              <Separator />
-
-              {/* Note */}
-              <Field>
-                <FieldTitle>{t('staff.forms.note')}</FieldTitle>
                 <Textarea
                   value={actionNote}
                   onChange={(e) => setActionNote(e.target.value)}
                   placeholder={t('staff.forms.notePlaceholder')}
-                  className="resize-none mt-2"
+                  className="resize-none text-sm"
                   rows={4}
                 />
-                <FieldDescription>{t('staff.forms.noteDescription')}</FieldDescription>
-              </Field>
 
-              <div className="flex justify-end">
-                <Button onClick={save} disabled={saving} size="sm">
+                <Button onClick={save} disabled={saving} className="w-full" size="sm">
                   {saving && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
                   {t('staff.forms.save')}
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </>
+              </CardContent>
+            </Card>
+
+          </div>
+        </div>
       )}
     </div>
   )
