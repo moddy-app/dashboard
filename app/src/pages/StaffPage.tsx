@@ -14,6 +14,7 @@ import {
   XCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PlusIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -26,6 +27,14 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -460,6 +469,11 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
   const [forms, setForms] = useState<TallyForm[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [newFormId, setNewFormId] = useState('')
+  const [newTitle, setNewTitle] = useState('')
+  const [newSecret, setNewSecret] = useState('')
+  const [creating, setCreating] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -475,6 +489,31 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
 
   useEffect(() => { load() }, [load])
 
+  const openDialog = () => {
+    setNewFormId('')
+    setNewTitle('')
+    setNewSecret('')
+    setDialogOpen(true)
+  }
+
+  const create = async () => {
+    if (!newFormId.trim() || !newTitle.trim() || !newSecret.trim()) return
+    setCreating(true)
+    try {
+      const created = await registerTallyForm(newFormId.trim(), {
+        title: newTitle.trim(),
+        signing_secret: newSecret.trim(),
+      })
+      setForms((prev) => [...prev, { ...created, submission_count: 0 }])
+      setDialogOpen(false)
+      toast.success(t('staff.forms.createSuccess'))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to register form')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   if (loading) return <Skeleton className="h-48 rounded-xl" />
 
   if (error) return (
@@ -488,35 +527,113 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
     </div>
   )
 
-  if (forms.length === 0) return (
-    <p className="text-sm text-muted-foreground text-center py-8">{t('staff.forms.empty')}</p>
-  )
-
   return (
-    <Card>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('staff.forms.formTitle')}</TableHead>
-            <TableHead>{t('staff.forms.formId')}</TableHead>
-            <TableHead>{t('staff.forms.createdAt')}</TableHead>
-            <TableHead>{t('staff.forms.submissions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {forms.map((form) => (
-            <TableRow key={form.form_id} className="cursor-pointer" onClick={() => onSelect(form)}>
-              <TableCell className="font-medium">{form.title}</TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{form.form_id}</TableCell>
-              <TableCell className="text-xs text-muted-foreground tabular-nums">
-                {new Date(form.created_at).toLocaleDateString()}
-              </TableCell>
-              <TableCell className="tabular-nums">{form.submission_count}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </Card>
+    <>
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">{t('staff.tabs.forms')}</p>
+        <Button size="sm" variant="outline" onClick={openDialog}>
+          <PlusIcon className="size-4 mr-1.5" />
+          {t('staff.forms.createForm')}
+        </Button>
+      </div>
+
+      {forms.length === 0 ? (
+        <div className="flex flex-col items-center gap-5 py-16 text-center">
+          <div className="rounded-full border bg-muted/40 p-5">
+            <PlusIcon className="size-7 text-muted-foreground" />
+          </div>
+          <div>
+            <p className="font-medium text-sm">{t('staff.forms.emptyTitle')}</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs">{t('staff.forms.emptyDescription')}</p>
+          </div>
+          <Button size="sm" onClick={openDialog}>
+            <PlusIcon className="size-4 mr-1.5" />
+            {t('staff.forms.createForm')}
+          </Button>
+        </div>
+      ) : (
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('staff.forms.formTitle')}</TableHead>
+                <TableHead>{t('staff.forms.formId')}</TableHead>
+                <TableHead>{t('staff.forms.createdAt')}</TableHead>
+                <TableHead>{t('staff.forms.submissions')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {forms.map((form) => (
+                <TableRow key={form.form_id} className="cursor-pointer" onClick={() => onSelect(form)}>
+                  <TableCell className="font-medium">{form.title}</TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">{form.form_id}</TableCell>
+                  <TableCell className="text-xs text-muted-foreground tabular-nums">
+                    {new Date(form.created_at).toLocaleDateString()}
+                  </TableCell>
+                  <TableCell className="tabular-nums">{form.submission_count}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </Card>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('staff.forms.createDialog.title')}</DialogTitle>
+            <DialogDescription>{t('staff.forms.createDialog.description')}</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 py-1">
+            <Field>
+              <FieldTitle>{t('staff.forms.createDialog.formId')}</FieldTitle>
+              <Input
+                value={newFormId}
+                onChange={(e) => setNewFormId(e.target.value)}
+                placeholder="mYfOrM"
+                className="font-mono mt-2"
+              />
+              <FieldDescription>{t('staff.forms.createDialog.formIdDescription')}</FieldDescription>
+            </Field>
+            <Field>
+              <FieldTitle>{t('staff.forms.createDialog.formTitle')}</FieldTitle>
+              <Input
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="Candidature modérateur"
+                className="mt-2"
+                onKeyDown={(e) => e.key === 'Enter' && create()}
+              />
+            </Field>
+            <Field>
+              <FieldTitle>{t('staff.forms.createDialog.signingSecret')}</FieldTitle>
+              <Input
+                value={newSecret}
+                onChange={(e) => setNewSecret(e.target.value)}
+                placeholder="tally_secret_..."
+                type="password"
+                className="font-mono mt-2"
+              />
+              <FieldDescription>{t('staff.forms.createDialog.signingSecretDescription')}</FieldDescription>
+            </Field>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={creating}>
+              {t('staff.forms.createDialog.cancel')}
+            </Button>
+            <Button
+              onClick={create}
+              disabled={creating || !newFormId.trim() || !newTitle.trim() || !newSecret.trim()}
+            >
+              {creating && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+              {t('staff.forms.createDialog.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
