@@ -208,7 +208,7 @@ function UsersTab() {
       )}
 
       {users.length > 0 && (
-        <Card>
+        <Card className="py-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -302,7 +302,7 @@ function GuildsTab() {
       </div>
 
       {guilds.length > 0 ? (
-        <Card>
+        <Card className="py-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -384,7 +384,7 @@ function CasesTab() {
   )
 
   return (
-    <Card>
+    <Card className="py-0">
       <Table>
         <TableHeader>
           <TableRow>
@@ -552,7 +552,7 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
           </Button>
         </div>
       ) : (
-        <Card>
+        <Card className="py-0">
           <Table>
             <TableHeader>
               <TableRow>
@@ -674,12 +674,12 @@ function FormSubmissions({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={onBack}>
-          <ChevronLeftIcon className="size-4 mr-1" />
+      <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+        <Button variant="ghost" size="sm" className="-ml-2 shrink-0" onClick={onBack}>
+          <ChevronLeftIcon className="size-4" />
           {t('staff.forms.backToForms')}
         </Button>
-        <span className="text-sm text-muted-foreground">/</span>
+        <ChevronRightIcon className="size-3.5 text-muted-foreground shrink-0" />
         <span className="text-sm font-medium truncate">{formTitle}</span>
       </div>
 
@@ -698,7 +698,7 @@ function FormSubmissions({
 
       {data && !loading && (
         <>
-          <Card>
+          <Card className="py-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -857,27 +857,25 @@ function SubmissionDetail({
           {/* LEFT — Answers (flex-1, takes available width) */}
           <div className="flex-1 min-w-0">
             {visibleAnswers.length > 0 ? (
-              <Card>
-                <CardHeader className="pb-0">
-                  <CardTitle className="text-sm font-semibold">{t('staff.forms.answers')}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0 mt-2">
-                  <div className="divide-y">
-                    {visibleAnswers.map((answer) => (
-                      <div key={answer.id} className="px-6 py-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                          {answer.label}
-                        </p>
-                        <p className={cn(
-                          "text-sm break-words",
-                          (answer.type === 'TEXTAREA' || answer.type === 'INPUT_TEXT') && "whitespace-pre-wrap leading-relaxed"
-                        )}>
-                          {answer.value || <span className="text-muted-foreground italic">—</span>}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
+              <Card className="py-0 gap-0">
+                <div className="px-6 py-4 border-b">
+                  <p className="text-sm font-semibold">{t('staff.forms.answers')}</p>
+                </div>
+                <div className="divide-y">
+                  {visibleAnswers.map((answer) => (
+                    <div key={answer.id} className="px-6 py-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                        {answer.label}
+                      </p>
+                      <p className={cn(
+                        "text-sm break-words",
+                        (answer.type === 'TEXTAREA' || answer.type === 'INPUT_TEXT') && "whitespace-pre-wrap leading-relaxed"
+                      )}>
+                        {answer.value || <span className="text-muted-foreground italic">—</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </Card>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-10">No answers recorded.</p>
@@ -889,7 +887,7 @@ function SubmissionDetail({
 
             {/* Info card */}
             <Card>
-              <CardContent className="pt-5 pb-5 flex flex-col gap-4">
+              <CardContent className="flex flex-col gap-4">
                 {/* Avatar + status row */}
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -923,7 +921,7 @@ function SubmissionDetail({
 
             {/* Action card */}
             <Card>
-              <CardHeader className="pb-3">
+              <CardHeader>
                 <CardTitle className="text-sm font-semibold">{t('staff.forms.action')}</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
@@ -940,7 +938,7 @@ function SubmissionDetail({
                           ? s === 'done'
                             ? "bg-green-600 text-white shadow-sm"
                             : s === 'rejected'
-                            ? "bg-destructive text-destructive-foreground shadow-sm"
+                            ? "bg-destructive text-white shadow-sm"
                             : "bg-blue-600 text-white shadow-sm"
                           : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                       )}
