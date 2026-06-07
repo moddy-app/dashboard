@@ -48,7 +48,7 @@ import { cn } from "@/lib/utils"
 import { Field, FieldTitle, FieldDescription } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { useGuildContext } from "@/contexts/GuildContext"
-import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission } from "@/services/staff"
+import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission, registerTallyForm } from "@/services/staff"
 import type { GlobalStats, BotStatus, UserFullProfile, ModerationCase, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
 
 // Rôles staff ayant accès aux différentes sections
