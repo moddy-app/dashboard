@@ -324,6 +324,21 @@
     },
     "forms": {
       "empty": "No forms found.",
+      "emptyTitle": "No forms yet",
+      "emptyDescription": "Register a Tally form to start receiving applications.",
+      "createForm": "New form",
+      "createSuccess": "Form registered.",
+      "createDialog": {
+        "title": "Register a form",
+        "description": "Link a Tally form to the staff panel.",
+        "formId": "Form ID",
+        "formIdDescription": "Tally form ID found in the form URL.",
+        "formTitle": "Title",
+        "signingSecret": "Signing secret",
+        "signingSecretDescription": "Found in Tally's webhook settings for this form.",
+        "cancel": "Cancel",
+        "confirm": "Register"
+      },
       "formTitle": "Title",
       "formId": "Form ID",
       "createdAt": "Created",
