@@ -12,6 +12,8 @@ import {
   TrendingUpIcon,
   RefreshCwIcon,
   XCircleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -23,6 +25,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
@@ -32,9 +35,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
+import { Field, FieldTitle, FieldDescription } from "@/components/ui/field"
+import { Separator } from "@/components/ui/separator"
 import { useGuildContext } from "@/contexts/GuildContext"
-import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases } from "@/services/staff"
-import type { GlobalStats, BotStatus, UserFullProfile, ModerationCase } from "@/types/api"
+import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission } from "@/services/staff"
+import type { GlobalStats, BotStatus, UserFullProfile, ModerationCase, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
 
 // Rôles staff ayant accès aux différentes sections
 const CAN_ACCESS_STATS = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup']
@@ -42,6 +48,7 @@ const CAN_MANAGE_GUILDS = ['Dev', 'Manager', 'Supervisor_Mod']
 const CAN_MANAGE_USERS = ['Dev', 'Manager', 'Supervisor_Mod', 'Moderator']
 const CAN_VIEW_CASES = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup', 'Moderator', 'Support']
 const CAN_ACCESS_BOT = ['Dev', 'Manager']
+const CAN_ACCESS_FORMS = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup']
 
 function hasRole(staffRoles: string[], allowedRoles: string[]): boolean {
   return staffRoles.some((r) => allowedRoles.includes(r))
@@ -420,6 +427,419 @@ function CasesTab() {
   )
 }
 
+// ─── Formulaires / Candidatures ───────────────────────────────────────────────
+
+const HIDDEN_FIELD_LABELS = ['session', 'discord_id', 'email']
+
+type FormsView =
+  | { type: 'list' }
+  | { type: 'submissions'; formId: string; formTitle: string }
+  | { type: 'detail'; submissionId: string; formId: string; formTitle: string }
+
+function StatusBadge({ status }: { status: TallySubmissionStatus }) {
+  const { t } = useTranslation()
+  if (status === 'done') return (
+    <Badge className="text-xs bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
+      {t('staff.forms.statusLabel.done')}
+    </Badge>
+  )
+  if (status === 'rejected') return (
+    <Badge variant="destructive" className="text-xs">
+      {t('staff.forms.statusLabel.rejected')}
+    </Badge>
+  )
+  return (
+    <Badge className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
+      {t('staff.forms.statusLabel.pending')}
+    </Badge>
+  )
+}
+
+function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
+  const { t } = useTranslation()
+  const [forms, setForms] = useState<TallyForm[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      setForms(await getTallyForms())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load forms')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  if (loading) return <Skeleton className="h-48 rounded-xl" />
+
+  if (error) return (
+    <div className="flex flex-col items-center gap-3 py-12 text-center">
+      <XCircleIcon className="size-8 text-destructive" />
+      <p className="text-sm text-muted-foreground">{error}</p>
+      <Button variant="outline" size="sm" onClick={load}>
+        <RefreshCwIcon className="size-4 mr-1.5" />
+        {t('guildOverview.refresh')}
+      </Button>
+    </div>
+  )
+
+  if (forms.length === 0) return (
+    <p className="text-sm text-muted-foreground text-center py-8">{t('staff.forms.empty')}</p>
+  )
+
+  return (
+    <Card>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('staff.forms.formTitle')}</TableHead>
+            <TableHead>{t('staff.forms.formId')}</TableHead>
+            <TableHead>{t('staff.forms.createdAt')}</TableHead>
+            <TableHead>{t('staff.forms.submissions')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {forms.map((form) => (
+            <TableRow key={form.form_id} className="cursor-pointer" onClick={() => onSelect(form)}>
+              <TableCell className="font-medium">{form.title}</TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">{form.form_id}</TableCell>
+              <TableCell className="text-xs text-muted-foreground tabular-nums">
+                {new Date(form.created_at).toLocaleDateString()}
+              </TableCell>
+              <TableCell className="tabular-nums">{form.submission_count}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </Card>
+  )
+}
+
+const SUBMISSIONS_LIMIT = 50
+
+function FormSubmissions({
+  formId,
+  formTitle,
+  onSelect,
+  onBack,
+}: {
+  formId: string
+  formTitle: string
+  onSelect: (submissionId: string) => void
+  onBack: () => void
+}) {
+  const { t } = useTranslation()
+  const [page, setPage] = useState(0)
+  const [data, setData] = useState<TallySubmissionsResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async (p: number) => {
+    setLoading(true)
+    setError(null)
+    try {
+      setData(await getTallySubmissions(formId, SUBMISSIONS_LIMIT, p * SUBMISSIONS_LIMIT))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load submissions')
+    } finally {
+      setLoading(false)
+    }
+  }, [formId])
+
+  useEffect(() => { load(page) }, [load, page])
+
+  const totalPages = data ? Math.ceil(data.total / SUBMISSIONS_LIMIT) : 0
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <ChevronLeftIcon className="size-4 mr-1" />
+          {t('staff.forms.backToForms')}
+        </Button>
+        <span className="text-sm text-muted-foreground">/</span>
+        <span className="text-sm font-medium truncate">{formTitle}</span>
+      </div>
+
+      {loading && <Skeleton className="h-48 rounded-xl" />}
+
+      {error && !loading && (
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <XCircleIcon className="size-8 text-destructive" />
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => load(page)}>
+            <RefreshCwIcon className="size-4 mr-1.5" />
+            {t('guildOverview.refresh')}
+          </Button>
+        </div>
+      )}
+
+      {data && !loading && (
+        <>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('staff.forms.submissionId')}</TableHead>
+                  <TableHead>{t('staff.forms.discordId')}</TableHead>
+                  <TableHead>{t('staff.forms.date')}</TableHead>
+                  <TableHead>{t('staff.forms.status')}</TableHead>
+                  <TableHead>{t('staff.forms.note')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {data.items.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-10">
+                      {t('staff.forms.noSubmissions')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  data.items.map((item) => (
+                    <TableRow
+                      key={item.submission_id}
+                      className="cursor-pointer"
+                      onClick={() => onSelect(item.submission_id)}
+                    >
+                      <TableCell className="font-mono text-xs">{item.submission_id}</TableCell>
+                      <TableCell className="font-mono text-xs">{item.discord_id}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground tabular-nums">
+                        {new Date(item.created_at).toLocaleString()}
+                      </TableCell>
+                      <TableCell><StatusBadge status={item.status} /></TableCell>
+                      <TableCell className="max-w-[180px] truncate text-xs text-muted-foreground">
+                        {item.note ?? <span className="opacity-50">—</span>}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <span>{t('staff.forms.pagination', { current: page + 1, total: totalPages, count: data.total })}</span>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                  <ChevronLeftIcon className="size-4" />
+                </Button>
+                <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
+                  <ChevronRightIcon className="size-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function SubmissionDetail({
+  submissionId,
+  formTitle,
+  onBack,
+}: {
+  submissionId: string
+  formTitle: string
+  onBack: () => void
+}) {
+  const { t } = useTranslation()
+  const [detail, setDetail] = useState<TallySubmissionDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [actionStatus, setActionStatus] = useState<TallySubmissionStatus>('pending')
+  const [actionNote, setActionNote] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const d = await getTallySubmission(submissionId)
+      setDetail(d)
+      setActionStatus(d.status)
+      setActionNote(d.note ?? '')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load submission')
+    } finally {
+      setLoading(false)
+    }
+  }, [submissionId])
+
+  useEffect(() => { load() }, [load])
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const updated = await updateTallySubmission(submissionId, {
+        status: actionStatus,
+        note: actionNote,
+      })
+      setDetail((prev) => prev ? { ...prev, status: updated.status, note: updated.note } : prev)
+      toast.success(t('staff.forms.saved'))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const visibleAnswers = detail?.answers.filter(
+    (a) => !HIDDEN_FIELD_LABELS.includes(a.label.toLowerCase())
+  ) ?? []
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <ChevronLeftIcon className="size-4 mr-1" />
+          {formTitle}
+        </Button>
+        <span className="text-sm text-muted-foreground">/</span>
+        <span className="text-sm font-mono text-muted-foreground truncate">{submissionId}</span>
+      </div>
+
+      {loading && <Skeleton className="h-64 rounded-xl" />}
+
+      {error && !loading && (
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <XCircleIcon className="size-8 text-destructive" />
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={load}>
+            <RefreshCwIcon className="size-4 mr-1.5" />
+            {t('guildOverview.refresh')}
+          </Button>
+        </div>
+      )}
+
+      {detail && !loading && (
+        <>
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">{t('staff.forms.generalInfo')}</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">{t('staff.forms.discordId')}</p>
+                <p className="font-mono text-sm mt-0.5">{detail.discord_id}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t('staff.forms.date')}</p>
+                <p className="text-sm mt-0.5">{new Date(detail.created_at).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">{t('staff.forms.status')}</p>
+                <div className="mt-1"><StatusBadge status={detail.status} /></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {visibleAnswers.length > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold">{t('staff.forms.answers')}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col divide-y">
+                {visibleAnswers.map((answer) => (
+                  <div key={answer.id} className="py-3 first:pt-0 last:pb-0">
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{answer.label}</p>
+                    <p className="text-sm whitespace-pre-wrap">{answer.value || '—'}</p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold">{t('staff.forms.action')}</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              {/* Segmented control statut */}
+              <Field>
+                <FieldTitle>{t('staff.forms.status')}</FieldTitle>
+                <div className="inline-flex rounded-xl border bg-muted/40 p-1 gap-0.5 w-fit mt-2">
+                  {(['pending', 'done', 'rejected'] as TallySubmissionStatus[]).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setActionStatus(s)}
+                      className={cn(
+                        "px-3 py-1.5 text-sm font-medium rounded-lg transition-all select-none cursor-pointer",
+                        actionStatus === s
+                          ? s === 'done'
+                            ? "bg-green-600 text-white shadow-sm"
+                            : s === 'rejected'
+                            ? "bg-destructive text-destructive-foreground shadow-sm"
+                            : "bg-amber-500 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                      )}
+                    >
+                      {t(`staff.forms.statusLabel.${s}`)}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Separator />
+
+              {/* Note */}
+              <Field>
+                <FieldTitle>{t('staff.forms.note')}</FieldTitle>
+                <Textarea
+                  value={actionNote}
+                  onChange={(e) => setActionNote(e.target.value)}
+                  placeholder={t('staff.forms.notePlaceholder')}
+                  className="resize-none mt-2"
+                  rows={4}
+                />
+                <FieldDescription>{t('staff.forms.noteDescription')}</FieldDescription>
+              </Field>
+
+              <div className="flex justify-end">
+                <Button onClick={save} disabled={saving} size="sm">
+                  {saving && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+                  {t('staff.forms.save')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  )
+}
+
+function FormsTab() {
+  const [view, setView] = useState<FormsView>({ type: 'list' })
+
+  if (view.type === 'submissions') return (
+    <FormSubmissions
+      formId={view.formId}
+      formTitle={view.formTitle}
+      onSelect={(id) => setView({ type: 'detail', submissionId: id, formId: view.formId, formTitle: view.formTitle })}
+      onBack={() => setView({ type: 'list' })}
+    />
+  )
+
+  if (view.type === 'detail') return (
+    <SubmissionDetail
+      submissionId={view.submissionId}
+      formTitle={view.formTitle}
+      onBack={() => setView({ type: 'submissions', formId: view.formId, formTitle: view.formTitle })}
+    />
+  )
+
+  return <FormsList onSelect={(form) => setView({ type: 'submissions', formId: form.form_id, formTitle: form.title })} />
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export function StaffPage() {
@@ -459,6 +879,9 @@ export function StaffPage() {
       )}
       {activeTab === 'cases' && hasRole(staffRoles, CAN_VIEW_CASES) && (
         <CasesTab />
+      )}
+      {activeTab === 'forms' && hasRole(staffRoles, CAN_ACCESS_FORMS) && (
+        <FormsTab />
       )}
     </div>
   )

@@ -7,6 +7,11 @@ import type {
   GuildDetail,
   GuildAttributes,
   BlacklistEntry,
+  TallyForm,
+  TallySubmissionsResponse,
+  TallySubmissionDetail,
+  TallySubmissionItem,
+  TallySubmissionStatus,
 } from '@/types/api'
 
 // ─── Guard ────────────────────────────────────────────────────────────────────
@@ -156,4 +161,46 @@ export async function sendAnnouncement(
       guild_ids: guildIds ?? null,
     }),
   })
+}
+
+// ─── Tally (Formulaires/Candidatures) ────────────────────────────────────────
+
+export async function getTallyForms(): Promise<TallyForm[]> {
+  return (await api('/staff/tally/forms')) as TallyForm[]
+}
+
+export async function getTallySubmissions(
+  formId: string,
+  limit = 50,
+  offset = 0
+): Promise<TallySubmissionsResponse> {
+  return (await api(
+    `/staff/tally/forms/${formId}/submissions?limit=${limit}&offset=${offset}`
+  )) as TallySubmissionsResponse
+}
+
+export async function getTallySubmission(
+  submissionId: string
+): Promise<TallySubmissionDetail> {
+  return (await api(`/staff/tally/submissions/${submissionId}`)) as TallySubmissionDetail
+}
+
+export async function updateTallySubmission(
+  submissionId: string,
+  data: { status?: TallySubmissionStatus; note?: string }
+): Promise<TallySubmissionItem> {
+  return (await api(`/staff/tally/submissions/${submissionId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  })) as TallySubmissionItem
+}
+
+export async function registerTallyForm(
+  formId: string,
+  data: { title: string; signing_secret: string }
+): Promise<TallyForm> {
+  return (await api(`/staff/tally/forms/${formId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  })) as TallyForm
 }

@@ -13,6 +13,7 @@ import {
   ScrollTextIcon,
   AlertTriangleIcon,
   ServerIcon,
+  ClipboardListIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -146,6 +147,12 @@ export function AppSidebar({
           url: "/staff?tab=cases",
           icon: AlertTriangleIcon,
           isActive: staffTab === "cases",
+        },
+        {
+          title: t("staff.tabs.forms"),
+          url: "/staff?tab=forms",
+          icon: ClipboardListIcon,
+          isActive: staffTab === "forms",
         },
       ]
     : []

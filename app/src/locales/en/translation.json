@@ -283,7 +283,8 @@
       "stats": "Statistics",
       "users": "Users",
       "guilds": "Servers",
-      "cases": "Cases"
+      "cases": "Cases",
+      "forms": "Applications"
     },
     "stats": {
       "totalUsers": "Total Users",
@@ -320,6 +321,33 @@
       "reason": "Reason",
       "date": "Date",
       "empty": "No cases found."
+    },
+    "forms": {
+      "empty": "No forms found.",
+      "formTitle": "Title",
+      "formId": "Form ID",
+      "createdAt": "Created",
+      "submissions": "Submissions",
+      "noSubmissions": "No submissions yet.",
+      "backToForms": "Back to forms",
+      "submissionId": "Submission ID",
+      "discordId": "Discord ID",
+      "date": "Date",
+      "status": "Status",
+      "note": "Note",
+      "pagination": "Page {{current}}/{{total}} — {{count}} total",
+      "generalInfo": "General information",
+      "answers": "Answers",
+      "action": "Action",
+      "notePlaceholder": "Add a note...",
+      "noteDescription": "Internal note visible only to staff.",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "statusLabel": {
+        "pending": "Pending",
+        "done": "Accepted",
+        "rejected": "Rejected"
+      }
     }
   },
   "navUser": {

@@ -252,3 +252,44 @@ export interface SubscriptionServersResponse {
   count: number
   max_servers: number
 }
+
+// ─── Tally (Formulaires/Candidatures) ────────────────────────────────────────
+
+export type TallySubmissionStatus = 'pending' | 'done' | 'rejected'
+
+export interface TallyForm {
+  form_id: string
+  title: string
+  created_at: string
+  submission_count: number
+}
+
+export interface TallySubmissionItem {
+  submission_id: string
+  form_id: string
+  discord_id: string
+  status: TallySubmissionStatus
+  note: string | null
+  created_at: string
+}
+
+export interface TallySubmissionsResponse {
+  total: number
+  limit: number
+  offset: number
+  items: TallySubmissionItem[]
+}
+
+export interface TallyAnswer {
+  id: number
+  submission_id: string
+  form_id: string
+  key: string
+  type: string
+  label: string
+  value: string
+}
+
+export interface TallySubmissionDetail extends TallySubmissionItem {
+  answers: TallyAnswer[]
+}
