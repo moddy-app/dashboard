@@ -45,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { cn } from "@/lib/utils"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Field, FieldTitle, FieldDescription } from "@/components/ui/field"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission, registerTallyForm } from "@/services/staff"
@@ -811,6 +812,11 @@ function SubmissionDetail({
     (a) => !HIDDEN_FIELD_LABELS.includes(a.label.toLowerCase())
   ) ?? []
 
+  const hiddenEmail = detail?.answers.find((a) => a.label.toLowerCase() === 'email')?.value ?? null
+  const discordAvatarUrl = detail
+    ? `https://cdn.discordapp.com/embed/avatars/${Number(BigInt(detail.discord_id) % 6n)}.png`
+    : null
+
   return (
     <div className="flex flex-col gap-6">
       {/* Breadcrumb */}
@@ -883,15 +889,32 @@ function SubmissionDetail({
 
             {/* Info card */}
             <Card>
-              <CardContent className="pt-5 pb-5">
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Discord ID</p>
-                    <p className="font-mono text-xs break-all">{detail.discord_id}</p>
+              <CardContent className="pt-5 pb-5 flex flex-col gap-4">
+                {/* Avatar + status row */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="size-10 shrink-0">
+                      <AvatarImage src={discordAvatarUrl ?? undefined} alt="Discord avatar" />
+                      <AvatarFallback className="text-xs">
+                        {detail.discord_id.slice(-2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="text-xs font-mono text-muted-foreground leading-none truncate">
+                        {detail.discord_id}
+                      </p>
+                      {hiddenEmail && (
+                        <p className="text-xs text-foreground mt-1 truncate" title={hiddenEmail}>
+                          {hiddenEmail}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <StatusBadge status={detail.status} />
                 </div>
-                <div className="pt-4 border-t">
+
+                {/* Date */}
+                <div className="pt-3 border-t">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{t('staff.forms.date')}</p>
                   <p className="text-xs">{new Date(detail.created_at).toLocaleString()}</p>
                 </div>
