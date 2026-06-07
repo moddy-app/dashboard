@@ -340,6 +340,7 @@
       "answers": "Answers",
       "action": "Action",
       "notePlaceholder": "Add a note...",
+      "noteDescription": "Internal note visible only to staff.",
       "save": "Save",
       "saved": "Changes saved.",
       "statusLabel": {

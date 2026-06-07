@@ -35,6 +35,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { cn } from "@/lib/utils"
+import { Field, FieldTitle, FieldDescription } from "@/components/ui/field"
+import { Separator } from "@/components/ui/separator"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission } from "@/services/staff"
 import type { GlobalStats, BotStatus, UserFullProfile, ModerationCase, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
@@ -755,36 +758,51 @@ function SubmissionDetail({
           )}
 
           <Card>
-            <CardHeader className="pb-3">
+            <CardHeader>
               <CardTitle className="text-sm font-semibold">{t('staff.forms.action')}</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col gap-4">
-              <div className="flex flex-wrap gap-2">
-                {(['pending', 'done', 'rejected'] as TallySubmissionStatus[]).map((s) => (
-                  <Button
-                    key={s}
-                    size="sm"
-                    variant={actionStatus === s ? (s === 'rejected' ? 'destructive' : 'default') : 'outline'}
-                    className={
-                      actionStatus === s && s === 'done'
-                        ? 'bg-green-600 hover:bg-green-700'
-                        : actionStatus === s && s === 'pending'
-                        ? 'bg-amber-500 hover:bg-amber-600'
-                        : ''
-                    }
-                    onClick={() => setActionStatus(s)}
-                  >
-                    {t(`staff.forms.statusLabel.${s}`)}
-                  </Button>
-                ))}
-              </div>
-              <Textarea
-                value={actionNote}
-                onChange={(e) => setActionNote(e.target.value)}
-                placeholder={t('staff.forms.notePlaceholder')}
-                className="resize-none"
-                rows={3}
-              />
+            <CardContent className="flex flex-col gap-5">
+              {/* Segmented control statut */}
+              <Field>
+                <FieldTitle>{t('staff.forms.status')}</FieldTitle>
+                <div className="inline-flex rounded-xl border bg-muted/40 p-1 gap-0.5 w-fit mt-2">
+                  {(['pending', 'done', 'rejected'] as TallySubmissionStatus[]).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setActionStatus(s)}
+                      className={cn(
+                        "px-3 py-1.5 text-sm font-medium rounded-lg transition-all select-none cursor-pointer",
+                        actionStatus === s
+                          ? s === 'done'
+                            ? "bg-green-600 text-white shadow-sm"
+                            : s === 'rejected'
+                            ? "bg-destructive text-destructive-foreground shadow-sm"
+                            : "bg-amber-500 text-white shadow-sm"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/80"
+                      )}
+                    >
+                      {t(`staff.forms.statusLabel.${s}`)}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+
+              <Separator />
+
+              {/* Note */}
+              <Field>
+                <FieldTitle>{t('staff.forms.note')}</FieldTitle>
+                <Textarea
+                  value={actionNote}
+                  onChange={(e) => setActionNote(e.target.value)}
+                  placeholder={t('staff.forms.notePlaceholder')}
+                  className="resize-none mt-2"
+                  rows={4}
+                />
+                <FieldDescription>{t('staff.forms.noteDescription')}</FieldDescription>
+              </Field>
+
               <div className="flex justify-end">
                 <Button onClick={save} disabled={saving} size="sm">
                   {saving && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
