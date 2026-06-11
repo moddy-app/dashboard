@@ -51,7 +51,7 @@ import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
 import type { ChannelSlowmodeConfig, Sensitivity } from "@/types/api"
-import { getAdaptiveSlowmodeConfig } from "@/services/guilds"
+import { getAdaptiveSlowmodeConfig, upsertSlowmodeChannel, deleteSlowmodeChannel } from "@/services/guilds"
 import { cn } from "@/lib/utils"
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -238,7 +238,6 @@ export function AdaptiveSlowmodePage() {
     isLoadingGuild,
     guildError,
     refreshGuildData,
-    updateModule,
     disableModule,
   } = useGuildContext()
 
@@ -299,11 +298,8 @@ export function AdaptiveSlowmodePage() {
     logger.event('module:adaptive_slowmode', 'Save channel', { channelId, config })
     setIsSavingChannel(true)
     try {
-      // Fusionne le nouveau salon dans la config complète et sauvegarde via PATCH générique.
-      // Le PATCH générique crée le guild record si nécessaire (guild fraîche).
-      const updatedChannels = { ...channelConfigs, [channelId]: config }
-      await updateModule('adaptive_slowmode', { channels: updatedChannels })
-      setChannelConfigs(updatedChannels)
+      await upsertSlowmodeChannel(selectedGuildId, channelId, config)
+      setChannelConfigs((prev) => ({ ...prev, [channelId]: config }))
       setEditing(null)
       toast.success(t('modules.saved'))
       logger.success('module:adaptive_slowmode', 'Channel saved')
@@ -320,16 +316,12 @@ export function AdaptiveSlowmodePage() {
     logger.event('module:adaptive_slowmode', 'Delete channel', { channelId })
     setDeletingChannelId(channelId)
     try {
-      const remaining = { ...channelConfigs }
-      delete remaining[channelId]
-
-      if (Object.keys(remaining).length === 0) {
-        // Dernier salon → désactiver le module entier
-        await disableModule('adaptive_slowmode')
-      } else {
-        await updateModule('adaptive_slowmode', { channels: remaining })
-      }
-      setChannelConfigs(remaining)
+      await deleteSlowmodeChannel(selectedGuildId, channelId)
+      setChannelConfigs((prev) => {
+        const next = { ...prev }
+        delete next[channelId]
+        return next
+      })
       toast.success(t('modules.adaptive_slowmode.channelRemoved'))
       logger.success('module:adaptive_slowmode', 'Channel deleted')
     } catch (e) {
