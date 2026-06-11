@@ -51,11 +51,7 @@ import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
 import type { ChannelSlowmodeConfig, Sensitivity } from "@/types/api"
-import {
-  getAdaptiveSlowmodeConfig,
-  upsertSlowmodeChannel,
-  deleteSlowmodeChannel,
-} from "@/services/guilds"
+import { getAdaptiveSlowmodeConfig } from "@/services/guilds"
 import { cn } from "@/lib/utils"
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
@@ -70,7 +66,6 @@ function formatDelay(seconds: number, t: (k: string) => string): string {
   return `${seconds / 3600}h`
 }
 
-// Nearest valid delay index (for snapping)
 function nearestDelayIndex(seconds: number): number {
   const idx = VALID_DELAYS.indexOf(seconds as ValidDelay)
   return idx >= 0 ? idx : 0
@@ -81,13 +76,15 @@ const SENSITIVITIES: Sensitivity[] = ['low', 'medium', 'high']
 // ─── Types internes ───────────────────────────────────────────────────────────
 
 interface EditingChannel {
-  channelId: string | null // null = new channel
+  isNew: boolean        // true = ajout, false = édition d'un salon existant
+  channelId: string | null
   config: ChannelSlowmodeConfig
 }
 
 // ─── Composant de configuration d'un salon ────────────────────────────────────
 
 interface ChannelFormProps {
+  isNew: boolean
   channelId: string | null
   config: ChannelSlowmodeConfig
   usedChannelIds: string[]
@@ -97,6 +94,7 @@ interface ChannelFormProps {
 }
 
 function ChannelForm({
+  isNew,
   channelId,
   config,
   usedChannelIds,
@@ -105,10 +103,12 @@ function ChannelForm({
   t,
 }: ChannelFormProps) {
   const { channels } = useGuildContext()
+
+  // En mode ajout : exclure les salons déjà configurés. En mode édition : montrer tous + le salon courant.
   const textChannels = channels.filter(
     (c) =>
       (c.type === CHANNEL_TYPES.TEXT || c.type === CHANNEL_TYPES.ANNOUNCEMENT) &&
-      (c.id === channelId || !usedChannelIds.includes(c.id))
+      (isNew ? !usedChannelIds.includes(c.id) : c.id === channelId || !usedChannelIds.includes(c.id))
   )
 
   const minIdx = nearestDelayIndex(config.min_delay)
@@ -116,7 +116,6 @@ function ChannelForm({
 
   const handleSliderChange = (values: number[]) => {
     const [newMin, newMax] = values
-    // Ensure max > min: if thumbs cross, push them apart
     const safeMax = newMax <= newMin ? Math.min(newMin + 1, VALID_DELAYS.length - 1) : newMax
     onConfigChange({
       ...config,
@@ -132,8 +131,13 @@ function ChannelForm({
         <label className="text-sm font-medium">
           {t('modules.adaptive_slowmode.channel')}
         </label>
-        <Select value={channelId ?? undefined} onValueChange={onChannelChange} disabled={channelId !== null}>
-          <SelectTrigger disabled={textChannels.length === 0 || channelId !== null}>
+        {/* Le select est libre en mode "ajout", verrouillé en mode "édition" */}
+        <Select
+          value={channelId ?? undefined}
+          onValueChange={onChannelChange}
+          disabled={!isNew}
+        >
+          <SelectTrigger disabled={textChannels.length === 0 || !isNew}>
             <SelectValue placeholder={t('modules.selectChannel')} />
           </SelectTrigger>
           <SelectContent>
@@ -150,7 +154,7 @@ function ChannelForm({
             ))}
           </SelectContent>
         </Select>
-        {channelId !== null && (
+        {!isNew && (
           <p className="text-xs text-muted-foreground">{t('modules.adaptive_slowmode.channelLocked')}</p>
         )}
       </div>
@@ -234,6 +238,7 @@ export function AdaptiveSlowmodePage() {
     isLoadingGuild,
     guildError,
     refreshGuildData,
+    updateModule,
     disableModule,
   } = useGuildContext()
 
@@ -257,8 +262,6 @@ export function AdaptiveSlowmodePage() {
     try {
       const cfg = await getAdaptiveSlowmodeConfig(selectedGuildId)
       setChannelConfigs(cfg?.channels ?? {})
-    } catch {
-      // Config not yet set
     } finally {
       setIsLoadingConfig(false)
     }
@@ -272,6 +275,7 @@ export function AdaptiveSlowmodePage() {
 
   const openNewChannel = () => {
     setEditing({
+      isNew: true,
       channelId: null,
       config: { min_delay: 0, max_delay: 30, sensitivity: 'medium' },
     })
@@ -280,12 +284,11 @@ export function AdaptiveSlowmodePage() {
   const openEditChannel = (channelId: string) => {
     const existing = channelConfigs[channelId]
     if (!existing) return
-    setEditing({ channelId, config: { ...existing } })
+    setEditing({ isNew: false, channelId, config: { ...existing } })
   }
 
   const handleSaveChannel = async () => {
-    if (!selectedGuildId || !editing) return
-    if (!editing.channelId) return // should not happen
+    if (!selectedGuildId || !editing || !editing.channelId) return
 
     const { channelId, config } = editing
     if (config.max_delay <= config.min_delay) {
@@ -293,11 +296,14 @@ export function AdaptiveSlowmodePage() {
       return
     }
 
-    logger.event('module:adaptive_slowmode', 'Upsert channel', { channelId, config })
+    logger.event('module:adaptive_slowmode', 'Save channel', { channelId, config })
     setIsSavingChannel(true)
     try {
-      await upsertSlowmodeChannel(selectedGuildId, channelId, config)
-      setChannelConfigs((prev) => ({ ...prev, [channelId]: config }))
+      // Fusionne le nouveau salon dans la config complète et sauvegarde via PATCH générique.
+      // Le PATCH générique crée le guild record si nécessaire (guild fraîche).
+      const updatedChannels = { ...channelConfigs, [channelId]: config }
+      await updateModule('adaptive_slowmode', { channels: updatedChannels })
+      setChannelConfigs(updatedChannels)
       setEditing(null)
       toast.success(t('modules.saved'))
       logger.success('module:adaptive_slowmode', 'Channel saved')
@@ -314,12 +320,16 @@ export function AdaptiveSlowmodePage() {
     logger.event('module:adaptive_slowmode', 'Delete channel', { channelId })
     setDeletingChannelId(channelId)
     try {
-      await deleteSlowmodeChannel(selectedGuildId, channelId)
-      setChannelConfigs((prev) => {
-        const next = { ...prev }
-        delete next[channelId]
-        return next
-      })
+      const remaining = { ...channelConfigs }
+      delete remaining[channelId]
+
+      if (Object.keys(remaining).length === 0) {
+        // Dernier salon → désactiver le module entier
+        await disableModule('adaptive_slowmode')
+      } else {
+        await updateModule('adaptive_slowmode', { channels: remaining })
+      }
+      setChannelConfigs(remaining)
       toast.success(t('modules.adaptive_slowmode.channelRemoved'))
       logger.success('module:adaptive_slowmode', 'Channel deleted')
     } catch (e) {
@@ -512,9 +522,9 @@ export function AdaptiveSlowmodePage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editing?.channelId
-                ? t('modules.adaptive_slowmode.editChannel')
-                : t('modules.adaptive_slowmode.addChannelTitle')}
+              {editing?.isNew
+                ? t('modules.adaptive_slowmode.addChannelTitle')
+                : t('modules.adaptive_slowmode.editChannel')}
             </DialogTitle>
             <DialogDescription>
               {t('modules.adaptive_slowmode.dialogDescription')}
@@ -523,6 +533,7 @@ export function AdaptiveSlowmodePage() {
 
           {editing && (
             <ChannelForm
+              isNew={editing.isNew}
               channelId={editing.channelId}
               config={editing.config}
               usedChannelIds={usedChannelIds}
