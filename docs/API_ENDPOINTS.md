@@ -312,6 +312,43 @@ Recupere toutes les infos Discord d'un serveur en un seul appel (guild info, cha
 
 ---
 
+### `GET /guilds/{guild_id}/premium`
+
+Verifie si un serveur a un abonnement premium actif et quel utilisateur l'a lie.
+
+**Auth :** guild_access
+
+**Reponse (premium actif) :**
+```json
+{
+  "guild_id": "123456789",
+  "is_premium": true,
+  "subscriber_id": "987654321098765432",
+  "tier": "monthly",
+  "expires_at": "2026-07-01T00:00:00+00:00",
+  "linked_at": "2026-06-01T12:34:56+00:00"
+}
+```
+
+**Reponse (pas de premium) :**
+```json
+{
+  "guild_id": "123456789",
+  "is_premium": false,
+  "subscriber_id": null,
+  "tier": null,
+  "expires_at": null,
+  "linked_at": null
+}
+```
+
+**Logique :**
+1. Lit `guilds.attributes` pour `PREMIUM`
+2. Joint `subscription_servers` + `users` sur `server_id` pour trouver l'abonne dont l'abonnement est encore actif (`subscription_tier IS NOT NULL AND subscription_expires_at > NOW()`)
+3. Si un subscriber actif est trouve, `is_premium = true` meme si l'attribut `PREMIUM` n'est pas encore positionne
+
+---
+
 ### `PATCH /guilds/{guild_id}/settings`
 
 Modifie la config du serveur (merge dans le champ JSONB `data`).
@@ -425,6 +462,179 @@ Desactive un module (supprime sa config).
 
 ```json
 {"guild_id": 123456789, "module_id": "starboard", "status": "disabled"}
+```
+
+---
+
+## Module — Adaptive Slowmode
+
+Le module `adaptive_slowmode` ajuste automatiquement le délai d'envoi d'un salon Discord en fonction de son activité, dans les bornes `min_delay` / `max_delay` définies par le serveur. Contrairement aux autres modules, il expose des endpoints dédiés avec validation stricte des valeurs Discord.
+
+**Valeurs de delay valides (secondes) :** `0, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600`
+
+**Structure stockée en DB** (`guilds.data.modules.adaptive_slowmode`) :
+
+```json
+{
+  "channels": {
+    "123456789012345678": {
+      "min_delay": 0,
+      "max_delay": 30,
+      "sensitivity": "high"
+    },
+    "987654321098765432": {
+      "min_delay": 5,
+      "max_delay": 300,
+      "sensitivity": "low"
+    }
+  }
+}
+```
+
+---
+
+### `GET /guilds/{guild_id}/modules/adaptive_slowmode`
+
+Config complète du module. Endpoint générique (voir `GET /guilds/{guild_id}/modules/{module_id}`).
+
+**Auth :** guild_access
+**Reponse :** config du module ou `404` si jamais configuré.
+
+```json
+{
+  "channels": {
+    "123456789012345678": {"min_delay": 0, "max_delay": 30, "sensitivity": "high"}
+  }
+}
+```
+
+---
+
+### `PUT /guilds/{guild_id}/modules/adaptive_slowmode`
+
+Sauvegarde complète de la config (remplace tout le module d'un coup).
+
+**Auth :** guild_access
+**Body :**
+
+```json
+{
+  "channels": {
+    "123456789012345678": {
+      "min_delay": 0,
+      "max_delay": 30,
+      "sensitivity": "high"
+    },
+    "987654321098765432": {
+      "min_delay": 5,
+      "max_delay": 300,
+      "sensitivity": "low"
+    }
+  }
+}
+```
+
+**Champs du body :**
+
+| Champ | Type | Contrainte |
+|---|---|---|
+| `channels` | object | Au moins 1 entrée |
+| clé | string | Snowflake Discord valide (numérique) |
+| `min_delay` | int | Parmi les valeurs Discord valides (`0 ≤ x ≤ 21600`) |
+| `max_delay` | int | Parmi les valeurs Discord valides, doit être `> min_delay` |
+| `sensitivity` | string | `"low"` \| `"medium"` \| `"high"` |
+
+**Actions déclenchées :**
+1. `UPDATE guilds SET data = jsonb_set(data, '{modules,adaptive_slowmode}', $2::jsonb) WHERE guild_id = $1`
+2. Invalide le cache : `DEL guild:{id}:config`
+3. Notifie le bot (Pub/Sub) : `PUBLISH moddy:bot {"type": "module_updated", "guild_id": 123, "module_id": "adaptive_slowmode"}`
+
+**Reponse :** config complète mise à jour
+
+```json
+{
+  "channels": {
+    "123456789012345678": {"min_delay": 0, "max_delay": 30, "sensitivity": "high"}
+  }
+}
+```
+
+**Erreurs :** `422` validation, `404` serveur introuvable
+
+---
+
+### `PUT /guilds/{guild_id}/modules/adaptive_slowmode/channels/{channel_id}`
+
+Ajoute ou met à jour la config d'un seul salon.
+
+**Auth :** guild_access
+**Path params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `channel_id` | string | Snowflake Discord du salon (numérique) |
+
+**Body :**
+
+```json
+{
+  "min_delay": 0,
+  "max_delay": 60,
+  "sensitivity": "medium"
+}
+```
+
+**Actions déclenchées :**
+1. `UPDATE guilds SET data = jsonb_set(data, '{modules,adaptive_slowmode,channels,<channel_id>}', $3::jsonb, true)`
+2. Invalide le cache + notifie le bot
+
+**Reponse :** config complète du module après mise à jour
+
+```json
+{
+  "channels": {
+    "123456789012345678": {"min_delay": 0, "max_delay": 60, "sensitivity": "medium"}
+  }
+}
+```
+
+**Erreurs :** `400` channel_id invalide, `422` validation, `404` serveur introuvable
+
+---
+
+### `DELETE /guilds/{guild_id}/modules/adaptive_slowmode/channels/{channel_id}`
+
+Supprime la config d'un seul salon.
+
+**Auth :** guild_access
+**Path params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `channel_id` | string | Snowflake Discord du salon (numérique) |
+
+**Actions déclenchées :**
+1. `UPDATE guilds SET data = data #- '{modules,adaptive_slowmode,channels,<channel_id>}'`
+2. Invalide le cache + notifie le bot
+
+**Reponse :**
+
+```json
+{"guild_id": "123456789", "channel_id": "123456789012345678", "status": "removed"}
+```
+
+**Erreur :** `400` channel_id invalide
+
+---
+
+### `DELETE /guilds/{guild_id}/modules/adaptive_slowmode`
+
+Désactive le module entier. Endpoint générique (voir `DELETE /guilds/{guild_id}/modules/{module_id}`).
+
+**Reponse :**
+
+```json
+{"guild_id": "123456789", "module_id": "adaptive_slowmode", "status": "disabled"}
 ```
 
 ---
@@ -600,6 +810,73 @@ Le frontend doit cacher le bandeau si la reponse est `null` ou si le champ corre
 | `resolved` | Incident resolu |
 
 **Banniere custom (`type = null`) :** `icon_svg` contient le SVG brut, `color` contient la couleur hex `#RRGGBB`.
+
+---
+
+## Users (public)
+
+### `GET /users/{user_id}`
+
+Retourne les informations publiques d'un utilisateur Discord via le bot token. Endpoint public, sans authentification, concu pour la documentation et les intégrations tierces.
+
+**Auth :** aucune
+**Cache :** Redis `discord:user:{user_id}` TTL 5min
+**Path params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `user_id` | int | ID Discord de l'utilisateur (Snowflake) |
+
+**Reponse :**
+
+```json
+{
+  "user_id": "123456789012345678",
+  "username": "johndoe",
+  "global_name": "John Doe",
+  "discriminator": "0",
+  "avatar": "a_d5efa99b3eeaa7dd43acca82f5692432",
+  "avatar_url": "https://cdn.discordapp.com/avatars/123456789012345678/a_d5efa99b3eeaa7dd43acca82f5692432.gif?size=256",
+  "banner": null,
+  "banner_url": null,
+  "accent_color": 5793266,
+  "avatar_decoration_data": {
+    "asset": "a_abc123def456",
+    "sku_id": "123456789",
+    "asset_url": "https://cdn.discordapp.com/avatar-decoration-presets/a_abc123def456.png"
+  },
+  "public_flags": 4194304,
+  "badges": ["ACTIVE_DEVELOPER"],
+  "bot": false
+}
+```
+
+**Champs :**
+
+| Champ | Type | Description |
+|---|---|---|
+| `user_id` | string | Discord ID (Snowflake) |
+| `username` | string | Nom d'utilisateur Discord (unique) |
+| `global_name` | string\|null | Nom d'affichage |
+| `discriminator` | string | Discriminateur (`"0"` sur les nouveaux comptes) |
+| `avatar` | string\|null | Hash de l'avatar |
+| `avatar_url` | string\|null | URL CDN (`.png` ou `.gif` si hash commence par `a_`), `?size=256` |
+| `banner` | string\|null | Hash de la banniere de profil |
+| `banner_url` | string\|null | URL CDN de la banniere |
+| `accent_color` | int\|null | Couleur d'accent (valeur RGB entiere) |
+| `avatar_decoration_data` | object\|null | Decoration d'avatar : `asset`, `sku_id`, `asset_url` (URL CDN calculee) |
+| `public_flags` | int\|null | Bitmask des flags publics |
+| `badges` | string[] | Noms lisibles des flags publics actifs (meme valeurs que `discord_badges` dans `/auth/me`) |
+| `bot` | bool | `true` si compte bot |
+
+**Erreurs :**
+
+| Code | Description |
+|---|---|
+| `404` | Utilisateur introuvable sur Discord |
+| `429` | Rate limit Discord atteint |
+| `502` | Erreur API Discord |
+| `503` | Bot token non configure |
 
 ---
 
@@ -1346,3 +1623,200 @@ Envoyer une annonce via le bot (tache critique Redis Stream).
 ```json
 {"status": "queued"}
 ```
+
+---
+
+## Tally — Formulaires
+
+### `POST /webhooks/tally`
+
+Reçoit une soumission Tally. Identifie le formulaire via `formId`, vérifie la signature HMAC-SHA256 (base64) avec le `signing_secret` du formulaire, valide le champ caché `session` pour extraire et authentifier le `discord_id`, puis persiste la soumission et ses réponses.
+
+**Auth :** aucune (signature Tally via `X-Tally-Signature`)
+
+**Headers requis :**
+
+| Header | Description |
+|---|---|
+| `X-Tally-Signature` | HMAC-SHA256 du body brut, encodé en base64 |
+
+**Payload Tally (exemple) :**
+
+```json
+{
+  "eventId": "...",
+  "eventType": "FORM_RESPONSE",
+  "data": {
+    "responseId": "abc123",
+    "submissionId": "abc123",
+    "formId": "mYfOrM",
+    "formName": "Mon formulaire",
+    "fields": [
+      { "key": "session", "label": "session", "type": "HIDDEN_FIELDS", "value": "123456789:hmac_hex" },
+      { "key": "question_abc", "label": "Pseudo", "type": "INPUT_TEXT", "value": "John" }
+    ]
+  }
+}
+```
+
+**Champ `session` :** format `discord_id:hmac_hex` — le HMAC est `HMAC-SHA256(TALLY_SESSION_SECRET, discord_id)`.
+
+**Comportement :**
+- Formulaire inconnu → ignoré silencieusement (200)
+- Signature invalide → ignoré silencieusement (200)
+- Session invalide → ignoré silencieusement (200)
+- Soumission dupliquée → ignorée (idempotent)
+
+**Réponse :** `{"received": true}`
+
+---
+
+### `GET /tally/session-hash`
+
+Génère le token de session à injecter dans le champ caché `session` d'un formulaire Tally.
+
+**Auth :** session cookie
+
+**Réponse :**
+
+```json
+{ "session": "123456789012345678:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890" }
+```
+
+Format : `discord_id:hmac_hex` (HMAC-SHA256 du discord_id signé avec `TALLY_SESSION_SECRET`)
+
+---
+
+### `GET /staff/tally/forms`
+
+Liste tous les formulaires enregistrés avec leur nombre de soumissions.
+
+**Auth :** staff
+
+**Réponse :**
+
+```json
+[
+  { "form_id": "mYfOrM", "title": "Candidature", "created_at": "2026-06-01T00:00:00Z", "submission_count": 42 }
+]
+```
+
+---
+
+### `GET /staff/tally/forms/{form_id}`
+
+Infos générales d'un formulaire (sans le `signing_secret`).
+
+**Auth :** staff
+
+**Réponse :**
+
+```json
+{ "form_id": "mYfOrM", "title": "Candidature", "created_at": "2026-06-01T00:00:00Z" }
+```
+
+**Erreurs :** `404` si formulaire inexistant
+
+---
+
+### `PUT /staff/tally/forms/{form_id}`
+
+Crée ou met à jour un formulaire (enregistrement du `signing_secret` Tally).
+
+**Auth :** staff
+
+**Body :**
+
+```json
+{ "title": "Candidature modérateur", "signing_secret": "tally_secret_..." }
+```
+
+**Réponse :** formulaire créé/mis à jour (sans `signing_secret`)
+
+**Erreurs :** `400` si `title` ou `signing_secret` manquant
+
+---
+
+### `GET /staff/tally/forms/{form_id}/submissions`
+
+Liste les soumissions d'un formulaire avec pagination.
+
+**Auth :** staff
+
+**Query params :**
+
+| Param | Type | Défaut | Description |
+|---|---|---|---|
+| `limit` | int | 50 | Max 200 |
+| `offset` | int | 0 | Décalage |
+
+**Réponse :**
+
+```json
+{
+  "total": 42,
+  "limit": 50,
+  "offset": 0,
+  "items": [
+    {
+      "submission_id": "abc123",
+      "form_id": "mYfOrM",
+      "discord_id": 123456789012345678,
+      "status": "pending",
+      "note": null,
+      "created_at": "2026-06-07T12:00:00Z"
+    }
+  ]
+}
+```
+
+**Erreurs :** `404` si formulaire inexistant
+
+---
+
+### `GET /staff/tally/submissions/{submission_id}`
+
+Charge les infos générales d'une soumission + toutes ses réponses.
+
+**Auth :** staff
+
+**Réponse :**
+
+```json
+{
+  "submission_id": "abc123",
+  "form_id": "mYfOrM",
+  "discord_id": 123456789012345678,
+  "status": "pending",
+  "note": null,
+  "created_at": "2026-06-07T12:00:00Z",
+  "answers": [
+    { "id": 1, "submission_id": "abc123", "form_id": "mYfOrM", "key": "question_abc", "type": "INPUT_TEXT", "label": "Pseudo", "value": "John" }
+  ]
+}
+```
+
+**Erreurs :** `404` si soumission inexistante
+
+---
+
+### `PATCH /staff/tally/submissions/{submission_id}`
+
+Met à jour le statut et/ou la note d'une soumission.
+
+**Auth :** staff
+
+**Body :**
+
+```json
+{ "status": "done", "note": "Candidature acceptée" }
+```
+
+| Champ | Type | Valeurs acceptées |
+|---|---|---|
+| `status` | string (optionnel) | `pending`, `done`, `rejected` |
+| `note` | string (optionnel) | texte libre |
+
+**Réponse :** soumission mise à jour
+
+**Erreurs :** `400` si statut invalide ou ni `status` ni `note` fourni, `404` si soumission inexistante
