@@ -7,6 +7,8 @@ import type {
   ModuleConfig,
   GuildStats,
   LoggingConfig,
+  AdaptiveSlowmodeConfig,
+  ChannelSlowmodeConfig,
   SubscriptionData,
   SubscriptionServer,
   SubscriptionServersResponse,
@@ -117,6 +119,48 @@ export async function updateLogging(
 ): Promise<void> {
   await api(`/guilds/${guildId}/logging`, {
     method: 'PATCH',
+    body: JSON.stringify(config),
+  })
+}
+
+// ─── Adaptive Slowmode ────────────────────────────────────────────────────────
+
+export async function getAdaptiveSlowmodeConfig(
+  guildId: string | number
+): Promise<AdaptiveSlowmodeConfig | null> {
+  try {
+    return (await api(`/guilds/${guildId}/modules/adaptive_slowmode`)) as AdaptiveSlowmodeConfig
+  } catch {
+    return null
+  }
+}
+
+export async function upsertSlowmodeChannel(
+  guildId: string | number,
+  channelId: string,
+  config: ChannelSlowmodeConfig
+): Promise<void> {
+  await api(`/guilds/${guildId}/modules/adaptive_slowmode/channels/${channelId}`, {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  })
+}
+
+export async function deleteSlowmodeChannel(
+  guildId: string | number,
+  channelId: string
+): Promise<void> {
+  await api(`/guilds/${guildId}/modules/adaptive_slowmode/channels/${channelId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function saveAdaptiveSlowmodeConfig(
+  guildId: string | number,
+  config: AdaptiveSlowmodeConfig
+): Promise<void> {
+  await api(`/guilds/${guildId}/modules/adaptive_slowmode`, {
+    method: 'PUT',
     body: JSON.stringify(config),
   })
 }
