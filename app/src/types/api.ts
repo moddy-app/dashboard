@@ -101,6 +101,7 @@ export type ModuleId =
   | 'interserver'
   | 'youtube_notifications'
   | 'logging'
+  | 'adaptive_slowmode'
 
 export interface StarboardConfig {
   channel_id: string
@@ -150,6 +151,18 @@ export interface LoggingConfig {
   events: string[]
 }
 
+export type Sensitivity = 'low' | 'medium' | 'high'
+
+export interface ChannelSlowmodeConfig {
+  min_delay: number
+  max_delay: number
+  sensitivity: Sensitivity
+}
+
+export interface AdaptiveSlowmodeConfig {
+  channels: Record<string, ChannelSlowmodeConfig>
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
@@ -158,6 +171,7 @@ export type ModuleConfig =
   | AutoRestoreRolesConfig
   | InterserverConfig
   | LoggingConfig
+  | AdaptiveSlowmodeConfig
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 

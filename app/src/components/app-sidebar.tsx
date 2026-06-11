@@ -2,6 +2,7 @@ import * as React from "react"
 import {
   BookOpenIcon,
   CrownIcon,
+  GaugeIcon,
   LayoutDashboardIcon,
   LifeBuoyIcon,
   RefreshCwIcon,
@@ -107,6 +108,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/logging`,
           icon: ScrollTextIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/logging`,
+        },
+        {
+          title: t("modules.adaptive_slowmode.name"),
+          url: `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
+          icon: GaugeIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
         },
       ]
     : !isOnStaffPage
