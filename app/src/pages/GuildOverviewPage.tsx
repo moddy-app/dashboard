@@ -10,6 +10,7 @@ import {
   MessageSquareIcon,
   ScrollTextIcon,
   GaugeIcon,
+  BellRingIcon,
   CheckCircleIcon,
   XCircleIcon,
   ExternalLinkIcon,
@@ -190,6 +191,7 @@ export function GuildOverviewPage() {
     { id: 'auto_role', icon: UsersIcon },
     { id: 'logging', icon: ScrollTextIcon },
     { id: 'adaptive_slowmode', icon: GaugeIcon },
+    { id: 'social_notifications', icon: BellRingIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null

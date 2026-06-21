@@ -15,6 +15,7 @@ import {
   AlertTriangleIcon,
   ServerIcon,
   ClipboardListIcon,
+  BellRingIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -114,6 +115,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
           icon: GaugeIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
+        },
+        {
+          title: t("modules.social_notifications.name"),
+          url: `/servers/${selectedGuildId}/modules/social_notifications`,
+          icon: BellRingIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/social_notifications`,
         },
       ]
     : !isOnStaffPage

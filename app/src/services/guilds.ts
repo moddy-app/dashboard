@@ -12,6 +12,11 @@ import type {
   SubscriptionData,
   SubscriptionServer,
   SubscriptionServersResponse,
+  SocialPlatform,
+  SocialSubscription,
+  SocialSubscriptionCreate,
+  SocialSubscriptionUpdate,
+  SocialSubscribeResult,
 } from '@/types/api'
 
 // ─── Guilds ───────────────────────────────────────────────────────────────────
@@ -162,6 +167,60 @@ export async function saveAdaptiveSlowmodeConfig(
   await api(`/guilds/${guildId}/modules/adaptive_slowmode`, {
     method: 'PUT',
     body: JSON.stringify(config),
+  })
+}
+
+// ─── Social Notifications ──────────────────────────────────────────────────────
+
+const SOCIAL_BASE = (guildId: string | number) =>
+  `/guilds/${guildId}/modules/social_notifications`
+
+/** Liste les abonnements de la guilde (optionnellement filtrés par plateforme). */
+export async function getSocialSubscriptions(
+  guildId: string | number,
+  platform?: SocialPlatform
+): Promise<SocialSubscription[]> {
+  const query = platform ? `?platform=${platform}` : ''
+  return (await api(`${SOCIAL_BASE(guildId)}/subscriptions${query}`)) as SocialSubscription[]
+}
+
+/**
+ * Ajoute (ou ré-active) un abonnement. Appel synchrone côté backend (~2-12s) :
+ * la réponse contient le target_id canonique et le display_name résolu par le bot.
+ * Les snowflakes sont envoyés en string — Pydantic les coerce en int sans perte
+ * de précision (contrairement à un Number() JS qui arrondirait au-delà de 2^53).
+ */
+export async function addSocialSubscription(
+  guildId: string | number,
+  input: SocialSubscriptionCreate
+): Promise<SocialSubscribeResult> {
+  return (await api(`${SOCIAL_BASE(guildId)}/subscriptions`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })) as SocialSubscribeResult
+}
+
+/** Modifie un abonnement (PATCH partiel — seuls les champs fournis sont transmis). */
+export async function updateSocialSubscription(
+  guildId: string | number,
+  platform: SocialPlatform,
+  targetId: string,
+  update: SocialSubscriptionUpdate
+): Promise<void> {
+  await api(`${SOCIAL_BASE(guildId)}/subscriptions/${platform}/${targetId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(update),
+  })
+}
+
+/** Supprime un abonnement. */
+export async function deleteSocialSubscription(
+  guildId: string | number,
+  platform: SocialPlatform,
+  targetId: string
+): Promise<void> {
+  await api(`${SOCIAL_BASE(guildId)}/subscriptions/${platform}/${targetId}`, {
+    method: 'DELETE',
   })
 }
 

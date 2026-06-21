@@ -102,6 +102,7 @@ export type ModuleId =
   | 'youtube_notifications'
   | 'logging'
   | 'adaptive_slowmode'
+  | 'social_notifications'
 
 export interface StarboardConfig {
   channel_id: string
@@ -163,6 +164,72 @@ export interface AdaptiveSlowmodeConfig {
   channels: Record<string, ChannelSlowmodeConfig>
 }
 
+// ─── Social Notifications ──────────────────────────────────────────────────────
+
+export type SocialPlatform = 'youtube' | 'twitch' | 'bluesky' | 'rss' | 'instagram'
+
+/** Config globale du module (endpoint générique des modules) */
+export interface SocialNotificationsConfig {
+  enabled: boolean
+  default_message: string | null
+}
+
+/** Un abonnement (ligne de la table social_subscriptions) */
+export interface SocialSubscription {
+  id: number
+  guild_id?: string
+  platform: SocialPlatform
+  target_id: string
+  identifier: string
+  display_name: string | null
+  avatar_url: string | null
+  channel_id: string
+  message: string | null
+  mention_role_ids: string[]
+  poll_interval?: number
+  enabled: boolean
+  embed_color: number | null
+  show_avatar: boolean
+  show_media: boolean
+  created_by?: string
+  created_at: string
+  updated_at?: string
+}
+
+/** Corps d'un POST /subscriptions (création) */
+export interface SocialSubscriptionCreate {
+  platform: SocialPlatform
+  identifier: string
+  channel_id: string
+  message: string | null
+  mention_role_ids: string[]
+  embed_color: number | null
+  show_avatar: boolean
+  show_media: boolean
+}
+
+/** Corps d'un PATCH /subscriptions/{platform}/{target_id} (tous optionnels) */
+export interface SocialSubscriptionUpdate {
+  channel_id?: string
+  message?: string | null
+  mention_role_ids?: string[]
+  enabled?: boolean
+  embed_color?: number | null
+  show_avatar?: boolean
+  show_media?: boolean
+}
+
+/** Réponse résolue par le bot lors d'un ajout */
+export interface SocialSubscribeResult {
+  ok: boolean
+  platform: SocialPlatform
+  target_id: string
+  display_name: string | null
+  avatar_url: string | null
+  error?: string
+  limit?: number
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
@@ -172,6 +239,7 @@ export type ModuleConfig =
   | InterserverConfig
   | LoggingConfig
   | AdaptiveSlowmodeConfig
+  | SocialNotificationsConfig
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 

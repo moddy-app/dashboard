@@ -337,6 +337,7 @@ Le système utilise :
 - **TooltipProvider** wrappant l'app dans `main.tsx`
 - **Système de notifications** (NotificationDrawer responsive, types, données exemple, hook use-media-query)
 - **Dark mode** (ThemeProvider, cookie `moddy_preferences.theme`, sélecteur dans `/debug`)
+- **Module Social Notifications** (`/servers/:guildId/modules/social_notifications`) — abonnements YouTube/Twitch/Bluesky/RSS (Instagram réservé) : liste, ajout (résolution synchrone via le bot), édition (PATCH partiel), pause/reprise, suppression, quota par plateforme (1 free / 5 premium), éditeur de message avec cheat-sheet de placeholders, couleur d'embed (marque ou custom), toggles avatar/média conditionnels. Métadonnées plateformes dans `src/lib/social-platforms.ts`, services dans `src/services/guilds.ts`.
 
 ### 🚧 Prêt pour le développement
 - Gestion et validation de formulaires
@@ -571,4 +572,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-23 (dark mode avec ThemeProvider et cookie de préférences)*
+*Dernière mise à jour : 2026-06-21 (intégration du module Social Notifications)*
