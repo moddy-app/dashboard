@@ -80,6 +80,19 @@ notification Discord à chaque nouvelle publication.
   (cache module, 1 seule requête `/guilds`) → badge ambré dans `GuildSelectionView`
   et icône couronne dans le `TeamSwitcher`.
 
+## Correctif premium (cause racine)
+- **Bug** : `guildDetail` provient de `GET /guilds/{id}/discord` qui renvoie les
+  données Discord brutes **sans** `attributes` → `guildDetail.attributes?.PREMIUM`
+  était toujours `undefined`, donc le CTA d'upsell s'affichait sur des serveurs Max.
+- **Fix** : la détection premium s'appuie désormais sur un **set partagé**
+  (`usePremiumGuilds`) combinant l'abonnement actif de l'utilisateur
+  (`GET /stripe/subscription` → `servers[]`, source de vérité billing) **et**
+  l'attribut PREMIUM via `GET /guilds`. `GuildContext.isPremium` = serveur dans ce
+  set (avec stats et `/premium` en secours). Garantit la cohérence entre le badge
+  « Max » et le masquage du CTA.
+- Cache invalidé (`invalidatePremiumGuilds`) au lien/délien d'un serveur dans les
+  paramètres de facturation.
+
 ## Prochaines étapes suggérées
 - Aperçu live de l'embed de notification dans le formulaire.
 - Combobox avec recherche pour les salons/rôles sur les serveurs volumineux.

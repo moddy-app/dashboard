@@ -21,6 +21,7 @@ import {
   disableModule as apiDisableModule,
 } from '@/services/guilds'
 import { ApiError, refreshGuilds as apiRefreshGuilds } from '@/lib/auth'
+import { usePremiumGuilds } from '@/hooks/usePremiumGuilds'
 import { logger } from '@/lib/logger'
 
 // ─── Types du contexte ────────────────────────────────────────────────────────
@@ -246,7 +247,12 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     [selectedGuildId]
   )
 
+  // Détection premium robuste : le guildDetail vient de /discord (sans `attributes`),
+  // donc on s'appuie sur le set partagé (abonnement de l'utilisateur + attribut
+  // PREMIUM via /guilds), avec stats et /premium comme signaux de secours.
+  const premiumIds = usePremiumGuilds()
   const isPremium =
+    (selectedGuildId != null && premiumIds.has(String(selectedGuildId))) ||
     guildDetail?.attributes?.PREMIUM === true ||
     stats?.is_premium === true ||
     premium?.is_premium === true
