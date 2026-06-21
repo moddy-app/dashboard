@@ -418,9 +418,10 @@ Config d'un module specifique.
 
 ---
 
-### `PATCH /guilds/{guild_id}/modules/{module_id}`
+### `PUT` / `PATCH /guilds/{guild_id}/modules/{module_id}`
 
-Modifier la config d'un module. Remplace entierement la config du module.
+Modifier la config d'un module. Remplace entierement la config du module. `PUT`
+et `PATCH` sont equivalents ici.
 
 **Auth :** guild_access
 **Body (JSON) :** nouvelle config complete du module
@@ -434,17 +435,43 @@ Modifier la config d'un module. Remplace entierement la config du module.
 }
 ```
 
+**Validation par schema (Module Registry) :** si le module a un `ModuleSpec`
+enregistre (`app/modules/specs/<module_id>.py`), le body est valide contre son
+schema Pydantic avant ecriture — un body invalide renvoie **422**. Les modules
+sans spec sont stockes tels quels (passthrough legacy, aucune validation).
+
 **Actions declenchees :**
-1. `UPDATE guilds SET data = jsonb_set(data, '{modules,starboard}', $3::jsonb) WHERE guild_id = $1`
-2. Invalide le cache : `DEL guild:{id}:config`
-3. Notifie le bot (Pub/Sub) : `PUBLISH moddy:bot {"type": "module_updated", "guild_id": 123, "module_id": "starboard"}`
-4. Si `update_panel: true` dans le body → ajoute une tache critique (Redis Stream) : `XADD moddy:tasks * type update_panel guild_id 123 payload {...}`
+1. Validation du body contre le schema du module (si enregistre)
+2. `UPDATE guilds SET data = jsonb_set(data, '{modules,starboard}', $3::jsonb) WHERE guild_id = $1`
+3. Invalide le cache : `DEL guild:{id}:config`
+4. Notifie le bot (Pub/Sub) : `PUBLISH moddy:bot {"type": "module_updated", "guild_id": 123, "module_id": "starboard"}`
+5. Execute le hook `on_save` du module (si defini) — ex: appliquer un slowmode Discord
+6. Si `update_panel: true` dans le body → ajoute une tache critique (Redis Stream) : `XADD moddy:tasks * type update_panel guild_id 123 payload {...}`
 
 **Reponse :** config mise a jour
 
 ```json
 {"channel_id": 999, "reaction_count": 3, "emoji": "🌟"}
 ```
+
+---
+
+### `GET /guilds/{guild_id}/modules/schemas`
+
+Schemas JSON de **tous** les modules pilotes par schema (registry complet). Le
+dashboard s'en sert pour generer ses formulaires automatiquement.
+
+**Auth :** guild_access
+**Reponse :** `{ "<module_id>": <json_schema>, ... }`
+
+---
+
+### `GET /guilds/{guild_id}/modules/{module_id}/schema`
+
+Schema JSON d'un seul module pilote par schema (genere via Pydantic
+`model_json_schema()`). **404** si le module n'a pas de `ModuleSpec` enregistre.
+
+**Auth :** guild_access
 
 ---
 
@@ -468,7 +495,9 @@ Desactive un module (supprime sa config).
 
 ## Module — Adaptive Slowmode
 
-Le module `adaptive_slowmode` ajuste automatiquement le délai d'envoi d'un salon Discord en fonction de son activité, dans les bornes `min_delay` / `max_delay` définies par le serveur. Contrairement aux autres modules, il expose des endpoints dédiés avec validation stricte des valeurs Discord.
+Le module `adaptive_slowmode` ajuste automatiquement le délai d'envoi d'un salon Discord en fonction de son activité, dans les bornes `min_delay` / `max_delay` définies par le serveur. C'est le **module de référence du Module Registry** : sa validation (valeurs Discord valides) et son effet de bord (application immédiate du slowmode) sont déclarés via un `ModuleSpec` dans `app/modules/specs/adaptive_slowmode.py`. La sauvegarde de la config complète passe donc par le endpoint **générique** `PUT /guilds/{id}/modules/adaptive_slowmode`. Seules les sous-ressources « par salon » (`/channels/{id}`) gardent un routeur dédié.
+
+**Application immédiate :** à la réception d'une config (`PUT` complet ou par salon), le backend applique tout de suite le **slowmode minimal** (`min_delay`) sur le ou les salons concernés via l'API Discord (`PATCH /channels/{id}` avec le token du bot). Cette opération est best-effort : si Discord refuse (permission `MANAGE_CHANNELS` manquante, salon introuvable...), la config reste persistée et la requête réussit quand même — l'échec est seulement loggué côté backend.
 
 **Valeurs de delay valides (secondes) :** `0, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600`
 
@@ -512,7 +541,10 @@ Config complète du module. Endpoint générique (voir `GET /guilds/{guild_id}/m
 
 ### `PUT /guilds/{guild_id}/modules/adaptive_slowmode`
 
-Sauvegarde complète de la config (remplace tout le module d'un coup).
+Sauvegarde complète de la config (remplace tout le module d'un coup). Sert via
+le endpoint générique `PUT/PATCH /guilds/{id}/modules/{module_id}` : validation
+contre le schéma du `ModuleSpec`, puis exécution du hook `on_save` qui applique
+le slowmode minimal de chaque salon.
 
 **Auth :** guild_access
 **Body :**
@@ -636,6 +668,109 @@ Désactive le module entier. Endpoint générique (voir `DELETE /guilds/{guild_i
 ```json
 {"guild_id": "123456789", "module_id": "adaptive_slowmode", "status": "disabled"}
 ```
+
+---
+
+## Module — Social Notifications
+
+Le module `social_notifications` poste une notification Discord dès qu'un compte social suivi (YouTube, Twitch, Bluesky, RSS ; Instagram réservé) publie du nouveau contenu. La détection est faite par le service `moddy-feeds`, auquel **seul le bot** parle. Le backend **ne touche jamais** les streams `feeds:*` ni la table `social_subscriptions` en écriture : il **délègue** chaque écriture au bot via une tâche sur `moddy:tasks`, puis attend le résultat publié par le bot sur le Pub/Sub `moddy:dashboard` (corrélé par `request_id`). La lecture des abonnements se fait directement sur la table partagée. Détails complets : `docs/SOCIAL_NOTIFICATIONS.md`.
+
+La **config globale** du module (`enabled`, `default_message`) passe par le endpoint générique des modules (`PUT /guilds/{id}/modules/social_notifications`). Les **abonnements** ci-dessous sont une sous-ressource dédiée.
+
+### `GET /guilds/{guild_id}/modules/social_notifications/subscriptions`
+
+Liste les abonnements de la guilde. Query optionnelle `?platform=youtube|twitch|bluesky|rss|instagram`. Lecture directe de la table `social_subscriptions`.
+
+**Reponse :**
+
+```json
+[
+  {
+    "id": 12,
+    "guild_id": "123456789",
+    "platform": "youtube",
+    "target_id": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+    "identifier": "@mrbeast",
+    "display_name": "MrBeast",
+    "avatar_url": "https://...",
+    "channel_id": "987654321",
+    "message": null,
+    "mention_role_ids": ["111", "222"],
+    "poll_interval": 60,
+    "enabled": true,
+    "embed_color": null,
+    "show_avatar": true,
+    "show_media": true,
+    "created_by": "555",
+    "created_at": "2026-06-14T10:00:00Z",
+    "updated_at": "2026-06-14T10:00:00Z"
+  }
+]
+```
+
+### `POST /guilds/{guild_id}/modules/social_notifications/subscriptions`
+
+Crée (ou ré-active) un abonnement. Émet une tâche `social_subscribe` au bot, qui résout la cible via le service, calcule le `poll_interval` selon le premium de la guilde, écrit la table et émet la commande Redis. La réponse est le résultat **résolu** par le bot.
+
+**Corps :**
+
+```json
+{
+  "platform": "youtube",
+  "identifier": "@mrbeast",
+  "channel_id": 987654321,
+  "message": "## <:youtube:…> Nouvelle vidéo !\n{author} a posté {title}\n{url}",
+  "mention_role_ids": [111, 222],
+  "embed_color": 16711680,
+  "show_avatar": true,
+  "show_media": true
+}
+```
+
+- `message` ≤ 1500 car. Corps complet de la notification (heading Markdown inclus). `NULL` ⇒ le bot utilise le template par défaut de la plateforme. Placeholders : `{author}` `{title}` `{url}` (alias `{link}`) `{platform}` `{timestamp}` (unix epoch, ex. `<t:{timestamp}:R>`). Disponibilité des placeholders varie par plateforme — voir `docs/SOCIAL_NOTIFICATIONS.md`.
+- `embed_color` : entier 24-bit (`#FF0000` → `16711680`). `NULL` = couleur de marque de la plateforme.
+- `show_avatar` / `show_media` : exposer uniquement pour les plateformes qui les supportent.
+- `channel_id` / `mention_role_ids` sont des snowflakes Discord.
+
+**Reponse (succès) :**
+
+```json
+{
+  "type": "social_subscribe_result", "request_id": "…", "guild_id": 123,
+  "ok": true, "platform": "youtube", "target_id": "UCX6OQ3DkcsbYNE6H8uQQuVA",
+  "display_name": "MrBeast", "avatar_url": "https://..."
+}
+```
+
+### `PATCH /guilds/{guild_id}/modules/social_notifications/subscriptions/{platform}/{target_id}`
+
+Modifie salon / rôles / message / pause d'un abonnement (DB only — la cible reste souscrite côté service). Émet une tâche `social_update`. Tous les champs sont optionnels ; seuls ceux fournis sont transmis.
+
+**Corps :**
+
+```json
+{ "channel_id": 987654321, "message": "…", "mention_role_ids": [333], "enabled": false,
+  "embed_color": null, "show_avatar": true, "show_media": false }
+```
+
+`enabled=false` met en pause (le dispatch ignore la ligne) sans désabonner la cible. `embed_color: null` réinitialise à la couleur de marque de la plateforme.
+
+### `DELETE /guilds/{guild_id}/modules/social_notifications/subscriptions/{platform}/{target_id}`
+
+Supprime un abonnement. Émet une tâche `social_remove` ; le bot supprime la ligne puis réconcilie la cible côté service (unsubscribe total si plus aucune guilde ne la suit, sinon recalcul du `poll_interval`).
+
+### Codes d'erreur (abonnements)
+
+La réponse du bot `{"ok": false, "error": "<code>"}` est mappée :
+
+| Cas | HTTP | Détail |
+|---|---|---|
+| `guild_not_found` | `404` | — |
+| `module_unavailable`, `twitch_not_configured`, `twitch_auth_failed`, `fetch_failed`, `bad_status`, `internal_error` | `502` | — |
+| `limit_reached_free` | `422` | `{"error":"limit_reached_free","limit":1}` — quota 1 compte/plateforme dépassé |
+| `limit_reached_premium` | `422` | `{"error":"limit_reached_premium","limit":5}` — quota 5 comptes/plateforme dépassé |
+| autres (`unknown_platform`, `platform_disabled`, `channel_not_found`, `user_not_found`, `handle_not_found`, `unsafe_url`, `no_entries`, `missing_identifier`, `not_supported`, …) | `422` | — |
+| Bot ne répond pas dans le délai | `504` | `bot_timeout` |
 
 ---
 
