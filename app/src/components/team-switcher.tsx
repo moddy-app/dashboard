@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronsUpDownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
+import { ChevronsUpDownIcon, CrownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { getGuildIconUrl } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 
@@ -32,6 +33,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const { guilds, selectedGuildId, selectGuild, guildDetail, user } = useGuildContext()
+  const premiumIds = usePremiumGuilds()
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefreshClick = async () => {
@@ -164,6 +166,9 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                       </AvatarFallback>
                     </Avatar>
                     <span className="truncate">{guild.name}</span>
+                    {premiumIds.has(String(guild.id)) && (
+                      <CrownIcon className="size-3 text-amber-500 shrink-0" />
+                    )}
                     {isActive && (
                       <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                     )}

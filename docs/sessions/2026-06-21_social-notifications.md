@@ -43,6 +43,43 @@ notification Discord à chaque nouvelle publication.
   `{ enabled, default_message }`) ; les abonnements ont leurs endpoints dédiés.
 - **Pluriels i18next v25** (JSON v4) : clés `rolesCount_one` / `rolesCount_other`.
 
+## Révisions (suite — retours utilisateur)
+- **Messages par défaut par plateforme** (`DEFAULT_MESSAGES` dans `social-platforms.ts`),
+  affichés comme placeholder enrichi (rendu + grisé) dans l'éditeur.
+- **Suppression du toggle d'activation** : le module est activé implicitement dès qu'il
+  existe ≥ 1 abonnement (auto-`updateModule` au premier ajout, auto-`disableModule` à la
+  suppression du dernier).
+- **Vrais logos de marque** : nouveau composant `components/social-icons.tsx` (SVG
+  SimpleIcons, `fill=currentColor`, couleur pilotée par la couleur de marque).
+- **Carte d'abonnement cliquable** : un clic sur la carte ouvre l'édition (les boutons
+  d'action stoppent la propagation).
+- **Sélecteur de couleur repensé** : deux cartes « Couleur plateforme » / « Personnalisée »
+  avec aperçu de la pastille, le picker n'apparaît qu'en mode personnalisé.
+- **Section Options uniforme** : toggles avatar/média/actif de taille égale, avec
+  `Tooltip` d'aide (composant `OptionToggle`).
+- **Éditeur de texte enrichi réutilisable** : `components/rich-text-editor.tsx`
+  (contentEditable). Surligne les placeholders `{token}` en bleu/gras et met en forme
+  la syntaxe Markdown (titres, gras, italique, barré, code, sous-texte `-#`, emoji
+  custom, timestamp Discord) en grisant les marqueurs — affichage uniquement, la valeur
+  envoyée reste le texte brut. Préservation du curseur via offset caractère (invariant :
+  le texte rendu == texte brut, seul le style change). Exporte `RichTextEditorHandle`
+  (`insertText`, `focus`) pour l'insertion de placeholders au curseur.
+
+## Révisions (suite — premium & quota)
+- **Détection premium fiabilisée** : nouvel endpoint `GET /guilds/{id}/premium`
+  (`getGuildPremium`), chargé dans `GuildContext` qui expose désormais `isPremium`
+  (attribut PREMIUM **ou** stats **ou** abonnement actif lié). Détecte les serveurs
+  liés à un abonnement même sans l'attribut PREMIUM positionné.
+- **CTA premium masqué** sur la vue d'ensemble quand le serveur a déjà Max
+  (`GuildOverviewPage` utilise `isPremium` du contexte) — fini le message d'upsell
+  incohérent sur un serveur déjà abonné.
+- **Quota social** : la limite (1 free / 5 premium) s'appuie sur le `isPremium` du
+  contexte ; messages d'erreur dédiés `limit_reached_free` / `limit_reached_premium`
+  (`errorLimitFree` / `errorLimitPremium`).
+- **Badge « Max »** sur les serveurs premium : nouveau hook `usePremiumGuilds`
+  (cache module, 1 seule requête `/guilds`) → badge ambré dans `GuildSelectionView`
+  et icône couronne dans le `TeamSwitcher`.
+
 ## Prochaines étapes suggérées
 - Aperçu live de l'embed de notification dans le formulaire.
 - Combobox avec recherche pour les salons/rôles sur les serveurs volumineux.

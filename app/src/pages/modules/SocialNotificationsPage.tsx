@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -8,17 +8,12 @@ import {
   LoaderIcon,
   PencilIcon,
   AlertCircleIcon,
-  YoutubeIcon,
-  TwitchIcon,
-  RssIcon,
-  AtSignIcon,
-  InstagramIcon,
   XIcon,
   PauseIcon,
   PlayIcon,
   CrownIcon,
   ExternalLinkIcon,
-  type LucideIcon,
+  InfoIcon,
 } from "lucide-react"
 import { handleSaveError } from "@/lib/handle-error"
 import { ApiError } from "@/lib/auth"
@@ -57,12 +52,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { ErrorPage } from "@/components/error-state"
+import { SocialIcon } from "@/components/social-icons"
+import { RichTextEditor, type RichTextEditorHandle } from "@/components/rich-text-editor"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES, roleColorToHex } from "@/types/api"
 import type {
@@ -74,6 +75,7 @@ import type {
 import {
   PLATFORM_META,
   PLATFORM_ORDER,
+  DEFAULT_MESSAGES,
   hexToInt,
   intToHex,
 } from "@/lib/social-platforms"
@@ -87,14 +89,6 @@ import { cn } from "@/lib/utils"
 
 const MESSAGE_MAX = 1500
 const MODULE_ID = "social_notifications"
-
-const PLATFORM_ICONS: Record<SocialPlatform, LucideIcon> = {
-  youtube: YoutubeIcon,
-  twitch: TwitchIcon,
-  bluesky: AtSignIcon,
-  rss: RssIcon,
-  instagram: InstagramIcon,
-}
 
 // ─── Brouillon d'édition ────────────────────────────────────────────────────────
 
@@ -113,12 +107,12 @@ interface SubscriptionDraft {
 
 interface EditingState {
   isNew: boolean
-  /** Abonnement source (édition uniquement) — pour les appels PATCH (platform/target_id). */
   source: SocialSubscription | null
   draft: SubscriptionDraft
 }
 
 function emptyDraft(platform: SocialPlatform): SubscriptionDraft {
+  const meta = PLATFORM_META[platform]
   return {
     platform,
     identifier: "",
@@ -126,9 +120,9 @@ function emptyDraft(platform: SocialPlatform): SubscriptionDraft {
     message: "",
     mention_role_ids: [],
     useBrandColor: true,
-    embed_color: PLATFORM_META[platform].brandColor,
-    show_avatar: true,
-    show_media: true,
+    embed_color: meta.brandColor,
+    show_avatar: meta.supportsAvatar,
+    show_media: meta.supportsMedia,
     enabled: true,
   }
 }
@@ -155,9 +149,8 @@ export function SocialNotificationsPage() {
   const { t } = useTranslation()
   const {
     selectedGuildId,
-    guildDetail,
-    stats,
     modules,
+    isPremium,
     isLoadingGuild,
     guildError,
     refreshGuildData,
@@ -165,9 +158,6 @@ export function SocialNotificationsPage() {
     disableModule,
   } = useGuildContext()
 
-  const isEnabled = MODULE_ID in modules
-  const isPremium =
-    guildDetail?.attributes?.PREMIUM === true || stats?.is_premium === true
   const limit = isPremium ? 5 : 1
 
   const [subscriptions, setSubscriptions] = useState<SocialSubscription[]>([])
@@ -175,13 +165,11 @@ export function SocialNotificationsPage() {
   const [subsError, setSubsError] = useState<string | null>(null)
   const [editing, setEditing] = useState<EditingState | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [pendingTarget, setPendingTarget] = useState<string | null>(null) // `${platform}/${target_id}`
+  const [pendingTarget, setPendingTarget] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<SocialSubscription | null>(null)
-  const [isTogglingModule, setIsTogglingModule] = useState(false)
 
   const subKey = (s: { platform: string; target_id: string }) => `${s.platform}/${s.target_id}`
 
-  // Comptage par plateforme (pour le quota)
   const countByPlatform = useMemo(() => {
     return subscriptions.reduce<Record<string, number>>((acc, s) => {
       acc[s.platform] = (acc[s.platform] ?? 0) + 1
@@ -194,7 +182,6 @@ export function SocialNotificationsPage() {
     [countByPlatform, limit]
   )
 
-  // Au moins une plateforme dispose encore de quota → on peut ouvrir le formulaire
   const canAddAny = PLATFORM_ORDER.some(
     (p) => !PLATFORM_META[p].disabled && !isAtLimit(p)
   )
@@ -207,7 +194,6 @@ export function SocialNotificationsPage() {
       const subs = await getSocialSubscriptions(selectedGuildId)
       setSubscriptions(subs ?? [])
     } catch (e) {
-      // 404 = module jamais configuré → liste vide, pas une erreur bloquante
       if (e instanceof ApiError && e.isNotFound) {
         setSubscriptions([])
       } else {
@@ -223,29 +209,9 @@ export function SocialNotificationsPage() {
     if (!isLoadingGuild) loadSubscriptions()
   }, [loadSubscriptions, isLoadingGuild])
 
-  // ── Activer / désactiver le module global ──────────────────────────────────
-
-  const handleToggleModule = async (next: boolean) => {
-    setIsTogglingModule(true)
-    try {
-      if (next) {
-        await updateModule(MODULE_ID, { enabled: true, default_message: null })
-        toast.success(t("modules.social_notifications.enabledSuccess"))
-      } else {
-        await disableModule(MODULE_ID)
-        toast.success(t("modules.social_notifications.disabledSuccess"))
-      }
-    } catch (e) {
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsTogglingModule(false)
-    }
-  }
-
   // ── Ouverture du formulaire ────────────────────────────────────────────────
 
   const openNew = () => {
-    // Première plateforme avec du quota disponible
     const firstAvailable =
       PLATFORM_ORDER.find((p) => !PLATFORM_META[p].disabled && !isAtLimit(p)) ?? "youtube"
     setEditing({ isNew: true, source: null, draft: emptyDraft(firstAvailable) })
@@ -293,9 +259,8 @@ export function SocialNotificationsPage() {
         }
         logger.event("module:social_notifications", "Add subscription", payload)
         const result = await addSocialSubscription(selectedGuildId, payload)
-        // Réponse résolue par le bot → on construit la carte avec ses valeurs
         const newSub: SocialSubscription = {
-          id: Date.now(), // id temporaire ; un reload récupère le vrai
+          id: Date.now(),
           platform: result.platform,
           target_id: result.target_id,
           identifier: draft.identifier.trim(),
@@ -311,6 +276,10 @@ export function SocialNotificationsPage() {
           created_at: new Date().toISOString(),
         }
         setSubscriptions((prev) => [...prev, newSub])
+        // Le module est implicitement activé dès qu'il existe une configuration.
+        if (!(MODULE_ID in modules)) {
+          await ensureModuleEnabled()
+        }
         toast.success(
           t("modules.social_notifications.addedSuccess", {
             name: result.display_name ?? draft.identifier.trim(),
@@ -358,16 +327,24 @@ export function SocialNotificationsPage() {
     }
   }
 
-  // Traduit les codes d'erreur connus du backend en messages clairs
+  // Active la config globale du module (best-effort — n'échoue pas l'ajout).
+  const ensureModuleEnabled = async () => {
+    try {
+      await updateModule(MODULE_ID, { enabled: true, default_message: null })
+    } catch (e) {
+      logger.warn("module:social_notifications", "Could not enable module config", e)
+    }
+  }
+
   const handleSubscriptionError = (e: unknown) => {
     if (e instanceof ApiError) {
       const code = e.message
-      if (code === "limit_reached_free" || code === "limit_reached_premium") {
-        toast.error(t("modules.social_notifications.errorLimit", { limit }), {
-          description: isPremium
-            ? undefined
-            : t("modules.social_notifications.errorLimitUpsell"),
-        })
+      if (code === "limit_reached_free") {
+        toast.error(t("modules.social_notifications.errorLimitFree"))
+        return
+      }
+      if (code === "limit_reached_premium") {
+        toast.error(t("modules.social_notifications.errorLimitPremium"))
         return
       }
       const known = [
@@ -385,9 +362,11 @@ export function SocialNotificationsPage() {
         "bot_timeout",
       ]
       if (known.includes(code)) {
-        toast.error(t(`modules.social_notifications.errors.${code}`, {
-          defaultValue: t("modules.social_notifications.errorGeneric"),
-        }))
+        toast.error(
+          t(`modules.social_notifications.errors.${code}`, {
+            defaultValue: t("modules.social_notifications.errorGeneric"),
+          })
+        )
         return
       }
     }
@@ -425,7 +404,16 @@ export function SocialNotificationsPage() {
     setPendingTarget(subKey(sub))
     try {
       await deleteSocialSubscription(selectedGuildId, sub.platform, sub.target_id)
-      setSubscriptions((prev) => prev.filter((s) => subKey(s) !== subKey(sub)))
+      const remaining = subscriptions.filter((s) => subKey(s) !== subKey(sub))
+      setSubscriptions(remaining)
+      // Plus aucune configuration → le module est implicitement désactivé.
+      if (remaining.length === 0 && MODULE_ID in modules) {
+        try {
+          await disableModule(MODULE_ID)
+        } catch (e) {
+          logger.warn("module:social_notifications", "Could not disable module config", e)
+        }
+      }
       toast.success(t("modules.social_notifications.removedSuccess"))
     } catch (e) {
       handleSaveError(e, { title: t("modules.saveError") })
@@ -441,7 +429,6 @@ export function SocialNotificationsPage() {
     return (
       <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 rounded-xl" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
     )
@@ -468,30 +455,6 @@ export function SocialNotificationsPage() {
         </div>
       </div>
 
-      {/* Activation du module */}
-      <Card>
-        <CardContent className="flex items-center justify-between gap-4 p-6">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">
-              {t("modules.social_notifications.enableTitle")}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t("modules.social_notifications.enableDescription")}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {isTogglingModule && (
-              <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
-            )}
-            <Switch
-              checked={isEnabled}
-              onCheckedChange={handleToggleModule}
-              disabled={isTogglingModule}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Carte abonnements */}
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4">
@@ -503,18 +466,12 @@ export function SocialNotificationsPage() {
               {t("modules.social_notifications.subscriptionsDescription", { limit })}
             </CardDescription>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={openNew}
-            disabled={!canAddAny || isLoadingSubs}
-          >
+          <Button type="button" size="sm" onClick={openNew} disabled={!canAddAny || isLoadingSubs}>
             <PlusIcon className="size-4" />
             {t("modules.social_notifications.addSubscription")}
           </Button>
         </CardHeader>
         <CardContent>
-          {/* Upsell quota free */}
           {!isPremium && !canAddAny && subscriptions.length > 0 && (
             <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-400/50 bg-amber-400/10 px-4 py-3">
               <CrownIcon className="size-4 text-amber-500 shrink-0" />
@@ -595,12 +552,7 @@ export function SocialNotificationsPage() {
           </DialogHeader>
 
           {editing && (
-            <SubscriptionForm
-              editing={editing}
-              isAtLimit={isAtLimit}
-              onChange={patchDraft}
-              t={t}
-            />
+            <SubscriptionForm editing={editing} isAtLimit={isAtLimit} onChange={patchDraft} t={t} />
           )}
 
           <DialogFooter className="gap-2">
@@ -631,15 +583,12 @@ export function SocialNotificationsPage() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {t("modules.social_notifications.confirmDeleteDescription", {
-                name:
-                  confirmDelete?.display_name ?? confirmDelete?.identifier ?? "",
+                name: confirmDelete?.display_name ?? confirmDelete?.identifier ?? "",
               })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>
-              {t("modules.social_notifications.cancel")}
-            </AlertDialogCancel>
+            <AlertDialogCancel>{t("modules.social_notifications.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => confirmDelete && handleDelete(confirmDelete)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -666,35 +615,51 @@ interface SubscriptionRowProps {
 
 function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: SubscriptionRowProps) {
   const { channels } = useGuildContext()
-  const Icon = PLATFORM_ICONS[sub.platform]
   const meta = PLATFORM_META[sub.platform]
   const channel = channels.find((c) => String(c.id) === String(sub.channel_id))
   const color = sub.embed_color !== null ? intToHex(sub.embed_color) : meta.brandColor
 
+  // Empêche le clic sur les boutons d'action de déclencher l'ouverture de l'édition.
+  const stop = (fn: () => void) => (e: React.MouseEvent) => {
+    e.stopPropagation()
+    fn()
+  }
+
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onClick={onEdit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          onEdit()
+        }
+      }}
       className={cn(
-        "flex items-center justify-between gap-4 rounded-lg border px-4 py-3 transition-colors hover:bg-muted/40",
+        "flex items-center justify-between gap-4 rounded-lg border px-4 py-3 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
         !sub.enabled && "opacity-60"
       )}
     >
       <div className="flex items-center gap-3 min-w-0">
         <Avatar className="size-9 shrink-0">
-          <AvatarImage src={sub.avatar_url ?? undefined} alt={sub.display_name ?? sub.identifier} referrerPolicy="no-referrer" />
+          <AvatarImage
+            src={sub.avatar_url ?? undefined}
+            alt={sub.display_name ?? sub.identifier}
+            referrerPolicy="no-referrer"
+          />
           <AvatarFallback className="bg-muted">
-            <Icon className="size-4 text-muted-foreground" />
+            <SocialIcon platform={sub.platform} className="size-4 text-muted-foreground" />
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-medium truncate">
-              {sub.display_name ?? sub.identifier}
-            </p>
+            <p className="text-sm font-medium truncate">{sub.display_name ?? sub.identifier}</p>
             <span
               className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
               style={{ backgroundColor: `${color}1a`, color }}
             >
-              <Icon className="size-3" />
+              <SocialIcon platform={sub.platform} className="size-3" />
               {t(`modules.social_notifications.platforms.${sub.platform}`)}
             </span>
             {!sub.enabled && (
@@ -716,7 +681,7 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
           variant="ghost"
           size="icon"
           className="size-8"
-          onClick={onTogglePause}
+          onClick={stop(onTogglePause)}
           disabled={pending}
           title={sub.enabled ? t("modules.social_notifications.pause") : t("modules.social_notifications.resume")}
         >
@@ -728,7 +693,7 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
             <PlayIcon className="size-4" />
           )}
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="size-8" onClick={onEdit}>
+        <Button type="button" variant="ghost" size="icon" className="size-8" onClick={stop(onEdit)}>
           <PencilIcon className="size-4" />
         </Button>
         <Button
@@ -736,12 +701,42 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
           variant="ghost"
           size="icon"
           className="size-8 text-destructive hover:text-destructive"
-          onClick={onDelete}
+          onClick={stop(onDelete)}
           disabled={pending}
         >
           <Trash2Icon className="size-4" />
         </Button>
       </div>
+    </div>
+  )
+}
+
+// ─── Option (taille uniforme + tooltip) ─────────────────────────────────────────
+
+interface OptionToggleProps {
+  label: string
+  hint?: string
+  checked: boolean
+  onChange: (v: boolean) => void
+}
+
+function OptionToggle({ label, hint, checked, onChange }: OptionToggleProps) {
+  return (
+    <div className="flex h-full items-center justify-between gap-2 rounded-lg border p-3">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <span className="text-sm truncate">{label}</span>
+        {hint && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button type="button" className="text-muted-foreground hover:text-foreground transition-colors">
+                <InfoIcon className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{hint}</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   )
 }
@@ -759,6 +754,7 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
   const { channels, roles } = useGuildContext()
   const { isNew, draft } = editing
   const meta = PLATFORM_META[draft.platform]
+  const editorRef = useRef<RichTextEditorHandle>(null)
 
   const textChannels = channels.filter(
     (c) => c.type === CHANNEL_TYPES.TEXT || c.type === CHANNEL_TYPES.ANNOUNCEMENT
@@ -766,18 +762,17 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
   const manageableRoles = roles.filter((r) => !r.managed && r.name !== "@everyone")
   const availableRoles = manageableRoles.filter((r) => !draft.mention_role_ids.includes(r.id))
 
+  const hasOptions = meta.supportsAvatar || meta.supportsMedia || !isNew
+
   return (
     <div className="flex flex-col gap-5">
-      {/* Plateforme (verrouillée en édition) */}
+      {/* Plateforme */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">
-          {t("modules.social_notifications.platform")}
-        </label>
+        <label className="text-sm font-medium">{t("modules.social_notifications.platform")}</label>
         {isNew ? (
           <div className="grid grid-cols-3 gap-2">
             {PLATFORM_ORDER.map((p) => {
               const pMeta = PLATFORM_META[p]
-              const Icon = PLATFORM_ICONS[p]
               const atLimit = isAtLimit(p)
               const blocked = pMeta.disabled || atLimit
               const active = draft.platform === p
@@ -790,7 +785,6 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
                     onChange({
                       platform: p,
                       embed_color: pMeta.brandColor,
-                      // réinitialise les toggles selon le support de la plateforme
                       show_avatar: pMeta.supportsAvatar,
                       show_media: pMeta.supportsMedia,
                     })
@@ -803,7 +797,7 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
                     blocked && "opacity-40 cursor-not-allowed hover:bg-transparent hover:border-border"
                   )}
                 >
-                  <Icon className="size-5" style={{ color: pMeta.brandColor }} />
+                  <SocialIcon platform={p} className="size-5" style={{ color: pMeta.brandColor }} />
                   <span className="text-xs font-medium">
                     {t(`modules.social_notifications.platforms.${p}`)}
                   </span>
@@ -822,24 +816,19 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
           </div>
         ) : (
           <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
-            {(() => {
-              const Icon = PLATFORM_ICONS[draft.platform]
-              return <Icon className="size-4" style={{ color: meta.brandColor }} />
-            })()}
+            <SocialIcon platform={draft.platform} className="size-4" style={{ color: meta.brandColor }} />
             <span className="text-sm font-medium">
               {t(`modules.social_notifications.platforms.${draft.platform}`)}
             </span>
-            <span className="text-xs text-muted-foreground ml-auto">{draft.identifier}</span>
+            <span className="text-xs text-muted-foreground ml-auto truncate">{draft.identifier}</span>
           </div>
         )}
       </div>
 
-      {/* Identifiant (création uniquement — la cible est fixée ensuite) */}
+      {/* Identifiant (création uniquement) */}
       {isNew && (
         <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">
-            {t("modules.social_notifications.identifier")}
-          </label>
+          <label className="text-sm font-medium">{t("modules.social_notifications.identifier")}</label>
           <Input
             value={draft.identifier}
             onChange={(e) => onChange({ identifier: e.target.value })}
@@ -853,9 +842,7 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
 
       {/* Salon */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">
-          {t("modules.social_notifications.channel")}
-        </label>
+        <label className="text-sm font-medium">{t("modules.social_notifications.channel")}</label>
         <Select value={draft.channel_id || undefined} onValueChange={(v) => onChange({ channel_id: v })}>
           <SelectTrigger disabled={textChannels.length === 0}>
             <SelectValue placeholder={t("modules.selectChannel")} />
@@ -883,9 +870,7 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
 
       {/* Rôles à mentionner */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">
-          {t("modules.social_notifications.mentionRoles")}
-        </label>
+        <label className="text-sm font-medium">{t("modules.social_notifications.mentionRoles")}</label>
         {draft.mention_role_ids.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {draft.mention_role_ids.map((id) => {
@@ -942,34 +927,30 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         </p>
       </div>
 
-      {/* Message personnalisé */}
+      {/* Message personnalisé (éditeur enrichi) */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">
-          {t("modules.social_notifications.message")}
-        </label>
-        <Textarea
+        <label className="text-sm font-medium">{t("modules.social_notifications.message")}</label>
+        <RichTextEditor
+          ref={editorRef}
           value={draft.message}
-          onChange={(e) => onChange({ message: e.target.value.slice(0, MESSAGE_MAX) })}
-          rows={4}
-          placeholder={t("modules.social_notifications.messagePlaceholder")}
+          onChange={(v) => onChange({ message: v })}
+          placeholder={DEFAULT_MESSAGES[draft.platform]}
+          placeholders={meta.placeholders}
+          maxLength={MESSAGE_MAX}
         />
         <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            {t("modules.social_notifications.messageHint")}
-          </p>
+          <p className="text-xs text-muted-foreground">{t("modules.social_notifications.messageHint")}</p>
           <span className="text-xs text-muted-foreground tabular-nums">
             {draft.message.length}/{MESSAGE_MAX}
           </span>
         </div>
-        {/* Cheat-sheet placeholders filtré par plateforme */}
+        {/* Cheat-sheet de placeholders (insertion au curseur) */}
         <div className="flex flex-wrap gap-1.5 rounded-lg border bg-muted/30 p-2.5">
           {meta.placeholders.map((ph) => (
             <button
               key={ph}
               type="button"
-              onClick={() =>
-                onChange({ message: (draft.message + ph).slice(0, MESSAGE_MAX) })
-              }
+              onClick={() => editorRef.current?.insertText(ph)}
               className="rounded bg-background border px-1.5 py-0.5 font-mono text-[11px] hover:bg-accent transition-colors"
               title={t("modules.social_notifications.insertPlaceholder")}
             >
@@ -979,22 +960,54 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         </div>
       </div>
 
-      {/* Apparence : couleur d'embed */}
+      {/* Couleur d'embed — choix marque / personnalisée */}
       <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">
-          {t("modules.social_notifications.embedColor")}
-        </label>
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <p className="text-sm">{t("modules.social_notifications.useBrandColor")}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("modules.social_notifications.useBrandColorHint")}
-            </p>
-          </div>
-          <Switch
-            checked={draft.useBrandColor}
-            onCheckedChange={(v) => onChange({ useBrandColor: v })}
-          />
+        <label className="text-sm font-medium">{t("modules.social_notifications.embedColor")}</label>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => onChange({ useBrandColor: true })}
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
+              draft.useBrandColor
+                ? "border-primary ring-1 ring-primary bg-primary/5"
+                : "border-border hover:border-muted-foreground/50"
+            )}
+          >
+            <span
+              className="size-6 rounded-full ring-1 ring-border shrink-0"
+              style={{ backgroundColor: meta.brandColor }}
+            />
+            <span className="flex flex-col min-w-0">
+              <span className="text-sm font-medium truncate">
+                {t("modules.social_notifications.colorBrand")}
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">{meta.brandColor}</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ useBrandColor: false })}
+            className={cn(
+              "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
+              !draft.useBrandColor
+                ? "border-primary ring-1 ring-primary bg-primary/5"
+                : "border-border hover:border-muted-foreground/50"
+            )}
+          >
+            <span
+              className="size-6 rounded-full ring-1 ring-border shrink-0"
+              style={{ backgroundColor: draft.embed_color }}
+            />
+            <span className="flex flex-col min-w-0">
+              <span className="text-sm font-medium truncate">
+                {t("modules.social_notifications.colorCustom")}
+              </span>
+              <span className="text-xs text-muted-foreground font-mono">
+                {!draft.useBrandColor ? draft.embed_color : t("modules.social_notifications.colorPick")}
+              </span>
+            </span>
+          </button>
         </div>
         {!draft.useBrandColor && (
           <div className="flex items-center gap-2">
@@ -1015,48 +1028,40 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         )}
       </div>
 
-      {/* Apparence : toggles avatar / média (selon support plateforme) */}
-      {(meta.supportsAvatar || meta.supportsMedia) && (
-        <div className="grid grid-cols-2 gap-3">
-          {meta.supportsAvatar && (
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <label className="text-sm cursor-pointer">
-                {t("modules.social_notifications.showAvatar")}
-              </label>
-              <Switch
+      {/* Options (taille uniforme) */}
+      {hasOptions && (
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium">{t("modules.social_notifications.optionsTitle")}</label>
+          <div className="grid grid-cols-2 gap-2 items-stretch">
+            {!isNew && (
+              <OptionToggle
+                label={t("modules.social_notifications.active")}
+                hint={t("modules.social_notifications.activeHint")}
+                checked={draft.enabled}
+                onChange={(v) => onChange({ enabled: v })}
+              />
+            )}
+            {meta.supportsAvatar && (
+              <OptionToggle
+                label={t("modules.social_notifications.showAvatar")}
+                hint={t("modules.social_notifications.showAvatarHint")}
                 checked={draft.show_avatar}
-                onCheckedChange={(v) => onChange({ show_avatar: v })}
+                onChange={(v) => onChange({ show_avatar: v })}
               />
-            </div>
-          )}
-          {meta.supportsMedia && (
-            <div className="flex items-center justify-between rounded-lg border p-3">
-              <label className="text-sm cursor-pointer">
-                {t("modules.social_notifications.showMedia")}
-              </label>
-              <Switch
+            )}
+            {meta.supportsMedia && (
+              <OptionToggle
+                label={t("modules.social_notifications.showMedia")}
+                hint={t("modules.social_notifications.showMediaHint")}
                 checked={draft.show_media}
-                onCheckedChange={(v) => onChange({ show_media: v })}
+                onChange={(v) => onChange({ show_media: v })}
               />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Pause (édition uniquement) */}
-      {!isNew && (
-        <div className="flex items-center justify-between rounded-lg border p-3">
-          <div>
-            <p className="text-sm">{t("modules.social_notifications.active")}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("modules.social_notifications.activeHint")}
-            </p>
+            )}
           </div>
-          <Switch checked={draft.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
         </div>
       )}
 
-      {/* Lien aide formats acceptés */}
+      {/* Lien aide */}
       <a
         href="https://docs.moddy.app"
         target="_blank"

@@ -6,6 +6,7 @@ import type {
   Role,
   ModuleConfig,
   GuildStats,
+  GuildPremium,
   LoggingConfig,
   AdaptiveSlowmodeConfig,
   ChannelSlowmodeConfig,
@@ -230,6 +231,14 @@ export async function getGuildStats(
   guildId: string | number
 ): Promise<GuildStats> {
   return (await api(`/guilds/${guildId}/stats`)) as GuildStats
+}
+
+/** Statut premium d'un serveur (détecte aussi les serveurs liés à un abonnement
+ *  actif même sans l'attribut PREMIUM). */
+export async function getGuildPremium(
+  guildId: string | number
+): Promise<GuildPremium> {
+  return (await api(`/guilds/${guildId}/premium`)) as GuildPremium
 }
 
 // ─── Stripe / Premium ─────────────────────────────────────────────────────────

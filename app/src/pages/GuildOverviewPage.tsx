@@ -99,6 +99,7 @@ export function GuildOverviewPage() {
     guilds,
     stats,
     modules,
+    isPremium,
     isLoadingGuild,
     guildError,
     refreshGuildData,
@@ -176,7 +177,6 @@ export function GuildOverviewPage() {
   const guildListItem = guilds.find((g) => String(g.id) === String(selectedGuildId))
   const iconHash = guildListItem?.icon ?? guildDetail.icon ?? null
   const iconUrl = getGuildIconUrl(selectedGuildId, iconHash)
-  const isPremium = guildDetail.attributes?.PREMIUM === true || stats?.is_premium === true
   const isBeta = guildDetail.attributes?.BETA === true
   const isBlacklisted = guildDetail.attributes?.BLACKLISTED === true
   const boostTier = guildDetail.premium_tier ?? 0

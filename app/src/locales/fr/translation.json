@@ -399,7 +399,15 @@
         "twitch_not_configured": "L'intégration Twitch n'est pas configurée. Réessayez plus tard.",
         "fetch_failed": "Impossible de joindre le service. Réessayez plus tard.",
         "bot_timeout": "Le bot n'a pas répondu à temps. Réessayez."
-      }
+      },
+      "optionsTitle": "Options",
+      "colorBrand": "Couleur plateforme",
+      "colorCustom": "Personnalisée",
+      "colorPick": "Choisir une couleur",
+      "showAvatarHint": "Affiche l'avatar du compte dans la notification.",
+      "showMediaHint": "Affiche la miniature ou l'aperçu média de la publication.",
+      "errorLimitFree": "Limite atteinte (1 compte par plateforme). Passez à Moddy Max pour en suivre jusqu'à 5.",
+      "errorLimitPremium": "Limite atteinte (5 comptes par plateforme)."
     }
   },
   "staff": {
