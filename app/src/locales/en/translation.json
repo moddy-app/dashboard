@@ -399,7 +399,13 @@
         "twitch_not_configured": "Twitch integration is not configured. Try again later.",
         "fetch_failed": "Could not reach the service. Try again later.",
         "bot_timeout": "The bot did not respond in time. Try again."
-      }
+      },
+      "optionsTitle": "Options",
+      "colorBrand": "Platform color",
+      "colorCustom": "Custom",
+      "colorPick": "Pick a color",
+      "showAvatarHint": "Show the account's avatar in the notification.",
+      "showMediaHint": "Show the post's thumbnail or media preview."
     }
   },
   "staff": {

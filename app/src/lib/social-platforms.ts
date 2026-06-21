@@ -67,6 +67,23 @@ export const PLATFORM_META: Record<SocialPlatform, PlatformMeta> = {
 /** Ordre d'affichage des plateformes (instagram en dernier car désactivée). */
 export const PLATFORM_ORDER: SocialPlatform[] = ['youtube', 'twitch', 'bluesky', 'rss', 'instagram']
 
+// ─── Messages par défaut ─────────────────────────────────────────────────────────
+// Template appliqué par le bot quand `message` est vide/null. Affiché comme
+// placeholder (rendu enrichi mais grisé) dans l'éditeur de message.
+
+export const DEFAULT_MESSAGES: Record<SocialPlatform, string> = {
+  youtube:
+    "## <:youtube:1515511923066671185> New video!\n{author} just posted a new video on {platform}: « {title} »\n{url}\n-# <t:{timestamp}:R>",
+  bluesky:
+    "## <:bluesky:1515511920235516024> New post!\n{author} just posted on {platform}.\n{url}\n-# <t:{timestamp}:R>",
+  twitch:
+    "## <:twitch:1515511921938399343> Live now!\n{author} is now live on {platform}: « {title} »\n{url}\n-# <t:{timestamp}:R>",
+  rss:
+    "## <:rss:1515511923951534160> New article!\nA new article was published: « {title} »\n{url}\n-# <t:{timestamp}:R>",
+  instagram:
+    "## <:instagram:0> New post!\n{author} just posted on {platform}.\n{url}\n-# <t:{timestamp}:R>",
+}
+
 // ─── Conversion couleur ─────────────────────────────────────────────────────────
 
 /** `#FF0000` → `16711680`. */

@@ -43,6 +43,28 @@ notification Discord à chaque nouvelle publication.
   `{ enabled, default_message }`) ; les abonnements ont leurs endpoints dédiés.
 - **Pluriels i18next v25** (JSON v4) : clés `rolesCount_one` / `rolesCount_other`.
 
+## Révisions (suite — retours utilisateur)
+- **Messages par défaut par plateforme** (`DEFAULT_MESSAGES` dans `social-platforms.ts`),
+  affichés comme placeholder enrichi (rendu + grisé) dans l'éditeur.
+- **Suppression du toggle d'activation** : le module est activé implicitement dès qu'il
+  existe ≥ 1 abonnement (auto-`updateModule` au premier ajout, auto-`disableModule` à la
+  suppression du dernier).
+- **Vrais logos de marque** : nouveau composant `components/social-icons.tsx` (SVG
+  SimpleIcons, `fill=currentColor`, couleur pilotée par la couleur de marque).
+- **Carte d'abonnement cliquable** : un clic sur la carte ouvre l'édition (les boutons
+  d'action stoppent la propagation).
+- **Sélecteur de couleur repensé** : deux cartes « Couleur plateforme » / « Personnalisée »
+  avec aperçu de la pastille, le picker n'apparaît qu'en mode personnalisé.
+- **Section Options uniforme** : toggles avatar/média/actif de taille égale, avec
+  `Tooltip` d'aide (composant `OptionToggle`).
+- **Éditeur de texte enrichi réutilisable** : `components/rich-text-editor.tsx`
+  (contentEditable). Surligne les placeholders `{token}` en bleu/gras et met en forme
+  la syntaxe Markdown (titres, gras, italique, barré, code, sous-texte `-#`, emoji
+  custom, timestamp Discord) en grisant les marqueurs — affichage uniquement, la valeur
+  envoyée reste le texte brut. Préservation du curseur via offset caractère (invariant :
+  le texte rendu == texte brut, seul le style change). Exporte `RichTextEditorHandle`
+  (`insertText`, `focus`) pour l'insertion de placeholders au curseur.
+
 ## Prochaines étapes suggérées
 - Aperçu live de l'embed de notification dans le formulaire.
 - Combobox avec recherche pour les salons/rôles sur les serveurs volumineux.
