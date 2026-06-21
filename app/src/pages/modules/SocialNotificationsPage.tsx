@@ -149,9 +149,8 @@ export function SocialNotificationsPage() {
   const { t } = useTranslation()
   const {
     selectedGuildId,
-    guildDetail,
-    stats,
     modules,
+    isPremium,
     isLoadingGuild,
     guildError,
     refreshGuildData,
@@ -159,8 +158,6 @@ export function SocialNotificationsPage() {
     disableModule,
   } = useGuildContext()
 
-  const isPremium =
-    guildDetail?.attributes?.PREMIUM === true || stats?.is_premium === true
   const limit = isPremium ? 5 : 1
 
   const [subscriptions, setSubscriptions] = useState<SocialSubscription[]>([])
@@ -342,12 +339,12 @@ export function SocialNotificationsPage() {
   const handleSubscriptionError = (e: unknown) => {
     if (e instanceof ApiError) {
       const code = e.message
-      if (code === "limit_reached_free" || code === "limit_reached_premium") {
-        toast.error(t("modules.social_notifications.errorLimit", { limit }), {
-          description: isPremium
-            ? undefined
-            : t("modules.social_notifications.errorLimitUpsell"),
-        })
+      if (code === "limit_reached_free") {
+        toast.error(t("modules.social_notifications.errorLimitFree"))
+        return
+      }
+      if (code === "limit_reached_premium") {
+        toast.error(t("modules.social_notifications.errorLimitPremium"))
         return
       }
       const known = [

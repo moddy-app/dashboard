@@ -65,6 +65,21 @@ notification Discord à chaque nouvelle publication.
   le texte rendu == texte brut, seul le style change). Exporte `RichTextEditorHandle`
   (`insertText`, `focus`) pour l'insertion de placeholders au curseur.
 
+## Révisions (suite — premium & quota)
+- **Détection premium fiabilisée** : nouvel endpoint `GET /guilds/{id}/premium`
+  (`getGuildPremium`), chargé dans `GuildContext` qui expose désormais `isPremium`
+  (attribut PREMIUM **ou** stats **ou** abonnement actif lié). Détecte les serveurs
+  liés à un abonnement même sans l'attribut PREMIUM positionné.
+- **CTA premium masqué** sur la vue d'ensemble quand le serveur a déjà Max
+  (`GuildOverviewPage` utilise `isPremium` du contexte) — fini le message d'upsell
+  incohérent sur un serveur déjà abonné.
+- **Quota social** : la limite (1 free / 5 premium) s'appuie sur le `isPremium` du
+  contexte ; messages d'erreur dédiés `limit_reached_free` / `limit_reached_premium`
+  (`errorLimitFree` / `errorLimitPremium`).
+- **Badge « Max »** sur les serveurs premium : nouveau hook `usePremiumGuilds`
+  (cache module, 1 seule requête `/guilds`) → badge ambré dans `GuildSelectionView`
+  et icône couronne dans le `TeamSwitcher`.
+
 ## Prochaines étapes suggérées
 - Aperçu live de l'embed de notification dans le formulaire.
 - Combobox avec recherche pour les salons/rôles sur les serveurs volumineux.

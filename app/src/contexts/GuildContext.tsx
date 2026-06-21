@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { Guild, User } from '@/lib/auth'
-import type { GuildDetail, Channel, Role, ModuleConfig, GuildStats } from '@/types/api'
+import type { GuildDetail, Channel, Role, ModuleConfig, GuildStats, GuildPremium } from '@/types/api'
 import {
   getGuildDiscordData,
   getGuild,
@@ -16,6 +16,7 @@ import {
   getRoles,
   getModules,
   getGuildStats,
+  getGuildPremium,
   updateModule as apiUpdateModule,
   disableModule as apiDisableModule,
 } from '@/services/guilds'
@@ -37,6 +38,8 @@ interface GuildContextValue {
   roles: Role[]
   modules: Record<string, ModuleConfig>
   stats: GuildStats | null
+  /** Serveur premium (attribut PREMIUM, stats, ou abonnement actif lié). */
+  isPremium: boolean
   isLoadingGuild: boolean
   guildError: string | null
   // Actions
@@ -71,6 +74,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
   const [roles, setRoles] = useState<Role[]>([])
   const [modules, setModules] = useState<Record<string, ModuleConfig>>({})
   const [stats, setStats] = useState<GuildStats | null>(null)
+  const [premium, setPremium] = useState<GuildPremium | null>(null)
   const [isLoadingGuild, setIsLoadingGuild] = useState(false)
   const [guildError, setGuildError] = useState<string | null>(null)
 
@@ -111,14 +115,16 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         }
       }
 
-      // Modules et stats — pas critiques, on les charge en parallèle
-      const [modulesData, statsData] = await Promise.allSettled([
+      // Modules, stats et premium — pas critiques, on les charge en parallèle
+      const [modulesData, statsData, premiumData] = await Promise.allSettled([
         getModules(guildId),
         getGuildStats(guildId),
+        getGuildPremium(guildId),
       ])
 
       if (modulesData.status === 'rejected') logger.warn('guild', `Modules failed for ${guildId}`, modulesData.reason)
       if (statsData.status === 'rejected') logger.warn('guild', `Stats failed for ${guildId}`, statsData.reason)
+      if (premiumData.status === 'rejected') logger.warn('guild', `Premium failed for ${guildId}`, premiumData.reason)
 
       setGuildDetail(guildInfo)
       setChannels(channelList)
@@ -126,6 +132,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
       const loadedModules = modulesData.status === 'fulfilled' ? (modulesData.value ?? {}) : {}
       setModules(loadedModules)
       setStats(statsData.status === 'fulfilled' ? statsData.value : null)
+      setPremium(premiumData.status === 'fulfilled' ? premiumData.value : null)
 
       const duration = Math.round(performance.now() - start)
       logger.success('guild', `Loaded guild ${guildId} in ${duration}ms`, {
@@ -143,6 +150,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
       setRoles([])
       setModules({})
       setStats(null)
+      setPremium(null)
     } finally {
       setIsLoadingGuild(false)
     }
@@ -165,6 +173,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
       setRoles([])
       setModules({})
       setStats(null)
+      setPremium(null)
     }
   }, [selectedGuildId, loadGuildData])
 
@@ -237,6 +246,11 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     [selectedGuildId]
   )
 
+  const isPremium =
+    guildDetail?.attributes?.PREMIUM === true ||
+    stats?.is_premium === true ||
+    premium?.is_premium === true
+
   return (
     <GuildContext.Provider
       value={{
@@ -249,6 +263,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         roles,
         modules,
         stats,
+        isPremium,
         isLoadingGuild,
         guildError,
         refreshGuildData,

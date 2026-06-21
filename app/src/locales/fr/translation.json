@@ -405,7 +405,9 @@
       "colorCustom": "Personnalisée",
       "colorPick": "Choisir une couleur",
       "showAvatarHint": "Affiche l'avatar du compte dans la notification.",
-      "showMediaHint": "Affiche la miniature ou l'aperçu média de la publication."
+      "showMediaHint": "Affiche la miniature ou l'aperçu média de la publication.",
+      "errorLimitFree": "Limite atteinte (1 compte par plateforme). Passez à Moddy Max pour en suivre jusqu'à 5.",
+      "errorLimitPremium": "Limite atteinte (5 comptes par plateforme)."
     }
   },
   "staff": {

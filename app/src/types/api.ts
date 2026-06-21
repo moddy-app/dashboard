@@ -90,6 +90,17 @@ export interface GuildStats {
   open_cases: number
 }
 
+/** Statut premium d'un serveur (GET /guilds/{id}/premium). is_premium=true même si
+ *  l'attribut PREMIUM n'est pas encore positionné mais qu'un abonné actif est lié. */
+export interface GuildPremium {
+  guild_id: string
+  is_premium: boolean
+  subscriber_id: string | null
+  tier: string | null
+  expires_at: string | null
+  linked_at: string | null
+}
+
 // ─── Modules ──────────────────────────────────────────────────────────────────
 
 export type ModuleId =

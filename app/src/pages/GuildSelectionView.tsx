@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
-import { ArrowUpRightIcon, PlusIcon } from "lucide-react"
+import { ArrowUpRightIcon, PlusIcon, CrownIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import {
   Empty,
   EmptyContent,
@@ -12,12 +13,14 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { getGuildIconUrl } from "@/lib/auth"
 import { ServerIcon } from "lucide-react"
 
 export function GuildSelectionView() {
   const { t } = useTranslation()
   const { guilds, selectGuild } = useGuildContext()
+  const premiumIds = usePremiumGuilds()
 
   if (guilds.length === 0) {
     return (
@@ -92,7 +95,15 @@ export function GuildSelectionView() {
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold truncate">{guild.name}</p>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <p className="font-semibold truncate">{guild.name}</p>
+                    {premiumIds.has(String(guild.id)) && (
+                      <Badge className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
+                        <CrownIcon className="size-2.5" />
+                        Max
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {t('guildSelection.manage')}
                   </p>

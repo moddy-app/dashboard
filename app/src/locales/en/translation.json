@@ -405,7 +405,9 @@
       "colorCustom": "Custom",
       "colorPick": "Pick a color",
       "showAvatarHint": "Show the account's avatar in the notification.",
-      "showMediaHint": "Show the post's thumbnail or media preview."
+      "showMediaHint": "Show the post's thumbnail or media preview.",
+      "errorLimitFree": "Limit reached (1 account per platform). Upgrade to Moddy Max to follow up to 5.",
+      "errorLimitPremium": "Limit reached (5 accounts per platform)."
     }
   },
   "staff": {
