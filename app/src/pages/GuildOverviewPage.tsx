@@ -31,7 +31,10 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ErrorPage } from "@/components/error-state"
 import { DebugErrorOverlay } from "@/components/debug-error-overlay"
+import { VerifiedBadge } from "@/components/verified-badge"
+import { resolveVerifiedKind } from "@/lib/verified"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
@@ -108,6 +111,7 @@ export function GuildOverviewPage() {
   } = useGuildContext()
 
   const [isUpgrading, setIsUpgrading] = useState(false)
+  const guildAttributes = useGuildAttributes()
 
   const handleUpgrade = async () => {
     if (!guildDetail) return
@@ -182,7 +186,9 @@ export function GuildOverviewPage() {
   const boostTier = guildDetail.premium_tier ?? 0
   const boostCount = guildDetail.premium_subscription_count ?? 0
 
-  const isOfficialServer = (guildDetail.features ?? []).includes('OFFICIAL_SERVER')
+  // attributes ne viennent pas de /discord → on les récupère via la map /guilds
+  const attrs = guildAttributes.get(String(selectedGuildId)) ?? guildDetail.attributes
+  const verifiedKind = resolveVerifiedKind(attrs, guildDetail.features)
 
   // Uniquement les modules disponibles — les modules en dev ne sont pas listés
   const allModules = [
@@ -219,15 +225,11 @@ export function GuildOverviewPage() {
             {/* Nom + badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
+              {verifiedKind && <VerifiedBadge kind={verifiedKind} />}
               {isPremium && (
                 <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-xs">
                   <CrownIcon className="size-3 mr-1" />
                   Moddy Max
-                </Badge>
-              )}
-              {isOfficialServer && (
-                <Badge variant="outline" className="text-xs text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">
-                  Official
                 </Badge>
               )}
               {boostTierLabel && (

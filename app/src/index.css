@@ -161,3 +161,26 @@
   position: absolute !important;
   height: 100% !important;
 }
+
+/* Color picker : la pastille remplit tout l'encadré (au lieu d'un petit carré
+   dans un ovale). Utilisé par <input type="color" class="color-field">. */
+input[type="color"].color-field {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+input[type="color"].color-field::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"].color-field::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+input[type="color"].color-field::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}

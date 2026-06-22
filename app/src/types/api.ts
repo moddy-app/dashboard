@@ -6,6 +6,10 @@ export interface GuildAttributes {
   PREMIUM?: true
   BETA?: true
   BLACKLISTED?: true
+  /** Serveur officiel de Moddy */
+  OFFICIAL?: true
+  /** Serveur d'une organisation vérifiée par Moddy */
+  VERIFIED_ORG?: true
 }
 
 export interface UserAttributes {
@@ -81,6 +85,12 @@ export interface Role {
 
 export function roleColorToHex(color: number): string {
   return color === 0 ? '#99aab5' : `#${color.toString(16).padStart(6, '0')}`
+}
+
+export interface GuildEmoji {
+  id: string
+  name: string
+  animated?: boolean
 }
 
 export interface GuildStats {

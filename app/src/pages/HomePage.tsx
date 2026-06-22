@@ -8,7 +8,7 @@ type AuthPhase = 'authenticating' | 'authenticated'
 
 function AuthScreen({ phase }: { phase: AuthPhase }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white relative overflow-hidden">
+    <div className="flex min-h-screen items-center justify-center bg-background relative overflow-hidden">
       {/* Subtle grain overlay */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -22,7 +22,7 @@ function AuthScreen({ phase }: { phase: AuthPhase }) {
       <div className="flex flex-col items-center gap-5">
         {/* Spinner — légèrement plus rapide */}
         <div
-          className="w-7 h-7 rounded-full border-2 border-black/12 border-t-black animate-spin"
+          className="w-7 h-7 rounded-full border-2 border-foreground/15 border-t-foreground animate-spin"
           style={{ animationDuration: '0.55s', animationTimingFunction: 'linear' }}
         />
 
@@ -37,12 +37,12 @@ function AuthScreen({ phase }: { phase: AuthPhase }) {
               bottom: '-14px',
               right: '-14px',
               left: '55%',
-              background: 'radial-gradient(ellipse 90% 100% at 70% 50%, rgba(255,255,255,0.98) 20%, rgba(255,255,255,0.7) 55%, transparent 80%)',
+              background: 'radial-gradient(ellipse 90% 100% at 70% 50%, var(--background) 20%, color-mix(in oklch, var(--background) 70%, transparent) 55%, transparent 80%)',
               filter: 'blur(14px)',
               borderRadius: '50%',
             }}
           />
-          <p className="relative text-[1.375rem] font-semibold tracking-tight text-black select-none flex items-baseline" style={{ zIndex: 1 }}>
+          <p className="relative text-[1.375rem] font-semibold tracking-tight text-foreground select-none flex items-baseline" style={{ zIndex: 1 }}>
             <span>Authenticat</span>
 
             {/* Suffix clip container */}

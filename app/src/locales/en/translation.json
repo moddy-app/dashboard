@@ -343,7 +343,7 @@
       "mentionRolesHint": "These roles will be pinged on every new notification.",
       "mentionRolesCount": "{{count}} role mentioned",
       "message": "Custom message",
-      "messagePlaceholder": "Leave empty to use the platform's default template.",
+      "messagePlaceholder": "Write your notification message…",
       "messageHint": "Markdown heading included. Empty = default template.",
       "insertPlaceholder": "Insert placeholder",
       "embedColor": "Embed color",
@@ -407,7 +407,15 @@
       "showAvatarHint": "Show the account's avatar in the notification.",
       "showMediaHint": "Show the post's thumbnail or media preview.",
       "errorLimitFree": "Limit reached (1 account per platform). Upgrade to Moddy Max to follow up to 5.",
-      "errorLimitPremium": "Limit reached (5 accounts per platform)."
+      "errorLimitPremium": "Limit reached (5 accounts per platform).",
+      "upgrade": "Upgrade",
+      "noEmojis": "No custom emojis on this server.",
+      "format": {
+        "heading": "Heading",
+        "bold": "Bold",
+        "italic": "Italic",
+        "strike": "Strikethrough"
+      }
     }
   },
   "staff": {
@@ -562,7 +570,8 @@
       "modules": "Modules",
       "stats": "Statistics",
       "premium": "Premium"
-    }
+    },
+    "manageSubscription": "Manage subscription"
   },
   "notifications": {
     "title": "Notifications",
@@ -716,5 +725,10 @@
     "no": "No",
     "empty": "(empty)",
     "clear": "Clear"
+  },
+  "verified": {
+    "official": "Official Moddy server",
+    "verified_org": "Verified organization on Moddy",
+    "discord": "Verified by Discord"
   }
 }

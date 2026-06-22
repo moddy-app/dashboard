@@ -14,6 +14,12 @@ import {
   CrownIcon,
   ExternalLinkIcon,
   InfoIcon,
+  BoldIcon,
+  ItalicIcon,
+  StrikethroughIcon,
+  Heading2Icon,
+  SmileIcon,
+  SparklesIcon,
 } from "lucide-react"
 import { handleSaveError } from "@/lib/handle-error"
 import { ApiError } from "@/lib/auth"
@@ -61,6 +67,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { ErrorPage } from "@/components/error-state"
 import { SocialIcon } from "@/components/social-icons"
 import { RichTextEditor, type RichTextEditorHandle } from "@/components/rich-text-editor"
@@ -71,6 +83,7 @@ import type {
   SocialSubscription,
   SocialSubscriptionCreate,
   SocialSubscriptionUpdate,
+  GuildEmoji,
 } from "@/types/api"
 import {
   PLATFORM_META,
@@ -84,6 +97,8 @@ import {
   addSocialSubscription,
   updateSocialSubscription,
   deleteSocialSubscription,
+  getEmojis,
+  createCheckout,
 } from "@/services/guilds"
 import { cn } from "@/lib/utils"
 
@@ -117,7 +132,8 @@ function emptyDraft(platform: SocialPlatform): SubscriptionDraft {
     platform,
     identifier: "",
     channel_id: "",
-    message: "",
+    // Le message par défaut de la plateforme est pré-rempli comme texte éditable.
+    message: DEFAULT_MESSAGES[platform],
     mention_role_ids: [],
     useBrandColor: true,
     embed_color: meta.brandColor,
@@ -751,10 +767,41 @@ interface SubscriptionFormProps {
 }
 
 function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormProps) {
-  const { channels, roles } = useGuildContext()
+  const { channels, roles, selectedGuildId, isPremium } = useGuildContext()
   const { isNew, draft } = editing
   const meta = PLATFORM_META[draft.platform]
   const editorRef = useRef<RichTextEditorHandle>(null)
+
+  const [emojis, setEmojis] = useState<GuildEmoji[]>([])
+  const [emojisLoaded, setEmojisLoaded] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
+
+  useEffect(() => {
+    if (!selectedGuildId) return
+    let active = true
+    getEmojis(selectedGuildId)
+      .then((e) => {
+        if (active) {
+          setEmojis(e ?? [])
+          setEmojisLoaded(true)
+        }
+      })
+      .catch(() => active && setEmojisLoaded(true))
+    return () => {
+      active = false
+    }
+  }, [selectedGuildId])
+
+  const handleUpgrade = async () => {
+    setUpgrading(true)
+    try {
+      const url = await createCheckout("monthly")
+      window.location.href = url
+    } catch (e) {
+      handleSaveError(e, { title: t("modules.social_notifications.errorGeneric") })
+      setUpgrading(false)
+    }
+  }
 
   const textChannels = channels.filter(
     (c) => c.type === CHANNEL_TYPES.TEXT || c.type === CHANNEL_TYPES.ANNOUNCEMENT
@@ -763,6 +810,20 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
   const availableRoles = manageableRoles.filter((r) => !draft.mention_role_ids.includes(r.id))
 
   const hasOptions = meta.supportsAvatar || meta.supportsMedia || !isNew
+  // Upsell : free + au moins une plateforme déjà au quota
+  const showUpsell =
+    isNew &&
+    !isPremium &&
+    PLATFORM_ORDER.some((p) => !PLATFORM_META[p].disabled && isAtLimit(p))
+
+  const applyFormat = (action: string) => {
+    const ed = editorRef.current
+    if (!ed) return
+    if (action === "heading") ed.prefixLine("## ")
+    else if (action === "bold") ed.wrapSelection("**", "**")
+    else if (action === "italic") ed.wrapSelection("*", "*")
+    else if (action === "strike") ed.wrapSelection("~~", "~~")
+  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -781,14 +842,20 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
                   key={p}
                   type="button"
                   disabled={blocked}
-                  onClick={() =>
+                  onClick={() => {
+                    // Si le message est encore un template par défaut (non personnalisé),
+                    // on le remplace par celui de la nouvelle plateforme.
+                    const isDefault =
+                      draft.message.trim() === "" ||
+                      Object.values(DEFAULT_MESSAGES).includes(draft.message)
                     onChange({
                       platform: p,
                       embed_color: pMeta.brandColor,
                       show_avatar: pMeta.supportsAvatar,
                       show_media: pMeta.supportsMedia,
+                      ...(isDefault ? { message: DEFAULT_MESSAGES[p] } : {}),
                     })
-                  }
+                  }}
                   className={cn(
                     "flex flex-col items-center gap-1.5 rounded-lg border p-3 transition-all",
                     active
@@ -824,6 +891,28 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
           </div>
         )}
       </div>
+
+      {/* Upsell Max (free + quota atteint) */}
+      {showUpsell && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/50 bg-amber-400/10 p-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <CrownIcon className="size-4 text-amber-500 shrink-0" />
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              {t("modules.social_notifications.quotaUpsell")}
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+            onClick={handleUpgrade}
+            disabled={upgrading}
+          >
+            {upgrading ? <LoaderIcon className="size-4 animate-spin" /> : <SparklesIcon className="size-4" />}
+            {t("modules.social_notifications.upgrade")}
+          </Button>
+        </div>
+      )}
 
       {/* Identifiant (création uniquement) */}
       {isNew && (
@@ -930,11 +1019,77 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
       {/* Message personnalisé (éditeur enrichi) */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium">{t("modules.social_notifications.message")}</label>
+
+        {/* Barre de mise en forme (pour ceux qui ne maîtrisent pas le Markdown Discord) */}
+        <div className="flex items-center gap-2">
+          <ToggleGroup
+            type="multiple"
+            value={[]}
+            variant="outline"
+            size="sm"
+            onValueChange={(vals) => applyFormat(vals[vals.length - 1])}
+          >
+            <ToggleGroupItem value="heading" aria-label={t("modules.social_notifications.format.heading")}>
+              <Heading2Icon />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="bold" aria-label={t("modules.social_notifications.format.bold")}>
+              <BoldIcon />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="italic" aria-label={t("modules.social_notifications.format.italic")}>
+              <ItalicIcon />
+            </ToggleGroupItem>
+            <ToggleGroupItem value="strike" aria-label={t("modules.social_notifications.format.strike")}>
+              <StrikethroughIcon />
+            </ToggleGroupItem>
+          </ToggleGroup>
+
+          {/* Émojis du serveur */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="size-8 p-0">
+                <SmileIcon className="size-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-2" align="start">
+              {!emojisLoaded ? (
+                <div className="flex items-center justify-center py-6">
+                  <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : emojis.length === 0 ? (
+                <p className="py-6 text-center text-xs text-muted-foreground">
+                  {t("modules.social_notifications.noEmojis")}
+                </p>
+              ) : (
+                <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto">
+                  {emojis.map((e) => (
+                    <button
+                      key={e.id}
+                      type="button"
+                      title={`:${e.name}:`}
+                      onClick={() =>
+                        editorRef.current?.insertText(`<${e.animated ? "a" : ""}:${e.name}:${e.id}>`)
+                      }
+                      className="flex items-center justify-center rounded p-1 hover:bg-accent transition-colors"
+                    >
+                      <img
+                        src={`https://cdn.discordapp.com/emojis/${e.id}.${e.animated ? "gif" : "png"}?size=32`}
+                        alt={e.name}
+                        className="size-6 object-contain"
+                        loading="lazy"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </PopoverContent>
+          </Popover>
+        </div>
+
         <RichTextEditor
           ref={editorRef}
           value={draft.message}
           onChange={(v) => onChange({ message: v })}
-          placeholder={DEFAULT_MESSAGES[draft.platform]}
+          placeholder={t("modules.social_notifications.messagePlaceholder")}
           placeholders={meta.placeholders}
           maxLength={MESSAGE_MAX}
         />
@@ -1011,9 +1166,9 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         </div>
         {!draft.useBrandColor && (
           <div className="flex items-center gap-2">
-            <Input
+            <input
               type="color"
-              className="h-10 w-20 p-1 cursor-pointer"
+              className="color-field size-10 shrink-0 rounded-lg border border-input"
               value={draft.embed_color}
               onChange={(e) => onChange({ embed_color: e.target.value })}
             />
@@ -1021,7 +1176,7 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
               value={draft.embed_color}
               onChange={(e) => onChange({ embed_color: e.target.value })}
               placeholder={meta.brandColor}
-              className="flex-1"
+              className="flex-1 font-mono"
               maxLength={7}
             />
           </div>

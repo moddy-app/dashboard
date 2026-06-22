@@ -20,6 +20,9 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
+import { useGuildAttributes } from "@/hooks/useGuildAttributes"
+import { VerifiedBadge } from "@/components/verified-badge"
+import { resolveVerifiedKind } from "@/lib/verified"
 import { getGuildIconUrl } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 
@@ -34,6 +37,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
   const location = useLocation()
   const { guilds, selectedGuildId, selectGuild, guildDetail, user } = useGuildContext()
   const premiumIds = usePremiumGuilds()
+  const guildAttributes = useGuildAttributes()
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefreshClick = async () => {
@@ -166,6 +170,10 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                       </AvatarFallback>
                     </Avatar>
                     <span className="truncate">{guild.name}</span>
+                    {(() => {
+                      const kind = resolveVerifiedKind(guildAttributes.get(String(guild.id)), undefined)
+                      return kind ? <VerifiedBadge kind={kind} className="shrink-0" /> : null
+                    })()}
                     {premiumIds.has(String(guild.id)) && (
                       <CrownIcon className="size-3 text-amber-500 shrink-0" />
                     )}

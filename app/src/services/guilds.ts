@@ -4,6 +4,7 @@ import type {
   GuildDetail,
   Channel,
   Role,
+  GuildEmoji,
   ModuleConfig,
   GuildStats,
   GuildPremium,
@@ -62,6 +63,10 @@ export async function getChannels(guildId: string | number): Promise<Channel[]> 
 
 export async function getRoles(guildId: string | number): Promise<Role[]> {
   return (await api(`/guilds/${guildId}/roles`)) as Role[]
+}
+
+export async function getEmojis(guildId: string | number): Promise<GuildEmoji[]> {
+  return (await api(`/guilds/${guildId}/emojis`)) as GuildEmoji[]
 }
 
 export async function updateGuildSettings(
