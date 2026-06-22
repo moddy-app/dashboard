@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo, useRef } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -14,11 +14,6 @@ import {
   CrownIcon,
   ExternalLinkIcon,
   InfoIcon,
-  BoldIcon,
-  ItalicIcon,
-  StrikethroughIcon,
-  Heading2Icon,
-  SmileIcon,
   SparklesIcon,
 } from "lucide-react"
 import { handleSaveError } from "@/lib/handle-error"
@@ -67,15 +62,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { ErrorPage } from "@/components/error-state"
 import { SocialIcon } from "@/components/social-icons"
-import { RichTextEditor, type RichTextEditorHandle } from "@/components/rich-text-editor"
+import { MessageEditor } from "@/components/message-editor"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES, roleColorToHex } from "@/types/api"
 import type {
@@ -83,7 +72,6 @@ import type {
   SocialSubscription,
   SocialSubscriptionCreate,
   SocialSubscriptionUpdate,
-  GuildEmoji,
 } from "@/types/api"
 import {
   PLATFORM_META,
@@ -97,7 +85,6 @@ import {
   addSocialSubscription,
   updateSocialSubscription,
   deleteSocialSubscription,
-  getEmojis,
   createCheckout,
 } from "@/services/guilds"
 import { cn } from "@/lib/utils"
@@ -489,9 +476,9 @@ export function SocialNotificationsPage() {
         </CardHeader>
         <CardContent>
           {!isPremium && !canAddAny && subscriptions.length > 0 && (
-            <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-400/50 bg-amber-400/10 px-4 py-3">
-              <CrownIcon className="size-4 text-amber-500 shrink-0" />
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-violet-400/50 bg-violet-400/10 px-4 py-3">
+              <CrownIcon className="size-4 text-violet-500 shrink-0" />
+              <p className="text-xs text-violet-700 dark:text-violet-300">
                 {t("modules.social_notifications.quotaUpsell")}
               </p>
             </div>
@@ -770,27 +757,8 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
   const { channels, roles, selectedGuildId, isPremium } = useGuildContext()
   const { isNew, draft } = editing
   const meta = PLATFORM_META[draft.platform]
-  const editorRef = useRef<RichTextEditorHandle>(null)
 
-  const [emojis, setEmojis] = useState<GuildEmoji[]>([])
-  const [emojisLoaded, setEmojisLoaded] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
-
-  useEffect(() => {
-    if (!selectedGuildId) return
-    let active = true
-    getEmojis(selectedGuildId)
-      .then((e) => {
-        if (active) {
-          setEmojis(e ?? [])
-          setEmojisLoaded(true)
-        }
-      })
-      .catch(() => active && setEmojisLoaded(true))
-    return () => {
-      active = false
-    }
-  }, [selectedGuildId])
 
   const handleUpgrade = async () => {
     setUpgrading(true)
@@ -815,15 +783,6 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
     isNew &&
     !isPremium &&
     PLATFORM_ORDER.some((p) => !PLATFORM_META[p].disabled && isAtLimit(p))
-
-  const applyFormat = (action: string) => {
-    const ed = editorRef.current
-    if (!ed) return
-    if (action === "heading") ed.prefixLine("## ")
-    else if (action === "bold") ed.wrapSelection("**", "**")
-    else if (action === "italic") ed.wrapSelection("*", "*")
-    else if (action === "strike") ed.wrapSelection("~~", "~~")
-  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -894,17 +853,17 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
 
       {/* Upsell Max (free + quota atteint) */}
       {showUpsell && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-400/50 bg-amber-400/10 p-3">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-violet-400/50 bg-violet-400/10 p-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <CrownIcon className="size-4 text-amber-500 shrink-0" />
-            <p className="text-xs text-amber-700 dark:text-amber-300">
+            <CrownIcon className="size-4 text-violet-500 shrink-0" />
+            <p className="text-xs text-violet-700 dark:text-violet-300">
               {t("modules.social_notifications.quotaUpsell")}
             </p>
           </div>
           <Button
             type="button"
             size="sm"
-            className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+            className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
             onClick={handleUpgrade}
             disabled={upgrading}
           >
@@ -1016,103 +975,18 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         </p>
       </div>
 
-      {/* Message personnalisé (éditeur enrichi) */}
+      {/* Message personnalisé (éditeur réutilisable) */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium">{t("modules.social_notifications.message")}</label>
-
-        {/* Barre de mise en forme (pour ceux qui ne maîtrisent pas le Markdown Discord) */}
-        <div className="flex items-center gap-2">
-          <ToggleGroup
-            type="multiple"
-            value={[]}
-            variant="outline"
-            size="sm"
-            onValueChange={(vals) => applyFormat(vals[vals.length - 1])}
-          >
-            <ToggleGroupItem value="heading" aria-label={t("modules.social_notifications.format.heading")}>
-              <Heading2Icon />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="bold" aria-label={t("modules.social_notifications.format.bold")}>
-              <BoldIcon />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="italic" aria-label={t("modules.social_notifications.format.italic")}>
-              <ItalicIcon />
-            </ToggleGroupItem>
-            <ToggleGroupItem value="strike" aria-label={t("modules.social_notifications.format.strike")}>
-              <StrikethroughIcon />
-            </ToggleGroupItem>
-          </ToggleGroup>
-
-          {/* Émojis du serveur */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm" className="size-8 p-0">
-                <SmileIcon className="size-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64 p-2" align="start">
-              {!emojisLoaded ? (
-                <div className="flex items-center justify-center py-6">
-                  <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
-                </div>
-              ) : emojis.length === 0 ? (
-                <p className="py-6 text-center text-xs text-muted-foreground">
-                  {t("modules.social_notifications.noEmojis")}
-                </p>
-              ) : (
-                <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto">
-                  {emojis.map((e) => (
-                    <button
-                      key={e.id}
-                      type="button"
-                      title={`:${e.name}:`}
-                      onClick={() =>
-                        editorRef.current?.insertText(`<${e.animated ? "a" : ""}:${e.name}:${e.id}>`)
-                      }
-                      className="flex items-center justify-center rounded p-1 hover:bg-accent transition-colors"
-                    >
-                      <img
-                        src={`https://cdn.discordapp.com/emojis/${e.id}.${e.animated ? "gif" : "png"}?size=32`}
-                        alt={e.name}
-                        className="size-6 object-contain"
-                        loading="lazy"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        <RichTextEditor
-          ref={editorRef}
+        <MessageEditor
           value={draft.message}
           onChange={(v) => onChange({ message: v })}
-          placeholder={t("modules.social_notifications.messagePlaceholder")}
-          placeholders={meta.placeholders}
+          variables={meta.placeholders}
+          guildId={selectedGuildId ?? undefined}
           maxLength={MESSAGE_MAX}
+          placeholder={t("modules.social_notifications.messagePlaceholder")}
         />
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">{t("modules.social_notifications.messageHint")}</p>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {draft.message.length}/{MESSAGE_MAX}
-          </span>
-        </div>
-        {/* Cheat-sheet de placeholders (insertion au curseur) */}
-        <div className="flex flex-wrap gap-1.5 rounded-lg border bg-muted/30 p-2.5">
-          {meta.placeholders.map((ph) => (
-            <button
-              key={ph}
-              type="button"
-              onClick={() => editorRef.current?.insertText(ph)}
-              className="rounded bg-background border px-1.5 py-0.5 font-mono text-[11px] hover:bg-accent transition-colors"
-              title={t("modules.social_notifications.insertPlaceholder")}
-            >
-              {ph}
-            </button>
-          ))}
-        </div>
+        <p className="text-xs text-muted-foreground">{t("modules.social_notifications.messageHint")}</p>
       </div>
 
       {/* Couleur d'embed — choix marque / personnalisée */}

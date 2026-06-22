@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils"
 // Réutilisable ailleurs dans le dashboard, avec ou sans `placeholders`.
 // ─────────────────────────────────────────────────────────────────────────────
 
+export type RichFormat = "heading" | "bold" | "italic" | "strike"
+
 export interface RichTextEditorHandle {
   /** Insère du texte à la position du curseur (ou à la fin si non focus). */
   insertText: (text: string) => void
@@ -28,6 +30,8 @@ export interface RichTextEditorHandle {
   wrapSelection: (before: string, after: string) => void
   /** Préfixe la ligne courante (ex: `## ` pour un titre). */
   prefixLine: (prefix: string) => void
+  /** Active/désactive un format à la sélection (comme un éditeur Word). */
+  toggleFormat: (kind: RichFormat) => void
   focus: () => void
 }
 
@@ -47,6 +51,8 @@ interface RichTextEditorProps {
   disabled?: boolean
   className?: string
   id?: string
+  /** Notifie les formats actifs à la position du curseur (pour une barre d'outils). */
+  onSelectionChange?: (formats: RichFormat[]) => void
 }
 
 const SYNTAX = "text-muted-foreground/50"
@@ -205,11 +211,61 @@ function setCaret(el: HTMLElement, offset: number) {
   sel?.addRange(range)
 }
 
+// ─── Détection des formats (style Word) ──────────────────────────────────────
+
+/** Indices d'un marqueur sur une ligne (italique `*` exclut les `**`). */
+function markerIndices(line: string, marker: string): number[] {
+  const idx: number[] = []
+  if (marker === "*") {
+    for (let i = 0; i < line.length; i++) {
+      if (line[i] === "*" && line[i - 1] !== "*" && line[i + 1] !== "*") idx.push(i)
+    }
+  } else {
+    let i = 0
+    while ((i = line.indexOf(marker, i)) !== -1) {
+      idx.push(i)
+      i += marker.length
+    }
+  }
+  return idx
+}
+
+/** Paire de marqueurs entourant `pos`, ou null. */
+function enclosingPair(line: string, pos: number, marker: string): [number, number] | null {
+  const idx = markerIndices(line, marker)
+  for (let k = 0; k + 1 < idx.length; k += 2) {
+    const open = idx[k]
+    const close = idx[k + 1]
+    if (pos >= open + marker.length && pos <= close) return [open, close]
+  }
+  return null
+}
+
+const FORMAT_MARKERS: Record<"bold" | "italic" | "strike", string> = {
+  bold: "**",
+  italic: "*",
+  strike: "~~",
+}
+
+function getActiveFormats(text: string, caret: number): RichFormat[] {
+  const lineStart = text.lastIndexOf("\n", caret - 1) + 1
+  let lineEnd = text.indexOf("\n", caret)
+  if (lineEnd === -1) lineEnd = text.length
+  const line = text.slice(lineStart, lineEnd)
+  const pos = caret - lineStart
+  const out: RichFormat[] = []
+  if (/^#{1,3}\s/.test(line)) out.push("heading")
+  if (enclosingPair(line, pos, "**")) out.push("bold")
+  if (enclosingPair(line, pos, "*")) out.push("italic")
+  if (enclosingPair(line, pos, "~~")) out.push("strike")
+  return out
+}
+
 // ─── Composant ───────────────────────────────────────────────────────────────
 
 export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
   function RichTextEditor(
-    { value, onChange, placeholder, placeholders, maxLength, minHeight = 110, disabled, className, id },
+    { value, onChange, placeholder, placeholders, maxLength, minHeight = 110, disabled, className, id, onSelectionChange },
     ref
   ) {
     const elRef = useRef<HTMLDivElement>(null)
@@ -311,6 +367,57 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       [commit, maxLength]
     )
 
+    const toggleFormat = useCallback(
+      (kind: RichFormat) => {
+        const el = elRef.current
+        if (!el) return
+        const text = el.textContent ?? ""
+        let [s] = getSelectionOffsets(el)
+        if (document.activeElement !== el) s = text.length
+        const lineStart = text.lastIndexOf("\n", s - 1) + 1
+        let lineEnd = text.indexOf("\n", s)
+        if (lineEnd === -1) lineEnd = text.length
+        const line = text.slice(lineStart, lineEnd)
+
+        if (kind === "heading") {
+          const m = line.match(/^(#{1,3}\s)/)
+          if (m) {
+            const len = m[1].length
+            const next = text.slice(0, lineStart) + line.slice(len) + text.slice(lineEnd)
+            el.focus()
+            commit(next, Math.max(lineStart, s - len))
+          } else {
+            prefixLine("## ")
+          }
+          return
+        }
+
+        const marker = FORMAT_MARKERS[kind]
+        const pair = enclosingPair(line, s - lineStart, marker)
+        if (pair) {
+          // Désactive : retire les marqueurs entourant le curseur.
+          const aOpen = lineStart + pair[0]
+          const aClose = lineStart + pair[1]
+          const len = marker.length
+          const next =
+            text.slice(0, aOpen) + text.slice(aOpen + len, aClose) + text.slice(aClose + len)
+          const caret = s > aClose ? s - 2 * len : s > aOpen ? s - len : s
+          el.focus()
+          commit(next, caret)
+        } else {
+          wrapSelection(marker, marker)
+        }
+      },
+      [commit, prefixLine, wrapSelection]
+    )
+
+    const reportSelection = useCallback(() => {
+      const el = elRef.current
+      if (!el || !onSelectionChange || document.activeElement !== el) return
+      const text = el.textContent ?? ""
+      onSelectionChange(getActiveFormats(text, getSelectionOffsets(el)[0]))
+    }, [onSelectionChange])
+
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
@@ -335,8 +442,17 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       insertText,
       wrapSelection,
       prefixLine,
+      toggleFormat,
       focus: () => elRef.current?.focus(),
     }))
+
+    // Rapporte les formats actifs au curseur (sélection, clics, flèches, frappe).
+    useEffect(() => {
+      if (!onSelectionChange) return
+      const handler = () => reportSelection()
+      document.addEventListener("selectionchange", handler)
+      return () => document.removeEventListener("selectionchange", handler)
+    }, [onSelectionChange, reportSelection])
 
     // Synchronise le DOM quand `value` change depuis l'extérieur (reset, switch…).
     useEffect(() => {
