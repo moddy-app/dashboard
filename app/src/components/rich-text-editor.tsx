@@ -413,7 +413,11 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
     const reportSelection = useCallback(() => {
       const el = elRef.current
-      if (!el || !onSelectionChange || document.activeElement !== el) return
+      if (!el || !onSelectionChange) return
+      // On vérifie que la sélection est DANS l'éditeur (et non `activeElement`, qui
+      // n'est pas encore à jour au moment du `selectionchange` déclenché par un clic).
+      const sel = window.getSelection()
+      if (!sel || sel.rangeCount === 0 || !el.contains(sel.anchorNode)) return
       const text = el.textContent ?? ""
       onSelectionChange(getActiveFormats(text, getSelectionOffsets(el)[0]))
     }, [onSelectionChange])
