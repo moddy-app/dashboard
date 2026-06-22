@@ -21,6 +21,7 @@ import {
   disableModule as apiDisableModule,
 } from '@/services/guilds'
 import { ApiError, refreshGuilds as apiRefreshGuilds } from '@/lib/auth'
+import { usePremiumGuilds } from '@/hooks/usePremiumGuilds'
 import { logger } from '@/lib/logger'
 
 // ─── Types du contexte ────────────────────────────────────────────────────────
@@ -246,9 +247,13 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     [selectedGuildId]
   )
 
+  // Premium = le serveur est lié à l'abonnement Max actif de l'utilisateur
+  // (cf. API_ENDPOINTS.md → GET /stripe/subscription). On n'utilise PAS l'attribut
+  // PREMIUM de la guilde. `/guilds/{id}/premium` (jointure subscription_servers)
+  // sert de signal de secours côté serveur.
+  const premiumIds = usePremiumGuilds()
   const isPremium =
-    guildDetail?.attributes?.PREMIUM === true ||
-    stats?.is_premium === true ||
+    (selectedGuildId != null && premiumIds.has(String(selectedGuildId))) ||
     premium?.is_premium === true
 
   return (

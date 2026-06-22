@@ -68,8 +68,11 @@ function inline(seg: string, phSet: Set<string> | null, pretty: boolean): string
   let out = ""
   let last = 0
   let m: RegExpExecArray | null
-  INLINE_RE.lastIndex = 0
-  while ((m = INLINE_RE.exec(seg))) {
+  // IMPORTANT : regex locale (et non le const partagé) car `inline` est récursif —
+  // une regex `g` partagée verrait son lastIndex réinitialisé par l'appel récursif,
+  // ce qui relancerait la boucle externe à l'infini (→ RangeError: invalid string length).
+  const re = new RegExp(INLINE_RE.source, INLINE_RE.flags)
+  while ((m = re.exec(seg))) {
     out += escapeHtml(seg.slice(last, m.index))
     const tok = m[0]
     if (m[1]) {
@@ -114,7 +117,7 @@ function inline(seg: string, phSet: Set<string> | null, pretty: boolean): string
         `<span class="font-mono text-[0.9em] bg-muted rounded-[3px] px-0.5">${escapeHtml(innerC)}</span>` +
         grey("`")
     }
-    last = INLINE_RE.lastIndex
+    last = re.lastIndex
   }
   out += escapeHtml(seg.slice(last))
   return out
