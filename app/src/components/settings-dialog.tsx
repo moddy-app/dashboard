@@ -43,6 +43,7 @@ import {
   addSubscriptionServer,
   removeSubscriptionServer,
 } from "@/services/guilds"
+import { invalidatePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { toast } from "sonner"
 import type { User } from "@/lib/auth"
 import type { SubscriptionData } from "@/types/api"
@@ -117,6 +118,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
       setSubscription(prev =>
         prev ? { ...prev, servers: [...prev.servers, added] } : prev
       )
+      invalidatePremiumGuilds()
       setSelectedServerId('')
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
@@ -140,6 +142,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
           ? { ...prev, servers: prev.servers.filter(s => s.server_id !== serverId) }
           : prev
       )
+      invalidatePremiumGuilds()
     } catch {
       toast.error(t('settings.billing.servers.removeError'))
     } finally {
