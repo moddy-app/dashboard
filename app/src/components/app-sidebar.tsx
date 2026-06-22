@@ -209,15 +209,10 @@ export function AppSidebar({
               tooltip={isSubscribed ? t("sidebar.manageSubscription") : "Moddy Max"}
               onClick={() => navigate(isSubscribed ? "/?openSettings=billing" : "/premium")}
               isActive={location.pathname === "/premium"}
-              className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950/60 data-[active=true]:bg-amber-50 data-[active=true]:text-amber-700 dark:data-[active=true]:bg-amber-950/60 dark:data-[active=true]:text-amber-300"
+              className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-violet-950/60 data-[active=true]:bg-violet-50 data-[active=true]:text-violet-700 dark:data-[active=true]:bg-violet-950/60 dark:data-[active=true]:text-violet-300"
             >
               <CrownIcon />
               <span>{isSubscribed ? t("sidebar.manageSubscription") : "Moddy Max"}</span>
-              {isSubscribed && (
-                <span className="ml-auto rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-amber-700 dark:text-amber-300">
-                  Max
-                </span>
-              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

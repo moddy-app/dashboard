@@ -9,12 +9,27 @@ import type { GuildAttributes } from "@/types/api"
 let cache: Map<string, GuildAttributes> | null = null
 let inflight: Promise<Map<string, GuildAttributes>> | null = null
 
+/** L'API renvoie parfois `attributes` comme JSON encodé en string. On normalise. */
+function parseAttributes(raw: unknown): GuildAttributes {
+  if (!raw) return {}
+  if (typeof raw === "string") {
+    try {
+      return JSON.parse(raw) as GuildAttributes
+    } catch {
+      return {}
+    }
+  }
+  return raw as GuildAttributes
+}
+
 function load(): Promise<Map<string, GuildAttributes>> {
   if (cache) return Promise.resolve(cache)
   if (!inflight) {
     inflight = getGuilds()
       .then((list) => {
-        cache = new Map(list.map((g) => [String(g.guild_id), g.attributes ?? {}]))
+        cache = new Map(
+          list.map((g) => [String(g.guild_id), parseAttributes(g.attributes)])
+        )
         return cache
       })
       .catch(() => new Map<string, GuildAttributes>())

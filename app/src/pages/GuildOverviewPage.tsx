@@ -40,6 +40,14 @@ import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
 
+// Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
+const STAT_STYLES = {
+  blue: { box: "bg-blue-100 dark:bg-blue-950", icon: "text-blue-600 dark:text-blue-400" },
+  green: { box: "bg-green-100 dark:bg-green-950", icon: "text-green-600 dark:text-green-400" },
+  orange: { box: "bg-orange-100 dark:bg-orange-950", icon: "text-orange-600 dark:text-orange-400" },
+  purple: { box: "bg-purple-100 dark:bg-purple-950", icon: "text-purple-600 dark:text-purple-400" },
+} as const
+
 // ─── Carte module ─────────────────────────────────────────────────────────────
 
 interface ModuleCardProps {
@@ -189,6 +197,8 @@ export function GuildOverviewPage() {
   // attributes ne viennent pas de /discord → on les récupère via la map /guilds
   const attrs = guildAttributes.get(String(selectedGuildId)) ?? guildDetail.attributes
   const verifiedKind = resolveVerifiedKind(attrs, guildDetail.features)
+  // Les serveurs officiels n'affichent aucune indication premium (ni Max, ni CTA).
+  const hidePremium = verifiedKind === 'official'
 
   // Uniquement les modules disponibles — les modules en dev ne sont pas listés
   const allModules = [
@@ -226,8 +236,8 @@ export function GuildOverviewPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
               {verifiedKind && <VerifiedBadge kind={verifiedKind} />}
-              {isPremium && (
-                <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800 text-xs">
+              {isPremium && !hidePremium && (
+                <Badge className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 text-xs">
                   <CrownIcon className="size-3 mr-1" />
                   Moddy Max
                 </Badge>
@@ -249,7 +259,7 @@ export function GuildOverviewPage() {
             {/* Infos secondaires */}
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground w-full overflow-hidden">
               {guildDetail.description && (
-                <span className="truncate max-w-[200px]">{guildDetail.description}</span>
+                <span className="truncate max-w-[min(100%,28rem)]">{guildDetail.description}</span>
               )}
               {guildDetail.vanity_url_code && (
                 <a
@@ -275,15 +285,15 @@ export function GuildOverviewPage() {
       {/* ── Stats ───────────────────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' },
-          { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' },
-          { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' },
-          { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' },
+          { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' as const },
+          { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' as const },
+          { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' as const },
+          { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' as const },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="py-0">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
-                <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
+              <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_STYLES[color].box}`}>
+                <Icon className={`size-5 ${STAT_STYLES[color].icon}`} />
               </div>
               <div className="min-w-0">
                 <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
@@ -295,21 +305,21 @@ export function GuildOverviewPage() {
       </div>
 
       {/* ── CTA Premium ─────────────────────────────────────────────────── */}
-      {!isPremium && (
-        <Card className="py-0 border-amber-400/60 dark:border-amber-600/40 bg-amber-400/15 dark:bg-amber-900/25">
+      {!isPremium && !hidePremium && (
+        <Card className="py-0 border-violet-400/60 dark:border-violet-600/40 bg-violet-400/15 dark:bg-violet-900/25">
           <CardContent className="flex items-center justify-between gap-4 p-6 flex-wrap">
             <div className="flex items-center gap-4">
-              <div className="size-10 rounded-xl bg-amber-400/30 dark:bg-amber-700/40 flex items-center justify-center shrink-0">
-                <CrownIcon className="size-5 text-amber-600 dark:text-amber-400" />
+              <div className="size-10 rounded-xl bg-violet-400/30 dark:bg-violet-700/40 flex items-center justify-center shrink-0">
+                <CrownIcon className="size-5 text-violet-600 dark:text-violet-300" />
               </div>
               <div>
-                <p className="font-semibold text-sm text-amber-900 dark:text-amber-100">{t('guildOverview.premium.title')}</p>
-                <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
+                <p className="font-semibold text-sm text-violet-900 dark:text-violet-100">{t('guildOverview.premium.title')}</p>
+                <p className="text-xs text-violet-700/80 dark:text-violet-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
               </div>
             </div>
             <Button
               size="sm"
-              className="bg-amber-500 hover:bg-amber-600 text-white shrink-0 shadow-sm"
+              className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
               onClick={handleUpgrade}
               disabled={isUpgrading}
             >

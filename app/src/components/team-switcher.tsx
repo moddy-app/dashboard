@@ -172,11 +172,15 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                     <span className="truncate">{guild.name}</span>
                     {(() => {
                       const kind = resolveVerifiedKind(guildAttributes.get(String(guild.id)), undefined)
-                      return kind ? <VerifiedBadge kind={kind} className="shrink-0" /> : null
+                      return (
+                        <>
+                          {kind && <VerifiedBadge kind={kind} className="shrink-0" />}
+                          {premiumIds.has(String(guild.id)) && kind !== "official" && (
+                            <CrownIcon className="size-3 text-violet-500 shrink-0" />
+                          )}
+                        </>
+                      )
                     })()}
-                    {premiumIds.has(String(guild.id)) && (
-                      <CrownIcon className="size-3 text-amber-500 shrink-0" />
-                    )}
                     {isActive && (
                       <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
                     )}

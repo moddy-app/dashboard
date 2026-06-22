@@ -730,5 +730,15 @@
     "official": "Official Moddy server",
     "verified_org": "Verified organization on Moddy",
     "discord": "Verified by Discord"
+  },
+  "messageEditor": {
+    "heading": "Heading",
+    "bold": "Bold",
+    "italic": "Italic",
+    "strike": "Strikethrough",
+    "emojis": "Server emojis",
+    "noEmojis": "No custom emojis on this server.",
+    "variables": "Variables:",
+    "insertVariable": "Insert variable"
   }
 }
