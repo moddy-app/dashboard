@@ -24,6 +24,10 @@ import { cn } from "@/lib/utils"
 export interface RichTextEditorHandle {
   /** Insère du texte à la position du curseur (ou à la fin si non focus). */
   insertText: (text: string) => void
+  /** Entoure la sélection (ou le curseur) de `before`/`after` (ex: `**`…`**`). */
+  wrapSelection: (before: string, after: string) => void
+  /** Préfixe la ligne courante (ex: `## ` pour un titre). */
+  prefixLine: (prefix: string) => void
   focus: () => void
 }
 
@@ -214,7 +218,12 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       (text: string) => {
         const el = elRef.current
         if (!el) return
-        el.innerHTML = text ? renderRichText(text, placeholders, false) : ""
+        let html = text ? renderRichText(text, placeholders, false) : ""
+        // Une ligne vide finale (texte terminant par "\n") n'est pas rendue par le
+        // navigateur → le curseur reste invisible et il faut "deux Entrée". On ajoute
+        // un <br> purement visuel (sans texte, donc neutre pour le comptage du curseur).
+        if (text.endsWith("\n")) html += "<br>"
+        el.innerHTML = html
       },
       [placeholders]
     )
@@ -263,6 +272,45 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
       [commit, maxLength]
     )
 
+    const wrapSelection = useCallback(
+      (before: string, after: string) => {
+        const el = elRef.current
+        if (!el) return
+        const text = el.textContent ?? ""
+        let [start, end] = getSelectionOffsets(el)
+        if (document.activeElement !== el) {
+          start = text.length
+          end = text.length
+        }
+        const selected = text.slice(start, end)
+        const next = text.slice(0, start) + before + selected + after + text.slice(end)
+        if (maxLength && next.length > maxLength) return
+        // Curseur : à l'intérieur des marqueurs si pas de sélection, sinon après.
+        const caret = selected
+          ? start + before.length + selected.length + after.length
+          : start + before.length
+        el.focus()
+        commit(next, caret)
+      },
+      [commit, maxLength]
+    )
+
+    const prefixLine = useCallback(
+      (prefix: string) => {
+        const el = elRef.current
+        if (!el) return
+        const text = el.textContent ?? ""
+        let [start] = getSelectionOffsets(el)
+        if (document.activeElement !== el) start = text.length
+        const lineStart = text.lastIndexOf("\n", start - 1) + 1
+        const next = text.slice(0, lineStart) + prefix + text.slice(lineStart)
+        if (maxLength && next.length > maxLength) return
+        el.focus()
+        commit(next, start + prefix.length)
+      },
+      [commit, maxLength]
+    )
+
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
         if (e.key === "Enter") {
@@ -285,6 +333,8 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
 
     useImperativeHandle(ref, () => ({
       insertText,
+      wrapSelection,
+      prefixLine,
       focus: () => elRef.current?.focus(),
     }))
 

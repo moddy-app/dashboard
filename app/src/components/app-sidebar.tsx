@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/sidebar"
 import { getAvatarUrl, getDisplayName, type User } from "@/lib/auth"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useSubscription } from "@/hooks/useSubscription"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User | null
@@ -56,6 +57,8 @@ export function AppSidebar({
   const navigate = useNavigate()
   const location = useLocation()
   const { selectedGuildId, refreshGuildData } = useGuildContext()
+  const subscription = useSubscription()
+  const isSubscribed = subscription?.is_active ?? false
 
   const [isRefreshing, setIsRefreshing] = React.useState(false)
 
@@ -203,13 +206,18 @@ export function AppSidebar({
           )}
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip="Moddy Max"
-              onClick={() => navigate("/premium")}
+              tooltip={isSubscribed ? t("sidebar.manageSubscription") : "Moddy Max"}
+              onClick={() => navigate(isSubscribed ? "/?openSettings=billing" : "/premium")}
               isActive={location.pathname === "/premium"}
               className="text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:text-amber-300 dark:hover:bg-amber-950/60 data-[active=true]:bg-amber-50 data-[active=true]:text-amber-700 dark:data-[active=true]:bg-amber-950/60 dark:data-[active=true]:text-amber-300"
             >
               <CrownIcon />
-              <span>Moddy Max</span>
+              <span>{isSubscribed ? t("sidebar.manageSubscription") : "Moddy Max"}</span>
+              {isSubscribed && (
+                <span className="ml-auto rounded-md bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-amber-700 dark:text-amber-300">
+                  Max
+                </span>
+              )}
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>

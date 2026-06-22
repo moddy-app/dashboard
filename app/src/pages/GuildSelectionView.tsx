@@ -14,6 +14,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
+import { useGuildAttributes } from "@/hooks/useGuildAttributes"
+import { VerifiedBadge } from "@/components/verified-badge"
+import { resolveVerifiedKind } from "@/lib/verified"
 import { getGuildIconUrl } from "@/lib/auth"
 import { ServerIcon } from "lucide-react"
 
@@ -21,6 +24,7 @@ export function GuildSelectionView() {
   const { t } = useTranslation()
   const { guilds, selectGuild } = useGuildContext()
   const premiumIds = usePremiumGuilds()
+  const guildAttributes = useGuildAttributes()
 
   if (guilds.length === 0) {
     return (
@@ -97,6 +101,10 @@ export function GuildSelectionView() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className="font-semibold truncate">{guild.name}</p>
+                    {(() => {
+                      const kind = resolveVerifiedKind(guildAttributes.get(String(guild.id)), undefined)
+                      return kind ? <VerifiedBadge kind={kind} className="shrink-0" /> : null
+                    })()}
                     {premiumIds.has(String(guild.id)) && (
                       <Badge className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">
                         <CrownIcon className="size-2.5" />
