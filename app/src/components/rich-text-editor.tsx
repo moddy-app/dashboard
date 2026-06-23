@@ -464,9 +464,13 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
     }))
 
     // Rapporte les formats actifs au curseur (sélection, clics, flèches, frappe).
+    // Sur mobile la sélection se stabilise parfois une frame plus tard → on re-vérifie.
     useEffect(() => {
       if (!onSelectionChange) return
-      const handler = () => reportSelection()
+      const handler = () => {
+        reportSelection()
+        requestAnimationFrame(reportSelection)
+      }
       document.addEventListener("selectionchange", handler)
       return () => document.removeEventListener("selectionchange", handler)
     }, [onSelectionChange, reportSelection])
@@ -494,6 +498,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           onPaste={handlePaste}
           onKeyUp={reportSelection}
           onMouseUp={reportSelection}
+          onPointerUp={() => requestAnimationFrame(reportSelection)}
           onFocus={reportSelection}
           style={{ minHeight }}
           className={cn(
