@@ -6,6 +6,7 @@ import {
   StrikethroughIcon,
   Heading2Icon,
   SmileIcon,
+  LinkIcon,
   LoaderIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -103,7 +104,7 @@ export function MessageEditor({
                   <ToggleGroupItem
                     value={v}
                     aria-label={label}
-                    className="size-8 p-0"
+                    className="size-8 p-0 data-[state=on]:bg-primary/15 data-[state=on]:text-primary"
                     // Conserve la sélection/curseur dans l'éditeur (sinon le clic défocus).
                     onMouseDown={(e) => e.preventDefault()}
                   >
@@ -116,6 +117,22 @@ export function MessageEditor({
           </ToggleGroup>
 
           <div className="mx-0.5 h-5 w-px bg-border" />
+
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => editorRef.current?.wrapSelection("[", "](https://)")}
+                className="size-8 p-0"
+              >
+                <LinkIcon className="size-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t("messageEditor.link")}</TooltipContent>
+          </Tooltip>
 
           <Tooltip>
             <TooltipTrigger asChild>

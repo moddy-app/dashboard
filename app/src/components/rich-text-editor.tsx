@@ -72,7 +72,7 @@ function grey(text: string): string {
 // Marqueurs inline : emoji custom, timestamp Discord, placeholder, gras, italique,
 // barré, code. L'ordre des alternatives donne la priorité.
 const INLINE_RE =
-  /(<a?:\w+:\d+>)|(<t:[^>\n]*>)|(\{[a-zA-Z0-9_.]+\})|(\*\*[^*\n]+\*\*)|(__[^_\n]+__)|(\*[^*\n]+\*)|(_[^_\n]+_)|(~~[^~\n]+~~)|(`[^`\n]+`)/g
+  /(<a?:\w+:\d+>)|(<t:[^>\n]*>)|(\{[a-zA-Z0-9_.]+\})|(\[[^\]\n]+\]\([^)\n]+\))|(\*\*[^*\n]+\*\*)|(__[^_\n]+__)|(\*[^*\n]+\*)|(_[^_\n]+_)|(~~[^~\n]+~~)|(`[^`\n]+`)/g
 
 function inline(seg: string, phSet: Set<string> | null, pretty: boolean): string {
   let out = ""
@@ -105,21 +105,34 @@ function inline(seg: string, phSet: Set<string> | null, pretty: boolean): string
       out += known
         ? `<span class="${PLACEHOLDER_CLS}">${escapeHtml(tok)}</span>`
         : escapeHtml(tok)
-    } else if (m[4] || m[5]) {
+    } else if (m[4]) {
+      // Lien [texte](url)
+      const lk = tok.match(/^\[([^\]]+)\]\(([^)]+)\)$/)
+      if (lk) {
+        out +=
+          grey("[") +
+          `<span class="text-blue-600 dark:text-blue-400 underline">${inline(lk[1], phSet, pretty)}</span>` +
+          grey("](") +
+          `<span class="text-muted-foreground">${escapeHtml(lk[2])}</span>` +
+          grey(")")
+      } else {
+        out += escapeHtml(tok)
+      }
+    } else if (m[5] || m[6]) {
       // Gras ** ou __
       const mark = tok.slice(0, 2)
       const innerB = tok.slice(2, -2)
       out += grey(mark) + `<span class="font-semibold">${inline(innerB, phSet, pretty)}</span>` + grey(mark)
-    } else if (m[6] || m[7]) {
+    } else if (m[7] || m[8]) {
       // Italique * ou _
       const mark = tok[0]
       const innerI = tok.slice(1, -1)
       out += grey(mark) + `<span class="italic">${inline(innerI, phSet, pretty)}</span>` + grey(mark)
-    } else if (m[8]) {
+    } else if (m[9]) {
       // Barré ~~
       const innerS = tok.slice(2, -2)
       out += grey("~~") + `<span class="line-through">${inline(innerS, phSet, pretty)}</span>` + grey("~~")
-    } else if (m[9]) {
+    } else if (m[10]) {
       // Code `…`
       const innerC = tok.slice(1, -1)
       out +=
@@ -475,6 +488,9 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
           onInput={handleInput}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
+          onKeyUp={reportSelection}
+          onMouseUp={reportSelection}
+          onFocus={reportSelection}
           style={{ minHeight }}
           className={cn(
             "w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm leading-relaxed whitespace-pre-wrap break-words shadow-xs transition-[color,box-shadow] outline-none",
