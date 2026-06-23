@@ -235,7 +235,7 @@ export function GuildOverviewPage() {
             {/* Nom + badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
-              {verifiedKind && <VerifiedBadge kind={verifiedKind} />}
+              {verifiedKind && <VerifiedBadge kind={verifiedKind} className="-ml-1" />}
               {isPremium && !hidePremium && (
                 <Badge className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 text-xs">
                   <CrownIcon className="size-3 mr-1" />
