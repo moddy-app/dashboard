@@ -739,6 +739,7 @@
     "emojis": "Server emojis",
     "noEmojis": "No custom emojis on this server.",
     "variables": "Variables:",
-    "insertVariable": "Insert variable"
+    "insertVariable": "Insert variable",
+    "link": "Link"
   }
 }

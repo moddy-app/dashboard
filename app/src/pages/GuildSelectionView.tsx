@@ -104,7 +104,7 @@ export function GuildSelectionView() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <p className="font-semibold truncate">{guild.name}</p>
-                    {kind && <VerifiedBadge kind={kind} className="shrink-0" />}
+                    {kind && <VerifiedBadge kind={kind} className="-ml-1 shrink-0" />}
                     {showMax && (
                       <Badge className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800">
                         <CrownIcon className="size-2.5" />

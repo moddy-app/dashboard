@@ -460,7 +460,7 @@ export function SocialNotificationsPage() {
 
       {/* Carte abonnements */}
       <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4">
+        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle className="text-base">
               {t("modules.social_notifications.subscriptionsTitle")}
@@ -469,7 +469,13 @@ export function SocialNotificationsPage() {
               {t("modules.social_notifications.subscriptionsDescription", { limit })}
             </CardDescription>
           </div>
-          <Button type="button" size="sm" onClick={openNew} disabled={!canAddAny || isLoadingSubs}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={openNew}
+            disabled={!canAddAny || isLoadingSubs}
+            className="w-full sm:w-auto shrink-0"
+          >
             <PlusIcon className="size-4" />
             {t("modules.social_notifications.addSubscription")}
           </Button>
@@ -640,11 +646,11 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
         }
       }}
       className={cn(
-        "flex items-center justify-between gap-4 rounded-lg border px-4 py-3 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
         !sub.enabled && "opacity-60"
       )}
     >
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex items-center gap-2.5 min-w-0">
         <Avatar className="size-9 shrink-0">
           <AvatarImage
             src={sub.avatar_url ?? undefined}
@@ -659,11 +665,13 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium truncate">{sub.display_name ?? sub.identifier}</p>
             <span
-              className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+              className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
               style={{ backgroundColor: `${color}1a`, color }}
             >
               <SocialIcon platform={sub.platform} className="size-3" />
-              {t(`modules.social_notifications.platforms.${sub.platform}`)}
+              <span className="hidden min-[400px]:inline">
+                {t(`modules.social_notifications.platforms.${sub.platform}`)}
+              </span>
             </span>
             {!sub.enabled && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
