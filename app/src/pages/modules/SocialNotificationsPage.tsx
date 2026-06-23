@@ -661,29 +661,29 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
             <SocialIcon platform={sub.platform} className="size-4 text-muted-foreground" />
           </AvatarFallback>
         </Avatar>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium truncate">{sub.display_name ?? sub.identifier}</p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <p className="text-sm font-medium truncate">{sub.display_name || sub.identifier}</p>
+            {!sub.enabled && (
+              <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">
+                {t("modules.social_notifications.paused")}
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5 min-w-0 text-xs text-muted-foreground">
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
               style={{ backgroundColor: `${color}1a`, color }}
             >
               <SocialIcon platform={sub.platform} className="size-3" />
-              <span className="hidden min-[400px]:inline">
-                {t(`modules.social_notifications.platforms.${sub.platform}`)}
-              </span>
+              {t(`modules.social_notifications.platforms.${sub.platform}`)}
             </span>
-            {!sub.enabled && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                {t("modules.social_notifications.paused")}
-              </Badge>
-            )}
+            <span className="truncate">
+              {channel ? `# ${channel.name}` : `#${sub.channel_id}`}
+              {sub.mention_role_ids.length > 0 &&
+                ` · ${t("modules.social_notifications.rolesCount", { count: sub.mention_role_ids.length })}`}
+            </span>
           </div>
-          <p className="text-xs text-muted-foreground truncate mt-0.5">
-            {channel ? `# ${channel.name}` : `#${sub.channel_id}`}
-            {sub.mention_role_ids.length > 0 &&
-              ` · ${t("modules.social_notifications.rolesCount", { count: sub.mention_role_ids.length })}`}
-          </p>
         </div>
       </div>
       <div className="flex items-center gap-1.5 shrink-0">
