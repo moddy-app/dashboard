@@ -17,15 +17,10 @@ export function App() {
   }, [t])
 
   return (
-    <div className="relative flex min-h-screen flex-col overflow-hidden bg-background">
-      {/* Ambient brand glow */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-1/2 top-[-8rem] h-[38rem] w-[38rem] -translate-x-1/2 rounded-full bg-brand/10 blur-[150px]" />
-      </div>
-
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Header — logo (left) + theme toggle (right) */}
       <header className="flex shrink-0 items-center justify-between px-6 py-6 sm:px-10 sm:py-8">
-        <Logo className="h-7 text-brand sm:h-8" />
+        <Logo className="h-9 text-brand sm:h-10" />
         <button
           type="button"
           onClick={toggleTheme}
@@ -41,13 +36,7 @@ export function App() {
       {/* Main — framed content, centered */}
       <main className="flex flex-1 items-center justify-center px-6 py-6">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-          <article className="relative overflow-hidden rounded-3xl border border-border bg-card/80 p-8 text-left shadow-xl shadow-black/5 backdrop-blur-xl sm:p-10">
-            {/* Top accent line */}
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand/70 to-transparent"
-            />
-
+          <article className="rounded-3xl border border-border bg-card p-8 text-left shadow-sm sm:p-10">
             {/* Status badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
               <span className="relative flex h-1.5 w-1.5">
