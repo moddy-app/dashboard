@@ -14,8 +14,8 @@
 7. Ajout de la police **Google Sans** (avec repli sur Geist Variable).
 8. Lien de support pointant vers `https://moddy.app/support`.
 9. Utilisation exclusive d'icônes (lucide-react), aucun emoji.
-10. **Easter egg** : un clic sur la marque Moddy déclenche un petit rebond ludique (Web Animations API, respecte `prefers-reduced-motion`).
-11. Style final épuré : carte **rectangulaire en outline** (bordure seule, sans ombre ni fond décoratif) et **typographie agrandie**.
+10. **Logo cliquable** vers `https://moddy.app`, avec un **easter egg au survol/focus** : la marque Moddy rebondit (Web Animations API, respecte `prefers-reduced-motion`).
+11. Style final épuré : carte **en outline** (bordure seule, sans ombre ni fond décoratif), **élargie** (`max-w-xl`) et **typographie agrandie**.
 
 ## Fichiers créés
 

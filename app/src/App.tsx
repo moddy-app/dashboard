@@ -7,6 +7,7 @@ import { useTranslation } from "@/i18n"
 import { cn } from "@/lib/utils"
 
 const SUPPORT_URL = "https://moddy.app/support"
+const MODDY_URL = "https://moddy.app"
 
 export function App() {
   const { t, lang, setLang, languages, languageLabels } = useTranslation()
@@ -16,8 +17,8 @@ export function App() {
     document.title = `Moddy — ${t("badge")}`
   }, [t])
 
-  // Easter egg: give the Moddy mark a playful little bounce when clicked.
-  const pokeLogo = (event: React.MouseEvent<HTMLButtonElement>) => {
+  // Easter egg: give the Moddy mark a playful little bounce on hover/focus.
+  const pokeLogo = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
     const mark = event.currentTarget.querySelector(".moddy-logo-mark")
     mark?.animate(
@@ -36,14 +37,16 @@ export function App() {
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header — logo (left) + theme toggle (right) */}
       <header className="flex shrink-0 items-center justify-between px-6 py-6 sm:px-10 sm:py-8">
-        {/* Logo — click for a little easter egg */}
-        <button
-          type="button"
-          onClick={pokeLogo}
+        {/* Logo — links to moddy.app, plays an easter egg on hover */}
+        <a
+          href={MODDY_URL}
+          onMouseEnter={pokeLogo}
+          onFocus={pokeLogo}
+          aria-label="Moddy"
           className="-m-1.5 rounded-md p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <Logo className="h-9 text-brand sm:h-10" />
-        </button>
+        </a>
         <button
           type="button"
           onClick={toggleTheme}
@@ -58,8 +61,8 @@ export function App() {
 
       {/* Main — framed content, centered */}
       <main className="flex flex-1 items-center justify-center px-6 py-6">
-        <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-          <article className="rounded-lg border border-border bg-card p-8 text-left sm:p-10">
+        <div className="w-full max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
+          <article className="rounded-3xl border border-border bg-card p-8 text-left sm:p-10">
             {/* Status badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
               <span className="relative flex h-1.5 w-1.5">
@@ -88,7 +91,7 @@ export function App() {
             </p>
             <a
               href={SUPPORT_URL}
-              className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-base font-semibold text-white transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+              className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-base font-semibold text-white transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               <LifeBuoy className="h-4 w-4" />
               {t("support")}
