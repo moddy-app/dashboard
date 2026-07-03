@@ -1,44 +1,96 @@
-export function App() {
+import { Navigate, Route, Routes } from "react-router-dom"
+
+import { Spinner } from "@/components/ui/spinner"
+import { AppShell } from "@/components/layout/app-shell"
+import { useViewer } from "@/hooks/useViewer"
+import { BlacklistPage } from "@/pages/blacklist-page"
+import { CaseDetailView } from "@/components/cases/case-detail-view"
+import { LoginPage } from "@/pages/login-page"
+import {
+  PersonalCaseDetailPage,
+  PersonalCasesPage,
+} from "@/pages/personal-cases-page"
+import {
+  ServerCaseDetailPage,
+  ServerCasesPage,
+  ServersLandingPage,
+} from "@/pages/server-cases-page"
+import { StaffCaseDetailPage, StaffCasesPage } from "@/pages/staff-cases-page"
+import { useParams } from "react-router-dom"
+
+function GlobalCaseDetailPage() {
+  const { reference } = useParams()
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-8">
-      <div className="max-w-md text-center">
-        {/* Error Icon */}
-        <div className="mb-6 flex justify-center">
-          <svg
-            className="h-20 w-20 text-destructive"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-            />
-          </svg>
-        </div>
+    <CaseDetailView identifier={reference!} backTo="/me" backLabel="Mes sanctions" />
+  )
+}
 
-        {/* Error Message */}
-        <h1 className="mb-4 text-3xl font-bold text-foreground">
-          Dashboard Unavailable
-        </h1>
-        <p className="mb-2 text-lg text-muted-foreground">
-          The Moddy Dashboard is currently under active development.
-        </p>
-        <p className="text-sm text-muted-foreground">
-          Please check back later for updates.
-        </p>
+function StaffRoute({ children }: { children: React.ReactNode }) {
+  const viewer = useViewer()
+  if (!viewer.isStaff) return <Navigate to="/me" replace />
+  return <>{children}</>
+}
 
-        {/* Additional Info */}
-        <div className="mt-8 rounded-lg border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground">
-            For more information about Moddy, please visit our Discord community.
-          </p>
-        </div>
+export function App() {
+  const viewer = useViewer()
+
+  if (viewer.status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Spinner className="size-6 text-muted-foreground" />
       </div>
-    </div>
+    )
+  }
+
+  if (viewer.status === "unauthenticated") {
+    return <LoginPage />
+  }
+
+  return (
+    <Routes>
+      <Route element={<AppShell />}>
+        <Route index element={<Navigate to="/me" replace />} />
+
+        <Route path="me" element={<PersonalCasesPage />} />
+        <Route path="me/:reference" element={<PersonalCaseDetailPage />} />
+
+        <Route path="servers" element={<ServersLandingPage />} />
+        <Route path="servers/:guildId" element={<ServerCasesPage />} />
+        <Route
+          path="servers/:guildId/:reference"
+          element={<ServerCaseDetailPage />}
+        />
+
+        <Route
+          path="staff/cases"
+          element={
+            <StaffRoute>
+              <StaffCasesPage />
+            </StaffRoute>
+          }
+        />
+        <Route
+          path="staff/cases/:reference"
+          element={
+            <StaffRoute>
+              <StaffCaseDetailPage />
+            </StaffRoute>
+          }
+        />
+        <Route
+          path="staff/blacklist"
+          element={
+            <StaffRoute>
+              <BlacklistPage />
+            </StaffRoute>
+          }
+        />
+
+        <Route path="cases/:reference" element={<GlobalCaseDetailPage />} />
+
+        <Route path="*" element={<Navigate to="/me" replace />} />
+      </Route>
+    </Routes>
   )
 }
 
