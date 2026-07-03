@@ -130,3 +130,9 @@
     @apply font-sans;
     }
 }
+
+/* Pivot the logo mark around its own centre for the click easter egg */
+.moddy-logo-mark {
+  transform-box: fill-box;
+  transform-origin: center;
+}

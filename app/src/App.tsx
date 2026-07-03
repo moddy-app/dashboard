@@ -16,11 +16,34 @@ export function App() {
     document.title = `Moddy — ${t("badge")}`
   }, [t])
 
+  // Easter egg: give the Moddy mark a playful little bounce when clicked.
+  const pokeLogo = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
+    const mark = event.currentTarget.querySelector(".moddy-logo-mark")
+    mark?.animate(
+      [
+        { transform: "translateY(0) rotate(0deg) scale(1)" },
+        { transform: "translateY(-20%) rotate(-10deg) scale(1.1)", offset: 0.3 },
+        { transform: "translateY(0) rotate(7deg) scale(0.97)", offset: 0.55 },
+        { transform: "translateY(-7%) rotate(-3deg) scale(1.02)", offset: 0.78 },
+        { transform: "translateY(0) rotate(0deg) scale(1)" },
+      ],
+      { duration: 700, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" }
+    )
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background">
       {/* Header — logo (left) + theme toggle (right) */}
       <header className="flex shrink-0 items-center justify-between px-6 py-6 sm:px-10 sm:py-8">
-        <Logo className="h-9 text-brand sm:h-10" />
+        {/* Logo — click for a little easter egg */}
+        <button
+          type="button"
+          onClick={pokeLogo}
+          className="-m-1.5 rounded-md p-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          <Logo className="h-9 text-brand sm:h-10" />
+        </button>
         <button
           type="button"
           onClick={toggleTheme}
@@ -36,7 +59,7 @@ export function App() {
       {/* Main — framed content, centered */}
       <main className="flex flex-1 items-center justify-center px-6 py-6">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out">
-          <article className="rounded-3xl border border-border bg-card p-8 text-left shadow-sm sm:p-10">
+          <article className="rounded-lg border border-border bg-card p-8 text-left sm:p-10">
             {/* Status badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium text-muted-foreground">
               <span className="relative flex h-1.5 w-1.5">
@@ -47,12 +70,12 @@ export function App() {
             </div>
 
             {/* Title */}
-            <h1 className="mt-5 text-balance text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="mt-5 text-balance text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               {t("title")}
             </h1>
 
             {/* Description */}
-            <p className="mt-3 text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
+            <p className="mt-3 text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
               {t("description")}
             </p>
 
@@ -60,10 +83,12 @@ export function App() {
             <div className="my-7 h-px w-full bg-border" />
 
             {/* Support call to action */}
-            <p className="text-sm text-muted-foreground/80">{t("supportPrompt")}</p>
+            <p className="text-sm text-muted-foreground/80 sm:text-base">
+              {t("supportPrompt")}
+            </p>
             <a
               href={SUPPORT_URL}
-              className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:shadow-brand/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+              className="group mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-5 py-3 text-base font-semibold text-white transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 focus-visible:ring-offset-card"
             >
               <LifeBuoy className="h-4 w-4" />
               {t("support")}
