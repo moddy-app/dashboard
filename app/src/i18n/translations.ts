@@ -13,6 +13,8 @@ export const translations = {
     supportPrompt: "Need a hand in the meantime?",
     support: "Join our support server",
     language: "Language",
+    switchToLight: "Switch to light theme",
+    switchToDark: "Switch to dark theme",
   },
   fr: {
     badge: "En travaux",
@@ -22,6 +24,8 @@ export const translations = {
     supportPrompt: "Besoin d'un coup de main en attendant ?",
     support: "Rejoindre le serveur de support",
     language: "Langue",
+    switchToLight: "Passer au thème clair",
+    switchToDark: "Passer au thème sombre",
   },
   es: {
     badge: "En construcción",
@@ -31,6 +35,8 @@ export const translations = {
     supportPrompt: "¿Necesitas ayuda mientras tanto?",
     support: "Unirse al servidor de soporte",
     language: "Idioma",
+    switchToLight: "Cambiar al tema claro",
+    switchToDark: "Cambiar al tema oscuro",
   },
   de: {
     badge: "In Arbeit",
@@ -40,6 +46,8 @@ export const translations = {
     supportPrompt: "Brauchst du in der Zwischenzeit Hilfe?",
     support: "Support-Server beitreten",
     language: "Sprache",
+    switchToLight: "Zum hellen Design wechseln",
+    switchToDark: "Zum dunklen Design wechseln",
   },
 } as const
 

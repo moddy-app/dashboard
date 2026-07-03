@@ -5,14 +5,15 @@
 
 ## Tâches accomplies
 
-1. Refonte complète de la page d'accueil (`App.tsx`) : mise en page épurée, alignée à gauche, avec logo, badge de statut animé, titre, description et un appel à l'action vers le support.
+1. Refonte complète de la page d'accueil (`App.tsx`) avec une mise en page en trois zones : **logo en haut à gauche** (header), **contenu encadré dans une carte centrée** (badge de statut animé, titre, description, séparateur, appel à l'action support), et **sélecteur de langue en bas de page** (footer).
 2. Mise en place d'un système d'internationalisation (i18n) léger et maison, sans dépendance externe, supportant **4 langues** : anglais, français, espagnol, allemand.
 3. Détection automatique de la langue du navigateur + mémorisation du choix (localStorage).
 4. Thème clair/sombre **automatique** selon la préférence système (`prefers-color-scheme`), appliqué avant le premier rendu pour éviter tout flash.
-5. Intégration du logo Moddy officiel (wordmark) et remplacement du favicon par la marque Moddy bleue.
-6. Ajout de la police **Google Sans** (avec repli sur Geist Variable).
-7. Lien de support pointant vers `https://moddy.app/support`.
-8. Utilisation exclusive d'icônes (lucide-react), aucun emoji.
+5. **Bouton manuel de bascule clair/sombre** (header, en haut à droite) qui surcharge et mémorise le choix par-dessus la préférence système (hook `useTheme`).
+6. Intégration du logo Moddy officiel (wordmark) et remplacement du favicon par la marque Moddy bleue.
+7. Ajout de la police **Google Sans** (avec repli sur Geist Variable).
+8. Lien de support pointant vers `https://moddy.app/support`.
+9. Utilisation exclusive d'icônes (lucide-react), aucun emoji.
 
 ## Fichiers créés
 
@@ -22,6 +23,7 @@
 - `app/src/i18n/useTranslation.ts` — hook d'accès à la traduction.
 - `app/src/i18n/index.ts` — barrel d'exports du module i18n.
 - `app/src/components/Logo.tsx` — composant du logo Moddy (`fill="currentColor"`, thème-aware).
+- `app/src/hooks/useTheme.ts` — hook de gestion du thème (bascule manuelle + synchro système).
 
 ## Fichiers modifiés
 

@@ -19,17 +19,19 @@
       rel="stylesheet"
     />
 
-    <!-- Apply the system colour scheme before paint to avoid a flash -->
+    <!-- Resolve the theme before paint to avoid a flash: an explicit saved
+         choice wins, otherwise follow the system preference. -->
     <script>
       (function () {
         try {
+          var stored = localStorage.getItem("moddy-theme")
           var query = window.matchMedia("(prefers-color-scheme: dark)")
           var apply = function (isDark) {
             document.documentElement.classList.toggle("dark", isDark)
           }
-          apply(query.matches)
+          apply(stored ? stored === "dark" : query.matches)
           query.addEventListener("change", function (event) {
-            apply(event.matches)
+            if (!localStorage.getItem("moddy-theme")) apply(event.matches)
           })
         } catch (error) {
           /* no-op: fall back to the default light theme */
