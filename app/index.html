@@ -4,7 +4,40 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Moddy Dashboard - Unavailable</title>
+    <meta
+      name="description"
+      content="The Moddy Dashboard is under construction. Join our support server for help in the meantime."
+    />
+    <meta name="theme-color" content="#0046f8" />
+    <title>Moddy — Under construction</title>
+
+    <!-- Google Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Resolve the theme before paint to avoid a flash: an explicit saved
+         choice wins, otherwise follow the system preference. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("moddy-theme")
+          var query = window.matchMedia("(prefers-color-scheme: dark)")
+          var apply = function (isDark) {
+            document.documentElement.classList.toggle("dark", isDark)
+          }
+          apply(stored ? stored === "dark" : query.matches)
+          query.addEventListener("change", function (event) {
+            if (!localStorage.getItem("moddy-theme")) apply(event.matches)
+          })
+        } catch (error) {
+          /* no-op: fall back to the default light theme */
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
