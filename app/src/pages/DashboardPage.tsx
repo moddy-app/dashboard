@@ -142,6 +142,24 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const getBreadcrumb = () => {
     const path = location.pathname
 
+    // /cases — mes sanctions (vue personnelle)
+    if (path === '/cases') {
+      return {
+        parent: t('dashboard.breadcrumb.app'),
+        parentHref: '/',
+        current: t('cases.my.title'),
+      }
+    }
+
+    // /servers/:guildId/cases — modération du serveur
+    if (path.match(/^\/servers\/\d+\/cases$/) && guildDetail) {
+      return {
+        parent: guildDetail.name,
+        parentHref: `/servers/${selectedGuildId}`,
+        current: t('cases.guild.navTitle'),
+      }
+    }
+
     // /servers/:guildId/modules/:moduleId
     const moduleMatch = path.match(/^\/servers\/\d+\/modules\/(.+)$/)
     if (moduleMatch && guildDetail) {

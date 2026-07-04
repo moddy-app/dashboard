@@ -23,6 +23,8 @@ import { AdaptiveSlowmodePage } from "@/pages/modules/AdaptiveSlowmodePage"
 import { SocialNotificationsPage } from "@/pages/modules/SocialNotificationsPage"
 import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
+import { MyCasesPage } from "@/pages/MyCasesPage"
+import { GuildCasesPage } from "@/pages/GuildCasesPage"
 
 Sentry.init({
   dsn: "https://68314945d5389aff0aae69966e2e46fb@o4510617959202816.ingest.de.sentry.io/4510875563196496",
@@ -36,7 +38,9 @@ const router = createBrowserRouter([
     element: <HomePage />,
     children: [
       { index: true, element: <GuildSelectionView /> },
+      { path: "cases", element: <MyCasesPage /> },
       { path: "servers/:guildId", element: <GuildOverviewPage /> },
+      { path: "servers/:guildId/cases", element: <GuildCasesPage /> },
       { path: "servers/:guildId/modules/starboard", element: <StarboardPage /> },
       { path: "servers/:guildId/modules/welcome_channel", element: <WelcomeChannelPage /> },
       { path: "servers/:guildId/modules/auto_role", element: <AutoRolePage /> },

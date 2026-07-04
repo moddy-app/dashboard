@@ -48,8 +48,10 @@ import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Field, FieldTitle, FieldDescription } from "@/components/ui/field"
 import { useGuildContext } from "@/contexts/GuildContext"
-import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getCases, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission, registerTallyForm } from "@/services/staff"
-import type { GlobalStats, BotStatus, UserFullProfile, ModerationCase, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
+import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission, registerTallyForm } from "@/services/staff"
+import type { GlobalStats, BotStatus, UserFullProfile, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
+import { CasesBrowser } from "@/components/cases/cases-browser"
+import { canModerateCases } from "@/lib/cases"
 
 // Rôles staff ayant accès aux différentes sections
 const CAN_ACCESS_STATS = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup']
@@ -348,91 +350,16 @@ function GuildsTab() {
 // ─── Cases ────────────────────────────────────────────────────────────────────
 
 function CasesTab() {
-  const { t } = useTranslation()
-  const [cases, setCases] = useState<ModerationCase[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const result = await getCases({ limit: 50 })
-      setCases(result)
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Failed to load cases'
-      setError(msg)
-      console.error('[Staff] getCases error:', e)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  if (loading) return <Skeleton className="h-48 rounded-xl" />
-
-  if (error) return (
-    <div className="flex flex-col items-center gap-3 py-12 text-center">
-      <XCircleIcon className="size-8 text-destructive" />
-      <p className="text-sm text-muted-foreground">{error}</p>
-      <Button variant="outline" size="sm" onClick={load}>
-        <RefreshCwIcon className="size-4 mr-1.5" />
-        {t('guildOverview.refresh')}
-      </Button>
-    </div>
-  )
+  const { user } = useGuildContext()
+  const canModerate = canModerateCases(user)
 
   return (
-    <Card className="py-0">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('staff.cases.id')}</TableHead>
-            <TableHead>{t('staff.cases.type')}</TableHead>
-            <TableHead>{t('staff.cases.entity')}</TableHead>
-            <TableHead>{t('staff.cases.status')}</TableHead>
-            <TableHead>{t('staff.cases.reason')}</TableHead>
-            <TableHead>{t('staff.cases.date')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {cases.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-10">
-                {t('staff.cases.empty')}
-              </TableCell>
-            </TableRow>
-          ) : (
-            cases.map((c) => (
-              <TableRow key={c.case_id}>
-                <TableCell className="font-mono text-xs font-medium">{c.case_id}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="text-xs">{c.sanction_type}</Badge>
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground">
-                  {c.entity_type}/{c.entity_id}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    variant={c.status === 'open' ? 'default' : 'secondary'}
-                    className="text-xs"
-                  >
-                    {c.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground">
-                  {c.reason ?? '—'}
-                </TableCell>
-                <TableCell className="text-xs text-muted-foreground tabular-nums">
-                  {new Date(c.created_at).toLocaleDateString()}
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-    </Card>
+    <CasesBrowser
+      baseFilters={{}}
+      canModerate={canModerate}
+      canCreate={canModerate}
+      showSubject
+    />
   )
 }
 
