@@ -16,6 +16,8 @@ import {
   ServerIcon,
   ClipboardListIcon,
   BellRingIcon,
+  ShieldAlertIcon,
+  ScaleIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -90,6 +92,12 @@ export function AppSidebar({
           isActive: location.pathname === `/servers/${selectedGuildId}`,
         },
         {
+          title: t("cases.guild.navTitle"),
+          url: `/servers/${selectedGuildId}/cases`,
+          icon: ShieldAlertIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/cases`,
+        },
+        {
           title: t("modules.starboard.name"),
           url: `/servers/${selectedGuildId}/modules/starboard`,
           icon: StarIcon,
@@ -133,6 +141,12 @@ export function AppSidebar({
           url: "/",
           icon: LayoutDashboardIcon,
           isActive: location.pathname === "/",
+        },
+        {
+          title: t("cases.my.navTitle"),
+          url: "/cases",
+          icon: ScaleIcon,
+          isActive: location.pathname === "/cases",
         },
       ]
     : []

@@ -650,7 +650,8 @@
     "dashboard": "Tableau de bord",
     "debug": "Debug",
     "premium": "Moddy Max",
-    "notFound": "404 — Introuvable"
+    "notFound": "404 — Introuvable",
+    "cases": "Sanctions"
   },
   "errors": {
     "retry": "Réessayer",
@@ -741,5 +742,194 @@
     "variables": "Variables :",
     "insertVariable": "Insérer la variable",
     "link": "Lien"
+  },
+  "cases": {
+    "status": {
+      "open": "Ouvert",
+      "closed": "Fermé"
+    },
+    "type": {
+      "global": "Global",
+      "network": "Réseau",
+      "guild": "Serveur",
+      "platform": "Plateforme",
+      "external": "Externe"
+    },
+    "action": {
+      "warn": "Avertir",
+      "mute": "Silence",
+      "ban": "Bannir",
+      "kick": "Expulser",
+      "restrict": "Restreindre",
+      "revoke_access": "Révoquer l'accès"
+    },
+    "sanctionStatus": {
+      "active": "Active",
+      "expired": "Expirée",
+      "revoked": "Révoquée"
+    },
+    "subjectType": {
+      "discord_user": "Utilisateur Discord",
+      "discord_guild": "Serveur Discord",
+      "moddy_user": "Compte Moddy",
+      "external": "Externe"
+    },
+    "scopeType": {
+      "discord_guild": "Serveur",
+      "network": "Réseau",
+      "platform": "Plateforme",
+      "external_service": "Service externe"
+    },
+    "appealRoute": {
+      "server": "Modérateurs du serveur",
+      "team": "Équipe Moddy"
+    },
+    "appealStatus": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "refused": "Refusée",
+      "transformed": "Transformée",
+      "cancelled": "Annulée"
+    },
+    "trigger": {
+      "manual": "manuellement",
+      "expiration": "à l'échéance",
+      "revocation": "après révocation",
+      "system": "par le système"
+    },
+    "actor": {
+      "moddy_staff": "Staff Moddy",
+      "automod": "AutoMod",
+      "system": "Système",
+      "external": "Externe"
+    },
+    "cancel": "Annuler",
+    "my": {
+      "navTitle": "Mes sanctions",
+      "title": "Mes sanctions",
+      "description": "Tous les cas de modération vous concernant, tous serveurs confondus.",
+      "emptyTitle": "Aucun cas",
+      "emptyDescription": "Vous n'avez aucun cas de modération. Tout est en règle !"
+    },
+    "guild": {
+      "navTitle": "Modération",
+      "title": "Modération",
+      "description": "Cas de modération liés à {{guild}}.",
+      "emptyTitle": "Aucun cas",
+      "emptyDescription": "Aucun cas de modération n'a encore été ouvert pour ce serveur."
+    },
+    "list": {
+      "searchPlaceholder": "Rechercher par référence, raison ou ID…",
+      "statusAll": "Tous les statuts",
+      "actionAll": "Toutes les actions",
+      "emptyTitle": "Aucun cas",
+      "emptyDescription": "Aucun cas ne correspond aux filtres actuels.",
+      "loadMore": "Charger plus"
+    },
+    "detail": {
+      "back": "Retour",
+      "openedOn": "Ouvert le {{date}}",
+      "addSanction": "Ajouter une sanction",
+      "editReason": "Modifier la raison",
+      "close": "Fermer le cas",
+      "reopen": "Rouvrir le cas",
+      "activity": "Activité",
+      "subject": "Sujet",
+      "scope": "Portée",
+      "issuer": "Émis par",
+      "group": "Groupe",
+      "dates": "Dates",
+      "created": "Créé le {{date}}",
+      "updated": "Modifié le {{date}}",
+      "sanctions": "Sanctions",
+      "appeals": "Appels",
+      "save": "Enregistrer",
+      "closedSuccess": "Cas fermé.",
+      "reopenedSuccess": "Cas rouvert.",
+      "statusError": "Impossible de changer le statut du cas.",
+      "reasonSaved": "Raison mise à jour.",
+      "reasonError": "Impossible de mettre à jour la raison."
+    },
+    "timeline": {
+      "empty": "Aucune activité pour le moment.",
+      "internalNote": "Note interne",
+      "evidenceAutomod": "Preuve AutoMod",
+      "severity": "Gravité",
+      "confidence": "Confiance",
+      "viewMessage": "Voir le message",
+      "appealOpened": "Appel ouvert · {{route}}",
+      "appealDecision": "Décision d'appel · {{status}}",
+      "sanctionAdded": "Sanction {{action}} ajoutée",
+      "aSanction": "Sanction",
+      "sanctionRevoked": "Sanction révoquée",
+      "sanctionExpired": "Sanction {{action}} expirée",
+      "status_open": "Cas rouvert {{trigger}}",
+      "status_closed": "Cas fermé {{trigger}}",
+      "statusChanged": "Statut modifié"
+    },
+    "composer": {
+      "placeholder": "Écrire un commentaire… (⌘+Entrée pour envoyer)",
+      "notePlaceholder": "Écrire une note interne…",
+      "comment": "Commentaire",
+      "note": "Note",
+      "send": "Commenter",
+      "addNote": "Ajouter une note",
+      "error": "Impossible de publier votre commentaire."
+    },
+    "sanctions": {
+      "empty": "Aucune sanction sur ce cas.",
+      "until": "Jusqu'au {{date}}",
+      "permanent": "Permanente",
+      "by": "Par",
+      "revoke": "Révoquer",
+      "revokeTitle": "Révoquer cette sanction ?",
+      "revokeDescription": "La sanction passe en « révoquée » et l'action Discord correspondante est annulée par le bot.",
+      "revokeNotePlaceholder": "Raison de la révocation (facultatif)…",
+      "revokeSuccess": "Sanction révoquée.",
+      "revokeError": "Impossible de révoquer la sanction."
+    },
+    "appeals": {
+      "empty": "Aucun appel.",
+      "decision": "Décision"
+    },
+    "addSanction": {
+      "title": "Ajouter une sanction",
+      "description": "Ajoute une sanction à ce cas. Une sanction active rouvre le cas.",
+      "confirm": "Ajouter la sanction",
+      "success": "Sanction ajoutée.",
+      "error": "Impossible d'ajouter la sanction."
+    },
+    "form": {
+      "caseType": "Type de cas",
+      "subjectType": "Type de sujet",
+      "subjectId": "ID du sujet",
+      "subjectIdPlaceholder": "ID Discord…",
+      "scopeType": "Portée",
+      "scopeId": "ID de portée",
+      "scopeIdPlaceholder": "ex. ID de serveur…",
+      "reason": "Raison",
+      "reasonPlaceholder": "Décrivez la raison de ce cas…",
+      "action": "Action",
+      "duration": "Durée",
+      "note": "Note",
+      "sanctionNotePlaceholder": "Note attachée à la sanction…",
+      "initialComment": "Commentaire initial",
+      "initialCommentPlaceholder": "Premier commentaire facultatif sur le cas…",
+      "optional": "facultatif",
+      "notTemporary": "Cette action est permanente et ne peut pas être temporisée.",
+      "permanent": "Permanente",
+      "temporary": "Temporaire"
+    },
+    "create": {
+      "new": "Nouveau cas",
+      "title": "Créer un cas",
+      "description": "Ouvre un nouveau cas de modération avec une sanction initiale.",
+      "confirm": "Créer le cas",
+      "success": "Cas {{reference}} créé.",
+      "error": "Impossible de créer le cas.",
+      "errorSubject": "Un ID de sujet est requis.",
+      "errorReason": "Une raison est requise.",
+      "errorAction": "Une action est requise."
+    }
   }
 }

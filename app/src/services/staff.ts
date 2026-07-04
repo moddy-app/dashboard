@@ -2,7 +2,6 @@ import { api } from '@/lib/auth'
 import type {
   GlobalStats,
   UserFullProfile,
-  ModerationCase,
   BotStatus,
   GuildDetail,
   GuildAttributes,
@@ -85,29 +84,6 @@ export async function addToBlacklist(params: {
 
 export async function removeFromBlacklist(caseId: string): Promise<void> {
   await api(`/staff/blacklist/${caseId}`, { method: 'DELETE' })
-}
-
-// ─── Cases ────────────────────────────────────────────────────────────────────
-
-export async function getCases(filters?: {
-  entity_id?: number
-  entity_type?: 'user' | 'guild'
-  case_type?: 'global' | 'interserver'
-  status?: 'open' | 'closed'
-  limit?: number
-  offset?: number
-}): Promise<ModerationCase[]> {
-  const query = new URLSearchParams()
-  if (filters) {
-    Object.entries(filters).forEach(([k, v]) => {
-      if (v !== undefined) query.set(k, String(v))
-    })
-  }
-  return (await api(`/cases?${query.toString()}`)) as ModerationCase[]
-}
-
-export async function getCase(caseId: string): Promise<ModerationCase> {
-  return (await api(`/cases/${caseId}`)) as ModerationCase
 }
 
 // ─── Users (staff) ────────────────────────────────────────────────────────────

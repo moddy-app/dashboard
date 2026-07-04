@@ -650,7 +650,8 @@
     "dashboard": "Dashboard",
     "debug": "Debug",
     "premium": "Moddy Max",
-    "notFound": "404 — Not Found"
+    "notFound": "404 — Not Found",
+    "cases": "Cases"
   },
   "errors": {
     "retry": "Try again",
@@ -741,5 +742,194 @@
     "variables": "Variables:",
     "insertVariable": "Insert variable",
     "link": "Link"
+  },
+  "cases": {
+    "status": {
+      "open": "Open",
+      "closed": "Closed"
+    },
+    "type": {
+      "global": "Global",
+      "network": "Network",
+      "guild": "Server",
+      "platform": "Platform",
+      "external": "External"
+    },
+    "action": {
+      "warn": "Warn",
+      "mute": "Mute",
+      "ban": "Ban",
+      "kick": "Kick",
+      "restrict": "Restrict",
+      "revoke_access": "Revoke access"
+    },
+    "sanctionStatus": {
+      "active": "Active",
+      "expired": "Expired",
+      "revoked": "Revoked"
+    },
+    "subjectType": {
+      "discord_user": "Discord user",
+      "discord_guild": "Discord server",
+      "moddy_user": "Moddy account",
+      "external": "External"
+    },
+    "scopeType": {
+      "discord_guild": "Server",
+      "network": "Network",
+      "platform": "Platform",
+      "external_service": "External service"
+    },
+    "appealRoute": {
+      "server": "Server moderators",
+      "team": "Moddy team"
+    },
+    "appealStatus": {
+      "pending": "Pending",
+      "accepted": "Accepted",
+      "refused": "Refused",
+      "transformed": "Transformed",
+      "cancelled": "Cancelled"
+    },
+    "trigger": {
+      "manual": "manually",
+      "expiration": "on expiry",
+      "revocation": "after revocation",
+      "system": "by the system"
+    },
+    "actor": {
+      "moddy_staff": "Moddy Staff",
+      "automod": "AutoMod",
+      "system": "System",
+      "external": "External"
+    },
+    "cancel": "Cancel",
+    "my": {
+      "navTitle": "My cases",
+      "title": "My cases",
+      "description": "Every moderation case involving you across all servers.",
+      "emptyTitle": "No cases",
+      "emptyDescription": "You have no moderation cases. Good standing!"
+    },
+    "guild": {
+      "navTitle": "Moderation",
+      "title": "Moderation",
+      "description": "Moderation cases scoped to {{guild}}.",
+      "emptyTitle": "No cases",
+      "emptyDescription": "No moderation case has been opened for this server yet."
+    },
+    "list": {
+      "searchPlaceholder": "Search by reference, reason or ID…",
+      "statusAll": "All statuses",
+      "actionAll": "All actions",
+      "emptyTitle": "No cases",
+      "emptyDescription": "No case matches the current filters.",
+      "loadMore": "Load more"
+    },
+    "detail": {
+      "back": "Back",
+      "openedOn": "Opened on {{date}}",
+      "addSanction": "Add sanction",
+      "editReason": "Edit reason",
+      "close": "Close case",
+      "reopen": "Reopen case",
+      "activity": "Activity",
+      "subject": "Subject",
+      "scope": "Scope",
+      "issuer": "Issued by",
+      "group": "Group",
+      "dates": "Dates",
+      "created": "Created {{date}}",
+      "updated": "Updated {{date}}",
+      "sanctions": "Sanctions",
+      "appeals": "Appeals",
+      "save": "Save",
+      "closedSuccess": "Case closed.",
+      "reopenedSuccess": "Case reopened.",
+      "statusError": "Could not change the case status.",
+      "reasonSaved": "Reason updated.",
+      "reasonError": "Could not update the reason."
+    },
+    "timeline": {
+      "empty": "No activity yet.",
+      "internalNote": "Internal note",
+      "evidenceAutomod": "AutoMod evidence",
+      "severity": "Severity",
+      "confidence": "Confidence",
+      "viewMessage": "View message",
+      "appealOpened": "Appeal opened · {{route}}",
+      "appealDecision": "Appeal decision · {{status}}",
+      "sanctionAdded": "{{action}} sanction added",
+      "aSanction": "Sanction",
+      "sanctionRevoked": "Sanction revoked",
+      "sanctionExpired": "{{action}} sanction expired",
+      "status_open": "Case reopened {{trigger}}",
+      "status_closed": "Case closed {{trigger}}",
+      "statusChanged": "Status changed"
+    },
+    "composer": {
+      "placeholder": "Write a comment… (⌘+Enter to send)",
+      "notePlaceholder": "Write an internal note…",
+      "comment": "Comment",
+      "note": "Note",
+      "send": "Comment",
+      "addNote": "Add note",
+      "error": "Could not post your comment."
+    },
+    "sanctions": {
+      "empty": "No sanctions on this case.",
+      "until": "Until {{date}}",
+      "permanent": "Permanent",
+      "by": "By",
+      "revoke": "Revoke",
+      "revokeTitle": "Revoke this sanction?",
+      "revokeDescription": "The sanction becomes revoked and the matching Discord action is reversed by the bot.",
+      "revokeNotePlaceholder": "Reason for revocation (optional)…",
+      "revokeSuccess": "Sanction revoked.",
+      "revokeError": "Could not revoke the sanction."
+    },
+    "appeals": {
+      "empty": "No appeals.",
+      "decision": "Decision"
+    },
+    "addSanction": {
+      "title": "Add a sanction",
+      "description": "Add a sanction to this case. Adding an active sanction reopens the case.",
+      "confirm": "Add sanction",
+      "success": "Sanction added.",
+      "error": "Could not add the sanction."
+    },
+    "form": {
+      "caseType": "Case type",
+      "subjectType": "Subject type",
+      "subjectId": "Subject ID",
+      "subjectIdPlaceholder": "Discord ID…",
+      "scopeType": "Scope",
+      "scopeId": "Scope ID",
+      "scopeIdPlaceholder": "e.g. guild ID…",
+      "reason": "Reason",
+      "reasonPlaceholder": "Describe the reason for this case…",
+      "action": "Action",
+      "duration": "Duration",
+      "note": "Note",
+      "sanctionNotePlaceholder": "Note attached to the sanction…",
+      "initialComment": "Initial comment",
+      "initialCommentPlaceholder": "Optional first comment on the case…",
+      "optional": "optional",
+      "notTemporary": "This action is permanent and cannot be timed.",
+      "permanent": "Permanent",
+      "temporary": "Temporary"
+    },
+    "create": {
+      "new": "New case",
+      "title": "Create a case",
+      "description": "Open a new moderation case with an initial sanction.",
+      "confirm": "Create case",
+      "success": "Case {{reference}} created.",
+      "error": "Could not create the case.",
+      "errorSubject": "A subject ID is required.",
+      "errorReason": "A reason is required.",
+      "errorAction": "An action is required."
+    }
   }
 }

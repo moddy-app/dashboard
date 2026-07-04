@@ -338,6 +338,7 @@ Le système utilise :
 - **Système de notifications** (NotificationDrawer responsive, types, données exemple, hook use-media-query)
 - **Dark mode** (ThemeProvider, cookie `moddy_preferences.theme`, sélecteur dans `/debug`)
 - **Module Social Notifications** (`/servers/:guildId/modules/social_notifications`) — abonnements YouTube/Twitch/Bluesky/RSS (Instagram réservé) : liste, ajout (résolution synchrone via le bot), édition (PATCH partiel), pause/reprise, suppression, quota par plateforme (1 free / 5 premium), éditeur de message avec cheat-sheet de placeholders, couleur d'embed (marque ou custom), toggles avatar/média conditionnels. Métadonnées plateformes dans `src/lib/social-platforms.ts`, services dans `src/services/guilds.ts`.
+- **Système Cases / Modération** — nouveau modèle (case + sanctions + events + appeals) remplaçant l'ancien `ModerationCase`. Trois vues partageant **une vue détail unifiée** (design continu façon tickets Linear) : personnelle (`/cases`), serveur (`/servers/:guildId/cases`), staff (onglet Cases). Timeline mêlant commentaires (composant `Message`/`Bubble`) et historique d'actions (composant `Marker`) par ordre chronologique. Formulaires pilotés par `GET /cases/meta`. Écriture réservée au staff modérateur sur les cases `global`/`network`. Types `src/types/cases.ts`, service `src/services/cases.ts`, helpers `src/lib/cases.ts`, composants `src/components/cases/`, profils Discord via `src/hooks/useProfile.ts`.
 
 ### 🚧 Prêt pour le développement
 - Gestion et validation de formulaires
@@ -572,4 +573,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-06-21 (intégration du module Social Notifications)*
+*Dernière mise à jour : 2026-07-04 (intégration du système Cases / modération)*
