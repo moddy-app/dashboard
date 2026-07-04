@@ -1,4 +1,5 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { PlusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -22,6 +23,8 @@ interface CasesBrowserProps {
   backLabel?: string
   emptyTitle?: string
   emptyDescription?: string
+  /** Verrouille le type de case créable (ex. « global » pour le panel staff). */
+  lockCaseType?: "global" | "network"
   createDefaults?: Partial<{
     case_type: CaseType
     subject_type: SubjectType
@@ -40,12 +43,32 @@ export function CasesBrowser({
   backLabel,
   emptyTitle,
   emptyDescription,
+  lockCaseType,
   createDefaults,
 }: CasesBrowserProps) {
   const { t } = useTranslation()
   const { meta } = useCasesMeta()
-  const [selected, setSelected] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
   const [createOpen, setCreateOpen] = useState(false)
+
+  // La case ouverte vit dans l'URL (?case=REF) → visible dans le fil d'Ariane
+  // et partageable, sans changer de route (les 3 vues restent unifiées).
+  const selected = searchParams.get("case")
+
+  const setSelected = useCallback(
+    (ref: string | null) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (ref) next.set("case", ref)
+          else next.delete("case")
+          return next
+        },
+        { replace: false }
+      )
+    },
+    [setSearchParams]
+  )
 
   if (selected) {
     return (
@@ -83,6 +106,7 @@ export function CasesBrowser({
           onOpenChange={setCreateOpen}
           meta={meta}
           defaults={createDefaults}
+          lockCaseType={lockCaseType}
           onCreated={(created) => setSelected(created.reference)}
         />
       )}

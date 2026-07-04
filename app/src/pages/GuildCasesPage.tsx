@@ -41,15 +41,24 @@ export function GuildCasesPage() {
     </div>
   )
 
+  const canModerate = canModerateCases(user)
+
   return (
     <CasesBrowser
       header={header}
       baseFilters={{ scope_type: "discord_guild", scope_id: selectedGuildId }}
-      canModerate={canModerateCases(user)}
+      canModerate={canModerate}
+      canCreate={canModerate}
       showSubject
       backLabel={t("cases.guild.title")}
       emptyTitle={t("cases.guild.emptyTitle")}
       emptyDescription={t("cases.guild.emptyDescription")}
+      createDefaults={{
+        case_type: "network",
+        subject_type: "discord_user",
+        scope_type: "discord_guild",
+        scope_id: selectedGuildId,
+      }}
     />
   )
 }

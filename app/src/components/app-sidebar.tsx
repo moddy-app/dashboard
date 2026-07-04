@@ -142,12 +142,6 @@ export function AppSidebar({
           icon: LayoutDashboardIcon,
           isActive: location.pathname === "/",
         },
-        {
-          title: t("cases.my.navTitle"),
-          url: "/cases",
-          icon: ScaleIcon,
-          isActive: location.pathname === "/cases",
-        },
       ]
     : []
 
@@ -206,6 +200,16 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu className="gap-0.5">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip={t("cases.my.navTitle")}
+              onClick={() => navigate("/cases")}
+              isActive={location.pathname === "/cases"}
+            >
+              <ScaleIcon />
+              <span>{t("cases.my.navTitle")}</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           {selectedGuildId && !isOnStaffPage && (
             <SidebarMenuItem>
               <SidebarMenuButton
