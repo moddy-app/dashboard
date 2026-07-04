@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react"
+import { useState, useCallback, useEffect, useRef, Fragment } from "react"
 import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
@@ -138,26 +138,32 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   const activeNotifications = notifications.filter((n) => !isNotificationExpired(n))
 
-  // Détermine le breadcrumb selon la route courante
-  const getBreadcrumb = () => {
+  // Détermine le breadcrumb (liste de segments) selon la route courante.
+  // Chaque segment : { label, href? }. Le dernier segment est la page courante.
+  type Crumb = { label: string; href?: string | null }
+  const getBreadcrumb = (): Crumb[] => {
     const path = location.pathname
+    // Case ouverte (?case=REF) → segment final partagé par les 3 vues.
+    const caseRef = new URLSearchParams(location.search).get('case')
 
     // /cases — mes sanctions (vue personnelle)
     if (path === '/cases') {
-      return {
-        parent: t('dashboard.breadcrumb.app'),
-        parentHref: '/',
-        current: t('cases.my.title'),
-      }
+      const items: Crumb[] = [
+        { label: t('dashboard.breadcrumb.app'), href: '/' },
+        { label: t('cases.my.title'), href: caseRef ? '/cases' : null },
+      ]
+      if (caseRef) items.push({ label: caseRef })
+      return items
     }
 
     // /servers/:guildId/cases — modération du serveur
     if (path.match(/^\/servers\/\d+\/cases$/) && guildDetail) {
-      return {
-        parent: guildDetail.name,
-        parentHref: `/servers/${selectedGuildId}`,
-        current: t('cases.guild.navTitle'),
-      }
+      const items: Crumb[] = [
+        { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
+        { label: t('cases.guild.navTitle'), href: caseRef ? `/servers/${selectedGuildId}/cases` : null },
+      ]
+      if (caseRef) items.push({ label: caseRef })
+      return items
     }
 
     // /servers/:guildId/modules/:moduleId
@@ -165,50 +171,50 @@ export function DashboardPage({ user }: DashboardPageProps) {
     if (moduleMatch && guildDetail) {
       const moduleId = moduleMatch[1]
       const moduleName = t(`modules.${moduleId}.name`, { defaultValue: moduleId })
-      return {
-        parent: guildDetail.name,
-        parentHref: `/servers/${selectedGuildId}`,
-        current: moduleName,
-      }
+      return [
+        { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
+        { label: moduleName },
+      ]
     }
 
     // /servers/:guildId
     if (path.match(/^\/servers\/\d+/) && guildDetail) {
-      return {
-        parent: t('dashboard.breadcrumb.app'),
-        parentHref: '/',
-        current: guildDetail.name,
-      }
+      return [
+        { label: t('dashboard.breadcrumb.app'), href: '/' },
+        { label: guildDetail.name },
+      ]
     }
 
-    // /staff — Panel Staff > onglet actif
+    // /staff — Panel Staff > onglet actif (> case)
     if (path === '/staff') {
-      const staffTab = new URLSearchParams(location.search).get("tab") ?? "stats"
-      return {
-        parent: t('staff.title'),
-        parentHref: '/staff',
-        current: t(`staff.tabs.${staffTab}`),
-      }
+      const staffTab = new URLSearchParams(location.search).get('tab') ?? 'stats'
+      const items: Crumb[] = [
+        { label: t('staff.title'), href: '/staff' },
+        {
+          label: t(`staff.tabs.${staffTab}`),
+          href: staffTab === 'cases' && caseRef ? '/staff?tab=cases' : null,
+        },
+      ]
+      if (staffTab === 'cases' && caseRef) items.push({ label: caseRef })
+      return items
     }
 
     // /premium
     if (path === '/premium') {
-      return {
-        parent: t('dashboard.breadcrumb.app'),
-        parentHref: '/',
-        current: 'Moddy Max',
-      }
+      return [
+        { label: t('dashboard.breadcrumb.app'), href: '/' },
+        { label: 'Moddy Max' },
+      ]
     }
 
     // /
-    return {
-      parent: t('dashboard.breadcrumb.app'),
-      parentHref: null,
-      current: t('dashboard.breadcrumb.overview'),
-    }
+    return [
+      { label: t('dashboard.breadcrumb.app') },
+      { label: t('dashboard.breadcrumb.overview') },
+    ]
   }
 
-  const breadcrumb = getBreadcrumb()
+  const breadcrumbItems = getBreadcrumb()
 
   // Prépare la liste des serveurs pour le command menu (avec icône)
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
@@ -236,25 +242,23 @@ export function DashboardPage({ user }: DashboardPageProps) {
             <div aria-hidden className="mx-1 h-5 w-px shrink-0 bg-border" />
             <Breadcrumb>
               <BreadcrumbList>
-                {breadcrumb.parent && (
-                  <>
-                    <BreadcrumbItem className="hidden md:block">
-                      {breadcrumb.parentHref ? (
-                        <BreadcrumbLink href={breadcrumb.parentHref}>
-                          {breadcrumb.parent}
-                        </BreadcrumbLink>
-                      ) : (
-                        <span className="text-foreground font-medium">
-                          {breadcrumb.parent}
-                        </span>
-                      )}
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator className="hidden md:block" />
-                  </>
-                )}
-                <BreadcrumbItem>
-                  <BreadcrumbPage>{breadcrumb.current}</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumbItems.map((crumb, i) => {
+                  const isLast = i === breadcrumbItems.length - 1
+                  return (
+                    <Fragment key={`${crumb.label}-${i}`}>
+                      <BreadcrumbItem className={isLast ? undefined : 'hidden md:block'}>
+                        {isLast ? (
+                          <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
+                        ) : crumb.href ? (
+                          <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                        ) : (
+                          <span className="text-foreground font-medium">{crumb.label}</span>
+                        )}
+                      </BreadcrumbItem>
+                      {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
+                    </Fragment>
+                  )
+                })}
               </BreadcrumbList>
             </Breadcrumb>
           </div>

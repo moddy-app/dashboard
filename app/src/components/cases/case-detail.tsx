@@ -128,10 +128,10 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
     load()
   }, [load])
 
-  // Écriture autorisée : staff modérateur ET type de case modifiable (global/network).
-  const writable =
-    !!data && canModerate && !!meta && meta.writable_case_types.includes(data.type)
+  // Écriture autorisée : staff modérateur. Le back-end reste l'autorité (403).
+  const writable = !!data && canModerate
   const allowedActions = data && meta ? meta.case_type_actions[data.type] ?? [] : []
+  const canSanction = writable && allowedActions.length > 0
 
   const handleAddComment = async (content: string) => {
     if (!data) return
@@ -266,10 +266,12 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
             </div>
             {writable && (
               <div className="flex shrink-0 items-center gap-2">
-                <Button size="sm" onClick={() => setAddOpen(true)}>
-                  <PlusIcon className="size-4" />
-                  <span className="hidden sm:inline">{t("cases.detail.addSanction")}</span>
-                </Button>
+                {canSanction && (
+                  <Button size="sm" onClick={() => setAddOpen(true)}>
+                    <PlusIcon className="size-4" />
+                    <span className="hidden sm:inline">{t("cases.detail.addSanction")}</span>
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon" className="size-8">
@@ -354,7 +356,7 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
           <SidePanel
             title={t("cases.detail.sanctions")}
             action={
-              writable && allowedActions.length > 0 ? (
+              canSanction ? (
                 <Button variant="ghost" size="icon" className="size-6" onClick={() => setAddOpen(true)}>
                   <PlusIcon className="size-3.5" />
                 </Button>

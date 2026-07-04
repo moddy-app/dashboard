@@ -865,7 +865,8 @@
       "sanctionExpired": "Sanction {{action}} expirée",
       "status_open": "Cas rouvert {{trigger}}",
       "status_closed": "Cas fermé {{trigger}}",
-      "statusChanged": "Statut modifié"
+      "statusChanged": "Statut modifié",
+      "evidenceLog": "Log serveur AutoMod"
     },
     "composer": {
       "placeholder": "Écrire un commentaire… (⌘+Entrée pour envoyer)",
@@ -918,7 +919,10 @@
       "optional": "facultatif",
       "notTemporary": "Cette action est permanente et ne peut pas être temporisée.",
       "permanent": "Permanente",
-      "temporary": "Temporaire"
+      "temporary": "Temporaire",
+      "subject": "Sujet",
+      "scope": "Portée",
+      "scopeIdOptional": "ID de portée (facultatif)"
     },
     "create": {
       "new": "Nouveau cas",
@@ -929,7 +933,8 @@
       "error": "Impossible de créer le cas.",
       "errorSubject": "Un ID de sujet est requis.",
       "errorReason": "Une raison est requise.",
-      "errorAction": "Une action est requise."
+      "errorAction": "Une action est requise.",
+      "descriptionGlobal": "Ouvre un cas global (réseau Moddy). Un bannissement global blackliste le sujet."
     }
   }
 }

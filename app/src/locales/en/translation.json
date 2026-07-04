@@ -865,7 +865,8 @@
       "sanctionExpired": "{{action}} sanction expired",
       "status_open": "Case reopened {{trigger}}",
       "status_closed": "Case closed {{trigger}}",
-      "statusChanged": "Status changed"
+      "statusChanged": "Status changed",
+      "evidenceLog": "AutoMod server log"
     },
     "composer": {
       "placeholder": "Write a comment… (⌘+Enter to send)",
@@ -918,7 +919,10 @@
       "optional": "optional",
       "notTemporary": "This action is permanent and cannot be timed.",
       "permanent": "Permanent",
-      "temporary": "Temporary"
+      "temporary": "Temporary",
+      "subject": "Subject",
+      "scope": "Scope",
+      "scopeIdOptional": "Scope ID (optional)"
     },
     "create": {
       "new": "New case",
@@ -929,7 +933,8 @@
       "error": "Could not create the case.",
       "errorSubject": "A subject ID is required.",
       "errorReason": "A reason is required.",
-      "errorAction": "An action is required."
+      "errorAction": "An action is required.",
+      "descriptionGlobal": "Open a global case (Moddy network). A global ban blacklists the subject."
     }
   }
 }

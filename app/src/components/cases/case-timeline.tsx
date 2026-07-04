@@ -111,12 +111,34 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
 function EvidenceEvent({ event }: { event: CaseEvent }) {
   const { t, i18n } = useTranslation()
   const p = event.payload ?? {}
+  const kind = asString(p["kind"])
   const isAutomod = asString(p["source"]) === "automod"
   const jumpUrl = asString(p["jump_url"])
-  const extrait = asString(p["extrait"]) ?? event.content
+  const extrait = asString(p["extrait"]) ?? (kind === "automod_log" ? null : event.content)
   const gravite = asString(p["gravite"])
   const categorie = asString(p["categorie"])
   const confiance = asString(p["confiance"])
+
+  // Variante « lien log serveur » (automod_log) : aucun extrait → ligne compacte.
+  if (!extrait && !gravite && !categorie) {
+    return (
+      <MarkerRow icon={BotIcon} iconClass="text-sky-500" time={event.created_at}>
+        <span className="inline-flex items-center gap-1.5">
+          {t("cases.timeline.evidenceLog")}
+          {jumpUrl && (
+            <a
+              href={jumpUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sky-600 underline underline-offset-2 hover:text-sky-700 dark:text-sky-400"
+            >
+              {t("cases.timeline.viewMessage")}
+            </a>
+          )}
+        </span>
+      </MarkerRow>
+    )
+  }
 
   return (
     <Message align="start" className="items-start">

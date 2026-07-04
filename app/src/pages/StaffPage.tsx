@@ -353,12 +353,15 @@ function CasesTab() {
   const { user } = useGuildContext()
   const canModerate = canModerateCases(user)
 
+  // Panel staff : uniquement les cases globales (réseau Moddy), création globale.
   return (
     <CasesBrowser
-      baseFilters={{}}
+      baseFilters={{ type: "global" }}
       canModerate={canModerate}
       canCreate={canModerate}
       showSubject
+      lockCaseType="global"
+      createDefaults={{ case_type: "global", scope_type: "platform" }}
     />
   )
 }

@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
-import { ACTION_META } from "@/lib/cases"
+import { ACTION_META, CASE_TYPE_TONE, ACTION_TONE } from "@/lib/cases"
 import { handleSaveError } from "@/lib/handle-error"
 import { createCase } from "@/services/cases"
 import type {
@@ -39,7 +39,9 @@ interface CreateCaseDialogProps {
   onOpenChange: (open: boolean) => void
   meta: CasesMeta
   onCreated: (created: CaseDetail) => void
-  /** Valeurs pré-remplies (ex. depuis la blacklist ou un profil). */
+  /** Verrouille le type (ex. « global » pour le panel staff). */
+  lockCaseType?: "global" | "network"
+  /** Valeurs pré-remplies (ex. depuis un serveur ou la blacklist). */
   defaults?: Partial<{
     case_type: CaseType
     subject_type: SubjectType
@@ -51,14 +53,23 @@ interface CreateCaseDialogProps {
 
 const REASON_MAX = 2000
 
-export function CreateCaseDialog({ open, onOpenChange, meta, onCreated, defaults }: CreateCaseDialogProps) {
+export function CreateCaseDialog({
+  open,
+  onOpenChange,
+  meta,
+  onCreated,
+  lockCaseType,
+  defaults,
+}: CreateCaseDialogProps) {
   const { t } = useTranslation()
 
-  const writableTypes = meta.writable_case_types.filter((ct): ct is "global" | "network" =>
-    ct === "global" || ct === "network"
+  const writableTypes = meta.writable_case_types.filter(
+    (ct): ct is "global" | "network" => ct === "global" || ct === "network"
   )
 
-  const [caseType, setCaseType] = useState<"global" | "network">(writableTypes[0] ?? "global")
+  const [caseType, setCaseType] = useState<"global" | "network">(
+    lockCaseType ?? writableTypes[0] ?? "global"
+  )
   const [subjectType, setSubjectType] = useState<SubjectType>("discord_user")
   const [subjectId, setSubjectId] = useState("")
   const [scopeType, setScopeType] = useState<ScopeType>("platform")
@@ -69,15 +80,18 @@ export function CreateCaseDialog({ open, onOpenChange, meta, onCreated, defaults
   const [note, setNote] = useState("")
   const [busy, setBusy] = useState(false)
 
-  const allowedActions = useMemo(
-    () => meta.case_type_actions[caseType] ?? [],
-    [meta, caseType]
-  )
+  const allowedActions = useMemo(() => meta.case_type_actions[caseType] ?? [], [meta, caseType])
+
+  // Le type est verrouillé (staff) OU imposé par le contexte serveur → pas de toggle.
+  const showTypeToggle = !lockCaseType && !defaults?.case_type && writableTypes.length > 1
+  // La portée est contextuelle (fournie par la page) → on masque les sélecteurs.
+  const showScope = !defaults?.scope_type
 
   // Réinitialise à l'ouverture, applique les defaults.
   useEffect(() => {
     if (!open) return
-    const ct = defaults?.case_type === "network" ? "network" : writableTypes[0] ?? "global"
+    const ct: "global" | "network" =
+      lockCaseType ?? (defaults?.case_type === "network" ? "network" : writableTypes[0] ?? "global")
     setCaseType(ct)
     setSubjectType(defaults?.subject_type ?? "discord_user")
     setSubjectId(defaults?.subject_id ?? "")
@@ -98,20 +112,12 @@ export function CreateCaseDialog({ open, onOpenChange, meta, onCreated, defaults
   }, [allowedActions, action])
 
   const temporary = action ? ACTION_META[action].temporary : false
+  const tone = ACTION_TONE[CASE_TYPE_TONE[caseType]]
 
   const submit = async () => {
-    if (!subjectId.trim()) {
-      toast.error(t("cases.create.errorSubject"))
-      return
-    }
-    if (!reason.trim()) {
-      toast.error(t("cases.create.errorReason"))
-      return
-    }
-    if (!action) {
-      toast.error(t("cases.create.errorAction"))
-      return
-    }
+    if (!subjectId.trim()) return toast.error(t("cases.create.errorSubject"))
+    if (!reason.trim()) return toast.error(t("cases.create.errorReason"))
+    if (!action) return toast.error(t("cases.create.errorAction"))
     setBusy(true)
     try {
       const created = await createCase({
@@ -137,85 +143,105 @@ export function CreateCaseDialog({ open, onOpenChange, meta, onCreated, defaults
 
   return (
     <Dialog open={open} onOpenChange={(o) => !busy && onOpenChange(o)}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{t("cases.create.title")}</DialogTitle>
-          <DialogDescription>{t("cases.create.description")}</DialogDescription>
+          <DialogTitle className="flex items-center gap-2">
+            {t("cases.create.title")}
+            <span
+              className={cn(
+                "rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
+                tone.border,
+                tone.softBg,
+                tone.text
+              )}
+            >
+              {t(`cases.type.${caseType}`)}
+            </span>
+          </DialogTitle>
+          <DialogDescription>
+            {lockCaseType === "global"
+              ? t("cases.create.descriptionGlobal")
+              : t("cases.create.description")}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
-          {/* Type de case */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">{t("cases.form.caseType")}</label>
-            <div className="inline-flex w-full rounded-lg border bg-muted/40 p-0.5">
-              {writableTypes.map((ct) => (
-                <button
-                  key={ct}
-                  type="button"
-                  onClick={() => setCaseType(ct)}
-                  className={cn(
-                    "flex-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
-                    caseType === ct ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {t(`cases.type.${ct}`)}
-                </button>
-              ))}
+          {/* Type de case (uniquement si non contextuel) */}
+          {showTypeToggle && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">{t("cases.form.caseType")}</label>
+              <div className="inline-flex w-full rounded-lg border bg-muted/40 p-0.5">
+                {writableTypes.map((ct) => (
+                  <button
+                    key={ct}
+                    type="button"
+                    onClick={() => setCaseType(ct)}
+                    className={cn(
+                      "flex-1 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+                      caseType === ct ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t(`cases.type.${ct}`)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Sujet */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">{t("cases.form.subjectType")}</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium">{t("cases.form.subject")}</label>
+            <div className="flex gap-2">
               <Select value={subjectType} onValueChange={(v) => setSubjectType(v as SubjectType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-[150px] shrink-0">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {meta.enums.subject_type.map((st) => (
-                    <SelectItem key={st} value={st}>{t(`cases.subjectType.${st}`)}</SelectItem>
+                    <SelectItem key={st} value={st}>
+                      {t(`cases.subjectType.${st}`)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">{t("cases.form.subjectId")}</label>
               <Input
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
                 placeholder={t("cases.form.subjectIdPlaceholder")}
-                className="font-mono"
+                className="flex-1 font-mono"
               />
             </div>
           </div>
 
-          {/* Portée */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[160px_1fr]">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">{t("cases.form.scopeType")}</label>
-              <Select value={scopeType} onValueChange={(v) => setScopeType(v as ScopeType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {meta.enums.scope_type.map((st) => (
-                    <SelectItem key={st} value={st}>{t(`cases.scopeType.${st}`)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Portée (uniquement hors contexte serveur) */}
+          {showScope && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium">{t("cases.form.scope")}</label>
+              <div className="flex gap-2">
+                <Select value={scopeType} onValueChange={(v) => setScopeType(v as ScopeType)}>
+                  <SelectTrigger className="w-[150px] shrink-0">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {meta.enums.scope_type.map((st) => (
+                      <SelectItem key={st} value={st}>
+                        {t(`cases.scopeType.${st}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={scopeId}
+                  onChange={(e) => setScopeId(e.target.value)}
+                  placeholder={t("cases.form.scopeIdOptional")}
+                  className="flex-1 font-mono"
+                />
+              </div>
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium">
-                {t("cases.form.scopeId")} <span className="text-muted-foreground">({t("cases.form.optional")})</span>
-              </label>
-              <Input
-                value={scopeId}
-                onChange={(e) => setScopeId(e.target.value)}
-                placeholder={t("cases.form.scopeIdPlaceholder")}
-                className="font-mono"
-              />
-            </div>
-          </div>
+          )}
 
           {/* Raison */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">{t("cases.form.reason")}</label>
             <Textarea
               value={reason}
@@ -227,21 +253,23 @@ export function CreateCaseDialog({ open, onOpenChange, meta, onCreated, defaults
             />
           </div>
 
-          {/* Action + durée */}
-          <div className="flex flex-col gap-2">
+          {/* Action */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">{t("cases.form.action")}</label>
             <ActionPicker actions={allowedActions} value={action} onChange={setAction} />
           </div>
-          <div className="flex flex-col gap-2">
+
+          {/* Durée */}
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">{t("cases.form.duration")}</label>
             <ExpiryField value={expiresAt} onChange={setExpiresAt} temporary={temporary} />
           </div>
 
           {/* Commentaire initial */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">
               {t("cases.form.initialComment")}{" "}
-              <span className="text-muted-foreground">({t("cases.form.optional")})</span>
+              <span className="font-normal text-muted-foreground">({t("cases.form.optional")})</span>
             </label>
             <Textarea
               value={note}
