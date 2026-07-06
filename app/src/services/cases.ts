@@ -41,7 +41,10 @@ export async function getCasesMeta(): Promise<CasesMeta> {
 export async function getCases(filters: CaseFilters = {}): Promise<CaseListItem[]> {
   const query = new URLSearchParams()
   Object.entries(filters).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== '') query.set(k, String(v))
+    if (v === undefined || v === null || v === '') return
+    // Valeurs multiples → paramètres répétés (ex. ?type=global&type=network).
+    if (Array.isArray(v)) v.forEach((item) => query.append(k, String(item)))
+    else query.set(k, String(v))
   })
   const qs = query.toString()
   return (await api(`/cases${qs ? `?${qs}` : ''}`)) as CaseListItem[]

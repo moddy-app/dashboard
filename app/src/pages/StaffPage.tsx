@@ -353,11 +353,11 @@ function CasesTab() {
   const { user } = useGuildContext()
   const canModerate = canModerateCases(user)
 
-  // Panel staff : recherche libre sur toutes les cases (global + network + serveur).
-  // Le type est affiché car il n'est plus évident (contrairement à une vue serveur).
+  // Panel staff (équipe Moddy) : uniquement les cases global + network.
+  // Le type est affiché car les deux coexistent ici (contrairement à une vue serveur).
   return (
     <CasesBrowser
-      baseFilters={{}}
+      baseFilters={{ type: ["global", "network"] }}
       canModerate={canModerate}
       canCreate={canModerate}
       showSubject

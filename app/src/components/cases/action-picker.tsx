@@ -29,16 +29,14 @@ export function ActionPicker({
             type="button"
             onClick={() => onChange(a)}
             className={cn(
-              "flex flex-col items-center gap-1.5 rounded-lg border p-2.5 transition-all",
+              "flex flex-col items-center gap-1.5 rounded-lg border p-2.5 transition-colors",
               active
-                ? cn(tone.border, tone.softBg, "ring-1", tone.text.replaceAll("text-", "ring-"))
+                ? "border-primary bg-accent"
                 : "border-border hover:border-muted-foreground/40 hover:bg-muted/40"
             )}
           >
-            <Icon className={cn("size-4", active ? tone.text : "text-muted-foreground")} />
-            <span className={cn("text-xs font-medium", active ? tone.text : "text-foreground")}>
-              {t(`cases.action.${a}`)}
-            </span>
+            <Icon className={cn("size-4", tone.text)} />
+            <span className="text-xs font-medium text-foreground">{t(`cases.action.${a}`)}</span>
           </button>
         )
       })}

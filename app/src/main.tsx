@@ -25,6 +25,7 @@ import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
 import { MyCasesPage } from "@/pages/MyCasesPage"
 import { GuildCasesPage } from "@/pages/GuildCasesPage"
+import { RouteError } from "@/components/route-error"
 
 Sentry.init({
   dsn: "https://68314945d5389aff0aae69966e2e46fb@o4510617959202816.ingest.de.sentry.io/4510875563196496",
@@ -36,6 +37,7 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <HomePage />,
+    errorElement: <RouteError />,
     children: [
       { index: true, element: <GuildSelectionView /> },
       { path: "cases", element: <MyCasesPage /> },
@@ -52,7 +54,7 @@ const router = createBrowserRouter([
       { path: "select-premium-servers", element: <Navigate to="/?openSettings=billing" replace /> },
     ],
   },
-  { path: "/debug", element: <DebugPage /> },
+  { path: "/debug", element: <DebugPage />, errorElement: <RouteError /> },
   { path: "*", element: <NotFoundPage /> },
 ])
 

@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import {
   Message,
+  MessageAvatar,
   MessageContent,
   MessageHeader,
 } from "@/components/ui/message"
@@ -19,7 +20,7 @@ import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
 import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime, ACTION_META } from "@/lib/cases"
 import type { CaseEvent, SanctionAction } from "@/types/cases"
-import { EntityRef, type EntityKind } from "./entity-ref"
+import { EntityAvatar, type EntityKind } from "./entity-ref"
 
 // ─── Helpers de payload (défensifs) ──────────────────────────────────────────
 
@@ -70,13 +71,15 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
   const { t, i18n } = useTranslation()
   return (
     <Message align="start" className="items-start">
+      <MessageAvatar className="self-start bg-transparent">
+        <EntityAvatar
+          kind={(event.author_type ?? "system") as EntityKind}
+          id={event.author_id}
+          className="size-8"
+        />
+      </MessageAvatar>
       <MessageContent>
-        <MessageHeader className="gap-2">
-          <EntityRef
-            kind={(event.author_type ?? "system") as EntityKind}
-            id={event.author_id}
-            variant="inline"
-          />
+        <MessageHeader className="gap-2 px-0">
           {isNote && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
               <LockIcon className="size-2.5" />

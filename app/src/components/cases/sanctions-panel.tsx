@@ -58,16 +58,15 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanel
           return (
             <div
               key={s.id}
-              className={cn(
-                "rounded-lg border p-2.5",
-                s.status === "active" ? tone.border : "border-border",
-                revoked && "opacity-70"
-              )}
+              className={cn("rounded-lg border p-2.5", revoked && "opacity-70")}
             >
               <div className="flex items-center gap-2">
-                <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", tone.softBg)}>
-                  <Icon className={cn("size-3.5", tone.text)} />
-                </span>
+                <Icon
+                  className={cn(
+                    "size-4 shrink-0",
+                    s.status === "active" ? tone.text : "text-muted-foreground"
+                  )}
+                />
                 <span className={cn("text-sm font-medium", s.status !== "active" && "text-muted-foreground")}>
                   {t(`cases.action.${s.action}`)}
                 </span>

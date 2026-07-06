@@ -135,9 +135,11 @@ export async function copyText(value: string): Promise<boolean> {
 // ─── Formatage ────────────────────────────────────────────────────────────────
 
 /** Temps relatif compact et localisé (ex. « 3d », « 2h », « just now »). */
-export function relativeTime(iso: string, locale = 'en'): string {
-  const date = new Date(iso)
-  const diffMs = Date.now() - date.getTime()
+export function relativeTime(iso: string | null | undefined, locale = 'en'): string {
+  if (!iso) return '—'
+  const ms = new Date(iso).getTime()
+  if (Number.isNaN(ms)) return '—'
+  const diffMs = Date.now() - ms
   const sec = Math.round(diffMs / 1000)
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto', style: 'short' })
   if (Math.abs(sec) < 60) return rtf.format(-sec, 'second')
@@ -153,8 +155,11 @@ export function relativeTime(iso: string, locale = 'en'): string {
 }
 
 /** Date + heure absolues, localisées (pour les tooltips / propriétés). */
-export function absoluteTime(iso: string, locale = 'en'): string {
-  return new Date(iso).toLocaleString(locale, {
+export function absoluteTime(iso: string | null | undefined, locale = 'en'): string {
+  if (!iso) return '—'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime())) return '—'
+  return date.toLocaleString(locale, {
     dateStyle: 'medium',
     timeStyle: 'short',
   })
