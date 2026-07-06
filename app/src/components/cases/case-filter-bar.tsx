@@ -24,7 +24,10 @@ import type { CaseStatus, SanctionAction } from "@/types/cases"
 import {
   FILTER_META,
   hasValue,
+  DATE_PRESETS,
+  datePresetRange,
   type CaseFilterValues,
+  type DatePreset,
   type FilterKey,
 } from "./case-filters"
 
@@ -139,40 +142,68 @@ function isoToDate(iso: string | undefined): string {
 function DateEditor({
   since,
   until,
+  preset,
   onChange,
+  onPreset,
 }: {
   since: string | undefined
   until: string | undefined
-  onChange: (patch: { since?: string; until?: string }) => void
+  preset: DatePreset | undefined
+  onChange: (patch: { since?: string; until?: string; datePreset?: DatePreset }) => void
+  onPreset: (p: DatePreset) => void
 }) {
   const { t } = useTranslation()
   return (
     <div className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-        {t("cases.filters.dateFrom")}
-        <input
-          type="date"
-          value={isoToDate(since)}
-          onChange={(e) =>
-            onChange({ since: e.target.value ? new Date(e.target.value).toISOString() : undefined })
-          }
-          className="h-8 rounded-md border border-input bg-input/30 px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-        {t("cases.filters.dateTo")}
-        <input
-          type="date"
-          value={isoToDate(until)}
-          onChange={(e) => {
-            // borne haute inclusive : fin de journée
-            const v = e.target.value
-            const iso = v ? new Date(`${v}T23:59:59`).toISOString() : undefined
-            onChange({ until: iso })
-          }}
-          className="h-8 rounded-md border border-input bg-input/30 px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-        />
-      </label>
+      <div className="flex flex-col gap-1">
+        {DATE_PRESETS.map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => onPreset(p)}
+            className={cn(
+              "rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
+              preset === p ? "bg-accent text-accent-foreground" : "hover:bg-muted"
+            )}
+          >
+            {t(`cases.filters.datePreset.${p}`)}
+          </button>
+        ))}
+      </div>
+      <div className="mt-1 border-t pt-2">
+        <p className="mb-1 px-1 text-xs font-medium text-muted-foreground">{t("cases.filters.custom")}</p>
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {t("cases.filters.dateFrom")}
+            <input
+              type="date"
+              value={isoToDate(since)}
+              onChange={(e) =>
+                onChange({
+                  since: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+                  datePreset: undefined,
+                })
+              }
+              className="h-8 rounded-md border border-input bg-input/30 px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+            {t("cases.filters.dateTo")}
+            <input
+              type="date"
+              value={isoToDate(until)}
+              onChange={(e) => {
+                const v = e.target.value
+                onChange({
+                  until: v ? new Date(`${v}T23:59:59`).toISOString() : undefined,
+                  datePreset: undefined,
+                })
+              }}
+              className="h-8 rounded-md border border-input bg-input/30 px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+            />
+          </label>
+        </div>
+      </div>
     </div>
   )
 }
@@ -191,6 +222,7 @@ function ChipValue({ filterKey, values }: { filterKey: FilterKey; values: CaseFi
     case "action":
       return values.action ? <>{t(`cases.action.${values.action}`)}</> : null
     case "date": {
+      if (values.datePreset) return <>{t(`cases.filters.datePreset.${values.datePreset}`)}</>
       const fmt = (iso?: string) =>
         iso ? new Date(iso).toLocaleDateString(i18n.language, { day: "2-digit", month: "short" }) : "…"
       if (!values.since && !values.until) return null
@@ -301,7 +333,16 @@ function FilterChip({
           />
         )}
         {filterKey === "date" && (
-          <DateEditor since={values.since} until={values.until} onChange={onChange} />
+          <DateEditor
+            since={values.since}
+            until={values.until}
+            preset={values.datePreset}
+            onChange={onChange}
+            onPreset={(p) => {
+              onChange({ ...datePresetRange(p), datePreset: p })
+              setOpen(false)
+            }}
+          />
         )}
 
         <button

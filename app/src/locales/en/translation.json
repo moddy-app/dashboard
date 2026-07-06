@@ -955,8 +955,17 @@
       "dateTo": "To",
       "idPlaceholder": "Discord ID…",
       "remove": "Remove filter",
-      "add": "Add filter",
-      "allUsed": "All filters in use"
+      "add": "Filter",
+      "allUsed": "All filters in use",
+      "custom": "Custom range",
+      "datePreset": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "This week",
+        "last7": "Last 7 days",
+        "last30": "Last 30 days",
+        "thisMonth": "This month"
+      }
     },
     "mass": {
       "selectOne": "Select case",

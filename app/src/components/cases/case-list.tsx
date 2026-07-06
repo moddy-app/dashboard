@@ -383,6 +383,7 @@ export function CaseList({
       if (key === "date") {
         delete next.since
         delete next.until
+        delete next.datePreset
       }
       return next
     })
