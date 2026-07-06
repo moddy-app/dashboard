@@ -675,6 +675,13 @@
     "generic": {
       "title": "Une erreur est survenue",
       "description": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    },
+    "boundary": {
+      "title": "Une erreur est survenue",
+      "description": "Une erreur inattendue s'est produite lors de l'affichage de cette page.",
+      "reload": "Recharger la page",
+      "home": "Retour à l'accueil",
+      "details": "Détails de l'erreur"
     }
   },
   "unsavedBar": {

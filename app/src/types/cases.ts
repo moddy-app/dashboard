@@ -193,7 +193,8 @@ export interface CaseFilters {
   subject_id?: string
   scope_type?: ScopeType
   scope_id?: string
-  type?: CaseType
+  /** Un seul type, ou plusieurs (envoyés en paramètres répétés `?type=…&type=…`). */
+  type?: CaseType | CaseType[]
   status?: CaseStatus
   action?: SanctionAction
   issuer_type?: string

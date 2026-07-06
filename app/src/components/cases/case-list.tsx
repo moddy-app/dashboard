@@ -488,7 +488,6 @@ export function CaseList({
         onChange={patchFilter}
         onRemove={removeFilter}
         onAdd={addFilter}
-        onPendingHandled={() => setPendingKey(null)}
       />
 
       {/* Barre d'action de masse */}

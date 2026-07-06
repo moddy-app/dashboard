@@ -675,6 +675,13 @@
     "generic": {
       "title": "Something went wrong",
       "description": "An unexpected error occurred. Please try again."
+    },
+    "boundary": {
+      "title": "Something went wrong",
+      "description": "An unexpected error occurred while rendering this page.",
+      "reload": "Reload page",
+      "home": "Back home",
+      "details": "Error details"
     }
   },
   "unsavedBar": {

@@ -2,7 +2,6 @@ import { useTranslation } from "react-i18next"
 import { ScaleIcon } from "lucide-react"
 import { usePageTitle } from "@/hooks/usePageTitle"
 import { useGuildContext } from "@/contexts/GuildContext"
-import { canModerateCases } from "@/lib/cases"
 import { CasesBrowser } from "@/components/cases/cases-browser"
 
 export function MyCasesPage() {
@@ -26,7 +25,8 @@ export function MyCasesPage() {
     <CasesBrowser
       header={header}
       baseFilters={{ subject_type: "discord_user", subject_id: user.user_id }}
-      canModerate={canModerateCases(user)}
+      // Vue personnelle = vue du sujet : lecture seule (on ne se sanctionne pas soi-même).
+      canModerate={false}
       showSubject={false}
       showType
       backLabel={t("cases.my.title")}

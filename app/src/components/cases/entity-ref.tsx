@@ -1,15 +1,19 @@
 import { useTranslation } from "react-i18next"
+import { toast } from "sonner"
 import {
   ShieldCheckIcon,
   BotIcon,
   Settings2Icon,
   GlobeIcon,
   UserIcon,
+  CopyIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { getAvatarUrl, getGuildIconUrl } from "@/lib/auth"
+import { copyText } from "@/lib/cases"
 import { useUserProfile, useGuildProfile } from "@/hooks/useProfile"
 
 // Un « kind » couvre les subject_type / issuer_type / author_type possibles.
@@ -165,5 +169,95 @@ export function EntityRef({ kind, id, variant = "inline", className }: EntityRef
       </span>
       <span className={cn("truncate font-mono", inline ? "text-xs" : "text-sm")}>{id ?? "—"}</span>
     </span>
+  )
+}
+
+// ─── Avatar seul (visuel) ─────────────────────────────────────────────────────
+
+function UserAvatarVisual({ id, className }: { id: string; className?: string }) {
+  const { data } = useUserProfile(id)
+  const url = data ? getAvatarUrl(data.user_id, data.avatar, data.avatar_url) : getAvatarUrl(id, null)
+  const name = data?.display_name ?? id
+  return (
+    <Avatar className={cn("size-8", className)}>
+      <AvatarImage src={url} alt={name} referrerPolicy="no-referrer" />
+      <AvatarFallback className="text-xs">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+function GuildAvatarVisual({ id, className }: { id: string; className?: string }) {
+  const { data } = useGuildProfile(id)
+  const url = data ? getGuildIconUrl(id, data.icon) : null
+  const name = data?.name ?? id
+  return (
+    <Avatar className={cn("size-8 rounded-md after:rounded-md", className)}>
+      <AvatarImage src={url ?? undefined} alt={name} referrerPolicy="no-referrer" className="rounded-md" />
+      <AvatarFallback className="rounded-md text-xs">{name.slice(0, 2).toUpperCase()}</AvatarFallback>
+    </Avatar>
+  )
+}
+
+function AvatarVisual({ kind, id, className }: { kind: EntityKind; id: string | null | undefined; className?: string }) {
+  if ((kind === "discord_user" || kind === "moddy_user" || kind === "moddy_staff") && id) {
+    return <UserAvatarVisual id={id} className={className} />
+  }
+  if (kind === "discord_guild" && id) {
+    return <GuildAvatarVisual id={id} className={className} />
+  }
+  const meta = kind in SYSTEM_META ? SYSTEM_META[kind as keyof typeof SYSTEM_META] : null
+  const Icon = meta?.icon ?? UserIcon
+  return (
+    <span className={cn("flex size-8 items-center justify-center rounded-full bg-muted", className)}>
+      <Icon className={cn("size-4", meta?.tone ?? "text-muted-foreground")} />
+    </span>
+  )
+}
+
+// ─── Avatar cliquable (popover profil) ────────────────────────────────────────
+// Affiche uniquement la pp ; au clic, ouvre les infos de l'entité (façon message).
+
+export function EntityAvatar({
+  kind,
+  id,
+  className,
+}: {
+  kind: EntityKind
+  id: string | null | undefined
+  className?: string
+}) {
+  const { t } = useTranslation()
+  const hasProfile =
+    !!id &&
+    (kind === "discord_user" ||
+      kind === "moddy_user" ||
+      kind === "moddy_staff" ||
+      kind === "discord_guild")
+
+  const avatar = <AvatarVisual kind={kind} id={id} className={className} />
+  if (!hasProfile) return avatar
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="rounded-full outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        >
+          {avatar}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-64 p-3">
+        <EntityRef kind={kind} id={id} variant="block" />
+        <button
+          type="button"
+          onClick={() => copyText(id!).then((ok) => ok && toast.success(t("cases.row.copied")))}
+          className="mt-2.5 flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <CopyIcon className="size-3.5" />
+          {t("cases.detail.copyId")}
+        </button>
+      </PopoverContent>
+    </Popover>
   )
 }

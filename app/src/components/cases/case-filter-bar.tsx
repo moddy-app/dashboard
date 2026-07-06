@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   ChevronDownIcon,
@@ -249,11 +249,20 @@ function FilterChip({
   onRemove: () => void
 }) {
   const { t } = useTranslation()
-  const [open, setOpen] = useState(autoOpen)
+  const [open, setOpen] = useState(false)
   const meta = FILTER_META[filterKey]
   const Icon = meta.icon
   const filled = hasValue(filterKey, values)
   const isId = filterKey === "subject" || filterKey === "issuer"
+
+  // Ouverture différée à l'ajout : sinon le clic qui a sélectionné le filtre dans
+  // le menu déroulant est capté par le popover comme un « clic extérieur » et le
+  // referme aussitôt (→ retrait immédiat du chip).
+  useEffect(() => {
+    if (!autoOpen) return
+    const id = setTimeout(() => setOpen(true), 90)
+    return () => clearTimeout(id)
+  }, [autoOpen])
 
   // Brouillon local pour les filtres ID : évite toute lecture de state périmé à
   // la fermeture (commit synchrone du texte saisi).
@@ -403,7 +412,6 @@ export function CaseFilterChips({
   onChange,
   onRemove,
   onAdd,
-  onPendingHandled,
 }: {
   activeKeys: FilterKey[]
   values: CaseFilterValues
@@ -414,19 +422,9 @@ export function CaseFilterChips({
   onChange: (patch: CaseFilterValues) => void
   onRemove: (key: FilterKey) => void
   onAdd: (key: FilterKey) => void
-  onPendingHandled: () => void
 }) {
   const { t } = useTranslation()
   const addableKeys = availableKeys.filter((k) => !activeKeys.includes(k))
-
-  // Évite de ré-ouvrir en boucle : on consomme le pending au premier rendu.
-  const handledRef = useRef<FilterKey | null>(null)
-  useEffect(() => {
-    if (pendingKey && handledRef.current !== pendingKey) {
-      handledRef.current = pendingKey
-      onPendingHandled()
-    }
-  }, [pendingKey, onPendingHandled])
 
   if (activeKeys.length === 0) return null
 

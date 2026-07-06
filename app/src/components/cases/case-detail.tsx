@@ -116,6 +116,18 @@ function PropRow({
   )
 }
 
+// ─── Valeur d'identité (sujet / auteur / portée — format unifié) ──────────────
+
+function IdentityValue({ kind, id }: { kind: EntityKind; id: string | null | undefined }) {
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <EntityRef kind={kind} id={id} variant="block" />
+      {id && <CopyButton value={id} label={t("cases.detail.copyId")} />}
+    </div>
+  )
+}
+
 // ─── Carte latérale (sans séparateurs internes) ───────────────────────────────
 
 function Panel({
@@ -381,19 +393,16 @@ export function CaseDetailView({
             <div className="flex flex-col gap-3.5">
               {showSubject && (
                 <PropRow icon={UserIcon} label={t("cases.detail.subject")}>
-                  <div className="flex items-center justify-between gap-2">
-                    <EntityRef kind={data.subject_type as EntityKind} id={data.subject_id} variant="block" />
-                    {data.subject_id && <CopyButton value={data.subject_id} label={t("cases.detail.copyId")} />}
-                  </div>
+                  <IdentityValue kind={data.subject_type as EntityKind} id={data.subject_id} />
                 </PropRow>
               )}
               <PropRow icon={UserCogIcon} label={t("cases.detail.issuer")}>
-                <EntityRef kind={data.issuer_type as EntityKind} id={data.issuer_id} variant="inline" />
+                <IdentityValue kind={data.issuer_type as EntityKind} id={data.issuer_id} />
               </PropRow>
               {showScope && (
                 <PropRow icon={ShieldIcon} label={t("cases.detail.scope")}>
                   {scopeIsGuild && data.scope_id ? (
-                    <EntityRef kind="discord_guild" id={data.scope_id} variant="inline" />
+                    <IdentityValue kind="discord_guild" id={data.scope_id} />
                   ) : (
                     <span>{t(`cases.scopeType.${data.scope_type}`)}</span>
                   )}
