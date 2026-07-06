@@ -776,64 +776,180 @@ La réponse du bot `{"ok": false, "error": "<code>"}` est mappée :
 
 ## Cases (moderation)
 
+Schéma unifié `cases`/`case_sanctions`/`case_events`/`case_appeals`, partagé avec
+le bot. **Lecture** en SQL direct ; **écriture** directe en base pour les cases
+globales/réseau (référence unique, event `sanction_added`, recalcul de statut
+réimplémentés). Les cases `guild` sont éditables (raison/statut/notes en direct DB)
+mais leurs **sanctions** sont déléguées au bot via `moddy:tasks`. Détails :
+`docs/MODERATION_CASES.md` (§4.2). **Note :** `case_type = platform` et
+`sanction_action = kick` sont retirés du flux actif (lecture d'historique seulement).
+
+### `GET /cases/meta`
+
+Métadonnées pour construire les formulaires côté dashboard (source unique alignée
+sur le bot). **Auth : utilisateur connecté.**
+
+**Réponse :**
+- `case_type_actions` : map `case_type → [actions autorisées]` (`global` → `warn`,
+  `restrict`, `ban` ; `network` → `warn`, `mute`, `ban` ; etc.)
+- `temporary_actions` : actions acceptant un `expires_at` (`ban`, `mute`, `restrict`)
+- `writable_case_types` : types dont les sanctions s'écrivent en direct DB (`global`, `network`)
+- `legacy` : valeurs encore dans les ENUM Postgres mais retirées du flux actif
+  (`case_type: ["platform"]`, `sanction_action: ["kick"]`) — à afficher en lecture
+  seule pour l'historique, à **exclure** des pickers de création/édition
+- `enums` : toutes les valeurs d'enum, historique inclus (`case_type`, `subject_type`,
+  `scope_type`, `sanction_action`, `sanction_status`, `case_status`, `event_type`,
+  `appeal_route`, `appeal_status`)
+
+> Le front doit construire ses pickers à partir de cet endpoint plutôt que de coder
+> les listes en dur : ainsi backend, bot et dashboard restent alignés.
+
+---
+
 ### `GET /cases`
 
-Liste les cases de moderation. **Staff only.**
+Recherche filtrée + paginée. **Auth : utilisateur connecté.**
 
-**Auth :** staff
+- **Staff** : voit toutes les cases, filtres libres.
+- **Utilisateur normal** : périmètre restreint automatiquement aux cases qui le
+  concernent (sujet = lui) et à celles des serveurs qu'il administre. Les filtres
+  s'appliquent à l'intérieur de ce périmètre.
+
 **Query params (tous optionnels) :**
 
 | Param | Type | Description |
 |---|---|---|
-| `entity_id` | int | Filtrer par ID de l'entite sanctionnee |
-| `entity_type` | string | `"user"` ou `"guild"` |
-| `case_type` | string | `"global"` ou `"interserver"` |
-| `status` | string | `"open"` ou `"closed"` |
-| `limit` | int | Max 100, defaut 50 |
-| `offset` | int | Defaut 0 |
+| `subject_type` | enum | `discord_user` / `discord_guild` / `moddy_user` / `external` |
+| `subject_id` | string | ID (TEXT) du sujet visé |
+| `scope_type` | enum | `discord_guild` / `network` / `platform` / `external_service` |
+| `scope_id` | string | ID du scope (ex: guild_id) |
+| `type` | enum | `global` / `network` / `guild` / `platform` / `external` |
+| `status` | enum | `open` / `closed` |
+| `action` | enum | `warn`/`mute`/`ban`/`kick`/`restrict`/`revoke_access` (au moins une sanction avec cette action) |
+| `issuer_type` | string | Type d'émetteur |
+| `issuer_id` | string | ID de l'émetteur |
+| `group_id` | uuid | Affaire liée (plusieurs cases) |
+| `since` / `until` | datetime ISO | Bornes sur `created_at` |
+| `q` | string, 1–200 | Recherche texte libre (insensible à la casse) sur la `reference` publique OU un sous-texte de `reason` |
+| `limit` | int | 1–100, défaut 50 |
+| `offset` | int | Défaut 0 |
 
-**Reponse :**
+Exemples : `?scope_type=discord_guild&scope_id=123` (cases d'un serveur),
+`?subject_type=discord_user&subject_id=456` (cases d'un membre), `?type=global`,
+`?q=A7F2K9` (retrouve la case par sa référence publique), `?q=spam` (cases dont
+la raison contient "spam").
+
+**Réponse :** array de cases. Chaque case inclut `actions` (array des actions de
+ses sanctions) et `has_active` (bool).
 
 ```json
 [
   {
-    "case_id": "A1B2C3D4",
-    "case_type": "global",
-    "sanction_type": "global_blacklist",
-    "entity_type": "user",
-    "entity_id": 123456789,
-    "status": "open",
-    "reason": "Spam massif",
-    "evidence": "https://...",
-    "duration": null,
-    "staff_notes": [
-      {"staff_id": 987654321, "note": "Recidive", "timestamp": "2025-12-10T10:30:00+00:00"}
-    ],
-    "created_by": 987654321,
-    "created_at": "2025-12-01T00:00:00+00:00",
-    "updated_by": null,
-    "updated_at": "2025-12-01T00:00:00+00:00",
-    "closed_by": null,
-    "closed_at": null,
-    "close_reason": null
+    "id": "3f9c...-uuid", "reference": "A7F2K9", "type": "global",
+    "subject_type": "discord_user", "subject_id": "123456789",
+    "issuer_type": "moddy_staff", "issuer_id": "987654321",
+    "scope_type": "platform", "scope_id": null,
+    "reason": "Spam massif", "status": "open", "status_locked": false,
+    "group_id": null, "created_at": "2026-07-01T00:00:00+00:00",
+    "updated_at": "2026-07-01T00:00:00+00:00",
+    "actions": ["ban"], "has_active": true
   }
 ]
 ```
 
 ---
 
-### `GET /cases/{case_id}`
+### `GET /cases/{identifier}`
 
-Detail d'une case. **Staff only.**
+Détail complet d'une case par sa **référence publique** (6 car.) ou son **UUID**.
+Renvoie le dossier + `sanctions` + `events` (timeline) + `appeals`.
 
-**Auth :** staff
+**Auth :** utilisateur connecté (staff, ou sujet du case, ou admin du serveur scopé).
+Un utilisateur qui consulte uniquement SON propre case ne reçoit pas les
+commentaires/notes ni les champs internes des appels. Case hors périmètre → **404**.
+
 **Path params :**
 
 | Param | Type | Description |
 |---|---|---|
-| `case_id` | string | ID hex 8 chars (ex: `A1B2C3D4`) |
+| `identifier` | string | Référence 6 car. (ex: `A7F2K9`) ou UUID |
 
-**Reponse :** meme format qu'un element de la liste ci-dessus
+---
+
+### `GET /cases/{identifier}/evidence`
+
+Preuves **affichables** d'une case (projection alignée sur le bot). **Auth :** même
+visibilité que `GET /cases/{identifier}`.
+
+Renvoie les `case_events` de `type='evidence'` portant soit une `payload.url`,
+soit `payload.kind == "message_link"` (les events d'évidence internes — contexte
+automod sans ces clés — sont exclus : ils restent dans la timeline via
+`GET /cases/{id}`).
+
+**Réponse :** array, deux formes selon `kind` :
+
+- Pièce jointe classique (`image`/`video`/`evidence`) : `{ event_id, created_at,
+  author_type, author_id, url, kind, media }`. `media=true` si l'URL finit par une
+  extension média (`.png/.jpg/.jpeg/.gif/.webp/.mp4/.webm/.mov`) → à afficher en
+  galerie ; sinon lien cliquable préfixé par `kind`.
+- Lien de message (`kind: "message_link"`) — snapshot figé au moment de l'ajout,
+  jamais mis à jour ensuite (le message a pu être édité/supprimé depuis) :
+  `{ event_id, created_at, author_type, author_id, kind: "message_link", jump_url,
+  channel_id, message_id, content, message_author_id, message_author_name,
+  attachments: string[], message_created_at }`. `author_id`/`author_type` =
+  modérateur qui a ajouté la preuve ; `message_author_id`/`message_author_name` =
+  auteur du message cité. `content` peut être `""`. `message_created_at` = epoch
+  seconds de création du message d'origine (≠ `created_at`, qui est l'ajout de la
+  preuve). `attachments` = URLs CDN Discord brutes, peuvent expirer.
+
+---
+
+### `POST /cases`
+
+Crée une case **globale ou réseau** + sa première sanction. **Auth : staff avec
+permission de modération.**
+
+**Body :** `{ case_type: "global"|"network", subject_type, subject_id, scope_type,
+scope_id?, reason, action, expires_at?, note?, group_id? }`
+
+**Validation `action` (alignée sur le bot, cf. `GET /cases/meta`) :**
+- `action` doit appartenir à `case_type_actions[case_type]` (ex. `global` → seulement
+  `warn`/`restrict`/`ban`) — sinon **422**.
+- `expires_at` n'est accepté que pour `ban`/`mute`/`restrict` (actions temporisables) —
+  sinon **422**.
+
+**Réponse :** `201` — le case complet (dossier + `sanctions` + `events`).
+
+---
+
+### `PATCH /cases/{identifier}`
+
+Modifie la `reason` et/ou le `status` d'une case (`global`, `network` **ou `guild`** —
+l'édition n'a aucun effet Discord). Fixer un `status` **verrouille** la case
+(`status_locked`, plus de recalcul auto). **Auth : staff mod.** Body :
+`{ reason?, status? }`. Réponse : le case complet.
+
+### `POST /cases/{identifier}/sanctions`
+
+Ajoute une sanction (rouvre le case si nécessaire). **Auth : staff mod.**
+Body : `{ action, expires_at?, note? }`. Même validation `action`×`type` que
+`POST /cases` (selon le `type` de la case existante).
+- Cases `global`/`network` : écriture directe, réponse `201` (case complet).
+- Cases `guild` : **déléguée au bot** (il applique le ban/timeout + DM). Réponse `201`
+  (case complet renvoyé par le bot). Erreurs : `504 bot_timeout` si le bot ne répond
+  pas, `502` si l'action Discord échoue. Voir `docs/MODERATION_CASES.md` §4.2.
+
+### `POST /cases/{identifier}/sanctions/{sanction_id}/revoke`
+
+Révoque une sanction ; le statut du case est recalculé automatiquement.
+**Auth : staff mod.** Body : `{ note? }`. Réponse : le case complet. Cases `guild` :
+**déléguée au bot** (unban / retrait timeout), mêmes codes d'erreur que l'ajout.
+
+### `POST /cases/{identifier}/notes`
+
+Ajoute un commentaire à la timeline (interne, sans effet Discord ; `global`/`network`/`guild`).
+**Auth : staff mod.** Body : `{ content }`.
+Réponse `201` : le case complet.
 
 ---
 
@@ -1012,6 +1128,37 @@ Retourne les informations publiques d'un utilisateur Discord via le bot token. E
 | `429` | Rate limit Discord atteint |
 | `502` | Erreur API Discord |
 | `503` | Bot token non configure |
+
+---
+
+### `GET /users/{user_id}/profile`
+
+Profil enrichi d'un **autre** utilisateur : identité Discord publique + statut Moddy
+(premium, staff). **Auth : utilisateur connecté.** Ne divulgue aucune donnée
+sensible (email, client Stripe, cases privées).
+
+**Réponse :** tous les champs de `GET /users/{user_id}` + :
+
+| Champ | Type | Description |
+|---|---|---|
+| `display_name` | string | `global_name` sinon `username` |
+| `is_premium` | bool | Abonnement actif OU attribut `PREMIUM` |
+| `is_beta` | bool | Attribut `BETA` |
+| `is_staff` | bool | Membre du staff Moddy |
+| `staff_roles` | string[] | Rôles staff (vide si non-staff) |
+| `in_database` | bool | L'utilisateur existe dans `users` |
+
+---
+
+### `GET /guilds/{guild_id}/profile`
+
+Infos publiques d'un **autre** serveur : identité + statut premium. Contrairement à
+`GET /guilds/{id}` (réservé aux serveurs de l'utilisateur), n'expose que les
+métadonnées publiques. **Auth : utilisateur connecté.**
+
+**Réponse :** `guild_id`, `name`, `icon`, `banner`, `splash`, `description`,
+`member_count`, `presence_count`, `features`, `vanity_url_code`, `is_premium`,
+`is_beta`, `in_database`.
 
 ---
 
@@ -1367,65 +1514,18 @@ Modifier les attributs d'un serveur (PREMIUM, BETA, BLACKLISTED, etc.).
 
 ### `GET /staff/blacklist`
 
-Liste des entites blacklistees (cases `global_blacklist` ou `guild_blacklist` avec status `open`).
+Liste des entités actuellement blacklistées globalement, c.-à-d. les cases
+`global`/`platform` portant une sanction `ban` **active** (cf. `docs/MODERATION_CASES.md` §7).
+
+**Projection en lecture uniquement.** Il n'y a **pas** d'endpoint d'écriture dédié :
+une blacklist EST une case globale avec un ban. Pour blacklister → `POST /cases`
+(`case_type=global`, `scope_type=platform`, `action=ban`) ; pour dé-blacklister →
+révoquer la sanction via `POST /cases/{identifier}/sanctions/{sanction_id}/revoke`.
 
 **Auth :** staff
 **Query params :** `limit` (max 200), `offset`
-**Reponse :** array de `moderation_cases`
-
----
-
-### `POST /staff/blacklist`
-
-Ajouter une entite a la blacklist.
-
-**Auth :** staff
-**Body :**
-
-```json
-{
-  "entity_type": "user",
-  "entity_id": 123456789,
-  "reason": "Spam massif sur plusieurs serveurs",
-  "sanction_type": "global_blacklist"
-}
-```
-
-| Champ | Type | Obligatoire | Description |
-|---|---|---|---|
-| `entity_type` | string | oui | `"user"` ou `"guild"` |
-| `entity_id` | int | oui | ID Discord de l'entite |
-| `reason` | string | non | Raison de la blacklist |
-| `sanction_type` | string | non | `"global_blacklist"` (defaut) ou `"guild_blacklist"` |
-
-**Actions :**
-1. Cree une `moderation_case` (case_id hex 8 chars, status "open")
-2. Set l'attribut `BLACKLISTED` sur l'entite (`users.attributes` ou `guilds.attributes`)
-
-**Reponse :** la case creee
-
----
-
-### `DELETE /staff/blacklist/{case_id}`
-
-Retirer une entite de la blacklist.
-
-**Auth :** staff
-**Path params :**
-
-| Param | Type | Description |
-|---|---|---|
-| `case_id` | string | ID hex 8 chars de la case |
-
-**Actions :**
-1. Ferme la case (`status = "closed"`, `closed_by`, `closed_at`)
-2. Retire l'attribut `BLACKLISTED` de l'entite
-
-**Reponse :**
-
-```json
-{"deleted": true, "case_id": "A1B2C3D4"}
-```
+**Réponse :** array joignant le case + sa sanction (`reference`, `subject_type/id`,
+`action`, `expires_at`, `sanctioned_at`, …).
 
 ---
 
@@ -1528,7 +1628,7 @@ SELECT
   (SELECT COUNT(*) FROM guilds) AS total_guilds,
   (SELECT COUNT(*) FROM guilds WHERE attributes ? 'PREMIUM') AS premium_guilds,
   (SELECT COUNT(*) FROM staff_permissions) AS total_staff,
-  (SELECT COUNT(*) FROM moderation_cases WHERE status = 'open') AS open_cases;
+  (SELECT COUNT(*) FROM cases WHERE status = 'open') AS open_cases;
 ```
 
 ---
