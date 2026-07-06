@@ -7,7 +7,6 @@ import {
   LockIcon,
   ShieldAlertIcon,
   MessageSquareIcon,
-  BotIcon,
   GavelIcon,
 } from "lucide-react"
 import {
@@ -106,96 +105,6 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
   )
 }
 
-// ─── Carte de preuve automod ──────────────────────────────────────────────────
-
-function EvidenceEvent({ event }: { event: CaseEvent }) {
-  const { t, i18n } = useTranslation()
-  const p = event.payload ?? {}
-  const kind = asString(p["kind"])
-  const isAutomod = asString(p["source"]) === "automod"
-  const jumpUrl = asString(p["jump_url"])
-  const extrait = asString(p["extrait"]) ?? (kind === "automod_log" ? null : event.content)
-  const gravite = asString(p["gravite"])
-  const categorie = asString(p["categorie"])
-  const confiance = asString(p["confiance"])
-
-  // Variante « lien log serveur » (automod_log) : aucun extrait → ligne compacte.
-  if (!extrait && !gravite && !categorie) {
-    return (
-      <MarkerRow icon={BotIcon} iconClass="text-sky-500" time={event.created_at}>
-        <span className="inline-flex items-center gap-1.5">
-          {t("cases.timeline.evidenceLog")}
-          {jumpUrl && (
-            <a
-              href={jumpUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sky-600 underline underline-offset-2 hover:text-sky-700 dark:text-sky-400"
-            >
-              {t("cases.timeline.viewMessage")}
-            </a>
-          )}
-        </span>
-      </MarkerRow>
-    )
-  }
-
-  return (
-    <Message align="start" className="items-start">
-      <MessageContent>
-        <MessageHeader className="gap-2">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-sky-600 dark:text-sky-400">
-            <BotIcon className="size-3.5" />
-            {t("cases.timeline.evidenceAutomod")}
-          </span>
-          <span
-            className="ml-auto text-xs tabular-nums text-muted-foreground/70"
-            title={absoluteTime(event.created_at, i18n.language)}
-          >
-            {relativeTime(event.created_at, i18n.language)}
-          </span>
-        </MessageHeader>
-        <div className="rounded-2xl border border-sky-200 bg-sky-50/60 p-3 dark:border-sky-900 dark:bg-sky-950/30">
-          {extrait && (
-            <p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground/90">
-              {extrait}
-            </p>
-          )}
-          {(gravite || categorie || confiance) && (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {categorie && (
-                <span className="rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">
-                  {categorie}
-                </span>
-              )}
-              {gravite && (
-                <span className="rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">
-                  {t("cases.timeline.severity")}: {gravite}
-                </span>
-              )}
-              {confiance && (
-                <span className="rounded-md bg-sky-100 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/60 dark:text-sky-300">
-                  {t("cases.timeline.confidence")}: {confiance}
-                </span>
-              )}
-            </div>
-          )}
-          {isAutomod && jumpUrl && (
-            <a
-              href={jumpUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-flex items-center gap-1 text-xs text-sky-600 underline underline-offset-2 hover:text-sky-700 dark:text-sky-400"
-            >
-              {t("cases.timeline.viewMessage")}
-            </a>
-          )}
-        </div>
-      </MessageContent>
-    </Message>
-  )
-}
-
 // ─── Item unique ──────────────────────────────────────────────────────────────
 
 function TimelineItem({ event }: { event: CaseEvent }) {
@@ -229,8 +138,6 @@ function TimelineItem({ event }: { event: CaseEvent }) {
       return <CommentEvent event={event} isNote={false} />
     case "note":
       return <CommentEvent event={event} isNote />
-    case "evidence":
-      return <EvidenceEvent event={event} />
     case "sanction_added": {
       const action = payloadAction(event.payload)
       return (
@@ -288,7 +195,10 @@ function TimelineItem({ event }: { event: CaseEvent }) {
 export function CaseTimeline({ events }: { events: CaseEvent[] }) {
   const { t } = useTranslation()
 
-  if (events.length === 0) {
+  // Les preuves sont affichées dans leur propre section (hors activité).
+  const activity = events.filter((e) => e.type !== "evidence")
+
+  if (activity.length === 0) {
     return (
       <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed py-10 text-center">
         <MessageSquareIcon className="size-6 text-muted-foreground/50" />
@@ -298,7 +208,7 @@ export function CaseTimeline({ events }: { events: CaseEvent[] }) {
   }
 
   // Ordre chronologique garanti par l'API ; on sécurise malgré tout.
-  const sorted = [...events].sort(
+  const sorted = [...activity].sort(
     (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   )
 

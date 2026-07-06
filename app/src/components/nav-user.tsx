@@ -2,7 +2,7 @@ import { useState } from "react"
 import {
   BellIcon,
   CreditCardIcon,
-  GavelIcon,
+  ScaleIcon,
   LogOutIcon,
   SparklesIcon,
   ChevronsUpDownIcon,
@@ -50,7 +50,7 @@ interface NavUserProps {
   onNavigate?: NavigateFunction
 }
 
-export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }: NavUserProps) {
+export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, onNavigate }: NavUserProps) {
   const { isMobile } = useSidebar()
   const { t } = useTranslation()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -142,8 +142,8 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications }
                   <BellIcon />
                   {t('navUser.notifications')}
                 </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <GavelIcon />
+                <DropdownMenuItem onClick={() => onNavigate?.('/cases')}>
+                  <ScaleIcon />
                   {t('navUser.myPunishments')}
                 </DropdownMenuItem>
               </DropdownMenuGroup>

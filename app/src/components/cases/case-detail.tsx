@@ -9,9 +9,10 @@ import {
   LockIcon,
   UnlockIcon,
   LoaderIcon,
-  ShieldIcon,
-  TargetIcon,
+  CopyIcon,
+  UserIcon,
   UserCogIcon,
+  ShieldIcon,
   CalendarIcon,
   LayersIcon,
 } from "lucide-react"
@@ -21,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {
@@ -31,11 +31,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { ErrorState } from "@/components/error-state"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
-import { absoluteTime } from "@/lib/cases"
+import { absoluteTime, relativeTime, copyText } from "@/lib/cases"
+import { cn } from "@/lib/utils"
 import { useCasesMeta } from "@/hooks/useCasesMeta"
 import {
   getCase,
@@ -49,6 +55,7 @@ import { CaseReference, CaseStatusPill, CaseTypeBadge } from "./case-badges"
 import { EntityRef, type EntityKind } from "./entity-ref"
 import { CaseTimeline } from "./case-timeline"
 import { CaseComposer } from "./case-composer"
+import { CaseEvidenceSection } from "./case-evidence"
 import { SanctionsPanel } from "./sanctions-panel"
 import { AppealsPanel } from "./appeals-panel"
 import { AddSanctionDialog } from "./add-sanction-dialog"
@@ -59,9 +66,35 @@ interface CaseDetailViewProps {
   backLabel?: string
   /** L'utilisateur est-il staff modérateur (droit d'écriture) ? */
   canModerate: boolean
+  /** Masque le sujet quand il est évident (vue personnelle). */
+  showSubject?: boolean
+  /** Masque le type quand il est évident (vue serveur). */
+  showType?: boolean
+  /** Masque la portée quand elle est évidente (vue serveur). */
+  showScope?: boolean
 }
 
-// ─── Ligne de propriété ───────────────────────────────────────────────────────
+// ─── Bouton « copier » (icône + tooltip) ──────────────────────────────────────
+
+function CopyButton({ value, label }: { value: string; label?: string }) {
+  const { t } = useTranslation()
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          onClick={() => copyText(value).then((ok) => ok && toast.success(t("cases.row.copied")))}
+          className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <CopyIcon className="size-3.5" />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{label ?? t("cases.detail.copy")}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+// ─── Ligne de propriété (typographie normalisée) ──────────────────────────────
 
 function PropRow({
   icon: Icon,
@@ -73,33 +106,49 @@ function PropRow({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-start gap-2 py-2">
-      <Icon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-        <div className="mt-1 min-w-0 text-sm">{children}</div>
-      </div>
+    <div className="flex flex-col gap-1.5">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <Icon className="size-3.5" />
+        {label}
+      </span>
+      <div className="min-w-0 text-sm">{children}</div>
     </div>
   )
 }
 
-// ─── Panneau (carte) latéral ──────────────────────────────────────────────────
+// ─── Carte latérale (sans séparateurs internes) ───────────────────────────────
 
-function SidePanel({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
+function Panel({
+  title,
+  action,
+  children,
+}: {
+  title: string
+  action?: React.ReactNode
+  children: React.ReactNode
+}) {
   return (
-    <div className="rounded-xl border bg-card">
-      <div className="flex items-center justify-between gap-2 border-b px-3.5 py-2.5">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
+    <div className="rounded-xl border bg-card p-4">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h3 className="text-sm font-semibold">{title}</h3>
         {action}
       </div>
-      <div className="p-3.5">{children}</div>
+      {children}
     </div>
   )
 }
 
 // ─── Vue détail ───────────────────────────────────────────────────────────────
 
-export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: CaseDetailViewProps) {
+export function CaseDetailView({
+  identifier,
+  onBack,
+  backLabel,
+  canModerate,
+  showSubject = true,
+  showType = true,
+  showScope = true,
+}: CaseDetailViewProps) {
   const { t, i18n } = useTranslation()
   const { meta } = useCasesMeta()
   const [data, setData] = useState<CaseDetail | null>(null)
@@ -245,20 +294,22 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
       <div className="flex flex-wrap items-center gap-2">
         {backButton}
         <div className="mx-1 h-4 w-px bg-border" />
-        <CaseReference reference={data.reference} className="text-sm" />
+        <span className="inline-flex items-center gap-0.5">
+          <CaseReference reference={data.reference} className="text-sm" />
+          <CopyButton value={data.reference} label={t("cases.detail.copyReference")} />
+        </span>
         <CaseStatusPill status={data.status} locked={data.status_locked} />
       </div>
 
       <div className="flex flex-col-reverse gap-6 lg:flex-row lg:items-start">
         {/* ── Colonne principale ─────────────────────────────────────────── */}
-        <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
           {/* Titre */}
-          <div className="mb-5 flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <h1 className="text-xl font-semibold leading-snug wrap-break-word">{data.reason}</h1>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <CaseTypeBadge type={data.type} />
-                <span>·</span>
+                {showType && <CaseTypeBadge type={data.type} />}
                 <span title={absoluteTime(data.created_at, i18n.language)}>
                   {t("cases.detail.openedOn", { date: absoluteTime(data.created_at, i18n.language) })}
                 </span>
@@ -288,7 +339,6 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
                       <PencilIcon className="size-4" />
                       {t("cases.detail.editReason")}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleToggleStatus} disabled={statusBusy}>
                       {data.status === "open" ? (
                         <>
@@ -308,52 +358,72 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
             )}
           </div>
 
-          {/* Activité */}
-          <div className="mb-2 flex items-center gap-2">
-            <h2 className="text-sm font-semibold">{t("cases.detail.activity")}</h2>
-          </div>
-          <CaseTimeline events={data.events} />
+          {/* Preuves (hors activité) */}
+          <CaseEvidenceSection caseRef={data.reference} events={data.events} />
 
-          {/* Composer (staff modérateur uniquement) */}
-          {writable && (
-            <div className="mt-5">
-              <CaseComposer onSubmit={handleAddComment} />
-            </div>
-          )}
+          {/* Activité */}
+          <section>
+            <h2 className="mb-3 text-sm font-semibold">{t("cases.detail.activity")}</h2>
+            <CaseTimeline events={data.events} />
+
+            {writable && (
+              <div className="mt-4">
+                <CaseComposer onSubmit={handleAddComment} />
+              </div>
+            )}
+          </section>
         </div>
 
-        {/* ── Colonne latérale (propriétés) ──────────────────────────────── */}
-        <div className="flex shrink-0 flex-col gap-4 lg:sticky lg:top-4 lg:w-80 lg:self-start">
-          {/* Propriétés */}
-          <div className="rounded-xl border bg-card px-3.5 py-1 divide-y">
-            <PropRow icon={TargetIcon} label={t("cases.detail.subject")}>
-              <EntityRef kind={data.subject_type as EntityKind} id={data.subject_id} variant="block" />
-            </PropRow>
-            <PropRow icon={ShieldIcon} label={t("cases.detail.scope")}>
-              {scopeIsGuild && data.scope_id ? (
-                <EntityRef kind="discord_guild" id={data.scope_id} variant="block" />
-              ) : (
-                <span className="text-sm">{t(`cases.scopeType.${data.scope_type}`)}</span>
+        {/* ── Colonne latérale ───────────────────────────────────────────── */}
+        <aside className="flex shrink-0 flex-col gap-4 lg:sticky lg:top-4 lg:w-80 lg:self-start">
+          {/* Détails */}
+          <Panel title={t("cases.detail.details")}>
+            <div className="flex flex-col gap-3.5">
+              {showSubject && (
+                <PropRow icon={UserIcon} label={t("cases.detail.subject")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <EntityRef kind={data.subject_type as EntityKind} id={data.subject_id} variant="block" />
+                    {data.subject_id && <CopyButton value={data.subject_id} label={t("cases.detail.copyId")} />}
+                  </div>
+                </PropRow>
               )}
-            </PropRow>
-            <PropRow icon={UserCogIcon} label={t("cases.detail.issuer")}>
-              <EntityRef kind={data.issuer_type as EntityKind} id={data.issuer_id} variant="inline" />
-            </PropRow>
-            {data.group_id && (
-              <PropRow icon={LayersIcon} label={t("cases.detail.group")}>
-                <span className="font-mono text-xs text-muted-foreground wrap-break-word">{data.group_id}</span>
+              <PropRow icon={UserCogIcon} label={t("cases.detail.issuer")}>
+                <EntityRef kind={data.issuer_type as EntityKind} id={data.issuer_id} variant="inline" />
               </PropRow>
-            )}
-            <PropRow icon={CalendarIcon} label={t("cases.detail.dates")}>
-              <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-                <span>{t("cases.detail.created", { date: absoluteTime(data.created_at, i18n.language) })}</span>
-                <span>{t("cases.detail.updated", { date: absoluteTime(data.updated_at, i18n.language) })}</span>
-              </div>
-            </PropRow>
-          </div>
+              {showScope && (
+                <PropRow icon={ShieldIcon} label={t("cases.detail.scope")}>
+                  {scopeIsGuild && data.scope_id ? (
+                    <EntityRef kind="discord_guild" id={data.scope_id} variant="inline" />
+                  ) : (
+                    <span>{t(`cases.scopeType.${data.scope_type}`)}</span>
+                  )}
+                </PropRow>
+              )}
+              {data.group_id && (
+                <PropRow icon={LayersIcon} label={t("cases.detail.group")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
+                      {data.group_id}
+                    </span>
+                    <CopyButton value={data.group_id} label={t("cases.detail.copyId")} />
+                  </div>
+                </PropRow>
+              )}
+              <PropRow icon={CalendarIcon} label={t("cases.detail.dates")}>
+                <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+                  <span title={absoluteTime(data.created_at, i18n.language)}>
+                    {t("cases.detail.created", { date: relativeTime(data.created_at, i18n.language) })}
+                  </span>
+                  <span title={absoluteTime(data.updated_at, i18n.language)}>
+                    {t("cases.detail.updated", { date: relativeTime(data.updated_at, i18n.language) })}
+                  </span>
+                </div>
+              </PropRow>
+            </div>
+          </Panel>
 
           {/* Sanctions */}
-          <SidePanel
+          <Panel
             title={t("cases.detail.sanctions")}
             action={
               canSanction ? (
@@ -364,15 +434,15 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
             }
           >
             <SanctionsPanel sanctions={data.sanctions} canWrite={writable} onRevoke={handleRevoke} />
-          </SidePanel>
+          </Panel>
 
           {/* Appels */}
           {data.appeals.length > 0 && (
-            <SidePanel title={t("cases.detail.appeals")}>
+            <Panel title={t("cases.detail.appeals")}>
               <AppealsPanel appeals={data.appeals} />
-            </SidePanel>
+            </Panel>
           )}
-        </div>
+        </aside>
       </div>
 
       {/* Dialog ajout de sanction */}
@@ -394,7 +464,7 @@ export function CaseDetailView({ identifier, onBack, backLabel, canModerate }: C
             onChange={(e) => setReasonDraft(e.target.value)}
             maxLength={2000}
             rows={4}
-            className="resize-none"
+            className={cn("resize-none")}
           />
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditOpen(false)} disabled={editBusy}>

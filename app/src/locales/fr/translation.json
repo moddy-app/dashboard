@@ -848,7 +848,11 @@
       "reopenedSuccess": "Cas rouvert.",
       "statusError": "Impossible de changer le statut du cas.",
       "reasonSaved": "Raison mise à jour.",
-      "reasonError": "Impossible de mettre à jour la raison."
+      "reasonError": "Impossible de mettre à jour la raison.",
+      "details": "Détails",
+      "copy": "Copier",
+      "copyReference": "Copier la référence",
+      "copyId": "Copier l’ID"
     },
     "timeline": {
       "empty": "Aucune activité pour le moment.",
@@ -935,6 +939,56 @@
       "errorReason": "Une raison est requise.",
       "errorAction": "Une action est requise.",
       "descriptionGlobal": "Ouvre un cas global (réseau Moddy). Un bannissement global blackliste le sujet."
+    },
+    "toolbar": {
+      "refresh": "Rafraîchir",
+      "filter": "Filtres",
+      "massAction": "Sélection multiple"
+    },
+    "filters": {
+      "subject": "Utilisateur",
+      "issuer": "Auteur",
+      "status": "Statut",
+      "action": "Sanction",
+      "date": "Date",
+      "dateFrom": "Du",
+      "dateTo": "Au",
+      "idPlaceholder": "ID Discord…",
+      "remove": "Retirer le filtre",
+      "add": "Filtrer",
+      "allUsed": "Tous les filtres sont utilisés",
+      "custom": "Plage personnalisée",
+      "datePreset": {
+        "today": "Aujourd'hui",
+        "yesterday": "Hier",
+        "thisWeek": "Cette semaine",
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "thisMonth": "Ce mois-ci"
+      }
+    },
+    "mass": {
+      "selectOne": "Sélectionner la case",
+      "selectedCount": "{{count}} sélectionnée(s)",
+      "reopen": "Rouvrir",
+      "close": "Fermer",
+      "clear": "Effacer",
+      "done": "{{count}} case(s) mise(s) à jour.",
+      "partialError": "{{count}} n’ont pas pu être mises à jour.",
+      "confirmCloseTitle": "Fermer les cases sélectionnées ?",
+      "confirmCloseDescription": "{{count}} case(s) seront fermées et verrouillées. Réversible en les rouvrant."
+    },
+    "row": {
+      "openCase": "Ouvrir la case",
+      "copyReference": "Copier la référence",
+      "copySubjectId": "Copier l’ID du sujet",
+      "copied": "Copié dans le presse-papiers."
+    },
+    "evidence": {
+      "title": "Preuves",
+      "citedMessage": "Message cité",
+      "noContent": "Aucun contenu textuel.",
+      "viewOnDiscord": "Voir sur Discord"
     }
   }
 }

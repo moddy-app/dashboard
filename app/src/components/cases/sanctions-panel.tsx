@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { ACTION_META, actionTone, absoluteTime } from "@/lib/cases"
 import type { Sanction } from "@/types/cases"
-import { ActionChip, SanctionStatusBadge } from "./case-badges"
+import { SanctionStatusBadge } from "./case-badges"
 import { EntityRef, type EntityKind } from "./entity-ref"
 
 interface SanctionsPanelProps {
@@ -68,7 +68,9 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanel
                 <span className={cn("flex size-6 shrink-0 items-center justify-center rounded-md", tone.softBg)}>
                   <Icon className={cn("size-3.5", tone.text)} />
                 </span>
-                <ActionChip action={s.action} muted={s.status !== "active"} />
+                <span className={cn("text-sm font-medium", s.status !== "active" && "text-muted-foreground")}>
+                  {t(`cases.action.${s.action}`)}
+                </span>
                 <div className="ml-auto">
                   <SanctionStatusBadge status={s.status} />
                 </div>

@@ -17,7 +17,6 @@ import {
   ClipboardListIcon,
   BellRingIcon,
   ShieldAlertIcon,
-  ScaleIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -200,16 +199,6 @@ export function AppSidebar({
       </SidebarContent>
       <SidebarFooter>
         <SidebarMenu className="gap-0.5">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tooltip={t("cases.my.navTitle")}
-              onClick={() => navigate("/cases")}
-              isActive={location.pathname === "/cases"}
-            >
-              <ScaleIcon />
-              <span>{t("cases.my.navTitle")}</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
           {selectedGuildId && !isOnStaffPage && (
             <SidebarMenuItem>
               <SidebarMenuButton

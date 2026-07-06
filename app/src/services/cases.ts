@@ -8,6 +8,7 @@ import type {
   CaseCreateInput,
   CasePatchInput,
   SanctionCreateInput,
+  CaseEvidence,
   DiscordUserProfile,
   DiscordGuildProfile,
 } from '@/types/cases'
@@ -49,6 +50,11 @@ export async function getCases(filters: CaseFilters = {}): Promise<CaseListItem[
 /** `identifier` = référence (6 caractères) ou UUID. */
 export async function getCase(identifier: string): Promise<CaseDetail> {
   return (await api(`/cases/${encodeURIComponent(identifier)}`)) as CaseDetail
+}
+
+/** Preuves affichables (pièces jointes + liens de message). */
+export async function getCaseEvidence(identifier: string): Promise<CaseEvidence[]> {
+  return (await api(`/cases/${encodeURIComponent(identifier)}/evidence`)) as CaseEvidence[]
 }
 
 export async function createCase(input: CaseCreateInput): Promise<CaseDetail> {
