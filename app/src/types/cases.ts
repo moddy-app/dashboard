@@ -130,6 +130,43 @@ export interface CaseDetail extends Case {
   appeals: Appeal[]
 }
 
+// ─── Preuves (GET /cases/{id}/evidence) ──────────────────────────────────────────
+// Deux formes distinguées par `kind` (toujours tester `message_link` en premier).
+
+/** Pièce jointe classique (image / vidéo / autre). */
+export interface EvidenceAttachment {
+  event_id: string
+  created_at: string
+  author_type: AuthorType | null
+  author_id: string | null
+  url: string
+  kind: 'image' | 'video' | 'evidence'
+  media: boolean
+}
+
+/** Lien de message cité (snapshot figé). */
+export interface EvidenceMessageLink {
+  event_id: string
+  created_at: string
+  author_type: AuthorType | null
+  author_id: string | null
+  kind: 'message_link'
+  jump_url: string
+  channel_id: string
+  message_id: string
+  content: string
+  message_author_id: string | null
+  message_author_name: string | null
+  attachments: string[]
+  message_created_at: number | null
+}
+
+export type CaseEvidence = EvidenceAttachment | EvidenceMessageLink
+
+export function isMessageLink(e: CaseEvidence): e is EvidenceMessageLink {
+  return e.kind === 'message_link'
+}
+
 // ─── Meta (GET /cases/meta) ──────────────────────────────────────────────────────
 
 export interface CasesMeta {

@@ -18,6 +18,8 @@ interface CasesBrowserProps {
   canCreate?: boolean
   /** Affiche la colonne sujet dans la liste (false pour la vue personnelle). */
   showSubject?: boolean
+  /** Affiche le type de case (false quand il est évident — ex. vue serveur). */
+  showType?: boolean
   /** En-tête affiché au-dessus de la liste (titre + description de la page). */
   header?: React.ReactNode
   backLabel?: string
@@ -39,6 +41,7 @@ export function CasesBrowser({
   canModerate,
   canCreate = false,
   showSubject = true,
+  showType = false,
   header,
   backLabel,
   emptyTitle,
@@ -77,6 +80,9 @@ export function CasesBrowser({
         canModerate={canModerate}
         backLabel={backLabel}
         onBack={() => setSelected(null)}
+        showSubject={showSubject}
+        showType={showType}
+        showScope={!baseFilters.scope_id}
       />
     )
   }
@@ -96,6 +102,8 @@ export function CasesBrowser({
         baseFilters={baseFilters}
         onOpen={setSelected}
         showSubject={showSubject}
+        showType={showType}
+        canModerate={canModerate}
         toolbarExtra={createButton}
         emptyTitle={emptyTitle}
         emptyDescription={emptyDescription}

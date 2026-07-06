@@ -28,6 +28,7 @@ export function MyCasesPage() {
       baseFilters={{ subject_type: "discord_user", subject_id: user.user_id }}
       canModerate={canModerateCases(user)}
       showSubject={false}
+      showType
       backLabel={t("cases.my.title")}
       emptyTitle={t("cases.my.emptyTitle")}
       emptyDescription={t("cases.my.emptyDescription")}

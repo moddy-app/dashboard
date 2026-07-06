@@ -848,7 +848,11 @@
       "reopenedSuccess": "Case reopened.",
       "statusError": "Could not change the case status.",
       "reasonSaved": "Reason updated.",
-      "reasonError": "Could not update the reason."
+      "reasonError": "Could not update the reason.",
+      "details": "Details",
+      "copy": "Copy",
+      "copyReference": "Copy reference",
+      "copyId": "Copy ID"
     },
     "timeline": {
       "empty": "No activity yet.",
@@ -935,6 +939,47 @@
       "errorReason": "A reason is required.",
       "errorAction": "An action is required.",
       "descriptionGlobal": "Open a global case (Moddy network). A global ban blacklists the subject."
+    },
+    "toolbar": {
+      "refresh": "Refresh",
+      "filter": "Filters",
+      "massAction": "Select multiple"
+    },
+    "filters": {
+      "subject": "User",
+      "issuer": "Author",
+      "status": "Status",
+      "action": "Sanction",
+      "date": "Date",
+      "dateFrom": "From",
+      "dateTo": "To",
+      "idPlaceholder": "Discord ID…",
+      "remove": "Remove filter",
+      "add": "Add filter",
+      "allUsed": "All filters in use"
+    },
+    "mass": {
+      "selectOne": "Select case",
+      "selectedCount": "{{count}} selected",
+      "reopen": "Reopen",
+      "close": "Close",
+      "clear": "Clear",
+      "done": "{{count}} case(s) updated.",
+      "partialError": "{{count}} could not be updated.",
+      "confirmCloseTitle": "Close selected cases?",
+      "confirmCloseDescription": "{{count}} case(s) will be closed and locked. This can be reversed by reopening them."
+    },
+    "row": {
+      "openCase": "Open case",
+      "copyReference": "Copy reference",
+      "copySubjectId": "Copy subject ID",
+      "copied": "Copied to clipboard."
+    },
+    "evidence": {
+      "title": "Evidence",
+      "citedMessage": "Cited message",
+      "noContent": "No text content.",
+      "viewOnDiscord": "View on Discord"
     }
   }
 }

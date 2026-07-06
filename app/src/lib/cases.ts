@@ -112,6 +112,26 @@ export function caseStatusIsOpen(status: CaseStatus): boolean {
   return status === 'open'
 }
 
+// ─── Accent « filtre » ────────────────────────────────────────────────────────
+// Bleu distinct du bouton d'action principale (primary) : sert aux labels de
+// filtre actifs et à l'état actif du bouton « filtrer ».
+
+export const FILTER_ACCENT_CHIP =
+  'border-blue-300 bg-blue-100/70 text-blue-700 hover:bg-blue-100 dark:border-blue-800/80 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900/50'
+
+export const FILTER_ACCENT_BUTTON =
+  'border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-700 dark:border-blue-800/80 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-900/50'
+
+/** Copie une valeur dans le presse-papiers (best-effort). */
+export async function copyText(value: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(value)
+    return true
+  } catch {
+    return false
+  }
+}
+
 // ─── Formatage ────────────────────────────────────────────────────────────────
 
 /** Temps relatif compact et localisé (ex. « 3d », « 2h », « just now »). */

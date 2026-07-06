@@ -202,6 +202,8 @@ Le projet utilise **shadcn/ui**, qui sont des composants Radix UI non-stylés et
 - `skeleton.tsx` - Squelettes de chargement
 - `sheet.tsx` - Panneaux latéraux (Sheet, SheetContent, etc.)
 - `drawer.tsx` - Panneaux tiroirs (Drawer, DrawerContent, DrawerHeader, DrawerFooter, etc.) — via vaul
+- `context-menu.tsx` - Menu contextuel (clic droit) — Radix ContextMenu
+- `checkbox.tsx` - Case à cocher — Radix Checkbox
 
 ### Composants métier (dans `/app/src/components/`)
 
@@ -338,7 +340,7 @@ Le système utilise :
 - **Système de notifications** (NotificationDrawer responsive, types, données exemple, hook use-media-query)
 - **Dark mode** (ThemeProvider, cookie `moddy_preferences.theme`, sélecteur dans `/debug`)
 - **Module Social Notifications** (`/servers/:guildId/modules/social_notifications`) — abonnements YouTube/Twitch/Bluesky/RSS (Instagram réservé) : liste, ajout (résolution synchrone via le bot), édition (PATCH partiel), pause/reprise, suppression, quota par plateforme (1 free / 5 premium), éditeur de message avec cheat-sheet de placeholders, couleur d'embed (marque ou custom), toggles avatar/média conditionnels. Métadonnées plateformes dans `src/lib/social-platforms.ts`, services dans `src/services/guilds.ts`.
-- **Système Cases / Modération** — nouveau modèle (case + sanctions + events + appeals) remplaçant l'ancien `ModerationCase`. Trois vues partageant **une vue détail unifiée** (design continu façon tickets Linear) : personnelle (`/cases`), serveur (`/servers/:guildId/cases`), staff (onglet Cases). Timeline mêlant commentaires (composant `Message`/`Bubble`) et historique d'actions (composant `Marker`) par ordre chronologique. Formulaires pilotés par `GET /cases/meta`. Écriture réservée au staff modérateur sur les cases `global`/`network`. Types `src/types/cases.ts`, service `src/services/cases.ts`, helpers `src/lib/cases.ts`, composants `src/components/cases/`, profils Discord via `src/hooks/useProfile.ts`.
+- **Système Cases / Modération** — nouveau modèle (case + sanctions + events + appeals) remplaçant l'ancien `ModerationCase`. Trois vues partageant **une vue détail unifiée** (design continu façon tickets Linear) : personnelle (accessible via le menu utilisateur → `/cases`), serveur (`/servers/:guildId/cases`), staff (onglet Cases, recherche libre sur toutes les cases). Liste : barre de recherche serveur (`?q=`), boutons icône (rafraîchir / filtres / sélection multiple) + tooltips, **filtres en chips bleus** (utilisateur, auteur, statut, sanction, date) modèle/helpers dans `case-filters.ts` et UI dans `case-filter-bar.tsx`, **scroll infini**, **menu contextuel** (clic droit), **sélection de masse** avec actions groupées (confirmation destructive). Détail : infos évidentes masquées selon le contexte (`showSubject`/`showType`/`showScope`), **section Preuves** dédiée (`case-evidence.tsx`, `GET /cases/{id}/evidence` + automod), panneaux normalisés sans séparateurs, boutons « copier ». Timeline mêlant commentaires (`Message`/`Bubble`) et historique d'actions (`Marker`), preuves exclues. Formulaires pilotés par `GET /cases/meta`. Écriture réservée au staff modérateur sur les cases `global`/`network`. Types `src/types/cases.ts`, service `src/services/cases.ts`, helpers `src/lib/cases.ts`, composants `src/components/cases/`, profils Discord via `src/hooks/useProfile.ts`.
 
 ### 🚧 Prêt pour le développement
 - Gestion et validation de formulaires
