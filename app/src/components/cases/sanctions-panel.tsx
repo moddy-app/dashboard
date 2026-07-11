@@ -53,7 +53,7 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanel
 
   return (
     <>
-      <div className="flex flex-col divide-y overflow-hidden rounded-xl border">
+      <div className="flex flex-col divide-y">
         {sanctions.map((s) => {
           const meta = ACTION_META[s.action]
           const tone = actionTone(s.action)
@@ -62,7 +62,7 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanel
           return (
             <div
               key={s.id}
-              className={cn("flex items-start gap-2.5 px-3 py-2.5", !active && "opacity-70")}
+              className={cn("flex items-start gap-2.5 py-3 first:pt-0 last:pb-0", !active && "opacity-70")}
             >
               <span
                 className={cn(
