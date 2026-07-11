@@ -1,5 +1,5 @@
+import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { toast } from "sonner"
 import {
   ShieldCheckIcon,
   BotIcon,
@@ -7,6 +7,7 @@ import {
   GlobeIcon,
   UserIcon,
   CopyIcon,
+  CheckIcon,
 } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -172,6 +173,17 @@ export function EntityRef({ kind, id, variant = "inline", className }: EntityRef
   )
 }
 
+// ─── Nom seul (sans avatar, ex. en-tête de message) ───────────────────────────
+
+export function EntityName({ kind, id }: { kind: EntityKind; id: string | null | undefined }) {
+  const { t } = useTranslation()
+  const isUser = (kind === "discord_user" || kind === "moddy_user" || kind === "moddy_staff") && !!id
+  const { data } = useUserProfile(isUser ? id : undefined)
+  if (isUser) return <>{data?.display_name ?? id}</>
+  if (kind in SYSTEM_META) return <>{t(SYSTEM_META[kind as keyof typeof SYSTEM_META].labelKey)}</>
+  return <>{id ?? "—"}</>
+}
+
 // ─── Avatar seul (visuel) ─────────────────────────────────────────────────────
 
 function UserAvatarVisual({ id, className }: { id: string; className?: string }) {
@@ -227,6 +239,7 @@ export function EntityAvatar({
   className?: string
 }) {
   const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
   const hasProfile =
     !!id &&
     (kind === "discord_user" ||
@@ -238,7 +251,7 @@ export function EntityAvatar({
   if (!hasProfile) return avatar
 
   return (
-    <Popover>
+    <Popover onOpenChange={(o) => !o && setCopied(false)}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -251,11 +264,21 @@ export function EntityAvatar({
         <EntityRef kind={kind} id={id} variant="block" />
         <button
           type="button"
-          onClick={() => copyText(id!).then((ok) => ok && toast.success(t("cases.row.copied")))}
+          onClick={() =>
+            copyText(id!).then((ok) => {
+              if (!ok) return
+              setCopied(true)
+              window.setTimeout(() => setCopied(false), 1500)
+            })
+          }
           className="mt-2.5 flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <CopyIcon className="size-3.5" />
-          {t("cases.detail.copyId")}
+          {copied ? (
+            <CheckIcon className="size-3.5 shrink-0 animate-in zoom-in-50 text-emerald-500 duration-200" />
+          ) : (
+            <CopyIcon className="size-3.5 shrink-0" />
+          )}
+          {copied ? t("cases.detail.copied") : t("cases.detail.copyId")}
         </button>
       </PopoverContent>
     </Popover>

@@ -859,10 +859,12 @@
       "details": "Details",
       "copy": "Copy",
       "copyReference": "Copy reference",
-      "copyId": "Copy ID"
+      "copyId": "Copy ID",
+      "copied": "Copied!"
     },
     "timeline": {
       "empty": "No activity yet.",
+      "you": "You",
       "internalNote": "Internal note",
       "evidenceAutomod": "AutoMod evidence",
       "severity": "Severity",
@@ -995,7 +997,16 @@
       "title": "Evidence",
       "citedMessage": "Cited message",
       "noContent": "No text content.",
-      "viewOnDiscord": "View on Discord"
+      "viewOnDiscord": "View on Discord",
+      "addedBy": "Added by",
+      "reason": "Reason",
+      "explanation": "Explanation",
+      "signalSource": "Signal source",
+      "detectorScore": "Detector score",
+      "viewContext": "View conversation context",
+      "contextTitle": "Conversation context",
+      "contextDescription": "The messages leading up to the one flagged by AutoMod.",
+      "flagged": "Flagged"
     }
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   ChevronDownIcon,
@@ -258,9 +258,13 @@ function FilterChip({
   // Ouverture différée à l'ajout : sinon le clic qui a sélectionné le filtre dans
   // le menu déroulant est capté par le popover comme un « clic extérieur » et le
   // referme aussitôt (→ retrait immédiat du chip).
+  const openedAtRef = useRef(0)
   useEffect(() => {
     if (!autoOpen) return
-    const id = setTimeout(() => setOpen(true), 90)
+    const id = setTimeout(() => {
+      openedAtRef.current = Date.now()
+      setOpen(true)
+    }, 160)
     return () => clearTimeout(id)
   }, [autoOpen])
 
@@ -272,9 +276,16 @@ function FilterChip({
   const handleOpenChange = (o: boolean) => {
     if (o) {
       setIdDraft(currentId ?? "")
+      openedAtRef.current = Date.now()
       setOpen(true)
       return
     }
+    // Ignore un « clic extérieur » fantôme juste après l'ouverture différée : le
+    // menu déroulant « ajouter un filtre » peut encore terminer sa fermeture
+    // (animation + retour de focus) et être capté à tort comme une interaction
+    // hors du popover, ce qui le refermait aussitôt (→ chip retiré sans avoir pu
+    // être configuré).
+    if (Date.now() - openedAtRef.current < 250) return
     setOpen(false)
     if (isId) {
       const v = idDraft.trim()
@@ -297,19 +308,19 @@ function FilterChip({
           )}
         >
           <Icon className="size-3.5 shrink-0" />
-          <span className="font-semibold">{t(meta.labelKey)}</span>
+          <span className="font-semibold">
+            {t(meta.labelKey)}
+            {filled && ":"}
+          </span>
           {filled && (
-            <>
-              <span className="font-semibold">:</span>
-              <span className="max-w-[10rem] truncate font-normal">
-                <ChipValue filterKey={filterKey} values={values} />
-              </span>
-            </>
+            <span className="max-w-[10rem] truncate font-normal">
+              <ChipValue filterKey={filterKey} values={values} />
+            </span>
           )}
           <ChevronDownIcon className="size-3.5 shrink-0 opacity-70" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 p-2">
+      <PopoverContent align="start" className="w-56 gap-0 p-2">
         <div className="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-medium text-muted-foreground">
           <Icon className="size-3.5" />
           {t(meta.labelKey)}
@@ -380,7 +391,7 @@ export function AddFilterMenu({
 }) {
   const { t } = useTranslation()
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-44">
         {addableKeys.length === 0 ? (

@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { XCircleIcon, LoaderIcon, ClockIcon, InfinityIcon } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,12 +11,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import { ACTION_META, actionTone, absoluteTime } from "@/lib/cases"
 import type { Sanction } from "@/types/cases"
 import { SanctionStatusBadge } from "./case-badges"
 import { EntityRef, type EntityKind } from "./entity-ref"
+
+function Dot() {
+  return <span className="size-1 shrink-0 rounded-full bg-current opacity-40" />
+}
 
 interface SanctionsPanelProps {
   sanctions: Sanction[]
@@ -49,71 +53,74 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanel
 
   return (
     <>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col divide-y">
         {sanctions.map((s) => {
           const meta = ACTION_META[s.action]
           const tone = actionTone(s.action)
           const Icon = meta.icon
-          const revoked = s.status === "revoked"
+          const active = s.status === "active"
           return (
             <div
               key={s.id}
-              className={cn("rounded-lg border p-2.5", revoked && "opacity-70")}
+              className={cn("flex items-start gap-2.5 py-3 first:pt-0 last:pb-0", !active && "opacity-70")}
             >
-              <div className="flex items-center gap-2">
-                <Icon
-                  className={cn(
-                    "size-4 shrink-0",
-                    s.status === "active" ? tone.text : "text-muted-foreground"
-                  )}
-                />
-                <span className={cn("text-sm font-medium", s.status !== "active" && "text-muted-foreground")}>
-                  {t(`cases.action.${s.action}`)}
-                </span>
-                <div className="ml-auto">
+              <span
+                className={cn(
+                  "mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full",
+                  active ? tone.softBg : "bg-muted"
+                )}
+              >
+                <Icon className={cn("size-3.5", active ? tone.text : "text-muted-foreground")} />
+              </span>
+
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-sm font-medium">{t(`cases.action.${s.action}`)}</span>
                   <SanctionStatusBadge status={s.status} />
                 </div>
+
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
+                  <span className="inline-flex items-center gap-1">
+                    {s.expires_at ? (
+                      <>
+                        <ClockIcon className="size-3 shrink-0" />
+                        {t("cases.sanctions.until", { date: absoluteTime(s.expires_at, i18n.language) })}
+                      </>
+                    ) : (
+                      <>
+                        <InfinityIcon className="size-3 shrink-0" />
+                        {t("cases.sanctions.permanent")}
+                      </>
+                    )}
+                  </span>
+                  <Dot />
+                  <span className="inline-flex min-w-0 items-center gap-1">
+                    {t("cases.sanctions.by")}
+                    <EntityRef kind={s.issued_by_type as EntityKind} id={s.issued_by_id} variant="inline" />
+                  </span>
+                </div>
+
+                {s.note && (
+                  <p className="mt-1.5 wrap-break-word text-xs text-foreground/80">{s.note}</p>
+                )}
               </div>
 
-              <div className="mt-2 flex flex-col gap-1 text-xs text-muted-foreground">
-                <span className="inline-flex items-center gap-1.5">
-                  {s.expires_at ? (
-                    <>
-                      <ClockIcon className="size-3 shrink-0" />
-                      {t("cases.sanctions.until", { date: absoluteTime(s.expires_at, i18n.language) })}
-                    </>
-                  ) : (
-                    <>
-                      <InfinityIcon className="size-3 shrink-0" />
-                      {t("cases.sanctions.permanent")}
-                    </>
-                  )}
-                </span>
-                <span className="inline-flex items-center gap-1.5 min-w-0">
-                  <span className="shrink-0">{t("cases.sanctions.by")}</span>
-                  <EntityRef kind={s.issued_by_type as EntityKind} id={s.issued_by_id} variant="inline" />
-                </span>
-              </div>
-
-              {s.note && (
-                <p className="mt-2 rounded-md bg-muted/60 px-2 py-1.5 text-xs wrap-break-word text-foreground/80">
-                  {s.note}
-                </p>
-              )}
-
-              {canWrite && s.status === "active" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="mt-2 h-7 w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => {
-                    setRevokeNote("")
-                    setRevoking(s)
-                  }}
-                >
-                  <XCircleIcon className="size-3.5" />
-                  {t("cases.sanctions.revoke")}
-                </Button>
+              {canWrite && active && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRevokeNote("")
+                        setRevoking(s)
+                      }}
+                      className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <XCircleIcon className="size-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>{t("cases.sanctions.revoke")}</TooltipContent>
+                </Tooltip>
               )}
             </div>
           )

@@ -273,7 +273,13 @@ export function CaseList({
   const { t } = useTranslation()
   const { meta } = useCasesMeta()
   const [items, setItems] = useState<CaseListItem[]>([])
+  // `loading` = tout premier chargement (squelette plein écran). Les rechargements
+  // suivants (recherche, filtres, refresh) passent par `fetching` : la liste déjà
+  // affichée reste en place (juste estompée) au lieu d'être remplacée par un
+  // squelette, ce qui évite les à-coups de mise en page.
   const [loading, setLoading] = useState(true)
+  const [fetching, setFetching] = useState(false)
+  const hasLoadedOnceRef = useRef(false)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
@@ -322,7 +328,8 @@ export function CaseList({
   )
 
   const load = useCallback(async () => {
-    setLoading(true)
+    if (hasLoadedOnceRef.current) setFetching(true)
+    else setLoading(true)
     setError(null)
     try {
       const data = await getCases(buildFilters(0))
@@ -331,7 +338,9 @@ export function CaseList({
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load cases")
     } finally {
+      hasLoadedOnceRef.current = true
       setLoading(false)
+      setFetching(false)
     }
   }, [buildFilters])
 
@@ -451,7 +460,7 @@ export function CaseList({
         </div>
 
         <ToolbarIconButton label={t("cases.toolbar.refresh")} onClick={load}>
-          <RefreshCwIcon className={cn("size-4", loading && "animate-spin")} />
+          <RefreshCwIcon className={cn("size-4", (loading || fetching) && "animate-spin")} />
         </ToolbarIconButton>
 
         <AddFilterMenu
@@ -515,7 +524,7 @@ export function CaseList({
                 </Button>
               </>
             )}
-            <Button variant="ghost" size="sm" onClick={clearSelection} disabled={bulkBusy}>
+            <Button variant="ghost" size="sm" onClick={exitMassMode} disabled={bulkBusy}>
               {t("cases.mass.clear")}
             </Button>
           </div>
@@ -544,6 +553,19 @@ export function CaseList({
             {t("errors.retry")}
           </Button>
         </div>
+      ) : items.length === 0 && fetching ? (
+        <div className="flex flex-col divide-y rounded-xl border">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="size-4 rounded-full" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-3.5 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
+              <Skeleton className="h-3 w-10" />
+            </div>
+          ))}
+        </div>
       ) : items.length === 0 ? (
         <Empty className="rounded-xl border border-dashed">
           <EmptyHeader>
@@ -556,7 +578,12 @@ export function CaseList({
         </Empty>
       ) : (
         <>
-          <div className="flex flex-col divide-y overflow-hidden rounded-xl border">
+          <div
+            className={cn(
+              "flex flex-col divide-y overflow-hidden rounded-xl border transition-opacity",
+              fetching && "pointer-events-none opacity-60"
+            )}
+          >
             {items.map((item) => (
               <CaseRow
                 key={item.id}
