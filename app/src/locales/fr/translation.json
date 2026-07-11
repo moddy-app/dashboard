@@ -1006,7 +1006,11 @@
       "viewContext": "Voir le contexte de la conversation",
       "contextTitle": "Contexte de la conversation",
       "contextDescription": "Les messages précédant celui signalé par l'AutoMod.",
-      "flagged": "Signalé"
+      "flagged": "Signalé",
+      "image": "Image",
+      "video": "Vidéo",
+      "openOriginal": "Ouvrir l'original",
+      "imagePreview": "Aperçu de l'image"
     }
   }
 }

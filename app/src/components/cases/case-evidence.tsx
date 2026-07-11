@@ -9,6 +9,7 @@ import {
   MessagesSquareIcon,
   ExternalLinkIcon,
 } from "lucide-react"
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime } from "@/lib/cases"
 import { getCaseEvidence } from "@/services/cases"
@@ -232,7 +233,13 @@ function AutomodCard({ event }: { event: CaseEvent }) {
 
 // ─── Carte lien de message (preuve ajoutée par un modérateur) ─────────────────
 
-function MessageLinkCard({ item }: { item: EvidenceMessageLink }) {
+function MessageLinkCard({
+  item,
+  onOpenImage,
+}: {
+  item: EvidenceMessageLink
+  onOpenImage: (url: string) => void
+}) {
   const { t } = useTranslation()
   const time = epochToIso(item.message_created_at) ?? item.created_at
 
@@ -250,7 +257,7 @@ function MessageLinkCard({ item }: { item: EvidenceMessageLink }) {
       {item.attachments.length > 0 && (
         <div className="mt-2 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {item.attachments.map((url, i) => (
-            <ScreenshotThumb key={i} url={url} />
+            <ScreenshotThumb key={i} url={url} onOpen={onOpenImage} />
           ))}
         </div>
       )}
@@ -267,14 +274,82 @@ function MessageLinkCard({ item }: { item: EvidenceMessageLink }) {
   )
 }
 
-// ─── Vignette média (galerie) ──────────────────────────────────────────────────
+// ─── Carte de preuve média (image / vidéo) ────────────────────────────────────
+// Affiche le média en entier (non rogné) avec les mêmes métadonnées qu'une preuve
+// message : type, auteur (« ajoutée par »), horodatage, et lien vers l'original.
 
-function ScreenshotThumb({ url }: { url: string }) {
+function MediaEvidenceCard({
+  attachment,
+  onOpenImage,
+}: {
+  attachment: EvidenceAttachment
+  onOpenImage: (url: string) => void
+}) {
+  const { t } = useTranslation()
+  const isVideo = attachment.kind === "video"
+
   return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
+    <EvidenceCard
+      icon={isVideo ? VideoIcon : ImageIcon}
+      title={t(isVideo ? "cases.evidence.video" : "cases.evidence.image")}
+      time={attachment.created_at}
+      footer={
+        <>
+          {attachment.author_id && (
+            <span className="inline-flex min-w-0 items-center gap-1 text-[11px] text-muted-foreground">
+              {t("cases.evidence.addedBy")}
+              <EntityRef
+                kind={(attachment.author_type ?? "moddy_staff") as EntityKind}
+                id={attachment.author_id}
+                variant="inline"
+              />
+            </span>
+          )}
+          <a
+            href={attachment.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-auto inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            {t("cases.evidence.openOriginal")}
+            <ExternalLinkIcon className="size-3" />
+          </a>
+        </>
+      }
+    >
+      {isVideo ? (
+        <video
+          src={attachment.url}
+          controls
+          className="max-h-80 w-full rounded-lg border bg-black/5 object-contain"
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={() => onOpenImage(attachment.url)}
+          className="group block w-full overflow-hidden rounded-lg border bg-muted/30"
+          aria-label={t("cases.evidence.imagePreview")}
+        >
+          <img
+            src={attachment.url}
+            alt=""
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            className="mx-auto max-h-80 w-auto max-w-full object-contain transition-transform duration-200 group-hover:scale-[1.02]"
+          />
+        </button>
+      )}
+    </EvidenceCard>
+  )
+}
+
+// ─── Vignette média (galerie compacte — pièces jointes d'un message cité) ──────
+
+function ScreenshotThumb({ url, onOpen }: { url: string; onOpen: (url: string) => void }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(url)}
       className="group relative block overflow-hidden rounded-xl border"
     >
       <img
@@ -288,7 +363,28 @@ function ScreenshotThumb({ url }: { url: string }) {
       <span className="absolute right-1 top-1 rounded-md bg-black/50 p-1 text-white opacity-0 transition-opacity group-hover:opacity-100">
         <ImageIcon className="size-3" />
       </span>
-    </a>
+    </button>
+  )
+}
+
+// ─── Lightbox (aperçu plein écran d'une image) ─────────────────────────────────
+
+function ImageLightbox({ src, onClose }: { src: string | null; onClose: () => void }) {
+  const { t } = useTranslation()
+  return (
+    <Dialog open={!!src} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl p-2 sm:max-w-3xl">
+        <DialogTitle className="sr-only">{t("cases.evidence.imagePreview")}</DialogTitle>
+        {src && (
+          <img
+            src={src}
+            alt=""
+            referrerPolicy="no-referrer"
+            className="max-h-[85vh] w-full rounded-xl object-contain"
+          />
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -298,6 +394,7 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
   const { t } = useTranslation()
   const [evidence, setEvidence] = useState<CaseEvidence[]>([])
   const [loaded, setLoaded] = useState(false)
+  const [lightbox, setLightbox] = useState<string | null>(null)
 
   const automodEvents = events.filter(isAutomodEvidence)
 
@@ -330,21 +427,12 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
       </div>
 
       <div className="flex flex-col gap-3">
-        {/* Galerie média (captures d'écran / vidéos jointes) */}
+        {/* Preuves média (captures d'écran / vidéos jointes) — image entière + méta */}
         {media.length > 0 && (
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {media.map((a) =>
-              a.kind === "video" ? (
-                <div key={a.event_id} className="relative overflow-hidden rounded-xl border">
-                  <video src={a.url} controls className="aspect-square w-full object-cover" />
-                  <span className="pointer-events-none absolute left-1 top-1 inline-flex items-center gap-1 rounded-md bg-black/50 px-1 py-0.5 text-[10px] text-white">
-                    <VideoIcon className="size-2.5" />
-                  </span>
-                </div>
-              ) : (
-                <ScreenshotThumb key={a.event_id} url={a.url} />
-              )
-            )}
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            {media.map((a) => (
+              <MediaEvidenceCard key={a.event_id} attachment={a} onOpenImage={setLightbox} />
+            ))}
           </div>
         )}
 
@@ -365,7 +453,7 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
 
         {/* Liens de message cité */}
         {messageLinks.map((m) => (
-          <MessageLinkCard key={m.event_id} item={m} />
+          <MessageLinkCard key={m.event_id} item={m} onOpenImage={setLightbox} />
         ))}
 
         {/* Contexte automod (formaté comme un message cité) */}
@@ -373,6 +461,8 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
           <AutomodCard key={e.id} event={e} />
         ))}
       </div>
+
+      <ImageLightbox src={lightbox} onClose={() => setLightbox(null)} />
     </section>
   )
 }
