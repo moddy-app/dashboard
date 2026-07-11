@@ -125,6 +125,18 @@ Nouveau composant `app/src/components/cases/automod-context-dialog.tsx`.
 - Ajusté le séparateur (`Dot`) du panneau de sanctions (`size-0.5` → `size-1 opacity-40`),
   aligné sur la convention du reste du code (quasi invisible auparavant).
 
+## Round 4 — Responsive mobile & nettoyage preuves
+
+- **Vue détaillée responsive (`case-detail.tsx`)** : le titre (raison + type + date + actions)
+  est désormais **sorti de la colonne principale** et affiché en pleine largeur juste sous
+  l'en-tête (motif « issue GitHub »). Auparavant, le `flex-col-reverse` mobile remontait
+  toute la colonne latérale (Détails/Sanctions/Appels) **au-dessus du titre** → affichage
+  sens dessus dessous. Nouvel ordre mobile : en-tête → titre → détails/sanctions/appels →
+  preuves → activité. Sur desktop, layout deux colonnes inchangé (contenu à gauche, aside
+  sticky à droite). Titre `text-lg sm:text-xl` (plus compact sur mobile).
+- **Preuves** : suppression de la carte « log serveur AutoMod » (`automod_log`) jugée inutile
+  (composant `AutomodLogCard`, filtre et rendu associés retirés de `case-evidence.tsx`).
+
 ## Prochaines étapes suggérées
 
 - Tester visuellement en conditions réelles (auth Discord) l'alignement des bulles de

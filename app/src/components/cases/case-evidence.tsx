@@ -230,25 +230,6 @@ function AutomodCard({ event }: { event: CaseEvent }) {
   )
 }
 
-// ─── Lien log serveur automod (marqueur léger, sans analyse) ──────────────────
-
-function AutomodLogCard({ event }: { event: CaseEvent }) {
-  const { t } = useTranslation()
-  const p = event.payload ?? {}
-  const channelId = asString(p["channel_id"])
-  return (
-    <div className="flex items-center gap-2 rounded-xl border px-3 py-2 text-xs">
-      <BotIcon className="size-3.5 shrink-0 text-sky-500" />
-      <span className="min-w-0 truncate text-muted-foreground">{t("cases.timeline.evidenceLog")}</span>
-      {channelId && (
-        <span className="ml-auto shrink-0 truncate font-mono text-[11px] text-muted-foreground/70">
-          #{channelId}
-        </span>
-      )}
-    </div>
-  )
-}
-
 // ─── Carte lien de message (preuve ajoutée par un modérateur) ─────────────────
 
 function MessageLinkCard({ item }: { item: EvidenceMessageLink }) {
@@ -319,9 +300,6 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
   const [loaded, setLoaded] = useState(false)
 
   const automodEvents = events.filter(isAutomodEvidence)
-  const automodLogEvents = events.filter(
-    (e) => e.type === "evidence" && asString(e.payload?.["kind"] ?? null) === "automod_log"
-  )
 
   useEffect(() => {
     let active = true
@@ -339,7 +317,7 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
   const media = attachments.filter((a) => a.media)
   const files = attachments.filter((a) => !a.media)
 
-  const count = automodEvents.length + automodLogEvents.length + evidence.length
+  const count = automodEvents.length + evidence.length
   if (!loaded || count === 0) return null
 
   return (
@@ -393,9 +371,6 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
         {/* Contexte automod (formaté comme un message cité) */}
         {automodEvents.map((e) => (
           <AutomodCard key={e.id} event={e} />
-        ))}
-        {automodLogEvents.map((e) => (
-          <AutomodLogCard key={e.id} event={e} />
         ))}
       </div>
     </section>
