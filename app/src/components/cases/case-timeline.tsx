@@ -13,7 +13,6 @@ import {
   Message,
   MessageAvatar,
   MessageContent,
-  MessageHeader,
 } from "@/components/ui/message"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
@@ -21,7 +20,7 @@ import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime, ACTION_META } from "@/lib/cases"
 import { useGuildContext } from "@/contexts/GuildContext"
 import type { CaseEvent, SanctionAction } from "@/types/cases"
-import { EntityAvatar, EntityName, type EntityKind } from "./entity-ref"
+import { EntityAvatar, type EntityKind } from "./entity-ref"
 
 // ─── Helpers de payload (défensifs) ──────────────────────────────────────────
 
@@ -75,39 +74,41 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
   const isOwn = event.author_type !== "system" && !!event.author_id && event.author_id === user.user_id
   const align = isOwn ? "end" : "start"
 
+  // Pas de pseudo, pas d'en-tête : juste l'avatar + la bulle, avec un horodatage
+  // discret aligné à côté de la bulle (jamais au-dessus). L'identité reste
+  // accessible au clic sur l'avatar (popover profil).
   return (
     <Message align={align}>
-      <MessageAvatar className="self-start bg-transparent">
+      <MessageAvatar className="self-end bg-transparent">
         <EntityAvatar kind={kind} id={event.author_id} className="size-8" />
       </MessageAvatar>
       <MessageContent>
-        <MessageHeader className="gap-2 px-0">
-          <span className="font-medium text-foreground/80">
-            {isOwn ? t("cases.timeline.you") : <EntityName kind={kind} id={event.author_id} />}
-          </span>
-          {isNote && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
-              <LockIcon className="size-2.5" />
-              {t("cases.timeline.internalNote")}
-            </span>
-          )}
-          <span
-            className="ml-auto text-xs tabular-nums text-muted-foreground/70"
-            title={absoluteTime(event.created_at, i18n.language)}
-          >
-            {relativeTime(event.created_at, i18n.language)}
-          </span>
-        </MessageHeader>
-        <Bubble variant={isNote ? "tinted" : isOwn ? "default" : "muted"} align={align} className="max-w-full">
-          <BubbleContent
-            className={cn(
-              "whitespace-pre-wrap rounded-2xl",
-              isNote && "bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
+        <div className={cn("flex items-end gap-2", isOwn && "flex-row-reverse")}>
+          <Bubble variant={isNote ? "tinted" : isOwn ? "default" : "muted"} align={align} className="max-w-full">
+            <BubbleContent
+              className={cn(
+                "whitespace-pre-wrap rounded-2xl",
+                isNote && "bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
+              )}
+            >
+              {event.content || <span className="italic opacity-70">—</span>}
+            </BubbleContent>
+          </Bubble>
+          <div className="flex shrink-0 items-center gap-1 pb-0.5">
+            {isNote && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
+                <LockIcon className="size-2.5" />
+                {t("cases.timeline.internalNote")}
+              </span>
             )}
-          >
-            {event.content || <span className="italic opacity-70">—</span>}
-          </BubbleContent>
-        </Bubble>
+            <span
+              className="text-[11px] tabular-nums text-muted-foreground/60"
+              title={absoluteTime(event.created_at, i18n.language)}
+            >
+              {relativeTime(event.created_at, i18n.language)}
+            </span>
+          </div>
+        </div>
       </MessageContent>
     </Message>
   )

@@ -125,6 +125,33 @@ Nouveau composant `app/src/components/cases/automod-context-dialog.tsx`.
 - Ajusté le séparateur (`Dot`) du panneau de sanctions (`size-0.5` → `size-1 opacity-40`),
   aligné sur la convention du reste du code (quasi invisible auparavant).
 
+## Round 4 — Responsive mobile & nettoyage preuves
+
+- **Vue détaillée responsive (`case-detail.tsx`)** : le titre (raison + type + date + actions)
+  est désormais **sorti de la colonne principale** et affiché en pleine largeur juste sous
+  l'en-tête (motif « issue GitHub »). Auparavant, le `flex-col-reverse` mobile remontait
+  toute la colonne latérale (Détails/Sanctions/Appels) **au-dessus du titre** → affichage
+  sens dessus dessous. Nouvel ordre mobile : en-tête → titre → détails/sanctions/appels →
+  preuves → activité. Sur desktop, layout deux colonnes inchangé (contenu à gauche, aside
+  sticky à droite). Titre `text-lg sm:text-xl` (plus compact sur mobile).
+- **Preuves** : suppression de la carte « log serveur AutoMod » (`automod_log`) jugée inutile
+  (composant `AutomodLogCard`, filtre et rendu associés retirés de `case-evidence.tsx`).
+
+## Round 5 — Messages sans pseudo, appels & popover profil
+
+- **Commentaires (`case-timeline.tsx`)** : suppression de l'en-tête de message (plus de
+  pseudo, plus de date affichée au-dessus de la bulle). L'horodatage est désormais discret,
+  aligné **à côté** de la bulle (à droite pour les autres, à gauche pour ses propres
+  messages), jamais au-dessus. L'identité reste accessible au clic sur l'avatar (popover
+  profil). Suppression du helper `EntityName` (devenu inutilisé).
+- **Appels (`appeals-panel.tsx`)** : refonte alignée sur le nouveau design des sanctions
+  (liste `divide-y` sans contour, icône ronde violette, route + statut sur une ligne, méta
+  condensée avec séparateur, raison/décision en texte simple) — supprime le box-in-box dans
+  le `Panel`.
+- **Popover profil (`entity-ref.tsx`)** : la grosse marge entre les infos utilisateur et le
+  bouton « copier l'ID » venait du `gap-4` par défaut du `PopoverContent` cumulé au `mt-2.5`
+  du bouton. Passé en `gap-2` + suppression du `mt` → espacement resserré.
+
 ## Prochaines étapes suggérées
 
 - Tester visuellement en conditions réelles (auth Discord) l'alignement des bulles de

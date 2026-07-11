@@ -173,17 +173,6 @@ export function EntityRef({ kind, id, variant = "inline", className }: EntityRef
   )
 }
 
-// ─── Nom seul (sans avatar, ex. en-tête de message) ───────────────────────────
-
-export function EntityName({ kind, id }: { kind: EntityKind; id: string | null | undefined }) {
-  const { t } = useTranslation()
-  const isUser = (kind === "discord_user" || kind === "moddy_user" || kind === "moddy_staff") && !!id
-  const { data } = useUserProfile(isUser ? id : undefined)
-  if (isUser) return <>{data?.display_name ?? id}</>
-  if (kind in SYSTEM_META) return <>{t(SYSTEM_META[kind as keyof typeof SYSTEM_META].labelKey)}</>
-  return <>{id ?? "—"}</>
-}
-
 // ─── Avatar seul (visuel) ─────────────────────────────────────────────────────
 
 function UserAvatarVisual({ id, className }: { id: string; className?: string }) {
@@ -260,7 +249,7 @@ export function EntityAvatar({
           {avatar}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-64 p-3">
+      <PopoverContent align="start" className="w-64 gap-2 p-3">
         <EntityRef kind={kind} id={id} variant="block" />
         <button
           type="button"
@@ -271,7 +260,7 @@ export function EntityAvatar({
               window.setTimeout(() => setCopied(false), 1500)
             })
           }
-          className="mt-2.5 flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           {copied ? (
             <CheckIcon className="size-3.5 shrink-0 animate-in zoom-in-50 text-emerald-500 duration-200" />
