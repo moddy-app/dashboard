@@ -20,7 +20,7 @@ import { SanctionStatusBadge } from "./case-badges"
 import { EntityRef, type EntityKind } from "./entity-ref"
 
 function Dot() {
-  return <span className="size-0.5 shrink-0 rounded-full bg-current opacity-50" />
+  return <span className="size-1 shrink-0 rounded-full bg-current opacity-40" />
 }
 
 interface SanctionsPanelProps {

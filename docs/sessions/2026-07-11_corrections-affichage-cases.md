@@ -99,9 +99,36 @@ Nouvelle vague de retours sur le module Cases / Modération après les sessions 
   fichiers modifiés (aucun test end-to-end en environnement — pas d'accès à l'auth Discord
   réelle depuis ce sandbox).
 
+## Ajout — Log de contexte AutoMod (relecture Opus 4.8)
+
+Nouveau composant `app/src/components/cases/automod-context-dialog.tsx`.
+
+- **Objectif** : consulter le fil de conversation qui a mené au message signalé par
+  l'AutoMod, dans une fenêtre (Dialog) rendue avec le composant `Message` de shadcn/ui.
+- **Source** : `GET /cases/{identifier}` → `events[]` → event `type=="evidence"` avec
+  `payload.source=="automod"` (filtre canonique) → `payload.context_text`. Ce champ est une
+  string brute pré-formatée par le bot (une ligne par message, `[date] Nom (id): contenu`,
+  jusqu'à 15 messages précédents, message signalé en dernier préfixé de `>>>`).
+- **Parsing** : `parseAutomodContext()` découpe le `context_text` en messages
+  (regex `[date] (>>> )?Nom (id): contenu`) ; les lignes non conformes sont préservées
+  telles quelles (fallback) plutôt que perdues. Chaque message est rendu en bulle : avatar
+  **récupéré via l'id** (`EntityAvatar`, cliquable → profil), nom + horodatage du log,
+  contenu. Le message signalé est mis en évidence (bulle `destructive` + anneau + badge
+  « Signalé »).
+- **Déclencheur** : bouton « Voir le contexte de la conversation » sur la carte de preuve
+  AutoMod (`AutomodCard`, `case-evidence.tsx`). L'ancien dump brut inline du `context_text`
+  (paragraphe illisible) a été supprimé au profit de ce bouton + fenêtre.
+
+## Relecture technique/design (Opus 4.8)
+
+- Vérifié les 9 corrections de Sonnet (types, lint, build) — tout est correct.
+- Ajusté le séparateur (`Dot`) du panneau de sanctions (`size-0.5` → `size-1 opacity-40`),
+  aligné sur la convention du reste du code (quasi invisible auparavant).
+
 ## Prochaines étapes suggérées
 
 - Tester visuellement en conditions réelles (auth Discord) l'alignement des bulles de
-  message et le rendu des nouvelles cartes de preuve AutoMod avec de vraies données.
+  message, le rendu des cartes de preuve AutoMod et le log de contexte avec de vraies
+  données.
 - Envisager un lightbox pour les vignettes de preuve (actuellement ouverture dans un
   nouvel onglet).

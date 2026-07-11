@@ -6,6 +6,7 @@ import {
   VideoIcon,
   FileIcon,
   MessageSquareQuoteIcon,
+  MessagesSquareIcon,
   ExternalLinkIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -14,6 +15,7 @@ import { getCaseEvidence } from "@/services/cases"
 import { isMessageLink } from "@/types/cases"
 import { ActionChip } from "./case-badges"
 import { EntityRef, type EntityKind } from "./entity-ref"
+import { AutomodContextDialog } from "./automod-context-dialog"
 import type {
   CaseEvent,
   CaseEvidence,
@@ -110,6 +112,7 @@ function ViewOnDiscordLink({ href }: { href: string }) {
 
 function AutomodCard({ event }: { event: CaseEvent }) {
   const { t } = useTranslation()
+  const [contextOpen, setContextOpen] = useState(false)
   const p = event.payload ?? {}
   const authorName = asString(p["author_name"])
   const jumpUrl = asString(p["jump_url"])
@@ -142,11 +145,6 @@ function AutomodCard({ event }: { event: CaseEvent }) {
         <p className="whitespace-pre-wrap wrap-break-word text-sm text-foreground/90">{extrait}</p>
       ) : (
         <p className="text-sm italic text-muted-foreground">{t("cases.evidence.noContent")}</p>
-      )}
-      {contextText && contextText !== extrait && (
-        <p className="mt-1.5 whitespace-pre-wrap wrap-break-word text-xs text-muted-foreground">
-          {contextText}
-        </p>
       )}
 
       {(categorie || gravite || confiance || signalSource || score !== null) && (
@@ -209,10 +207,24 @@ function AutomodCard({ event }: { event: CaseEvent }) {
         </div>
       )}
 
-      {jumpUrl && (
-        <div className="mt-2">
-          <ViewOnDiscordLink href={jumpUrl} />
+      {(contextText || jumpUrl) && (
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          {contextText && (
+            <button
+              type="button"
+              onClick={() => setContextOpen(true)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground hover:underline"
+            >
+              <MessagesSquareIcon className="size-3" />
+              {t("cases.evidence.viewContext")}
+            </button>
+          )}
+          {jumpUrl && <ViewOnDiscordLink href={jumpUrl} />}
         </div>
+      )}
+
+      {contextText && (
+        <AutomodContextDialog open={contextOpen} onOpenChange={setContextOpen} text={contextText} />
       )}
     </EvidenceCard>
   )

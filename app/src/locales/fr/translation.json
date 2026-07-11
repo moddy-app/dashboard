@@ -1002,7 +1002,11 @@
       "reason": "Raison",
       "explanation": "Explication",
       "signalSource": "Source du signal",
-      "detectorScore": "Score de détection"
+      "detectorScore": "Score de détection",
+      "viewContext": "Voir le contexte de la conversation",
+      "contextTitle": "Contexte de la conversation",
+      "contextDescription": "Les messages précédant celui signalé par l'AutoMod.",
+      "flagged": "Signalé"
     }
   }
 }
