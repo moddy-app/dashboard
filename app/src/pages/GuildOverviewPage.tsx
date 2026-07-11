@@ -13,7 +13,7 @@ import {
   BellRingIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ExternalLinkIcon,
+  ArrowRightIcon,
   CrownIcon,
   ZapIcon,
   RadioIcon,
@@ -35,7 +35,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
-import { getGuildIconUrl } from "@/lib/auth"
+import { getGuildIconUrl, getGuildBannerUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
@@ -67,16 +67,20 @@ function ModuleCard({
   const { t } = useTranslation()
   return (
     <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50 py-0"
+      className="group cursor-pointer transition-all hover:border-primary/30 hover:shadow-sm py-0"
       onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-2">
-            <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <Icon className="size-3.5 text-muted-foreground" />
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`size-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
+              isEnabled
+                ? 'bg-primary/10 text-primary'
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              <Icon className="size-4.5" />
             </div>
-            <CardTitle className="text-sm font-medium">{name}</CardTitle>
+            <CardTitle className="text-sm font-medium truncate">{name}</CardTitle>
           </div>
           {isEnabled ? (
             <Badge variant="outline" className="text-xs shrink-0 text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
@@ -90,10 +94,10 @@ function ModuleCard({
             </Badge>
           )}
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-        <div className="flex items-center gap-1 mt-2 text-xs text-primary">
-          <ExternalLinkIcon className="size-3" />
+        <p className="text-xs text-muted-foreground leading-relaxed min-h-[2.5rem]">{description}</p>
+        <div className="flex items-center gap-1 mt-2 text-xs font-medium text-primary">
           <span>{t('guildOverview.modules.configure')}</span>
+          <ArrowRightIcon className="size-3.5 transition-transform group-hover:translate-x-0.5" />
         </div>
       </CardContent>
     </Card>
@@ -189,6 +193,7 @@ export function GuildOverviewPage() {
   const guildListItem = guilds.find((g) => String(g.id) === String(selectedGuildId))
   const iconHash = guildListItem?.icon ?? guildDetail.icon ?? null
   const iconUrl = getGuildIconUrl(selectedGuildId, iconHash)
+  const bannerUrl = getGuildBannerUrl(selectedGuildId, guildDetail.banner)
   const isBeta = guildDetail.attributes?.BETA === true
   const isBlacklisted = guildDetail.attributes?.BLACKLISTED === true
   const boostTier = guildDetail.premium_tier ?? 0
@@ -217,70 +222,102 @@ export function GuildOverviewPage() {
   return (
     <div className="flex flex-col gap-6">
 
-      {/* ── En-tête serveur ─────────────────────────────────────────────── */}
-      <div className="flex items-center gap-4 min-w-0">
-          <Avatar className="size-16 rounded-xl shadow-sm ring-1 ring-border after:rounded-xl shrink-0">
-            <AvatarImage
-              src={iconUrl ?? undefined}
-              alt={guildDetail.name}
+      {/* ── Hero serveur ────────────────────────────────────────────────── */}
+      <div className="relative overflow-hidden rounded-2xl border bg-card">
+        {/* Bandeau (banner Discord si dispo, sinon dégradé de marque) */}
+        <div className="relative h-24 w-full sm:h-32">
+          {bannerUrl ? (
+            <img
+              src={bannerUrl}
+              alt=""
+              aria-hidden
               referrerPolicy="no-referrer"
-              className="rounded-xl"
-              onError={() => console.warn('[avatar] GuildOverview failed to load', iconUrl)}
+              className="size-full object-cover"
+              onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
             />
-            <AvatarFallback className="rounded-xl text-lg font-bold">
-              {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col gap-1.5 min-w-0">
-            {/* Nom + badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
-              {verifiedKind && <VerifiedBadge kind={verifiedKind} className="-ml-1" />}
-              {isPremium && !hidePremium && (
-                <Badge className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 text-xs">
-                  <CrownIcon className="size-3 mr-1" />
-                  Moddy Max
-                </Badge>
-              )}
-              {boostTierLabel && (
-                <Badge variant="secondary" className="text-xs">
-                  <ZapIcon className="size-3 mr-1 text-purple-500" />
-                  {boostTierLabel}
-                </Badge>
-              )}
-              {isBeta && <Badge variant="secondary" className="text-xs">Beta</Badge>}
-              {isBlacklisted && (
-                <Badge variant="destructive" className="text-xs">
-                  <ShieldAlertIcon className="size-3 mr-1" />
-                  {t('guildOverview.blacklisted')}
-                </Badge>
-              )}
-            </div>
-            {/* Infos secondaires */}
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground w-full overflow-hidden">
-              {guildDetail.description && (
-                <span className="truncate max-w-[min(100%,28rem)]">{guildDetail.description}</span>
-              )}
-              {guildDetail.vanity_url_code && (
-                <a
-                  href={`https://discord.gg/${guildDetail.vanity_url_code}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1 hover:text-foreground transition-colors min-w-0 max-w-full"
-                >
-                  <LinkIcon className="size-3 shrink-0" />
-                  <span className="truncate">discord.gg/{guildDetail.vanity_url_code}</span>
-                </a>
-              )}
-              {boostCount > 0 && (
-                <span className="flex items-center gap-1 shrink-0">
-                  <ZapIcon className="size-3 text-purple-400" />
-                  {boostCount} {boostCount > 1 ? 'boosts' : 'boost'}
-                </span>
-              )}
+          ) : (
+            <div
+              aria-hidden
+              className="size-full"
+              style={{
+                background:
+                  'radial-gradient(120% 140% at 0% 0%, oklch(0.62 0.21 262) 0%, transparent 55%),' +
+                  'radial-gradient(120% 140% at 100% 10%, oklch(0.56 0.20 296) 0%, transparent 55%),' +
+                  'linear-gradient(120deg, oklch(0.5 0.18 264), oklch(0.46 0.17 276))',
+              }}
+            />
+          )}
+          {/* Fondu vers la carte pour la lisibilité du contenu en dessous */}
+          <div className="absolute inset-0 bg-gradient-to-t from-card via-card/10 to-transparent" />
+        </div>
+
+        {/* Avatar + identité, chevauchant le bandeau */}
+        <div className="relative -mt-11 px-5 pb-5 sm:-mt-12 sm:px-6">
+          <div className="flex items-end gap-4 min-w-0">
+            <Avatar className="size-20 rounded-2xl shadow-md ring-4 ring-card after:rounded-2xl shrink-0 sm:size-24">
+              <AvatarImage
+                src={iconUrl ?? undefined}
+                alt={guildDetail.name}
+                referrerPolicy="no-referrer"
+                className="rounded-2xl"
+                onError={() => console.warn('[avatar] GuildOverview failed to load', iconUrl)}
+              />
+              <AvatarFallback className="rounded-2xl text-xl font-bold">
+                {guildDetail.name?.slice(0, 2)?.toUpperCase() ?? '??'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col gap-1.5 min-w-0 pb-0.5">
+              {/* Nom + badges */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-xl font-semibold leading-none tracking-tight sm:text-2xl">{guildDetail.name}</h1>
+                {verifiedKind && <VerifiedBadge kind={verifiedKind} className="-ml-1" />}
+                {isPremium && !hidePremium && (
+                  <Badge className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 text-xs">
+                    <CrownIcon className="size-3 mr-1" />
+                    Moddy Max
+                  </Badge>
+                )}
+                {boostTierLabel && (
+                  <Badge variant="secondary" className="text-xs">
+                    <ZapIcon className="size-3 mr-1 text-purple-500" />
+                    {boostTierLabel}
+                  </Badge>
+                )}
+                {isBeta && <Badge variant="secondary" className="text-xs">Beta</Badge>}
+                {isBlacklisted && (
+                  <Badge variant="destructive" className="text-xs">
+                    <ShieldAlertIcon className="size-3 mr-1" />
+                    {t('guildOverview.blacklisted')}
+                  </Badge>
+                )}
+              </div>
+              {/* Infos secondaires */}
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground w-full overflow-hidden">
+                {guildDetail.description && (
+                  <span className="truncate max-w-[min(100%,28rem)]">{guildDetail.description}</span>
+                )}
+                {guildDetail.vanity_url_code && (
+                  <a
+                    href={`https://discord.gg/${guildDetail.vanity_url_code}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 hover:text-foreground transition-colors min-w-0 max-w-full"
+                  >
+                    <LinkIcon className="size-3 shrink-0" />
+                    <span className="truncate">discord.gg/{guildDetail.vanity_url_code}</span>
+                  </a>
+                )}
+                {boostCount > 0 && (
+                  <span className="flex items-center gap-1 shrink-0">
+                    <ZapIcon className="size-3 text-purple-400" />
+                    {boostCount} {boostCount > 1 ? 'boosts' : 'boost'}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -290,7 +327,7 @@ export function GuildOverviewPage() {
           { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' as const },
           { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' as const },
         ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label} className="py-0">
+          <Card key={label} className="py-0 transition-colors hover:border-primary/20">
             <CardContent className="flex items-center gap-4 p-6">
               <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_STYLES[color].box}`}>
                 <Icon className={`size-5 ${STAT_STYLES[color].icon}`} />

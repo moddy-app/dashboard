@@ -85,10 +85,10 @@ export function GuildSelectionView() {
           return (
             <Card
               key={guild.id}
-              className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm group py-0"
+              className="cursor-pointer transition-all hover:border-primary/30 hover:shadow-sm group py-0"
               onClick={() => selectGuild(String(guild.id))}
             >
-              <CardContent className="flex items-center gap-3.5 p-6">
+              <CardContent className="flex items-center gap-3.5 p-5">
                 <Avatar className="size-11 rounded-xl shrink-0 after:rounded-xl">
                   <AvatarImage
                     src={iconUrl ?? undefined}
@@ -116,7 +116,7 @@ export function GuildSelectionView() {
                     {t('guildSelection.manage')}
                   </p>
                 </div>
-                <ArrowUpRightIcon className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                <ArrowUpRightIcon className="size-4 text-muted-foreground opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all shrink-0" />
               </CardContent>
             </Card>
           )
@@ -124,7 +124,7 @@ export function GuildSelectionView() {
 
         {/* Carte "Ajouter Moddy" */}
         <Card
-          className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm border-dashed group py-0"
+          className="cursor-pointer transition-all hover:border-primary/40 hover:shadow-sm border-dashed group py-0"
           onClick={() =>
             window.open(
               "https://discord.com/oauth2/authorize?client_id=1373916203814490194",

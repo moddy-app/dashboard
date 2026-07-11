@@ -118,6 +118,12 @@ export function getGuildIconUrl(guildId: number | string, iconHash: string | nul
   return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${ext}?size=128`
 }
 
+export function getGuildBannerUrl(guildId: number | string, bannerHash: string | null, size = 960): string | null {
+  if (!bannerHash) return null
+  const ext = bannerHash.startsWith('a_') ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/banners/${guildId}/${bannerHash}.${ext}?size=${size}`
+}
+
 /** Nom d'affichage — préfère global_name, sinon username */
 export function getDisplayName(user: User): string {
   return user.global_name ?? user.username
