@@ -19,8 +19,9 @@ import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
 import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime, ACTION_META } from "@/lib/cases"
+import { useGuildContext } from "@/contexts/GuildContext"
 import type { CaseEvent, SanctionAction } from "@/types/cases"
-import { EntityAvatar, type EntityKind } from "./entity-ref"
+import { EntityAvatar, EntityName, type EntityKind } from "./entity-ref"
 
 // ─── Helpers de payload (défensifs) ──────────────────────────────────────────
 
@@ -69,17 +70,21 @@ function MarkerRow({
 
 function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) {
   const { t, i18n } = useTranslation()
+  const { user } = useGuildContext()
+  const kind = (event.author_type ?? "system") as EntityKind
+  const isOwn = event.author_type !== "system" && !!event.author_id && event.author_id === user.user_id
+  const align = isOwn ? "end" : "start"
+
   return (
-    <Message align="start" className="items-start">
+    <Message align={align}>
       <MessageAvatar className="self-start bg-transparent">
-        <EntityAvatar
-          kind={(event.author_type ?? "system") as EntityKind}
-          id={event.author_id}
-          className="size-8"
-        />
+        <EntityAvatar kind={kind} id={event.author_id} className="size-8" />
       </MessageAvatar>
       <MessageContent>
         <MessageHeader className="gap-2 px-0">
+          <span className="font-medium text-foreground/80">
+            {isOwn ? t("cases.timeline.you") : <EntityName kind={kind} id={event.author_id} />}
+          </span>
           {isNote && (
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
               <LockIcon className="size-2.5" />
@@ -93,14 +98,14 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
             {relativeTime(event.created_at, i18n.language)}
           </span>
         </MessageHeader>
-        <Bubble variant={isNote ? "tinted" : "muted"} align="start" className="max-w-full">
+        <Bubble variant={isNote ? "tinted" : isOwn ? "default" : "muted"} align={align} className="max-w-full">
           <BubbleContent
             className={cn(
               "whitespace-pre-wrap rounded-2xl",
               isNote && "bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
             )}
           >
-            {event.content || <span className="italic text-muted-foreground">—</span>}
+            {event.content || <span className="italic opacity-70">—</span>}
           </BubbleContent>
         </Bubble>
       </MessageContent>

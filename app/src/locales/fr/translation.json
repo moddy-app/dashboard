@@ -859,10 +859,12 @@
       "details": "Détails",
       "copy": "Copier",
       "copyReference": "Copier la référence",
-      "copyId": "Copier l’ID"
+      "copyId": "Copier l’ID",
+      "copied": "Copié !"
     },
     "timeline": {
       "empty": "Aucune activité pour le moment.",
+      "you": "Vous",
       "internalNote": "Note interne",
       "evidenceAutomod": "Preuve AutoMod",
       "severity": "Gravité",
@@ -995,7 +997,12 @@
       "title": "Preuves",
       "citedMessage": "Message cité",
       "noContent": "Aucun contenu textuel.",
-      "viewOnDiscord": "Voir sur Discord"
+      "viewOnDiscord": "Voir sur Discord",
+      "addedBy": "Ajoutée par",
+      "reason": "Raison",
+      "explanation": "Explication",
+      "signalSource": "Source du signal",
+      "detectorScore": "Score de détection"
     }
   }
 }

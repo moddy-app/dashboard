@@ -15,6 +15,7 @@ import {
   ShieldIcon,
   CalendarIcon,
   LayersIcon,
+  CheckIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -78,18 +79,29 @@ interface CaseDetailViewProps {
 
 function CopyButton({ value, label }: { value: string; label?: string }) {
   const { t } = useTranslation()
+  const [copied, setCopied] = useState(false)
   return (
     <Tooltip>
       <TooltipTrigger asChild>
         <button
           type="button"
-          onClick={() => copyText(value).then((ok) => ok && toast.success(t("cases.row.copied")))}
+          onClick={() =>
+            copyText(value).then((ok) => {
+              if (!ok) return
+              setCopied(true)
+              window.setTimeout(() => setCopied(false), 1500)
+            })
+          }
           className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
-          <CopyIcon className="size-3.5" />
+          {copied ? (
+            <CheckIcon className="size-3.5 animate-in zoom-in-50 text-emerald-500 duration-200" />
+          ) : (
+            <CopyIcon className="size-3.5" />
+          )}
         </button>
       </TooltipTrigger>
-      <TooltipContent>{label ?? t("cases.detail.copy")}</TooltipContent>
+      <TooltipContent>{copied ? t("cases.detail.copied") : (label ?? t("cases.detail.copy"))}</TooltipContent>
     </Tooltip>
   )
 }
@@ -121,7 +133,7 @@ function PropRow({
 function IdentityValue({ kind, id }: { kind: EntityKind; id: string | null | undefined }) {
   const { t } = useTranslation()
   return (
-    <div className="flex items-center justify-between gap-2">
+    <div className="flex min-w-0 items-center gap-1.5">
       <EntityRef kind={kind} id={id} variant="block" />
       {id && <CopyButton value={id} label={t("cases.detail.copyId")} />}
     </div>
@@ -270,8 +282,12 @@ export function CaseDetailView({
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-6">
-        {backButton}
+      <div className="flex flex-col gap-5">
+        {/* Même structure d'en-tête que la vue chargée (§ ci-dessous) : le bouton
+            retour garde une position stable au lieu de sauter au chargement. */}
+        <div className="flex flex-wrap items-center gap-2">
+          {backButton}
+        </div>
         <div className="flex flex-col-reverse gap-6 lg:flex-row lg:items-start">
           <div className="flex-1 space-y-4">
             <Skeleton className="h-7 w-2/3" />
@@ -289,8 +305,10 @@ export function CaseDetailView({
 
   if (error || !data) {
     return (
-      <div className="flex flex-col gap-6">
-        {backButton}
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-center gap-2">
+          {backButton}
+        </div>
         <div className="flex flex-1 items-center justify-center py-16">
           <ErrorState error={error} onRetry={load} />
         </div>
@@ -410,7 +428,7 @@ export function CaseDetailView({
               )}
               {data.group_id && (
                 <PropRow icon={LayersIcon} label={t("cases.detail.group")}>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 items-center gap-1.5">
                     <span className="min-w-0 truncate font-mono text-xs text-muted-foreground">
                       {data.group_id}
                     </span>
