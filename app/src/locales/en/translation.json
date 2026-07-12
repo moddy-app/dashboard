@@ -1006,7 +1006,11 @@
       "viewContext": "View conversation context",
       "contextTitle": "Conversation context",
       "contextDescription": "The messages leading up to the one flagged by AutoMod.",
-      "flagged": "Flagged"
+      "flagged": "Flagged",
+      "image": "Image",
+      "video": "Video",
+      "openOriginal": "Open original",
+      "imagePreview": "Image preview"
     }
   }
 }
