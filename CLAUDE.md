@@ -37,8 +37,10 @@
 │   │   ├── App.tsx       # Routeur principal (react-router-dom)
 │   │   ├── main.tsx      # Point d'entrée React (BrowserRouter)
 │   │   ├── i18n.ts       # Configuration react-i18next
+│   │   ├── fonts.css     # @font-face Google Sans (auto-généré, ne pas éditer)
 │   │   └── index.css     # Styles globaux + design tokens
 │   ├── public/           # Fichiers statiques publics
+│   │   └── fonts/        # Google Sans woff2 (40 fichiers, self-hostés)
 │   ├── .env.local        # Variables d'environnement (dev local uniquement)
 │   ├── index.html        # Point d'entrée HTML
 │   ├── package.json      # Dépendances et scripts
@@ -48,6 +50,8 @@
 │   ├── vercel.json       # Rewrites SPA pour Vercel
 │   └── tsconfig.*.json   # Configurations TypeScript
 ├── vercel.json           # Rewrites SPA pour Vercel (racine)
+├── scripts/              # Outillage de build
+│   └── build-fonts.py    # Génère les woff2 Google Sans depuis les TTF sources
 ├── docs/                 # Documentation
 │   ├── CLAUDE.md         # Documentation technique pour Claude (ce fichier)
 │   ├── backend-integration/  # Documentation d'intégration API
@@ -89,7 +93,7 @@
 
 ### Autres dépendances
 - **@base-ui/react 1.1.0** - Composants UI headless légers
-- **@fontsource-variable/geist 5.2.8** - Police variable Geist (typographie moderne)
+- **Google Sans** - Police self-hostée en woff2 (voir la section Typographie), sans dépendance npm
 - **clsx 2.1.1** - Utilitaire pour classes conditionnelles
 
 ## Fichiers de configuration clés
@@ -155,7 +159,29 @@ Variables CSS définies dans `src/index.css` :
 - Couleurs spécifiques à la sidebar
 
 ### Typographie
-- **Police** : Geist Variable (sans-serif moderne et épurée de Vercel)
+- **Police** : **Google Sans** (self-hostée, aucun CDN)
+- **Graisses réelles** : 400 (regular), 500 (medium), 600 (semibold), 700 (bold) + les 4 italiques correspondantes — pas de gras synthétique
+- **Convention** : le 600 sert de graisse « gras » par défaut (`font-semibold`), le 700 (`font-bold`) est réservé aux usages plus marqués — le vrai 700 de Google Sans est visuellement lourd en inline
+- **Mono** : pas de Google Sans Mono fournie → `--font-mono` pointe vers la stack monospace système (`ui-monospace`, SF Mono, Menlo, Consolas…)
+
+#### Intégration (self-host, façon shadcn/ui)
+
+1. **Fichiers locaux** — `app/public/fonts/google-sans-*.woff2`, jamais de `<link>` vers `fonts.googleapis.com` ni de `@fontsource-*`.
+2. **Découpage par plage Unicode** — chaque face est découpée en 5 sous-ensembles (`latin`, `latin-ext`, `greek`, `cyrillic`, `vietnamese`), exactement comme les feuilles servies par Google Fonts. Soit 8 faces × 5 plages = **40 fichiers, ~547 Ko sur disque**, mais le navigateur ne télécharge que ce qu'il rend réellement (~100 Ko en pratique : latin 400/500/600/700). La couverture cyrillique / grecque reste disponible pour les pseudos Discord non latins.
+3. **`@font-face` générés** — `app/src/fonts.css` (40 blocs avec `font-display: swap` + `unicode-range`), importé par `index.css`. **Fichier auto-généré, ne pas éditer à la main.**
+4. **Branchement sur les tokens** — `--font-sans` / `--font-mono` sont redéfinis dans le bloc `@theme inline` de `index.css`, donc **tous** les composants shadcn héritent automatiquement via `font-sans` / `font-mono`, sans toucher un seul composant. Fallback système solide tant que la police n'a pas chargé.
+5. **Preload ciblé** — `app/index.html` précharge uniquement `google-sans-400-latin.woff2` et `google-sans-600-latin.woff2` (les deux graisses au-dessus de la ligne de flottaison). Le reste se charge à la demande.
+
+#### Régénérer les woff2
+
+Les TTF sources ne sont pas versionnés. Pour régénérer les fichiers :
+
+```bash
+pip install fonttools brotli
+python3 scripts/build-fonts.py <dossier-contenant-les-ttf>
+```
+
+Le script écrit dans `app/public/fonts/`. Si la liste des faces change, régénérer aussi `app/src/fonts.css` en conséquence.
 
 ### Design tokens
 Variables CSS complètes pour :
