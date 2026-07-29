@@ -11,12 +11,22 @@
     <meta name="theme-color" content="#0046f8" />
     <title>Moddy — Under construction</title>
 
-    <!-- Google Sans -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Google Sans is self-hosted (see @font-face in src/index.css). Only the
+         two weights used above the fold get preloaded — 400 for body copy and
+         600 for our default bold; 500 and 700 load on demand. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/google-sans-400.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
+    />
+    <link
+      rel="preload"
+      href="/fonts/google-sans-600.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous"
     />
 
     <!-- Resolve the theme before paint to avoid a flash: an explicit saved
