@@ -1,9 +1,70 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
+
+/* Google Sans — self-hosted, no CDN and no runtime call to fonts.googleapis.com.
+   One face per real weight rather than a single weight faked into bold: Google
+   Sans renders noticeably better with its own drawn weights. The files are
+   subset to latin + latin-ext, which covers every locale we ship (en/fr/es/de),
+   and `font-display: swap` keeps text visible while they load. */
+@font-face {
+    font-family: "Google Sans";
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/google-sans-400.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: italic;
+    font-weight: 400;
+    font-display: swap;
+    src: url("/fonts/google-sans-400-italic.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: normal;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/fonts/google-sans-500.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: italic;
+    font-weight: 500;
+    font-display: swap;
+    src: url("/fonts/google-sans-500-italic.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: normal;
+    font-weight: 600;
+    font-display: swap;
+    src: url("/fonts/google-sans-600.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: italic;
+    font-weight: 600;
+    font-display: swap;
+    src: url("/fonts/google-sans-600-italic.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/google-sans-700.woff2") format("woff2");
+}
+@font-face {
+    font-family: "Google Sans";
+    font-style: italic;
+    font-weight: 700;
+    font-display: swap;
+    src: url("/fonts/google-sans-700-italic.woff2") format("woff2");
+}
 
 :root {
     --background: oklch(1 0 0);
@@ -77,7 +138,13 @@
 }
 
 @theme inline {
-    --font-sans: 'Google Sans', 'Geist Variable', sans-serif;
+    /* Every shadcn component inherits its typeface from these two tokens, so
+       pointing them at our families is all it takes — no per-component edits.
+       The fallbacks are system faces, used only until the woff2 lands. */
+    --font-sans: "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+        Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    --font-heading: var(--font-sans);
     --color-brand: var(--brand);
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
@@ -128,6 +195,11 @@
     }
   html {
     @apply font-sans;
+    }
+  /* Google Sans' true 700 reads as too heavy inline, so demibold is our
+     default bold. Reach for `font-bold` explicitly when 700 is wanted. */
+  b, strong {
+    @apply font-semibold;
     }
 }
 

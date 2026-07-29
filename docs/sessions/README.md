@@ -64,6 +64,27 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-07-29 - Google Sans auto-hébergée
+**Fichier** : [2026-07-29_google-sans-auto-hebergee.md](./2026-07-29_google-sans-auto-hebergee.md)
+
+**Résumé** : Remplacement du chargement de Google Sans par CDN par une intégration auto-hébergée. Les TTF fournis ont été convertis en WOFF2 sous-ensemblés `latin + latin-ext` (~1,9 Mo → ~35 Ko par face), déclarés en `@font-face` manuels avec `font-display: swap`, et branchés sur les tokens `--font-sans` / `--font-mono` du thème shadcn — aucun composant modifié.
+
+**Fichiers créés** :
+- `app/public/fonts/google-sans-{400,500,600,700}[-italic].woff2` (8 faces)
+
+**Fichiers modifiés** :
+- `app/src/index.css` - `@font-face`, tokens de typographie, convention `b`/`strong` en 600
+- `app/index.html` - CDN retiré, preload local du 400 et du 600
+- `app/package.json` - `@fontsource-variable/geist` retirée (inutilisée)
+- `vercel.json` - cache long pour `/fonts/*.woff2`
+
+**Fichiers supprimés** :
+- `google-sans/` - dossier de dépôt temporaire des TTF
+
+**Impact** : ✅ **Majeur** - Zéro requête tierce vers Google Fonts, typographie maîtrisée
+
+---
+
 ### 2026-02-12 (Suite) - Proxy Vercel pour la Sécurité
 **Fichier** : [2026-02-12_proxy-vercel-securite.md](./2026-02-12_proxy-vercel-securite.md)
 

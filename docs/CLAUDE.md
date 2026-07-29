@@ -70,8 +70,10 @@
 
 ### Autres dépendances
 - **@base-ui/react 1.1.0** - Composants UI headless légers
-- **@fontsource-variable/geist 5.2.8** - Police variable Geist (typographie moderne)
 - **clsx 2.1.1** - Utilitaire pour classes conditionnelles
+
+> **Typographie** : aucune dépendance npm ni CDN. Google Sans est auto-hébergée
+> dans `app/public/fonts/` (voir la section Typographie).
 
 ## Fichiers de configuration clés
 
@@ -136,7 +138,44 @@ Variables CSS définies dans `src/index.css` :
 - Couleurs spécifiques à la sidebar
 
 ### Typographie
-- **Police** : Geist Variable (sans-serif moderne et épurée de Vercel)
+
+- **Police** : **Google Sans**, auto-hébergée — ni CDN, ni `@fontsource`, ni
+  `next/font`. Aucune requête vers `fonts.googleapis.com` / `fonts.gstatic.com`.
+
+**Fichiers** : `app/public/fonts/google-sans-{400,500,600,700}[-italic].woff2`
+
+Une face par graisse réelle (400 / 500 / 600 / 700 + italiques) plutôt qu'une
+seule graisse épaissie synthétiquement : Google Sans rend nettement mieux avec
+ses vraies graisses. Les `.woff2` sont sous-ensemblés en `latin + latin-ext`
+(les mêmes plages que sert le CDN Google), ce qui couvre les quatre locales
+`en / fr / es / de` et fait tomber chaque face de ~1,9 Mo (TTF) à ~35 Ko.
+
+**Déclaration** : les huit `@font-face` sont écrits à la main en tête de
+`app/src/index.css`, avec `font-display: swap` (pas de flash de texte
+invisible).
+
+**Branchement shadcn** : le `@theme inline` redéfinit `--font-sans` (et
+`--font-mono`, `--font-heading`). Tous les composants shadcn héritent donc de la
+police via `font-sans` / `font-mono`, sans toucher un seul composant. Les
+fallbacks système restent solides tant que le woff2 n'a pas chargé.
+
+**Preload** : `app/index.html` ne précharge que le 400 et le 600 — les deux
+seules graisses au-dessus de la ligne de flottaison. Le 500 et le 700 se
+chargent à la demande.
+
+**Convention "gras" = 600** : le vrai 700 de Google Sans est visuellement trop
+lourd en inline, donc le 600 (demibold) sert de graisse "gras" par défaut —
+`b` et `strong` sont mappés sur `font-semibold` dans la couche `base`. Le 700
+(`font-bold`) est réservé aux usages ponctuels plus marqués.
+
+**Cache** : `vercel.json` sert `/fonts/*.woff2` en
+`max-age=31536000, immutable`. Les noms de fichiers n'ont pas de hash de
+contenu — **remplacer une face impose donc de renommer le fichier**, sinon les
+navigateurs garderont l'ancienne version jusqu'à un an.
+
+> **Google Sans Mono** : pas encore fournie. `--font-mono` pointe pour l'instant
+> sur la pile monospace système ; il suffira d'ajouter le `@font-face` et de
+> changer le token le jour où le fichier arrive.
 
 ### Design tokens
 Variables CSS complètes pour :
@@ -405,4 +444,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-02-12*
+*Dernière mise à jour : 2026-07-29*
