@@ -7,8 +7,24 @@
   font-style: normal;
   font-weight: 400;
   font-display: swap;
+  src: url("/fonts/google-sans-400-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
   src: url("/fonts/google-sans-400-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/google-sans-400-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -40,7 +56,7 @@
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/google-sans-400-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -48,8 +64,24 @@
   font-style: italic;
   font-weight: 400;
   font-display: swap;
+  src: url("/fonts/google-sans-400italic-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
   src: url("/fonts/google-sans-400italic-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/google-sans-400italic-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -81,7 +113,7 @@
   font-weight: 400;
   font-display: swap;
   src: url("/fonts/google-sans-400italic-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -89,8 +121,24 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
+  src: url("/fonts/google-sans-500-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
   src: url("/fonts/google-sans-500-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/google-sans-500-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -122,7 +170,7 @@
   font-weight: 500;
   font-display: swap;
   src: url("/fonts/google-sans-500-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -130,8 +178,24 @@
   font-style: italic;
   font-weight: 500;
   font-display: swap;
+  src: url("/fonts/google-sans-500italic-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
   src: url("/fonts/google-sans-500italic-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/google-sans-500italic-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -163,7 +227,7 @@
   font-weight: 500;
   font-display: swap;
   src: url("/fonts/google-sans-500italic-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -171,8 +235,24 @@
   font-style: normal;
   font-weight: 600;
   font-display: swap;
+  src: url("/fonts/google-sans-600-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
   src: url("/fonts/google-sans-600-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/google-sans-600-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -204,7 +284,7 @@
   font-weight: 600;
   font-display: swap;
   src: url("/fonts/google-sans-600-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -212,8 +292,24 @@
   font-style: italic;
   font-weight: 600;
   font-display: swap;
+  src: url("/fonts/google-sans-600italic-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
   src: url("/fonts/google-sans-600italic-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/google-sans-600italic-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -245,7 +341,7 @@
   font-weight: 600;
   font-display: swap;
   src: url("/fonts/google-sans-600italic-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -253,8 +349,24 @@
   font-style: normal;
   font-weight: 700;
   font-display: swap;
+  src: url("/fonts/google-sans-700-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
   src: url("/fonts/google-sans-700-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/google-sans-700-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -286,7 +398,7 @@
   font-weight: 700;
   font-display: swap;
   src: url("/fonts/google-sans-700-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
@@ -294,8 +406,24 @@
   font-style: italic;
   font-weight: 700;
   font-display: swap;
+  src: url("/fonts/google-sans-700italic-cyrillic-ext.woff2") format("woff2");
+  unicode-range: U+0460-052F,U+1C80-1C88,U+20B4,U+2DE0-2DFF,U+A640-A69F,U+FE2E-FE2F;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
   src: url("/fonts/google-sans-700italic-cyrillic.woff2") format("woff2");
   unicode-range: U+0301,U+0400-045F,U+0490-0491,U+04B0-04B1,U+2116;
+}
+@font-face {
+  font-family: "Google Sans";
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/google-sans-700italic-greek-ext.woff2") format("woff2");
+  unicode-range: U+1F00-1FFF;
 }
 @font-face {
   font-family: "Google Sans";
@@ -327,6 +455,6 @@
   font-weight: 700;
   font-display: swap;
   src: url("/fonts/google-sans-700italic-latin.woff2") format("woff2");
-  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2190-2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 

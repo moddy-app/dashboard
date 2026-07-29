@@ -40,7 +40,7 @@
 │   │   ├── fonts.css     # @font-face Google Sans (auto-généré, ne pas éditer)
 │   │   └── index.css     # Styles globaux + design tokens
 │   ├── public/           # Fichiers statiques publics
-│   │   └── fonts/        # Google Sans woff2 (40 fichiers, self-hostés)
+│   │   └── fonts/        # Google Sans woff2 (56 fichiers, self-hostés)
 │   ├── .env.local        # Variables d'environnement (dev local uniquement)
 │   ├── index.html        # Point d'entrée HTML
 │   ├── package.json      # Dépendances et scripts
@@ -167,8 +167,12 @@ Variables CSS définies dans `src/index.css` :
 #### Intégration (self-host, façon shadcn/ui)
 
 1. **Fichiers locaux** — `app/public/fonts/google-sans-*.woff2`, jamais de `<link>` vers `fonts.googleapis.com` ni de `@fontsource-*`.
-2. **Découpage par plage Unicode** — chaque face est découpée en 5 sous-ensembles (`latin`, `latin-ext`, `greek`, `cyrillic`, `vietnamese`), exactement comme les feuilles servies par Google Fonts. Soit 8 faces × 5 plages = **40 fichiers, ~547 Ko sur disque**, mais le navigateur ne télécharge que ce qu'il rend réellement (~100 Ko en pratique : latin 400/500/600/700). La couverture cyrillique / grecque reste disponible pour les pseudos Discord non latins.
-3. **`@font-face` générés** — `app/src/fonts.css` (40 blocs avec `font-display: swap` + `unicode-range`), importé par `index.css`. **Fichier auto-généré, ne pas éditer à la main.**
+2. **Découpage par plage Unicode** — chaque face est découpée en 7 sous-ensembles (`latin`, `latin-ext`, `greek`, `greek-ext`, `cyrillic`, `cyrillic-ext`, `vietnamese`), exactement comme les feuilles servies par Google Fonts. Soit 8 faces × 7 plages = **56 fichiers, ~716 Ko sur disque**, mais le navigateur ne télécharge que ce qu'il rend réellement (~100 Ko en pratique : latin 400/500/600/700). La couverture cyrillique / grecque reste disponible pour les pseudos Discord non latins.
+3. **`@font-face` générés** — `app/src/fonts.css` (56 blocs avec `font-display: swap` + `unicode-range`), importé par `index.css`. **Fichier auto-généré, ne pas éditer à la main.**
+
+> ⚠️ **Ajouter un caractère hors des plages = fallback système silencieux.** Un codépoint présent dans la police mais couvert par aucun `unicode-range` ne sera jamais téléchargé : il s'affichera dans la police système, au milieu d'un texte en Google Sans. C'est ce qui est arrivé aux flèches `→` / `←` (la plage `latin` de Google ne contient que `U+2191`/`U+2193`, elle a été élargie à `U+2190-2193`). Avant d'introduire un caractère non-ASCII dans l'UI, vérifier qu'il tombe dans une plage déclarée.
+>
+> Les scripts non couverts par le découpage Google Fonts (hébreu, arménien, géorgien, thaï, indiens, éthiopien, khmer) tombent volontairement en fallback système, comme c'était déjà le cas avec Inter/Geist.
 4. **Branchement sur les tokens** — `--font-sans` / `--font-mono` sont redéfinis dans le bloc `@theme inline` de `index.css`, donc **tous** les composants shadcn héritent automatiquement via `font-sans` / `font-mono`, sans toucher un seul composant. Fallback système solide tant que la police n'a pas chargé.
 5. **Preload ciblé** — `app/index.html` précharge uniquement `google-sans-400-latin.woff2` et `google-sans-600-latin.woff2` (les deux graisses au-dessus de la ligne de flottaison). Le reste se charge à la demande.
 

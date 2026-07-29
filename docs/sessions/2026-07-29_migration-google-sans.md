@@ -12,8 +12,8 @@ Les TTF sources avaient été déposés temporairement dans `/google-sans/` à l
 
 1. Analyse des TTF sources (8 faces utiles + 8 doublons optiques `_17pt` écartés).
 2. Écriture d'un script de build `scripts/build-fonts.py` (fontTools + brotli).
-3. Génération de 40 woff2 sous-ensemblés par plage Unicode dans `app/public/fonts/`.
-4. Génération de `app/src/fonts.css` (40 blocs `@font-face`).
+3. Génération de 56 woff2 sous-ensemblés par plage Unicode dans `app/public/fonts/`.
+4. Génération de `app/src/fonts.css` (56 blocs `@font-face`).
 5. Rebranchement des tokens `--font-sans` / `--font-mono` dans `app/src/index.css`.
 6. Preload ciblé des deux graisses critiques dans `app/index.html`.
 7. Suppression des dépendances `@fontsource-variable/geist` et `@fontsource-variable/inter`.
@@ -26,8 +26,8 @@ Les TTF sources avaient été déposés temporairement dans `/google-sans/` à l
 | Chemin | Rôle |
 |---|---|
 | `scripts/build-fonts.py` | Génère les woff2 depuis les TTF sources |
-| `app/src/fonts.css` | 40 déclarations `@font-face` (auto-généré) |
-| `app/public/fonts/google-sans-*.woff2` | 40 fichiers de police (~547 Ko au total) |
+| `app/src/fonts.css` | 56 déclarations `@font-face` (auto-généré) |
+| `app/public/fonts/google-sans-*.woff2` | 56 fichiers de police (~716 Ko au total) |
 | `docs/sessions/2026-07-29_migration-google-sans.md` | Ce fichier |
 
 ## Fichiers modifiés
@@ -53,7 +53,7 @@ Les TTF sources font ~2 Mo chacun (7 424 glyphes, 3 281 points de code : latin, 
 pèsent **~3,7 Mo** — inacceptable pour un chargement de page.
 
 La solution retenue reproduit exactement ce que sert `fonts.googleapis.com` : chaque face
-est découpée en 5 sous-ensembles, et chaque `@font-face` déclare son `unicode-range`. Le
+est découpée en 7 sous-ensembles, et chaque `@font-face` déclare son `unicode-range`. Le
 navigateur ne télécharge un fichier que s'il doit effectivement rendre un caractère de sa
 plage.
 
@@ -62,7 +62,9 @@ plage.
 | latin | 25,1 Ko |
 | latin-ext | 15,3 Ko |
 | greek | 6,8 Ko |
+| greek-ext | 7,4 Ko |
 | cyrillic | 11,8 Ko |
+| cyrillic-ext | 12,8 Ko |
 | vietnamese | 6,3 Ko |
 
 **Résultat mesuré** sur `/debug` : 4 fichiers téléchargés (latin 400/500/600/700), soit
@@ -129,8 +131,72 @@ police de fallback puis bascule, pas de FOIT.
 - `npm run lint` : 15 erreurs, toutes préexistantes (`react-refresh/only-export-components`
   dans les fichiers shadcn) — aucune introduite par cette session
 - Rendu navigateur : `getComputedStyle(document.body).fontFamily` renvoie bien
-  `"Google Sans", …`, 4 faces chargées, 40 `@font-face` présents dans le CSS buildé,
-  les 40 woff2 copiés dans `dist/fonts/`
+  `"Google Sans", …`, 4 faces chargées, 56 `@font-face` présents dans le CSS buildé,
+  les 56 woff2 copiés dans `dist/fonts/`
+
+## Audit post-intégration (même session)
+
+Une passe de vérification a été demandée après le premier commit, suite à des affichages
+« un peu bizarres ». Deux défauts réels ont été trouvés et corrigés.
+
+### Défaut 1 — flèches `→` / `←` en fallback système (visible)
+
+La plage `latin` de Google Fonts ne contient que `U+2191` et `U+2193` (flèches haut/bas),
+**pas** `U+2190`/`U+2192` (gauche/droite). Ces deux caractères existent pourtant dans
+Google Sans : n'étant dans aucune plage déclarée, ils n'étaient jamais téléchargés et
+s'affichaient dans la police système au milieu d'un texte en Google Sans.
+
+Rendu concerné : `appeals-panel.tsx:53`, `AdaptiveSlowmodePage.tsx:172` et `:452`.
+
+Correctif : plage `latin` élargie de `U+2191,U+2193` à `U+2190-2193`.
+
+### Défaut 2 — subsets `cyrillic-ext` et `greek-ext` manquants
+
+Seuls 5 des 7 sous-ensembles standards de Google Fonts avaient été générés. Les alphabets
+cyrilliques étendus (kazakh, bachkir, slavon — `U+0460-052F`) et le grec polytonique
+(`U+1F00-1FFF`) tombaient donc en fallback système, ce qui est plausible sur des pseudos
+Discord.
+
+Correctif : ajout de `greek-ext` et `cyrillic-ext`. On passe de 40 à **56 fichiers**
+(~716 Ko sur disque), sans changement sur le volume réellement téléchargé.
+
+### Méthode de vérification
+
+1. **Analyse de couverture** — comparaison du `cmap` de la police (3 281 codepoints) avec
+   l'union des `unicode-range` déclarés, puis croisement avec tous les caractères non-ASCII
+   réellement présents dans `app/src` (55 distincts). C'est ce croisement qui a isolé les
+   deux flèches.
+2. **Rendu réel via CDP** — `CSS.getPlatformFontsForNode` (Chrome DevTools Protocol) sur une
+   page de test, pour lire la police *effectivement* utilisée par glyphe plutôt que de juger
+   à l'œil :
+
+| Contenu testé | Police résolue |
+|---|---|
+| texte latin | Google Sans |
+| flèches `→` `←` | Google Sans ✅ *(corrigé)* |
+| latin accentué | Google Sans |
+| cyrillique | Google Sans |
+| cyrillique étendu | Google Sans ✅ *(corrigé)* |
+| grec / grec polytonique | Google Sans ✅ *(corrigé)* |
+| vietnamien | Google Sans |
+| gras 600 | Google Sans **SemiBold** (vraie face, pas de gras synthétique) |
+| italique | Google Sans Italic (vraie face) |
+| `font-mono` | Liberation Mono (stack système, attendu) |
+| hébreu | DejaVu Sans (fallback assumé, hors périmètre) |
+
+### Autres points vérifiés (aucun problème)
+
+- Aucune `font-family` codée en dur dans `app/src`
+- Aucun usage de `font-extrabold` / `font-black` (800/900 → auraient été synthétisés)
+- Aucun reliquat d'import Inter/Geist
+- Les caractères `─` (7 702 occurrences) ne sont que des bannières de commentaires dans le
+  code source, jamais rendus
+- Les emoji et `⌘`/`⇧` sont absents de Google Sans : fallback système normal et inchangé
+
+### Correctif annexe
+
+`scripts/__pycache__/` avait été committé par inadvertance au premier commit (généré lors de
+la génération du CSS). Retiré de l'index et ajouté à un `.gitignore` racine.
 
 ## Prochaines étapes suggérées
 

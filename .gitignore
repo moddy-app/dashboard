@@ -1,0 +1,4 @@
+
+# Python (scripts/build-fonts.py)
+__pycache__/
+*.pyc
