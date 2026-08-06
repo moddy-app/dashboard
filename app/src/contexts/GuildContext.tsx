@@ -42,6 +42,14 @@ interface GuildContextValue {
   /** Serveur premium (attribut PREMIUM, stats, ou abonnement actif lié). */
   isPremium: boolean
   isLoadingGuild: boolean
+  /**
+   * `true` seulement quand les données du serveur *sélectionné* ont fini d'être
+   * chargées (succès ou échec). Sert de garde aux pages de configuration : tant
+   * que c'est `false`, elles ne doivent pas monter leurs formulaires, sinon
+   * ceux-ci s'initialisent sur des `channels`/`modules` vides (cas typique :
+   * arrivée directe sur l'URL d'un module).
+   */
+  isGuildReady: boolean
   guildError: string | null
   // Actions
   refreshGuildData: () => Promise<void>
@@ -76,7 +84,11 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
   const [modules, setModules] = useState<Record<string, ModuleConfig>>({})
   const [stats, setStats] = useState<GuildStats | null>(null)
   const [premium, setPremium] = useState<GuildPremium | null>(null)
-  const [isLoadingGuild, setIsLoadingGuild] = useState(false)
+  // Démarre à `true` quand l'URL cible déjà un serveur : le chargement est lancé
+  // dans un effet, donc sans ça le premier rendu passerait pour « chargé ».
+  const [isLoadingGuild, setIsLoadingGuild] = useState(urlGuildId !== null)
+  // Dernier serveur dont le chargement est allé au bout (succès ou erreur).
+  const [loadedGuildId, setLoadedGuildId] = useState<string | null>(null)
   const [guildError, setGuildError] = useState<string | null>(null)
 
   // Charge les données du serveur sélectionné
@@ -153,6 +165,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
       setStats(null)
       setPremium(null)
     } finally {
+      setLoadedGuildId(guildId)
       setIsLoadingGuild(false)
     }
   }, [])
@@ -167,8 +180,10 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
   // Charge les données quand le guildId change
   useEffect(() => {
     if (selectedGuildId) {
+      setIsLoadingGuild(true)
       loadGuildData(selectedGuildId)
     } else {
+      setLoadedGuildId(null)
       setGuildDetail(null)
       setChannels([])
       setRoles([])
@@ -270,6 +285,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         stats,
         isPremium,
         isLoadingGuild,
+        isGuildReady: selectedGuildId !== null && loadedGuildId === selectedGuildId,
         guildError,
         refreshGuildData,
         refreshGuildList,

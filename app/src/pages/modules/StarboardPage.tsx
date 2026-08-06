@@ -108,15 +108,37 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>
 
+/**
+ * Garde de chargement : le formulaire n'est monté qu'une fois les salons et la
+ * config du serveur disponibles. Sans ça, une arrivée directe sur l'URL monte
+ * `useForm` avec des `defaultValues` vides (sélecteur de salon vide) et le
+ * formulaire apparaît modifié dès la ré-hydratation.
+ */
 export function StarboardPage() {
+  const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
+
+  if (guildError) {
+    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
+  }
+
+  if (isLoadingGuild || !isGuildReady) {
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    )
+  }
+
+  return <StarboardForm />
+}
+
+function StarboardForm() {
   const { t } = useTranslation()
   const {
     selectedGuildId,
     channels,
     modules,
-    isLoadingGuild,
-    guildError,
-    refreshGuildData,
     updateModule,
     disableModule,
   } = useGuildContext()
@@ -154,11 +176,14 @@ export function StarboardPage() {
     if (!currentConfig) return
     if (form.formState.isDirty) return // Ne pas écraser les modifs en cours
     form.reset({
-      channel_id: String(currentConfig.channel_id ?? ''),
+      channel_id: resolveChannelId(currentConfig.channel_id, textChannels.map((c) => c.id)),
       reaction_count: currentConfig.reaction_count ?? 5,
       emoji: currentConfig.emoji ?? '⭐',
       enabled: true,
     })
+    // `textChannels` est dérivé de `channels` — la dépendance sur
+    // `channels.length` suffit et évite de relancer le reset à chaque rendu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConfig, channels.length, form])
 
   const onSubmit = async (values: FormValues) => {
@@ -202,19 +227,6 @@ export function StarboardPage() {
   const handleDiscard = () => {
     logger.event('module:starboard', 'Discard clicked')
     form.reset()
-  }
-
-  if (isLoadingGuild) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
   }
 
   return (

@@ -67,15 +67,37 @@ function decimalToHex(decimal: number): string {
   return `#${decimal.toString(16).padStart(6, '0')}`
 }
 
+/**
+ * Garde de chargement : le formulaire n'est monté qu'une fois les salons et la
+ * config du serveur disponibles. Sans ça, une arrivée directe sur l'URL monte
+ * `useForm` avec des `defaultValues` vides (sélecteur de salon vide) et le
+ * formulaire apparaît modifié dès la ré-hydratation.
+ */
 export function WelcomeChannelPage() {
+  const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
+
+  if (guildError) {
+    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
+  }
+
+  if (isLoadingGuild || !isGuildReady) {
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    )
+  }
+
+  return <WelcomeChannelForm />
+}
+
+function WelcomeChannelForm() {
   const { t } = useTranslation()
   const {
     selectedGuildId,
     channels,
     modules,
-    isLoadingGuild,
-    guildError,
-    refreshGuildData,
     updateModule,
     disableModule,
   } = useGuildContext()
@@ -119,7 +141,7 @@ export function WelcomeChannelPage() {
     if (!currentConfig) return
     if (form.formState.isDirty) return
     form.reset({
-      channel_id: String(currentConfig.channel_id ?? ''),
+      channel_id: resolveChannelId(currentConfig.channel_id, textChannels.map((c) => c.id)),
       message_template: currentConfig.message_template ?? 'Welcome {user} to the server!',
       mention_user: currentConfig.mention_user ?? true,
       embed_enabled: currentConfig.embed_enabled ?? false,
@@ -134,6 +156,9 @@ export function WelcomeChannelPage() {
       embed_author_enabled: currentConfig.embed_author_enabled ?? false,
       enabled: true,
     })
+    // `textChannels` est dérivé de `channels` — la dépendance sur
+    // `channels.length` suffit et évite de relancer le reset à chaque rendu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentConfig, channels.length, form])
 
   const watchEmbedEnabled = form.watch('embed_enabled')
@@ -192,19 +217,6 @@ export function WelcomeChannelPage() {
   const handleDiscard = () => {
     logger.event('module:welcome_channel', 'Discard clicked')
     form.reset()
-  }
-
-  if (isLoadingGuild) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
   }
 
   return (

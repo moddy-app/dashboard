@@ -236,6 +236,7 @@ export function AdaptiveSlowmodePage() {
     channels,
     modules,
     isLoadingGuild,
+    isGuildReady,
     guildError,
     refreshGuildData,
     disableModule,
@@ -267,10 +268,10 @@ export function AdaptiveSlowmodePage() {
   }, [selectedGuildId])
 
   useEffect(() => {
-    if (!isLoadingGuild) {
+    if (isGuildReady) {
       loadConfig()
     }
-  }, [loadConfig, isLoadingGuild, selectedGuildId])
+  }, [loadConfig, isGuildReady, selectedGuildId])
 
   const openNewChannel = () => {
     setEditing({
@@ -352,7 +353,7 @@ export function AdaptiveSlowmodePage() {
   const usedChannelIds = Object.keys(channelConfigs)
   const availableChannelCount = textChannels.filter((c) => !usedChannelIds.includes(c.id)).length
 
-  if (isLoadingGuild) {
+  if (isLoadingGuild || !isGuildReady) {
     return (
       <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />
