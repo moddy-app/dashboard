@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import {
   Dialog,
@@ -69,21 +69,44 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
   const [addingServer, setAddingServer] = useState(false)
   const [removingServerId, setRemovingServerId] = useState<string | null>(null)
 
-  const tabsContentRef = useRef<HTMLDivElement>(null)
-  const [tabsHeight, setTabsHeight] = useState<number | undefined>(undefined)
+  // Anime la hauteur du popup quand le contenu change (onglet, chargement async).
+  // Le contenu vit dans un portail monté après SettingsDialog : on passe par un
+  // callback ref, qui se déclenche exactement au montage/démontage du nœud, là où
+  // un useEffect verrait encore un ref vide.
+  const heightBoxRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<ResizeObserver | null>(null)
 
-  // Anime en douceur la hauteur du popup quand le contenu d'un onglet change de taille
-  useLayoutEffect(() => {
-    const el = tabsContentRef.current
-    if (!el) return
+  const measureRef = useCallback((node: HTMLDivElement | null) => {
+    observerRef.current?.disconnect()
+    observerRef.current = null
+    if (!node) return
 
-    const updateHeight = () => setTabsHeight(el.scrollHeight)
-    updateHeight()
+    // La première mesure fixe la hauteur de départ sans animer : on ne peut pas
+    // interpoler depuis `auto`, il faut une valeur en px avant toute transition.
+    let primed = false
 
-    const resizeObserver = new ResizeObserver(updateHeight)
-    resizeObserver.observe(el)
-    return () => resizeObserver.disconnect()
+    const observer = new ResizeObserver(() => {
+      const box = heightBoxRef.current
+      if (!box) return
+      const next = node.offsetHeight
+
+      if (!primed) {
+        primed = true
+        box.style.transitionDuration = '0ms'
+        box.style.height = `${next}px`
+        void box.offsetHeight // force un recalcul pour figer la base
+        box.style.transitionDuration = ''
+        return
+      }
+
+      box.style.height = `${next}px`
+    })
+
+    observer.observe(node)
+    observerRef.current = observer
   }, [])
+
+  useEffect(() => () => observerRef.current?.disconnect(), [])
 
   // Reset state when dialog closes / set tab when it opens
   useEffect(() => {
@@ -184,10 +207,11 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
         </DialogHeader>
 
         <div
-          className="overflow-hidden transition-[height] duration-350 ease-[cubic-bezier(0.32,0.72,0,1)]"
-          style={{ height: tabsHeight }}
+          ref={heightBoxRef}
+          className="overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none"
         >
-        <Tabs ref={tabsContentRef} value={activeTab} onValueChange={setActiveTab} className="flex-col gap-4">
+        <div ref={measureRef}>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="account">
               <UserIcon />
@@ -204,7 +228,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
           </TabsList>
 
           {/* ── Compte ─────────────────────────────────────────────────── */}
-          <TabsContent value="account" className="flex flex-col gap-4">
+          <TabsContent value="account" className="flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-1 duration-250 ease-out motion-reduce:animate-none">
             {user && (
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                 <Avatar className="size-14 rounded-full">
@@ -261,7 +285,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
           </TabsContent>
 
           {/* ── Apparence ──────────────────────────────────────────────── */}
-          <TabsContent value="appearance" className="flex flex-col gap-4">
+          <TabsContent value="appearance" className="flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-1 duration-250 ease-out motion-reduce:animate-none">
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium">{t('debug.themeSwitcher')}</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -322,7 +346,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
           </TabsContent>
 
           {/* ── Facturation ────────────────────────────────────────────── */}
-          <TabsContent value="billing" className="flex flex-col gap-4">
+          <TabsContent value="billing" className="flex flex-col gap-4 animate-in fade-in-0 slide-in-from-bottom-1 duration-250 ease-out motion-reduce:animate-none">
             {subscriptionLoading ? (
               <div className="flex flex-col gap-3">
                 <Skeleton className="h-16 w-full rounded-lg" />
@@ -485,6 +509,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
             )}
           </TabsContent>
         </Tabs>
+        </div>
         </div>
       </DialogContent>
     </Dialog>
