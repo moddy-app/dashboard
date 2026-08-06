@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef, useLayoutEffect } from "react"
 import { useTranslation } from "react-i18next"
 import {
   Dialog,
@@ -68,6 +68,22 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
   const [selectedServerId, setSelectedServerId] = useState('')
   const [addingServer, setAddingServer] = useState(false)
   const [removingServerId, setRemovingServerId] = useState<string | null>(null)
+
+  const tabsContentRef = useRef<HTMLDivElement>(null)
+  const [tabsHeight, setTabsHeight] = useState<number | undefined>(undefined)
+
+  // Anime en douceur la hauteur du popup quand le contenu d'un onglet change de taille
+  useLayoutEffect(() => {
+    const el = tabsContentRef.current
+    if (!el) return
+
+    const updateHeight = () => setTabsHeight(el.scrollHeight)
+    updateHeight()
+
+    const resizeObserver = new ResizeObserver(updateHeight)
+    resizeObserver.observe(el)
+    return () => resizeObserver.disconnect()
+  }, [])
 
   // Reset state when dialog closes / set tab when it opens
   useEffect(() => {
@@ -167,7 +183,11 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
           <DialogTitle>{t('settings.title')}</DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-col gap-4">
+        <div
+          className="overflow-hidden transition-[height] duration-350 ease-[cubic-bezier(0.32,0.72,0,1)]"
+          style={{ height: tabsHeight }}
+        >
+        <Tabs ref={tabsContentRef} value={activeTab} onValueChange={setActiveTab} className="flex-col gap-4">
           <TabsList className="w-full">
             <TabsTrigger value="account">
               <UserIcon />
@@ -465,6 +485,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
             )}
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   )
