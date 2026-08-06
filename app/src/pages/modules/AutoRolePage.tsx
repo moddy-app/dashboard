@@ -33,15 +33,36 @@ import { useGuildContext } from "@/contexts/GuildContext"
 import { roleColorToHex } from "@/types/api"
 import type { AutoRoleConfig } from "@/types/api"
 
+/**
+ * Garde de chargement : le contenu n'est monté qu'une fois les rôles et la
+ * config du serveur disponibles, sinon l'état local s'initialise à vide lors
+ * d'une arrivée directe sur l'URL.
+ */
 export function AutoRolePage() {
+  const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
+
+  if (guildError) {
+    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
+  }
+
+  if (isLoadingGuild || !isGuildReady) {
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    )
+  }
+
+  return <AutoRoleForm />
+}
+
+function AutoRoleForm() {
   const { t } = useTranslation()
   const {
     selectedGuildId,
     roles,
     modules,
-    isLoadingGuild,
-    guildError,
-    refreshGuildData,
     updateModule,
     disableModule,
   } = useGuildContext()
@@ -143,19 +164,6 @@ export function AutoRolePage() {
     } finally {
       setSaving(false)
     }
-  }
-
-  if (isLoadingGuild) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    )
-  }
-
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
   }
 
   const availableRoles = manageableRoles.filter(

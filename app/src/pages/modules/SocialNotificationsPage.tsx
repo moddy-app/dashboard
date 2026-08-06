@@ -155,6 +155,7 @@ export function SocialNotificationsPage() {
     modules,
     isPremium,
     isLoadingGuild,
+    isGuildReady,
     guildError,
     refreshGuildData,
     updateModule,
@@ -209,8 +210,8 @@ export function SocialNotificationsPage() {
   }, [selectedGuildId])
 
   useEffect(() => {
-    if (!isLoadingGuild) loadSubscriptions()
-  }, [loadSubscriptions, isLoadingGuild])
+    if (isGuildReady) loadSubscriptions()
+  }, [loadSubscriptions, isGuildReady])
 
   // ── Ouverture du formulaire ────────────────────────────────────────────────
 
@@ -428,7 +429,7 @@ export function SocialNotificationsPage() {
 
   // ── États de chargement / erreur ───────────────────────────────────────────
 
-  if (isLoadingGuild) {
+  if (isLoadingGuild || !isGuildReady) {
     return (
       <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />

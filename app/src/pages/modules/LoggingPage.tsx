@@ -58,15 +58,36 @@ const LOG_EVENTS = [
 type LogEvent = typeof LOG_EVENTS[number]['id']
 const EVENT_GROUPS = [...new Set(LOG_EVENTS.map((e) => e.group))]
 
+/**
+ * Garde de chargement : le contenu n'est monté qu'une fois les salons et la
+ * liste des modules disponibles, sinon l'état local s'initialise à vide lors
+ * d'une arrivée directe sur l'URL.
+ */
 export function LoggingPage() {
+  const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
+
+  if (guildError) {
+    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
+  }
+
+  if (isLoadingGuild || !isGuildReady) {
+    return (
+      <div className="flex flex-col gap-4 w-full">
+        <Skeleton className="h-8 w-48" />
+        <Skeleton className="h-64 rounded-xl" />
+      </div>
+    )
+  }
+
+  return <LoggingForm />
+}
+
+function LoggingForm() {
   const { t } = useTranslation()
   const {
     selectedGuildId,
     channels,
     modules,
-    isLoadingGuild,
-    guildError,
-    refreshGuildData,
     disableModule,
   } = useGuildContext()
 
@@ -76,6 +97,9 @@ export function LoggingPage() {
   const [channelId, setChannelId] = useState<string>('')
   const [selectedEvents, setSelectedEvents] = useState<Set<LogEvent>>(new Set())
   const [saving, setSaving] = useState(false)
+  // La config logging vient d'un endpoint dédié : tant qu'elle n'a pas répondu,
+  // on n'affiche pas le formulaire (salon vide + faux « modifs non enregistrées »).
+  const [isConfigLoading, setIsConfigLoading] = useState(isEnabled)
 
   // Valeurs sauvegardées pour dirty state
   const [savedEnabled, setSavedEnabled] = useState(isEnabled)
@@ -107,6 +131,7 @@ export function LoggingPage() {
         setSavedEnabled(true)
       })
       .catch(() => {/* silent — module n'est peut-être pas configuré */})
+      .finally(() => setIsConfigLoading(false))
   }, [selectedGuildId, isEnabled, channels.length])
 
   const toggleEvent = (eventId: LogEvent) => {
@@ -187,17 +212,13 @@ export function LoggingPage() {
     }
   }
 
-  if (isLoadingGuild) {
+  if (isConfigLoading) {
     return (
       <div className="flex flex-col gap-4 w-full">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 rounded-xl" />
       </div>
     )
-  }
-
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
   }
 
   return (
