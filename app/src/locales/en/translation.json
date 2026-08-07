@@ -182,6 +182,8 @@
       "channelDescription": "Channel where starred messages will be posted.",
       "emoji": "Reaction emoji",
       "emojiDescription": "Emoji that triggers the starboard.",
+      "emojiCustomNotAllowed": "Custom server emoji aren't supported here — pick a standard Unicode emoji.",
+      "emojiInvalid": "Please enter a valid Unicode emoji.",
       "reactionCount": "Required reactions",
       "reactionCountDescription": "Number of reactions needed to pin a message.",
       "disabledSuccess": "Starboard disabled."

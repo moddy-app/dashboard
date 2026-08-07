@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Trash2Icon, StarIcon, AlertCircleIcon, LoaderIcon, ChevronDownIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
+import { ApiError } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 import { resolveChannelId } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -99,14 +100,31 @@ function EmojiPicker({ value, onChange }: EmojiPickerProps) {
   )
 }
 
-const schema = z.object({
-  channel_id: z.string().min(1, { message: "Required" }),
-  reaction_count: z.number().int().min(1).max(100),
-  emoji: z.string().min(1, { message: "Required" }),
-  enabled: z.boolean(),
-})
+// Format Discord des emojis custom/serveur : <:name:id> ou animé <a:name:id>.
+// Le backend les refuse (422) — on bloque côté client pour éviter l'aller-retour.
+const DISCORD_CUSTOM_EMOJI_RE = /<a?:\w{2,32}:\d{15,20}>/
+// Un emoji Unicode standard porte la propriété Extended_Pictographic (⭐, 🔥…)
+// ou Regional_Indicator (drapeaux 🇫🇷) — sert à rejeter le texte brut collé par erreur.
+const UNICODE_EMOJI_RE = /\p{Extended_Pictographic}|\p{Regional_Indicator}/u
 
-type FormValues = z.infer<typeof schema>
+function createSchema(t: (key: string) => string) {
+  return z.object({
+    channel_id: z.string().min(1, { message: "Required" }),
+    reaction_count: z.number().int().min(1).max(100),
+    emoji: z
+      .string()
+      .min(1, { message: "Required" })
+      .refine((v) => !DISCORD_CUSTOM_EMOJI_RE.test(v), {
+        message: t('modules.starboard.emojiCustomNotAllowed'),
+      })
+      .refine((v) => UNICODE_EMOJI_RE.test(v), {
+        message: t('modules.starboard.emojiInvalid'),
+      }),
+    enabled: z.boolean(),
+  })
+}
+
+type FormValues = z.infer<ReturnType<typeof createSchema>>
 
 /**
  * Garde de chargement : le formulaire n'est monté qu'une fois les salons et la
@@ -149,6 +167,8 @@ function StarboardForm() {
   const textChannels = channels.filter(
     (c) => c.type === CHANNEL_TYPES.TEXT || c.type === CHANNEL_TYPES.ANNOUNCEMENT
   )
+
+  const schema = useMemo(() => createSchema(t), [t])
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -202,7 +222,24 @@ function StarboardForm() {
       toast.success(t('modules.saved'))
     } catch (e) {
       logger.error('module:starboard', 'Save failed', e)
-      handleSaveError(e, { title: t('modules.saveError') })
+      if (e instanceof ApiError && e.status === 422) {
+        const known: (keyof FormValues)[] = ['channel_id', 'reaction_count', 'emoji']
+        let mapped = false
+        for (const issue of e.validationIssues) {
+          const field = issue.loc?.find((p): p is keyof FormValues => known.includes(p as keyof FormValues))
+          if (field) {
+            form.setError(field, { message: issue.msg })
+            mapped = true
+          }
+        }
+        if (!mapped) {
+          // Erreur 422 sous forme de chaîne (ex: "Salon starboard invalide") plutôt
+          // qu'un tableau de validation par champ — on retombe sur le toast générique.
+          handleSaveError(e, { title: t('modules.saveError') })
+        }
+      } else {
+        handleSaveError(e, { title: t('modules.saveError') })
+      }
     }
   }
 
