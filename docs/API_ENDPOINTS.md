@@ -671,6 +671,133 @@ Désactive le module entier. Endpoint générique (voir `DELETE /guilds/{guild_i
 
 ---
 
+## Module — Automod AI
+
+Le module `automod_ai` est la modération IA de contenu. Sa config est pilotée par un `ModuleSpec` (`app/modules/specs/automod_ai.py`) : elle se lit et s'écrit par le endpoint **générique** des modules (`GET/PUT /guilds/{id}/modules/automod_ai`). Les routes dédiées ci-dessous ne couvrent que des sous-ressources propres au module (état réel, contrôle des indications, budget IA).
+
+**Renommage (2026-08).** Le module s'appelait `automod` ; l'id est désormais `automod_ai` (un automod *classique*, à règles, prendra l'id `automod`). Le bot migre lui-même une config restée sous `data.modules.automod`. **Le backend ne lit et n'écrit que `automod_ai`** ; un `data.modules.automod` résiduel est du legacy en lecture seule.
+
+**Structure stockée en DB** (`guilds.data.modules.automod_ai`) :
+
+```json
+{
+  "enabled": false,
+  "indications": "",
+  "notify_channel_id": null,
+  "ignore_moderators": true,
+  "severity": 3,
+  "max_action": "ban",
+  "langue_serveur": "auto",
+  "categories_desactivees": [],
+  "dry_run": false,
+  "features": {
+    "content": { "enabled": false, "exempt_roles": [], "exempt_channels": [] }
+  }
+}
+```
+
+| Champ | Type | Défaut | Notes |
+|---|---|---|---|
+| `enabled` | bool | `false` | Interrupteur principal. **Pas suffisant seul** (voir *État réel*). |
+| `indications` | string ≤ 3000 | `""` | Consignes serveur, injectées **verbatim** dans le system prompt IA → soumises au contrôle anti-injection. |
+| `notify_channel_id` | int \| null | `null` | **Obligatoire pour que le module tourne.** Salon texte/annonces où sont postées décisions, cartes shadow et alertes budget. |
+| `ignore_moderators` | bool | `true` | Ignore les membres avec `manage_messages`. |
+| `severity` | int 1–5 | `3` | Sensibilité (seuil embedding + décalage de cran du barème). |
+| `max_action` | `warn`\|`mute`\|`ban` | `ban` | Plafond dur du barème. |
+| `langue_serveur` | `auto`\|`fr`\|`en-US` | `auto` | Langue des DM/cartes et des raisons IA. |
+| `categories_desactivees` | string[] | `[]` | Catégories jamais sanctionnées (décision ramenée à la suppression seule). Valeurs : `insulte`, `menace`, `harcelement`, `harcelement_sexuel`, `haine_discrimination`, `incitation_automutilation`, `doxxing`, `arnaque_scam`, `violation_indications`. Champ ops (pas de sélecteur UI). |
+| `dry_run` | bool | `false` | Shadow mode : le funnel décide, **rien n'est appliqué** ; une carte SIMULATION est postée. |
+| `features.<id>.enabled` | bool | `false` | Feature de détection. Seul id connu aujourd'hui : `content`. |
+| `features.<id>.exempt_roles` | int[] ≤ 25 | `[]` | Rôles non modérés. |
+| `features.<id>.exempt_channels` | int[] ≤ 25 | `[]` | Salons exemptés (+ threads dont le parent est listé). |
+
+> **IDs Discord : chaînes en JSON, entiers en base.** Un snowflake de 19 chiffres dépasse `Number.MAX_SAFE_INTEGER` — renvoyé en nombre JSON il serait silencieusement arrondi par un client JS, qui réécrirait ensuite un ID faux. L'API renvoie donc `notify_channel_id`, `exempt_roles` et `exempt_channels` en **chaînes** (`"1234567890123456789"`), et accepte en écriture aussi bien la chaîne que le nombre. Le stockage JSONB, lui, reste en entiers (c'est ce que lit le bot) : l'aller-retour `GET` → `PUT` est sans perte.
+
+`features` est une map ouverte indexée par feature id ; une clé inconnue est **rejetée** (`422 Fonctionnalité inconnue : <id>`). Le bloc `features.situation` (supprimé en 2026-08) est retiré automatiquement à la lecture et à la prochaine écriture, comme les clés legacy `rules` → `indications` et `log_channel_id` → `notify_channel_id`.
+
+**État réel du module.** `enabled` seul ne suffit pas :
+
+```
+running = enabled ET au moins une features[*].enabled ET notify_channel_id != null
+```
+
+**Validation à l'écriture** (`PUT/PATCH /guilds/{id}/modules/automod_ai`) :
+
+| Règle | Erreur |
+|---|---|
+| `notify_channel_id` est un salon texte/annonces du serveur | `422 Salon d'alertes invalide` (non bloquant si Discord est injoignable) |
+| `len(indications) <= 3000` | `422` |
+| `severity` ∈ 1..5, `max_action` ∈ warn/mute/ban, `langue_serveur` ∈ auto/fr/en-US | `422` |
+| chaque clé de `features` est un feature id connu | `422 Fonctionnalité inconnue : <id>` |
+| `indications` (si modifiées) passent le contrôle anti-injection du bot | `422` avec la raison, ou `503` si le bot est injoignable |
+
+> **Contrôle anti-injection.** `indications` étant injecté verbatim dans le system prompt, tout texte **modifié** est envoyé au bot (`POST {BOT_INTERNAL_URL}/automod/rules_check`, call type `automod_rules_check`) avant d'être persisté — le même contrôle que le panel du bot. On échoue **fermé** : si le bot ne répond pas, la sauvegarde est refusée (`503`) plutôt que d'écrire du texte non vérifié. Le contrôle n'est rejoué que si le texte a changé (activer une feature ne relance pas d'appel IA).
+
+Comme pour tout module, une écriture invalide le cache et publie `{"type": "module_updated", "guild_id": ..., "module_id": "automod_ai"}` sur `moddy:bot` — sans cet événement le bot ne relirait la config qu'au redémarrage. `PUT` et `PATCH` ont la même sémantique : le corps **remplace** la config (le dashboard envoie toujours l'objet complet, comme le bot).
+
+---
+
+### `GET /guilds/{guild_id}/modules/automod_ai/status`
+
+État réel du module + avertissements de configuration (à afficher tel quel dans le dashboard).
+
+**Auth :** guild_access
+
+**Reponse :**
+
+```json
+{
+  "guild_id": "123456789",
+  "module_id": "automod_ai",
+  "running": false,
+  "enabled": true,
+  "dry_run": false,
+  "notify_channel_id": null,
+  "active_features": ["content"],
+  "warnings": ["missing_notify_channel"]
+}
+```
+
+`warnings` : `missing_notify_channel` (mauvaise config la plus fréquente), `no_feature_enabled`, `dry_run` (le module tourne mais n'applique rien).
+
+---
+
+### `POST /guilds/{guild_id}/modules/automod_ai/indications/check`
+
+Passe un texte au contrôle anti-injection **sans rien sauvegarder** (retour immédiat dans le formulaire). Le même contrôle est rejoué à la sauvegarde : ce endpoint ne dispense de rien.
+
+**Auth :** guild_access
+**Body :** `{"indications": "pas d'insultes, même pour rire"}`
+
+**Reponse :** `{"ok": true}` ou `{"ok": false, "reason": "..."}`
+**Erreur :** `503` bot injoignable
+
+---
+
+### `GET` / `PUT /guilds/{guild_id}/modules/automod_ai/budget`
+
+Soft cap quotidien d'appels IA (en « unités » ; un appel `mini` en coûte 4). Au-delà du cap, le bot **dégrade** le funnel (IA réservée aux cas flagrants) au lieu de s'arrêter. Stocké dans Redis : `automod:budget:cap:{guild_id}` (override) et `automod:budget:{guild_id}:{YYYYMMDD}` (consommation du jour).
+
+**Auth :** staff — un admin de serveur ne relève pas son propre plafond.
+**Body du `PUT` :** `{"cap": 500}` ou `{"cap": null}` pour restaurer le défaut.
+
+**Reponse :**
+
+```json
+{
+  "guild_id": "123456789",
+  "cap": 500,
+  "cap_overridden": true,
+  "default_cap": 300,
+  "used_today": 128,
+  "day": "20260806"
+}
+```
+
+> Les plafonds **durs** par type d'appel (`automod_decision`, `automod_decision_mini`, `automod_confirm`, `automod_rules_check`) vivent dans `quota_limits` / `quota_overrides` (scope `guild`, `-1` = illimité) et ne sont pas exposés ici.
+
+---
+
 ## Module — Social Notifications
 
 Le module `social_notifications` poste une notification Discord dès qu'un compte social suivi (YouTube, Twitch, Bluesky, RSS ; Instagram réservé) publie du nouveau contenu. La détection est faite par le service `moddy-feeds`, auquel **seul le bot** parle. Le backend **ne touche jamais** les streams `feeds:*` ni la table `social_subscriptions` en écriture : il **délègue** chaque écriture au bot via une tâche sur `moddy:tasks`, puis attend le résultat publié par le bot sur le Pub/Sub `moddy:dashboard` (corrélé par `request_id`). La lecture des abonnements se fait directement sur la table partagée. Détails complets : `docs/SOCIAL_NOTIFICATIONS.md`.
