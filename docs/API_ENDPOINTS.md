@@ -240,7 +240,12 @@ Detail d'un serveur. Combine les infos Discord (via bot token) avec la config DB
   "data": {
     "modules": {
       "starboard": {"channel_id": 999, "reaction_count": 5, "emoji": "⭐"},
-      "welcome_channel": {"channel_id": 888, "message_template": "Bienvenue {user} !"}
+      "welcome_channel": {
+        "version": 2,
+        "messages": [
+          {"id": "wm_3f9a1c72", "channel_id": "888", "message": "Bienvenue {user} !", "accent_color": null, "enabled": true, "created_by": null, "created_at": null}
+        ]
+      }
     }
   },
   "in_database": true
@@ -388,7 +393,7 @@ Retourne toutes les configs modules du serveur.
 ```json
 {
   "starboard": {"channel_id": 999, "reaction_count": 5, "emoji": "⭐"},
-  "welcome_channel": {"channel_id": 888, "message_template": "Bienvenue {user} !"},
+  "welcome_channel": {"version": 2, "messages": [{"id": "wm_3f9a1c72", "channel_id": "888", "message": "Bienvenue {user} !", "accent_color": null, "enabled": true, "created_by": null, "created_at": null}]},
   "auto_role": {"role_ids": [111, 222]}
 }
 ```
@@ -489,6 +494,95 @@ Desactive un module (supprime sa config).
 
 ```json
 {"guild_id": 123456789, "module_id": "starboard", "status": "disabled"}
+```
+
+---
+
+## Module — Starboard
+
+Le module `starboard` épingle un message dans un salon dédié quand il reçoit
+assez de réactions. Depuis 2026-08 il est piloté par un `ModuleSpec`
+(`app/modules/specs/starboard.py`) : validation + effet de bord passent par le
+endpoint **générique** `GET/PUT/PATCH/DELETE /guilds/{id}/modules/starboard` —
+pas de routeur dédié.
+
+**Structure stockée en DB** (`guilds.data.modules.starboard`) :
+
+```json
+{
+  "channel_id": 123456789012345678,
+  "reaction_count": 5,
+  "emoji": "⭐"
+}
+```
+
+| Champ | Type | Défaut | Contrainte |
+|---|---|---|---|
+| `channel_id` | snowflake (int64) \| `null` | `null` | Obligatoire pour activer le module. Vérifié en `pre_save` : doit résoudre à un salon texte/annonces existant de la guilde (`fetch_guild_channels`) — sinon **422**. Si Discord est injoignable, la vérification est ignorée (n'échoue pas la sauvegarde). |
+| `reaction_count` | int | `5` | Doit être dans `[1, 100]`. |
+| `emoji` | string | `"⭐"` | Doit être un emoji Unicode standard. Rejeté (**422**) si custom/de serveur (motif `<:name:id>` / `<a:name:id>`) ou s'il contient un caractère ASCII alphanumérique — mirror best-effort côté backend du check bot-side (`is_standard_discord_emoji`), pas identique bit à bit ; le bot reste juge final. |
+
+> **IDs Discord : chaînes en JSON, entiers en base.** Comme les autres modules,
+> `channel_id` est renvoyé en **chaîne** par l'API (snowflake > `Number.MAX_SAFE_INTEGER`)
+> et accepté en écriture aussi bien en chaîne qu'en nombre ; le stockage JSONB
+> reste en entier.
+
+> **Non couvert côté backend :** la permission `send_messages` du bot dans le
+> salon choisi n'est pas vérifiée ici (nécessiterait de calculer les
+> permission overwrites Discord) — seul le bot la contrôle à l'exécution.
+
+---
+
+### `GET /guilds/{guild_id}/modules/starboard`
+
+Config du module. Endpoint générique (voir `GET /guilds/{guild_id}/modules/{module_id}`).
+
+**Auth :** guild_access
+**Reponse :**
+
+```json
+{"channel_id": "123456789012345678", "reaction_count": 5, "emoji": "⭐"}
+```
+
+---
+
+### `PUT` / `PATCH /guilds/{guild_id}/modules/starboard`
+
+Sauvegarde complète de la config. Endpoint générique : validation contre le
+schéma `ModuleSpec`, puis `pre_save` (vérifie `channel_id`).
+
+**Auth :** guild_access
+**Body :**
+
+```json
+{"channel_id": 123456789012345678, "reaction_count": 3, "emoji": "🌟"}
+```
+
+**Actions déclenchées :**
+1. Validation Pydantic (`reaction_count` ∈ [1,100], `emoji` standard) — **422** si invalide
+2. `pre_save` : `channel_id` doit être un salon texte/annonces de la guilde — **422** sinon
+3. `UPDATE guilds SET data = jsonb_set(data, '{modules,starboard}', $2::jsonb) WHERE guild_id = $1`
+4. Invalide le cache : `DEL guild:{id}:config`
+5. Notifie le bot (Pub/Sub) : `PUBLISH moddy:bot {"type": "module_updated", "guild_id": 123, "module_id": "starboard"}`
+
+**Reponse :** config mise à jour (channel_id en chaîne)
+
+```json
+{"channel_id": "123456789012345678", "reaction_count": 3, "emoji": "🌟"}
+```
+
+**Erreurs :** `422` validation ou salon invalide, `404` serveur introuvable
+
+---
+
+### `DELETE /guilds/{guild_id}/modules/starboard`
+
+Désactive le module entier. Endpoint générique (voir `DELETE /guilds/{guild_id}/modules/{module_id}`).
+
+**Reponse :**
+
+```json
+{"guild_id": "123456789", "module_id": "starboard", "status": "disabled"}
 ```
 
 ---
@@ -731,7 +825,20 @@ running = enabled ET au moins une features[*].enabled ET notify_channel_id != nu
 | chaque clé de `features` est un feature id connu | `422 Fonctionnalité inconnue : <id>` |
 | `indications` (si modifiées) passent le contrôle anti-injection du bot | `422` avec la raison, ou `503` si le bot est injoignable |
 
-> **Contrôle anti-injection.** `indications` étant injecté verbatim dans le system prompt, tout texte **modifié** est envoyé au bot (`POST {BOT_INTERNAL_URL}/automod/rules_check`, call type `automod_rules_check`) avant d'être persisté — le même contrôle que le panel du bot. On échoue **fermé** : si le bot ne répond pas, la sauvegarde est refusée (`503`) plutôt que d'écrire du texte non vérifié. Le contrôle n'est rejoué que si le texte a changé (activer une feature ne relance pas d'appel IA).
+> **Contrôle anti-injection.** `indications` étant injecté verbatim dans le system prompt, tout texte **modifié** est envoyé au bot (`POST {BOT_INTERNAL_URL}/automod/rules_check`, call type `automod_rules_check`) avant d'être persisté — le même contrôle que le panel du bot. On échoue **fermé** : si le contrôle ne peut pas tourner, la sauvegarde est refusée (`503`) plutôt que d'écrire du texte non vérifié. Le contrôle n'est rejoué que si le texte a changé (activer une feature ne relance pas d'appel IA).
+>
+> Appel : `Authorization: Bearer {INTERNAL_API_SECRET}` (secret partagé avec le bot ; **sans lui le bot répond 401** et toute écriture des `indications` échoue en `503`), corps `{guild_id, indications, locale}` — `locale` est dérivée de `langue_serveur` (`fr` → `fr`, `en-US` → `en`, `auto` → défaut du bot) pour que la raison du refus soit affichable telle quelle.
+>
+> Interprétation de la réponse du bot :
+>
+> | Réponse du bot | Backend |
+> |---|---|
+> | `200 {"ok": true}` | sauvegarde |
+> | `200 {"ok": false, "code": "unsafe"\|"too_long", "reason": …}` | `422` avec `reason` |
+> | `200 {"ok": false, "code": "unavailable", …}` | `503` — **panne du bot, pas un texte refusé** |
+> | `400`/`401`/`404`/`503` (`invalid_guild_id`, `unauthorized`, `unknown_guild`, `bot_not_ready`) | `503` |
+>
+> Le point d'attention : le bot signale sa propre indisponibilité par un **`200` avec `ok: false`**. Ne jamais déduire « texte refusé » du seul `ok: false` — sinon une panne de gateway s'affiche à l'utilisateur comme un refus de ses indications.
 
 Comme pour tout module, une écriture invalide le cache et publie `{"type": "module_updated", "guild_id": ..., "module_id": "automod_ai"}` sur `moddy:bot` — sans cet événement le bot ne relirait la config qu'au redémarrage. `PUT` et `PATCH` ont la même sémantique : le corps **remplace** la config (le dashboard envoie toujours l'objet complet, comme le bot).
 
@@ -767,10 +874,10 @@ Comme pour tout module, une écriture invalide le cache et publie `{"type": "mod
 Passe un texte au contrôle anti-injection **sans rien sauvegarder** (retour immédiat dans le formulaire). Le même contrôle est rejoué à la sauvegarde : ce endpoint ne dispense de rien.
 
 **Auth :** guild_access
-**Body :** `{"indications": "pas d'insultes, même pour rire"}`
+**Body :** `{"indications": "pas d'insultes, même pour rire", "langue_serveur": "fr"}` (`langue_serveur` optionnel, défaut `auto` — choisit la langue de `reason`)
 
 **Reponse :** `{"ok": true}` ou `{"ok": false, "reason": "..."}`
-**Erreur :** `503` bot injoignable
+**Erreur :** `503` contrôle indisponible (bot injoignable, non authentifié, ou gateway du bot en panne)
 
 ---
 
