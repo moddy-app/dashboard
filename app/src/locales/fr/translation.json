@@ -182,6 +182,8 @@
       "channelDescription": "Salon où les messages étoilés seront publiés.",
       "emoji": "Emoji de réaction",
       "emojiDescription": "Emoji qui déclenche le starboard.",
+      "emojiCustomNotAllowed": "Les emojis personnalisés du serveur ne sont pas pris en charge ici — choisissez un emoji Unicode standard.",
+      "emojiInvalid": "Veuillez saisir un emoji Unicode valide.",
       "reactionCount": "Réactions requises",
       "reactionCountDescription": "Nombre de réactions nécessaires pour épingler un message.",
       "disabledSuccess": "Starboard désactivé."
