@@ -132,19 +132,37 @@ export interface StarboardConfig {
   emoji: string
 }
 
-export interface WelcomeChannelConfig {
+/**
+ * Message de bienvenue (v2). Un message = un salon ; jusqu'à
+ * {@link MAX_WELCOME_MESSAGES} par serveur. Plus aucun embed Discord : le bot
+ * envoie un Container Components V2 (texte + barre d'accent uniquement).
+ */
+export interface WelcomeMessage {
+  /** `wm_` + 8 hex minuscules, unique dans la guilde. Généré côté client. */
+  id: string
+  /** Snowflake en chaîne — ne JAMAIS parser en Number. */
   channel_id: string
-  message_template: string
-  mention_user: boolean
-  embed_enabled: boolean
-  embed_title?: string
-  embed_description?: string | null
-  embed_color?: number
-  embed_footer?: string | null
-  embed_image_url?: string | null
-  embed_thumbnail_enabled?: boolean
-  embed_author_enabled?: boolean
+  /** 1–1500 caractères (trim côté serveur). */
+  message: string
+  /** Entier décimal 0–0xFFFFFF ; `null` = couleur par défaut (0x5865F2). */
+  accent_color: number | null
+  enabled: boolean
+  /** Informatif seulement (rempli par le backend). */
+  created_by: string | null
+  /** Informatif seulement, ISO 8601 UTC. */
+  created_at: string | null
 }
+
+export interface WelcomeChannelConfig {
+  version: 2
+  messages: WelcomeMessage[]
+}
+
+/** Plafond serveur (MAX_WELCOME_MESSAGES) — un dépassement renvoie 422. */
+export const MAX_WELCOME_MESSAGES = 5
+
+/** Couleur d'accent appliquée par le bot quand `accent_color` vaut `null`. */
+export const WELCOME_DEFAULT_ACCENT = 0x5865f2
 
 export interface WelcomeDmConfig {
   message_template: string

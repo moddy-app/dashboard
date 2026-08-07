@@ -553,12 +553,20 @@ await updateModule("123456789", "starboard", {
   emoji: "⭐",
 });
 
-// Exemple : configurer le welcome channel
+// Exemple : configurer le welcome channel (v2 — la liste complète à chaque fois)
 await updateModule("123456789", "welcome_channel", {
-  channel_id: 111222333,
-  message_template: "Bienvenue {user} sur le serveur !",
-  mention_user: true,
-  embed_enabled: false,
+  version: 2,
+  messages: [
+    {
+      id: "wm_3f9a1c72",
+      channel_id: "111222333",
+      message: "Bienvenue {user} sur **{server}** !",
+      accent_color: null,
+      enabled: true,
+      created_by: null,
+      created_at: null,
+    },
+  ],
 });
 ```
 
@@ -595,21 +603,44 @@ interface StarboardConfig {
 
 #### Module `welcome_channel`
 
+Config **v2** : une liste de messages indépendants (un par salon), plus aucun
+`discord.Embed` — le bot envoie un Container Components V2 (texte + barre
+d'accent uniquement).
+
 ```typescript
+interface WelcomeMessage {
+  id: string;                   // "wm_" + 8 hex minuscules, unique dans la guilde,
+                                // généré côté client, jamais réutilisé
+  channel_id: string;           // Snowflake en string (ne jamais parser en Number)
+  message: string;              // 1–1500 caractères (trim côté serveur)
+  accent_color: number | null;  // 0–0xFFFFFF ; null = défaut 0x5865F2
+  enabled: boolean;             // pause sans supprimer
+  created_by: string | null;    // informatif
+  created_at: string | null;    // ISO 8601 UTC, informatif
+}
+
 interface WelcomeChannelConfig {
-  channel_id: number;
-  message_template: string;    // Utiliser {user} pour la mention
-  mention_user: boolean;
-  embed_enabled: boolean;
-  embed_title?: string;
-  embed_description?: string | null;
-  embed_color?: number;        // Couleur en décimal (ex: 5793266 = #5865F2)
-  embed_footer?: string | null;
-  embed_image_url?: string | null;
-  embed_thumbnail_enabled?: boolean;
-  embed_author_enabled?: boolean;
+  version: 2;
+  messages: WelcomeMessage[];   // max 5 (MAX_WELCOME_MESSAGES), sinon 422
 }
 ```
+
+Pas de clé `enabled` à la racine (ignorée par le backend) : le module est actif
+côté UI si au moins un message a `enabled: true` et un `channel_id`. Le PUT /
+PATCH remplace **toujours** la liste complète — il n'existe pas de patch par
+entrée. Une liste vide se traduit par un `DELETE` (module désactivé).
+
+Les entrées v1 sont migrées automatiquement à la lecture : le GET renvoie
+toujours du v2, aucun cas particulier à gérer côté frontend.
+
+Placeholders substitués littéralement par le bot (aucun templating, un token
+inconnu ne casse jamais le rendu) : `{server}`, `{user}`, `{display_name}`,
+`{username}`, `{member_count}`, `{timestamp}` (secondes Unix — à utiliser sous
+la forme `<t:{timestamp}:R>`).
+
+422 si : plus de 5 messages, id dupliqué, id hors format `^wm_[0-9a-f]{8}$`,
+message vide ou > 1500 caractères, `accent_color` hors [0, 0xFFFFFF], ou
+`channel_id` qui ne résout pas à un salon texte/annonces de la guilde.
 
 #### Module `welcome_dm`
 

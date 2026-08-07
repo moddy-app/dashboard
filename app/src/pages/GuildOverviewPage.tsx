@@ -39,7 +39,8 @@ import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
-import type { AutomodAiConfig, ModuleConfig } from "@/types/api"
+import type { AutomodAiConfig, ModuleConfig, WelcomeChannelConfig } from "@/types/api"
+import { isWelcomeActive } from "@/lib/welcome"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -60,6 +61,9 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   const config = modules[id]
   if (!config) return false
   if (id === 'automod_ai') return (config as AutomodAiConfig).enabled === true
+  // welcome_channel n'a pas d'interrupteur global : il est actif dès qu'un
+  // message est activé et rattaché à un salon.
+  if (id === 'welcome_channel') return isWelcomeActive(config as WelcomeChannelConfig)
   return true
 }
 
