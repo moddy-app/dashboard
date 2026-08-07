@@ -585,11 +585,10 @@ function MessageForm({ editing, textChannels, usedChannelIds, onChange, t }: Mes
   const { selectedGuildId } = useGuildContext()
   const { isNew, draft } = editing
   const duplicateChannel = Boolean(draft.channel_id) && usedChannelIds.includes(draft.channel_id)
-  // Le champ texte peut contenir une saisie en cours (`#58`) : l'aperçu et le
+  // Le champ texte peut contenir une saisie en cours (`#58`) : le swatch et le
   // sélecteur natif retombent alors sur la couleur par défaut.
   const customColor = accentHexToInt(draft.accent_color)
   const swatchColor = customColor === null ? DEFAULT_ACCENT_HEX : accentIntToHex(customColor)
-  const previewColor = draft.useDefaultColor ? DEFAULT_ACCENT_HEX : swatchColor
 
   return (
     <div className="flex flex-col gap-5">
@@ -718,25 +717,6 @@ function MessageForm({ editing, textChannels, usedChannelIds, onChange, t }: Mes
             />
           </div>
         )}
-      </div>
-
-      {/* Aperçu — barre d'accent + texte, aucun champ d'embed */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">{t("modules.welcome_channel.preview")}</label>
-        <div className="rounded-lg border bg-muted/30 p-3">
-          <div className="flex gap-3">
-            <span
-              className="w-1 self-stretch rounded-full shrink-0"
-              style={{ backgroundColor: previewColor }}
-            />
-            <p className="text-sm whitespace-pre-wrap break-words min-w-0">
-              {draft.message.trim() || t("modules.welcome_channel.previewEmpty")}
-            </p>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          {t("modules.welcome_channel.previewHint")}
-        </p>
       </div>
 
       {/* Actif / en pause (édition uniquement) */}
