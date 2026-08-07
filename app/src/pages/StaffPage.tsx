@@ -51,6 +51,7 @@ import { useGuildContext } from "@/contexts/GuildContext"
 import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getTallyForms, getTallySubmissions, getTallySubmission, updateTallySubmission, registerTallyForm } from "@/services/staff"
 import type { GlobalStats, BotStatus, UserFullProfile, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
 import { CasesBrowser } from "@/components/cases/cases-browser"
+import { AutomodBudgetPanel } from "@/components/automod/automod-budget-panel"
 import { canModerateCases } from "@/lib/cases"
 
 // Rôles staff ayant accès aux différentes sections
@@ -59,6 +60,8 @@ const CAN_MANAGE_GUILDS = ['Dev', 'Manager', 'Supervisor_Mod']
 const CAN_MANAGE_USERS = ['Dev', 'Manager', 'Supervisor_Mod', 'Moderator']
 const CAN_VIEW_CASES = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup', 'Moderator', 'Support']
 const CAN_ACCESS_BOT = ['Dev', 'Manager']
+// Le budget IA est un réglage d'exploitation : mêmes rôles que la gestion des serveurs.
+const CAN_MANAGE_AUTOMOD_BUDGET = ['Dev', 'Manager', 'Supervisor_Mod']
 const CAN_ACCESS_FORMS = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup']
 
 function hasRole(staffRoles: string[], allowedRoles: string[]): boolean {
@@ -967,6 +970,9 @@ export function StaffPage() {
       )}
       {activeTab === 'forms' && hasRole(staffRoles, CAN_ACCESS_FORMS) && (
         <FormsTab />
+      )}
+      {activeTab === 'automod_budget' && hasRole(staffRoles, CAN_MANAGE_AUTOMOD_BUDGET) && (
+        <AutomodBudgetPanel />
       )}
     </div>
   )

@@ -124,6 +124,7 @@ export type ModuleId =
   | 'logging'
   | 'adaptive_slowmode'
   | 'social_notifications'
+  | 'automod_ai'
 
 export interface StarboardConfig {
   channel_id: string
@@ -251,6 +252,80 @@ export interface SocialSubscribeResult {
   limit?: number
 }
 
+// ─── Automod AI ────────────────────────────────────────────────────────────────
+
+export type AutomodMaxAction = 'warn' | 'mute' | 'ban'
+export type AutomodLanguage = 'auto' | 'fr' | 'en-US'
+
+/** Un détecteur. `features` est une map ouverte : seul `content` existe
+ *  aujourd'hui, mais les suivants auront la même forme → rendu générique. */
+export interface AutomodFeature {
+  enabled: boolean
+  /** Snowflakes en chaînes — ne jamais passer par Number() (> 2^53). */
+  exempt_roles: string[]
+  exempt_channels: string[]
+}
+
+/**
+ * Config du module `automod_ai`. Identique en lecture et en écriture : le PUT
+ * remplace l'objet entier, on repart donc toujours de l'objet reçu.
+ *
+ * `categories_desactivees` est un champ ops sans sélecteur UI : il est conservé
+ * tel quel et renvoyé au PUT, sinon on écraserait un réglage posé côté staff.
+ * L'index signature permet de préserver aussi les champs ajoutés plus tard côté
+ * backend et inconnus de ce front.
+ */
+export interface AutomodAiConfig {
+  enabled: boolean
+  /** ≤ 3000 caractères, injecté verbatim dans le prompt IA. */
+  indications: string
+  notify_channel_id: string | null
+  ignore_moderators: boolean
+  /** 1 (permissif) → 5 (strict) */
+  severity: number
+  max_action: AutomodMaxAction
+  langue_serveur: AutomodLanguage
+  categories_desactivees: string[]
+  dry_run: boolean
+  features: Record<string, AutomodFeature>
+  [key: string]: unknown
+}
+
+export type AutomodWarning =
+  | 'missing_notify_channel'
+  | 'no_feature_enabled'
+  | 'dry_run'
+  | (string & {})
+
+/** État *réel* du module : `running` ≠ `enabled` (voir GET /status). */
+export interface AutomodAiStatus {
+  guild_id: string
+  module_id: string
+  running: boolean
+  enabled: boolean
+  dry_run: boolean
+  notify_channel_id: string | null
+  active_features: string[]
+  warnings: AutomodWarning[]
+}
+
+/** Réponse du contrôle anti-injection des indications. */
+export interface AutomodIndicationsCheck {
+  ok: boolean
+  reason?: string
+}
+
+/** Budget IA quotidien (staff uniquement). */
+export interface AutomodBudget {
+  guild_id: string
+  cap: number
+  cap_overridden: boolean
+  default_cap: number
+  used_today: number
+  /** Jour de comptage, format YYYYMMDD. */
+  day: string
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
@@ -261,6 +336,7 @@ export type ModuleConfig =
   | LoggingConfig
   | AdaptiveSlowmodeConfig
   | SocialNotificationsConfig
+  | AutomodAiConfig
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 
