@@ -113,10 +113,19 @@ thumbnail) — ces champs ont disparu du modèle et de l'UI.
 
 Aide-mémoire informatif uniquement (substitution littérale côté bot, un token
 inconnu ne casse jamais le rendu) : `{server}`, `{user}`, `{display_name}`,
-`{username}`, `{member_count}`, et `<t:{timestamp}:R>` proposé sous cette forme
-plutôt que `{timestamp}` seul. Ils sont injectés dans le `MessageEditor`
-réutilisable (surlignage + insertion en un clic), aucune validation stricte
-côté client.
+`{username}`, `{member_count}`, `{timestamp}`. Ils sont injectés dans le
+`MessageEditor` réutilisable (le même que Social Notifications : surlignage +
+insertion en un clic), en tokens `{…}` bruts — c'est sur cette forme que
+`RichTextEditor` fait correspondre la coloration. L'aide sous l'éditeur suggère
+`<t:{timestamp}:R>` pour afficher l'arrivée en date relative. Aucune validation
+stricte côté client.
+
+Message prérempli d'une nouvelle entrée (adapté à la langue de l'utilisateur) :
+
+```
+Welcome {user} to **{server}**!
+-# They are the **{member_count}**th member
+```
 
 ## Problèmes rencontrés
 

@@ -11,14 +11,19 @@ import {
 // action de l'UI réécrit la liste complète via PUT/PATCH — il n'existe pas
 // d'endpoint par entrée.
 
-/** Placeholders substitués littéralement par le bot (aide-mémoire UI). */
+/**
+ * Placeholders substitués littéralement par le bot (aide-mémoire UI + coloration
+ * dans l'éditeur). Tokens `{…}` bruts, comme pour Social Notifications : c'est
+ * sur eux que `RichTextEditor` fait correspondre le surlignage. `{timestamp}`
+ * rend des secondes Unix — l'aide sous l'éditeur suggère `<t:{timestamp}:R>`.
+ */
 export const WELCOME_PLACEHOLDERS = [
   "{server}",
   "{user}",
   "{display_name}",
   "{username}",
   "{member_count}",
-  "<t:{timestamp}:R>",
+  "{timestamp}",
 ] as const
 
 /**

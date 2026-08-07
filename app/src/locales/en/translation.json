@@ -207,7 +207,7 @@
       "message": "Message",
       "messagePlaceholder": "Welcome {user} to {server}!",
       "placeholdersHint": "Placeholders are replaced when the message is sent. Use <t:{timestamp}:R> to show the join time as a relative date.",
-      "defaultMessage": "Welcome {user} to **{server}**!\n-# They are member **{member_count}**",
+      "defaultMessage": "Welcome {user} to **{server}**!\n-# They are the **{member_count}**th member",
       "accentColor": "Accent color",
       "colorDefault": "Default",
       "colorCustom": "Custom",
