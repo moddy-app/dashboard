@@ -2,17 +2,66 @@ import { logger } from '@/lib/logger'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
 
+/** Une entrée du tableau `error` renvoyé sur un 422 de validation de schéma. */
+export interface ApiValidationIssue {
+  loc: (string | number)[]
+  msg: string
+  type?: string
+}
+
 export class ApiError extends Error {
   status: number
-  constructor(status: number, message: string) {
+  /**
+   * Payload brut du champ `error` : le backend renvoie soit une chaîne
+   * (`{"error": "Salon d'alertes invalide"}`), soit un tableau d'erreurs de
+   * validation (`{"error": [{"loc": ["severity"], "msg": "..."}]}`).
+   * `message` en est la version aplatie ; `detail` garde la forme d'origine
+   * pour pouvoir rattacher chaque erreur à son champ de formulaire.
+   */
+  detail: unknown
+  constructor(status: number, message: string, detail?: unknown) {
     super(message)
     this.status = status
+    this.detail = detail ?? message
   }
   get isUnauthorized() { return this.status === 401 }
   get isForbidden() { return this.status === 403 }
   get isNotFound() { return this.status === 404 }
   get isServerError() { return this.status >= 500 }
   get isNetworkError() { return this.status === 0 }
+  get isUnavailable() { return this.status === 503 }
+
+  /** Erreurs de validation par champ (vide si `error` était une chaîne). */
+  get validationIssues(): ApiValidationIssue[] {
+    if (!Array.isArray(this.detail)) return []
+    return this.detail.filter(
+      (i): i is ApiValidationIssue =>
+        typeof i === 'object' && i !== null && typeof (i as ApiValidationIssue).msg === 'string'
+    )
+  }
+}
+
+/**
+ * Aplatit le champ `error` en un message lisible. Sans ça un tableau de
+ * validation finirait en `[object Object]` dans le toast d'erreur.
+ */
+function formatApiError(raw: unknown, status: number): string {
+  if (typeof raw === 'string' && raw) return raw
+  if (Array.isArray(raw)) {
+    const parts = raw
+      .map((issue) => {
+        if (typeof issue !== 'object' || issue === null) return String(issue)
+        const { loc, msg } = issue as ApiValidationIssue
+        // `body` / `config` sont du bruit d'enveloppe Pydantic, pas des champs.
+        const field = Array.isArray(loc)
+          ? loc.filter((p) => p !== 'body' && p !== 'config').join('.')
+          : ''
+        return field ? `${field}: ${msg}` : String(msg ?? '')
+      })
+      .filter(Boolean)
+    if (parts.length > 0) return parts.join(' · ')
+  }
+  return `HTTP ${status}`
 }
 
 export async function api(path: string, options: RequestInit = {}): Promise<unknown> {
@@ -44,9 +93,10 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
       throw new ApiError(401, 'Unauthorized')
     }
     const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
-    const message = (error as { error: string }).error ?? `HTTP ${response.status}`
-    logger.error('api', `← ${method} ${path} ${response.status} ${duration}ms`, message)
-    throw new ApiError(response.status, message)
+    const detail = (error as { error?: unknown }).error
+    const message = formatApiError(detail, response.status)
+    logger.error('api', `← ${method} ${path} ${response.status} ${duration}ms`, detail ?? message)
+    throw new ApiError(response.status, message, detail)
   }
 
   const text = await response.text()

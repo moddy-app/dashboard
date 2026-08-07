@@ -39,6 +39,7 @@ import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
+import type { AutomodAiConfig, ModuleConfig } from "@/types/api"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -47,6 +48,20 @@ const STAT_STYLES = {
   orange: { box: "bg-orange-100 dark:bg-orange-950", icon: "text-orange-600 dark:text-orange-400" },
   purple: { box: "bg-purple-100 dark:bg-purple-950", icon: "text-purple-600 dark:text-purple-400" },
 } as const
+
+/**
+ * Un module est « activé » dès qu'il est configuré, sauf ceux qui portent leur
+ * propre interrupteur : `automod_ai` reste stocké (indications, exemptions) même
+ * éteint, sa présence dans `modules` ne veut donc pas dire qu'il est actif.
+ * (L'état *réel* d'automod_ai dépend en plus du salon d'alertes et des
+ * détecteurs — il est affiché sur la page du module, via GET /status.)
+ */
+function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boolean {
+  const config = modules[id]
+  if (!config) return false
+  if (id === 'automod_ai') return (config as AutomodAiConfig).enabled === true
+  return true
+}
 
 // ─── Carte module ─────────────────────────────────────────────────────────────
 
@@ -208,6 +223,7 @@ export function GuildOverviewPage() {
     { id: 'logging', icon: ScrollTextIcon },
     { id: 'adaptive_slowmode', icon: GaugeIcon },
     { id: 'social_notifications', icon: BellRingIcon },
+    { id: 'automod_ai', icon: SparklesIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null
@@ -350,7 +366,7 @@ export function GuildOverviewPage() {
               name={t(`modules.${id}.name`)}
               description={t(`modules.${id}.description`)}
               icon={icon}
-              isEnabled={id in modules}
+              isEnabled={isModuleEnabled(id, modules)}
               guildId={selectedGuildId}
               onNavigate={navigate}
             />

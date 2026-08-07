@@ -17,6 +17,7 @@ import {
   ClipboardListIcon,
   BellRingIcon,
   ShieldAlertIcon,
+  SparklesIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -127,6 +128,12 @@ export function AppSidebar({
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
         },
         {
+          title: t("modules.automod_ai.name"),
+          url: `/servers/${selectedGuildId}/modules/automod_ai`,
+          icon: SparklesIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/automod_ai`,
+        },
+        {
           title: t("modules.social_notifications.name"),
           url: `/servers/${selectedGuildId}/modules/social_notifications`,
           icon: BellRingIcon,
@@ -177,6 +184,12 @@ export function AppSidebar({
           url: "/staff?tab=forms",
           icon: ClipboardListIcon,
           isActive: staffTab === "forms",
+        },
+        {
+          title: t("staff.tabs.automodBudget"),
+          url: "/staff?tab=automod_budget",
+          icon: SparklesIcon,
+          isActive: staffTab === "automod_budget",
         },
       ]
     : []
