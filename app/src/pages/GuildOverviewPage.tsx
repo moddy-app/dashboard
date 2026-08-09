@@ -19,6 +19,7 @@ import {
   RadioIcon,
   HashIcon,
   LinkIcon,
+  PaletteIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -39,8 +40,14 @@ import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
-import type { AutomodAiConfig, ModuleConfig, WelcomeChannelConfig } from "@/types/api"
+import type {
+  AutomodAiConfig,
+  BotCustomizationConfig,
+  ModuleConfig,
+  WelcomeChannelConfig,
+} from "@/types/api"
 import { isWelcomeActive } from "@/lib/welcome"
+import { isBotCustomizationActive } from "@/lib/bot-customization"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -64,6 +71,9 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   // welcome_channel n'a pas d'interrupteur global : il est actif dès qu'un
   // message est activé et rattaché à un salon.
   if (id === 'welcome_channel') return isWelcomeActive(config as WelcomeChannelConfig)
+  // bot_customization non plus : le bloc peut exister vide (`{}`) — il est actif
+  // dès qu'un champ (pseudo, bio, avatar, bannière, style) est renseigné.
+  if (id === 'bot_customization') return isBotCustomizationActive(config as BotCustomizationConfig)
   return true
 }
 
@@ -228,6 +238,7 @@ export function GuildOverviewPage() {
     { id: 'adaptive_slowmode', icon: GaugeIcon },
     { id: 'social_notifications', icon: BellRingIcon },
     { id: 'automod_ai', icon: SparklesIcon },
+    { id: 'bot_customization', icon: PaletteIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null

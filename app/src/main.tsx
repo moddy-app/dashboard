@@ -22,6 +22,7 @@ import { LoggingPage } from "@/pages/modules/LoggingPage"
 import { AdaptiveSlowmodePage } from "@/pages/modules/AdaptiveSlowmodePage"
 import { SocialNotificationsPage } from "@/pages/modules/SocialNotificationsPage"
 import { AutomodAiPage } from "@/pages/modules/AutomodAiPage"
+import { BotCustomizationPage } from "@/pages/modules/BotCustomizationPage"
 import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
 import { MyCasesPage } from "@/pages/MyCasesPage"
@@ -51,6 +52,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/adaptive_slowmode", element: <AdaptiveSlowmodePage /> },
       { path: "servers/:guildId/modules/social_notifications", element: <SocialNotificationsPage /> },
       { path: "servers/:guildId/modules/automod_ai", element: <AutomodAiPage /> },
+      { path: "servers/:guildId/modules/bot_customization", element: <BotCustomizationPage /> },
       { path: "staff", element: <StaffPage /> },
       { path: "premium", element: <PremiumPage /> },
       { path: "select-premium-servers", element: <Navigate to="/?openSettings=billing" replace /> },
