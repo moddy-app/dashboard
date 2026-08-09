@@ -529,7 +529,7 @@
       "description": "Donnez à Moddy son propre pseudo, sa bio, son avatar, sa bannière et son style de pseudo sur ce serveur.",
       "previewTitle": "Aperçu",
       "previewDescription": "Le rendu de Moddy sur ce serveur une fois les changements appliqués.",
-      "previewHint": "Les polices et les effets sont rendus par Discord — l'aperçu ne montre que les couleurs.",
+      "previewHint": "Rendu avec les polices et effets de Discord. Ici l'animation boucle ; sur Discord elle ne joue qu'une fois.",
       "identityTitle": "Identité",
       "identityDescription": "Pseudo, bio, avatar et bannière de Moddy sur ce serveur.",
       "premiumBadge": "Moddy Max",
@@ -606,7 +606,22 @@
         "save_failed": "Le changement n'a pas pu être enregistré.",
         "internal_error": "Une erreur interne s'est produite. Réessayez dans quelques instants.",
         "bot_timeout": "Moddy n'a pas répondu à temps. Le changement sera appliqué dès son retour — rechargez la page dans un moment."
-      }
+      },
+      "fonts": {
+        "3": "Sakura",
+        "4": "Jellybean",
+        "6": "Moderne",
+        "7": "Médiéval",
+        "8": "8 bits",
+        "10": "Vampyre",
+        "12": "Tempo"
+      },
+      "effects": {
+        "3": "Néon",
+        "4": "Cartoon",
+        "5": "Pop"
+      },
+      "fontPreviewLabel": "Aa"
     }
   },
   "staff": {

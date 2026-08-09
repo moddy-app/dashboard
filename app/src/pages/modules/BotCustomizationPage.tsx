@@ -13,6 +13,7 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react"
+import { NameStyleFromIds, NameStylePreview } from "@/components/name-style-preview"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ErrorPage } from "@/components/error-state"
 import { DebugErrorOverlay } from "@/components/debug-error-overlay"
@@ -53,6 +54,7 @@ import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
+import { effectSlug, fontSlug } from "@/lib/discord-name-styles"
 import {
   DEFAULT_STYLE_COLOR,
   botCustomizationErrorCode,
@@ -148,21 +150,6 @@ function CustomizationPreview({
   const displayName = nickname.trim() || fallbackName
   const colors = style.colors.filter(isValidHex)
 
-  // Le dégradé se rend en `background-clip: text` ; une couleur unique suffit
-  // en `color`. Les polices Discord ne sont pas distribuées : elles sont
-  // indiquées en légende plutôt que simulées.
-  const nameStyle =
-    style.effect_id === limits.gradient_effect_id && colors.length >= 2
-      ? {
-          backgroundImage: `linear-gradient(90deg, ${colors[0]}, ${colors[1]})`,
-          WebkitBackgroundClip: "text" as const,
-          backgroundClip: "text" as const,
-          color: "transparent",
-        }
-      : colors.length >= 1
-        ? { color: colors[0] }
-        : undefined
-
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
       <div className="relative h-28 w-full bg-gradient-to-br from-muted to-muted-foreground/15 sm:h-32">
@@ -183,9 +170,14 @@ function CustomizationPreview({
           </AvatarFallback>
         </Avatar>
 
-        <p className="mt-3 truncate text-lg font-semibold leading-tight" style={nameStyle}>
-          {displayName}
-        </p>
+        <NameStyleFromIds
+          className="mt-3 max-w-full text-lg font-semibold leading-tight"
+          name={displayName}
+          fontId={style.font_id}
+          effectId={style.effect_id}
+          gradientEffectId={limits.gradient_effect_id}
+          colors={colors}
+        />
 
         <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
           {bio.trim() && <p className="whitespace-pre-wrap break-words">{bio.trim()}</p>}
@@ -682,6 +674,10 @@ function BotCustomizationForm() {
           defaultValue: t("modules.bot_customization.effectGeneric", { id }),
         })
 
+  // Couleurs utilisées pour prévisualiser les effets dans le sélecteur : celles
+  // du brouillon, ou la couleur par défaut de Discord tant qu'aucune n'est posée.
+  const previewColors = draft.style.colors.filter(isValidHex)
+
   const previewAvatar =
     draft.avatar.kind === "file"
       ? draft.avatar.previewUrl
@@ -903,16 +899,20 @@ function BotCustomizationForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>{t("modules.bot_customization.fontDefault")}</SelectItem>
+                  {/* Chaque option est écrite dans sa propre police, comme dans le
+                      sélecteur Discord : le nom seul ne dit rien du rendu. */}
                   {limits.font_ids.map((id) => (
                     <SelectItem key={id} value={String(id)}>
-                      {fontLabel(id)}
+                      <span className={`dns-font-${fontSlug(id)}`}>{fontLabel(id)}</span>
                     </SelectItem>
                   ))}
                   {/* Police enregistrée qui n'est plus proposée par l'API :
                       gardée en option désactivée pour ne pas l'effacer en silence. */}
                   {draft.style.font_id !== null && !limits.font_ids.includes(draft.style.font_id) && (
                     <SelectItem value={String(draft.style.font_id)} disabled>
-                      {fontLabel(draft.style.font_id)}
+                      <span className={`dns-font-${fontSlug(draft.style.font_id)}`}>
+                        {fontLabel(draft.style.font_id)}
+                      </span>
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -932,9 +932,19 @@ function BotCustomizationForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>{t("modules.bot_customization.effectNone")}</SelectItem>
+                  {/* Chaque option porte son propre effet, avec les couleurs
+                      courantes. Animation coupée ici : elle tournerait aussi
+                      dans le bouton du Select (Radix y recopie l'option
+                      sélectionnée) — l'aperçu au-dessus l'anime déjà. */}
                   {limits.effect_ids.map((id) => (
                     <SelectItem key={id} value={String(id)}>
-                      {effectLabel(id)}
+                      <NameStylePreview
+                        name={effectLabel(id)}
+                        font={fontSlug(draft.style.font_id)}
+                        effect={effectSlug(id, limits.gradient_effect_id)}
+                        colors={previewColors}
+                        animated={false}
+                      />
                     </SelectItem>
                   ))}
                   {draft.style.effect_id !== null &&
