@@ -128,12 +128,19 @@ function CustomizationPreview({
 
   const fallbackName = botProfile?.username ?? "Moddy"
 
+  // L'attribution est ajoutée par le bot **au moment où il écrit la bio de
+  // serveur**. Sans bio de serveur, il n'écrit rien : Discord affiche la bio
+  // globale du profil, telle quelle, sans attribution. L'aperçu doit donc la
+  // taire dès qu'il retombe sur le profil global — sinon il promet une ligne
+  // qui n'existera jamais sur Discord.
+  const guildBio = bio.trim()
+
   return (
     <DiscordProfilePreview
       displayName={nickname.trim() || fallbackName}
       username={fallbackName}
-      bio={bio.trim() || botProfile?.bio || ""}
-      bioAttribution={limits.bio_attribution}
+      bio={guildBio || botProfile?.bio || ""}
+      bioAttribution={guildBio ? limits.bio_attribution : null}
       avatarUrl={avatarUrl ?? botProfile?.avatar_url ?? null}
       bannerUrl={bannerUrl ?? botProfile?.banner_url ?? null}
       accentColor={botProfile?.accent_color ?? null}

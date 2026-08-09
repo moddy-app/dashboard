@@ -111,7 +111,13 @@ export interface DiscordProfilePreviewProps {
   username: string
   /** Bio résolue (guilde ou globale), en markdown Discord. */
   bio: string
-  /** Ligne d'attribution ajoutée par le bot, non éditable. */
+  /**
+   * Ligne d'attribution ajoutée par le bot, non éditable.
+   *
+   * ⚠️ Ne la passer que si `bio` est bien une bio **de serveur** : le bot
+   * n'appose l'attribution que sur ce qu'il écrit lui-même. Une bio héritée du
+   * profil global n'en porte pas — l'appelant passe `null` dans ce cas.
+   */
   bioAttribution?: string | null
   avatarUrl: string | null
   bannerUrl: string | null

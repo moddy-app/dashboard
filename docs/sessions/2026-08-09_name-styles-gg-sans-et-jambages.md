@@ -154,6 +154,21 @@ Résultat vérifié au navigateur sur une guilde vierge : amorce `effect_id: 5` 
 `#1C98EB`, formulaire non modifié au chargement, « Aucun effet » → `{"style":
 null}` et pseudo nu dans la couleur de texte de Discord.
 
+### 4. Pas d'attribution sous la bio par défaut
+
+L'aperçu affichait « Propulsé par Moddy » quelle que soit l'origine de la bio.
+Or l'attribution est apposée par le bot **au moment où il écrit la bio de
+serveur** : sans bio de serveur, il n'écrit rien, Discord affiche la bio globale
+du profil telle quelle, sans attribution. L'aperçu promettait donc une ligne qui
+n'existerait jamais sur Discord.
+
+`CustomizationPreview` ne passe plus `bio_attribution` que si le brouillon
+contient une bio de serveur. Le composant, lui, ne décide de rien : la contrainte
+est documentée sur la prop `bioAttribution`, à charge de l'appelant de ne la
+fournir que pour une bio de serveur.
+
+Cas « aucune bio du tout » : même règle, la section bio disparaît entièrement.
+
 ## Prochaines étapes suggérées
 
 - Confirmer la correspondance des `effect_id` 3/4/5 sur un vrai serveur (seul le
