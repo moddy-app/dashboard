@@ -40,8 +40,20 @@
 @font-face { font-family: "DNS Vampyre";   font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/name-styles/Vampyre-normal-400.woff2") format("woff2"); }
 @font-face { font-family: "DNS Tempo";     font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/name-styles/Tempo-normal-600.woff2") format("woff2"); }
 
-/* Police d'UI substituée à `gg sans` : Google Sans, comme le reste du dashboard. */
-:root { --dns-ui-font: var(--font-sans, ui-sans-serif, system-ui, sans-serif); }
+/* Police d'UI des name styles : `gg sans`, comme chez Discord.
+   Les `@font-face` de `gg sans` sont déclarés dans `discord-profile.css`.
+   C'est la police par défaut du sélecteur Discord (`dns-font-default`) *et* le
+   repli des 7 autres, dont la couverture s'arrête à U+0237 : rendre un pseudo
+   en Google Sans ne ressemble à rien de ce que Discord affiche.
+   Google Sans reste en repli, le temps que le woff2 arrive.
+
+   `gg sans` est passée open source, elle n'est donc plus cantonnée pour des
+   raisons de licence. Elle reste malgré tout réservée aux surfaces qui *imitent*
+   Discord — les classes `.dns-*` et `.dpp-scope` — pour une raison de design :
+   le châssis du dashboard est en Google Sans, et doit le rester. */
+:root {
+  --dns-ui-font: "gg sans", var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+}
 
 /* Piles + letter-spacing repris à l'identique de Discord. */
 .dns-font-default   { font-family: var(--dns-ui-font); }
@@ -298,4 +310,35 @@
   .dns-animated .dns--toon::before,
   .dns-animated .dns--pop,
   .dns-animated .dns--pop::before { animation: none; }
+}
+
+/* --------------------------------------------------------------------------
+   5. ADDITION MODDY — les 2 px manquants de `pop`
+   Tout ce qui précède est du Discord brut ; cette règle est à nous.
+
+   `pop` peint sa copie colorée dans un `::before` que Discord dimensionne à
+   `width: calc(100% - var(--dns-pop-stroke))` — 2 px de moins que le texte, pour
+   compenser le décalage horizontal du contour.
+
+   Chez Discord ce `::before` vit dans un popout de 300 px où le pseudo a de la
+   marge : les 2 px ne se voient pas. Partout où on pose ce composant, la boîte
+   est au contraire **ajustée au texte** — ligne de pseudo en flex, option de
+   `Select` — donc large *exactement* comme le mot. Les 2 px manquants font alors
+   déborder la copie colorée, et `overflow: hidden` la rogne :
+
+     - en `wrap` (aperçu du profil), la dernière lettre part sur une deuxième
+       ligne aussitôt coupée : la copie rendait « Modd » au lieu de « Moddy », et
+       l'effet semblait absent du jambage du « y » ;
+     - en `nowrap` (menus déroulants police / effet), c'est l'ellipse qui
+       s'active et ampute la dernière lettre du libellé.
+
+   On rend les 2 px en padding et on les reprend en marge négative : la boîte
+   peinte s'élargit, la mise en page ne bouge pas, et le `::before` retrouve la
+   largeur du texte — les deux calques se coupent donc au même endroit sur un
+   pseudo réellement trop long.
+   -------------------------------------------------------------------------- */
+
+.dns-on .dns--pop {
+  margin-inline-end: calc(var(--dns-pop-stroke) * -1);
+  padding-inline-end: var(--dns-pop-stroke);
 }
