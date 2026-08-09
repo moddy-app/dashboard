@@ -1,4 +1,5 @@
 import { ApiError } from '@/lib/auth'
+import { DEFAULT_BOT_NAME_STYLE, effectSlug } from '@/lib/discord-name-styles'
 import type {
   BotCustomizationConfig,
   BotCustomizationLimits,
@@ -68,13 +69,50 @@ export function fitColors(colors: string[], slots: { min: number; max: number })
   return next
 }
 
-/** Style tel que reçu → brouillon hex prêt pour le formulaire. */
-export function styleToDraft(config: BotCustomizationConfig): StyleDraft {
-  const style = config.style
+/**
+ * Style global de Moddy, tel que Discord l'affiche là où la guilde n'a rien
+ * personnalisé : effet pop, en bleu. L'identifiant d'effet est **relu depuis
+ * `limits`** (via {@link effectSlug}) plutôt que codé en dur — si le backend
+ * renumérote ses effets, l'amorce suit. S'il ne propose pas `pop`, on retombe
+ * sur un style vide plutôt que d'inventer un identifiant.
+ */
+function defaultStyleDraft(limits: BotCustomizationLimits): StyleDraft {
+  const effectId =
+    limits.effect_ids.find(
+      (id) => effectSlug(id, limits.gradient_effect_id) === DEFAULT_BOT_NAME_STYLE.effect
+    ) ?? null
+
+  if (effectId === null) return { font_id: null, effect_id: null, colors: [] }
   return {
-    font_id: style?.font_id ?? null,
-    effect_id: style?.effect_id ?? null,
-    colors: (style?.colors ?? []).map(intToHex),
+    font_id: null,
+    effect_id: effectId,
+    colors: [DEFAULT_BOT_NAME_STYLE.color.toUpperCase()],
+  }
+}
+
+/**
+ * Style tel que reçu → brouillon hex prêt pour le formulaire.
+ *
+ * Quand la guilde n'a **jamais** configuré de style (`config.style` absent), le
+ * brouillon est amorcé sur le style global du bot plutôt que sur « aucun effet » :
+ * c'est ce que Discord affiche réellement en l'absence d'override, donc ce que le
+ * menu déroulant doit montrer à l'ouverture.
+ *
+ * L'amorce passe des **deux côtés du diff** — `stateToDraft` et `diffDraft`
+ * appellent tous deux cette fonction — donc un formulaire qu'on n'a pas touché
+ * n'est jamais « modifié ». Choisir « Aucun effet » devient au contraire un vrai
+ * changement, sérialisé en `style: null` par {@link isEmptyStyle}.
+ *
+ * Un `style` présent mais sans effet reste tel quel : une guilde qui a
+ * explicitement retiré l'effet ne se le voit pas réamorcer à chaque chargement.
+ */
+export function styleToDraft(state: BotCustomizationState): StyleDraft {
+  const style = state.config.style
+  if (style === null || style === undefined) return defaultStyleDraft(state.limits)
+  return {
+    font_id: style.font_id ?? null,
+    effect_id: style.effect_id ?? null,
+    colors: (style.colors ?? []).map(intToHex),
   }
 }
 
@@ -109,7 +147,7 @@ export function stateToDraft(state: BotCustomizationState): CustomizationDraft {
   return {
     nickname: state.config.nickname ?? '',
     bio: state.config.bio ?? '',
-    style: styleToDraft(state.config),
+    style: styleToDraft(state),
     avatar: { kind: 'keep' },
     banner: { kind: 'keep' },
   }
@@ -152,7 +190,7 @@ export function diffDraft(
     body.bio = bio === '' ? null : bio
   }
 
-  const savedStyle = styleToDraft(state.config)
+  const savedStyle = styleToDraft(state)
   if (!sameStyle(savedStyle, draft.style)) {
     body.style = isEmptyStyle(draft.style)
       ? null

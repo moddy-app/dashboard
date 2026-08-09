@@ -2,11 +2,7 @@ import { useTranslation } from "react-i18next"
 import { DiscordMarkup } from "@/components/discord-markup"
 import { NameStylePreview } from "@/components/name-style-preview"
 import { useTheme } from "@/components/theme-provider"
-import {
-  DEFAULT_BOT_NAME_STYLE,
-  effectSlug,
-  fontSlug,
-} from "@/lib/discord-name-styles"
+import { effectSlug, fontSlug } from "@/lib/discord-name-styles"
 import { getGuildIconUrl, type Guild } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 
@@ -174,23 +170,17 @@ export function DiscordProfilePreview({
         }),
   }
 
-  // Rien de configuré dans la guilde → style global du bot (pop bleu), comme
-  // pour l'avatar et la bio. Un seul des trois champs suffit à sortir du défaut.
-  const hasCustomStyle = fontId !== null || effectId !== null || colors.length > 0
-  const nameStyle = hasCustomStyle
-    ? {
-        font: fontSlug(fontId),
-        effect: effectSlug(effectId, gradientEffectId),
-        colors,
-        // Sans couleur choisie, Discord garde la couleur de texte par défaut.
-        plain: colors.length === 0 && effectId === null,
-      }
-    : {
-        font: DEFAULT_BOT_NAME_STYLE.font,
-        effect: DEFAULT_BOT_NAME_STYLE.effect,
-        colors: [DEFAULT_BOT_NAME_STYLE.color],
-        plain: false,
-      }
+  // L'aperçu rend exactement ce que le formulaire décrit — aucun repli implicite.
+  // « Aucun effet » doit être *vraiment* aucun effet : le style global du bot
+  // (pop bleu) sert d'amorce au brouillon (`styleToDraft`), pas de valeur de
+  // secours ici, sinon on ne peut plus afficher l'absence d'effet.
+  const nameStyle = {
+    font: fontSlug(fontId),
+    effect: effectSlug(effectId, gradientEffectId),
+    colors,
+    // Ni effet ni couleur → pseudo nu, dans la couleur de texte de Discord.
+    plain: effectId === null && colors.length === 0,
+  }
 
   const hasBio = Boolean(bio.trim() || bioAttribution)
 

@@ -342,3 +342,28 @@
   margin-inline-end: calc(var(--dns-pop-stroke) * -1);
   padding-inline-end: var(--dns-pop-stroke);
 }
+
+/* --------------------------------------------------------------------------
+   6. ADDITION MODDY — `.dns-loop` ne bouclait pas
+
+   Section 4, `.dns-animated.dns-loop > *` pose `animation-iteration-count:
+   infinite`. Le sélecteur ne pèse que **deux classes** — `*` n'ajoute rien à la
+   spécificité — soit exactement le poids de `.dns-animated .dns--pop` qui suit,
+   et dont la propriété raccourcie `animation` remet le compteur à 1. À
+   spécificité égale, c'est l'ordre du fichier qui tranche : la règle de boucle
+   étant écrite avant, elle perdait. Les effets ne jouaient donc qu'une fois.
+
+   On la réaffirme ici, après les quatre règles d'animation, plutôt que de
+   réordonner le CSS d'origine : le fichier reste diffable contre le kit.
+
+   La pause entre deux passages est déjà dans les keyframes de Discord — chaque
+   effet est joué sur la première moitié du cycle puis tenu immobile (`50%, 100%`
+   pour pop, `55%, 100%` pour cartoon, `51%, 100%` pour néon), soit ~2 s de repos
+   sur les 4 s. Pas de `animation-delay` à ajouter : il ne s'appliquerait qu'au
+   premier passage, pas entre les itérations.
+   -------------------------------------------------------------------------- */
+
+.dns-animated.dns-loop > *,
+.dns-animated.dns-loop > *::before {
+  animation-iteration-count: infinite;
+}
