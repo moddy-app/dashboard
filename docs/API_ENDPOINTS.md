@@ -1008,6 +1008,130 @@ La réponse du bot `{"ok": false, "error": "<code>"}` est mappée :
 
 ---
 
+## Module — Bot Customization
+
+Le module `bot_customization` personnalise l'apparence de Moddy **dans une guilde** : pseudo, bio, avatar, bannière (premium) et style du pseudo (gratuit).
+
+Le backend **n'écrit jamais** `guilds.data.modules.bot_customization` : les hashes d'avatar/bannière ne peuvent venir que de Discord. Chaque écriture est **déléguée** au bot via une tâche `bot_customization_update` sur `moddy:tasks`, dont le résultat revient sur `moddy:dashboard` (corrélé par `request_id`). Ces routes **masquent** les routes génériques des modules pour ce `module_id`. Détails complets : `docs/BOT_CUSTOMIZATION.md`.
+
+| Champ | Condition |
+|---|---|
+| `nickname`, `bio`, `avatar_url`, `banner_url` | guilde premium |
+| `style` | toujours |
+
+Le gating premium fait ici est un **filtre UX** ; le bot re-vérifie. Réinitialiser un champ premium (`null`) reste permis sans premium.
+
+### `GET /guilds/{guild_id}/modules/bot_customization`
+
+État courant + tout ce qu'il faut au formulaire (aucun appel au bot).
+
+**Reponse :**
+
+```json
+{
+  "guild_id": "123456789",
+  "config": {
+    "nickname": "Guardian",
+    "bio": "Le bot de notre serveur",
+    "avatar_hash": "a_1c9e4f2b",
+    "banner_hash": "b_77f2a91d",
+    "avatar_source": "https://api.moddy.app/uploads/abc.png",
+    "banner_source": null,
+    "style": { "font_id": 7, "effect_id": 2, "colors": [16711680, 255] },
+    "updated_at": "2026-08-08T14:31:07+00:00",
+    "updated_by": "942386103000000000"
+  },
+  "avatar_url": "https://cdn.discordapp.com/guilds/123456789/users/<bot_id>/avatars/a_1c9e4f2b.gif",
+  "banner_url": "https://cdn.discordapp.com/guilds/123456789/users/<bot_id>/banners/b_77f2a91d.png",
+  "is_premium": true,
+  "limits": {
+    "nickname_max_length": 32,
+    "bio_max_length": 137,
+    "bio_attribution": "<a:Rocket:1535783839870353499> Powered by @**Moddy**",
+    "image_max_bytes": 8388608,
+    "image_content_types": ["image/png", "image/jpeg", "image/gif", "image/webp"],
+    "font_ids": [3, 4, 6, 7, 8, 10, 12],
+    "effect_ids": [2, 3, 4, 5],
+    "gradient_effect_id": 2
+  },
+  "premium_fields": ["nickname", "bio", "avatar_url", "banner_url"]
+}
+```
+
+- `config` = bloc stocké tel quel (`{}` si jamais personnalisé), `updated_by` exposé en **chaîne**.
+- `avatar_url` / `banner_url` sont calculées depuis les hashes (`.gif` si le hash commence par `a_`), `null` sans hash. **Aucune image n'est stockée côté Moddy.**
+- `bio_max_length` ne compte **que la partie serveur** : le bot ajoute lui-même `bio_attribution` en dernière ligne. Ne jamais l'envoyer dans `bio`.
+
+### `GET /guilds/{guild_id}/modules/bot_customization/schema`
+
+Schéma JSON du corps accepté en écriture (masque le `/schema` générique, qui décrit la forme stockée avec les hashes — inutilisable pour un formulaire).
+
+### `PUT` / `PATCH /guilds/{guild_id}/modules/bot_customization`
+
+Applique la personnalisation. Les deux verbes sont identiques : **c'est la présence des clés qui fait foi**.
+
+| Cas | Effet |
+|---|---|
+| clé absente | champ inchangé |
+| clé à `null` | champ réinitialisé |
+| clé avec valeur | champ appliqué |
+
+**Corps :**
+
+```json
+{
+  "nickname": "Guardian",
+  "bio": "Le bot de notre serveur",
+  "avatar_url": "https://api.moddy.app/uploads/abc.png",
+  "banner_url": "https://api.moddy.app/uploads/def.png",
+  "style": { "font_id": 7, "effect_id": 2, "colors": ["#FF0000", "#0000FF"] }
+}
+```
+
+- `nickname` ≤ 32 car. — `bio` ≤ 137 car. (partie serveur seule).
+- `style.colors` accepte des entiers 24-bit **ou** des `"#RRGGBB"` ; le backend normalise en entiers. `effect_id=2` (dégradé) exige exactement 2 couleurs, tout autre effet exactement 1.
+- `avatar_url` / `banner_url` doivent être publiques et sans auth — utiliser `POST .../uploads` ci-dessous.
+- Corps vide → `422 empty_update`.
+
+**Reponse :** le résultat publié par le bot (`bot_customization_update_result`), avec les `avatar_hash` / `banner_hash` fraîchement renvoyés par Discord.
+
+### `DELETE /guilds/{guild_id}/modules/bot_customization`
+
+Reset complet : émet la tâche avec `nickname`, `bio`, `avatar_url`, `banner_url`, `style` tous à `null`. Masque le `DELETE` générique, qui supprimerait le bloc en base sans rien remettre à zéro côté Discord.
+
+### `POST /guilds/{guild_id}/modules/bot_customization/uploads`
+
+Héberge temporairement une image (avatar ou bannière) pour que le bot la télécharge. `multipart/form-data`, champ `file`. Premium requis.
+
+**Reponse :**
+
+```json
+{ "url": "https://api.moddy.app/uploads/3f1a….png", "content_type": "image/png", "size": 104832, "expires_in": 900 }
+```
+
+- Types acceptés : `image/png`, `image/jpeg`, `image/gif`, `image/webp` → sinon `422 invalid_image_type`.
+- Taille ≤ 8 Mio, vérifiée sur les octets réellement lus → sinon `422 image_too_large`.
+- L'URL est publique et **expire** (15 min) : elle sert une seule fois, au téléchargement par le bot.
+
+### `GET /uploads/{token}`
+
+Sert l'image hébergée. **Public, sans authentification** (le bot n'a ni session ni `Authorization`). `404 upload_not_found` une fois expirée.
+
+### Codes d'erreur (bot customization)
+
+| Code | HTTP |
+|---|---|
+| `premium_required`, `missing_permissions` | `403` |
+| `guild_not_found` | `404` |
+| `rate_limited` | `429` |
+| `empty_update`, `nickname_too_long`, `bio_too_long`, `invalid_color`, `invalid_font`, `invalid_effect`, `gradient_needs_two_colors`, `effect_needs_color`, `invalid_image_type`, `image_too_large`, `invalid_config` | `422` |
+| `image_download_failed`, `rejected_by_discord`, `discord_error`, `save_failed`, `internal_error` | `502` |
+| `bot_timeout` (aucun résultat en 25 s) | `504` |
+
+Le corps d'erreur est toujours `{"error": "<code>"}` — les codes sont aussi des clés i18n. Sur `bot_timeout`, la tâche reste dans le stream et sera rejouée : **ne pas ré-émettre**, prévoir un simple message côté dashboard.
+
+---
+
 ## Cases (moderation)
 
 Schéma unifié `cases`/`case_sanctions`/`case_events`/`case_appeals`, partagé avec
