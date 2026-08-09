@@ -302,6 +302,16 @@
    replis pour les données absentes, et deux contraintes du dump qui n'ont pas
    de sens dans une page de configuration. */
 
+/* Chez Discord, `gg sans` est posée sur le `<body>` : chaque nœud de la carte en
+   hérite, y compris ceux qui ne portent aucune classe typographique (étiquette
+   APP, initiales de repli…). Le dump ne contenait pas cette règle — hors de
+   l'app Discord, ces nœuds retombaient donc sur Google Sans, au milieu d'un
+   popout en `gg sans`. `--font-primary` est la variable Discord elle-même,
+   définie plus haut. */
+.dpp-scope {
+  font-family: var(--font-primary);
+}
+
 /* Le popout Discord est un flottant borné à la fenêtre ; ici il est posé dans
    une carte, et la bio n'est pas tronquée à 3 lignes. */
 .dpp-scope.user-profile-popout {
