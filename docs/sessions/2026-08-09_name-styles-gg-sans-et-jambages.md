@@ -100,6 +100,75 @@ Mis en évidence en rendant le seul calque `::before` (texte principal en
   - options de `Select` : les 8 polices et les 5 effets, libellés entiers
     (« Jellybean », « Vampyre », « Dégradé », « Pop » — tous à jambages).
 
+## Suite — comportement du sélecteur d'effet et boucle d'animation
+
+Trois demandes de suivi, traitées dans le même lot.
+
+### 1. `.dns-loop` ne bouclait pas
+
+Section 4 du CSS Discord : `.dns-animated.dns-loop > *` pose
+`animation-iteration-count: infinite`. Le sélecteur ne pèse que **deux classes**
+(`*` n'ajoute rien à la spécificité), soit exactement le poids de
+`.dns-animated .dns--pop` qui suit, et dont la propriété raccourcie `animation`
+remet le compteur à 1. À spécificité égale, l'ordre du fichier tranche : la règle
+de boucle, écrite avant, perdait. Les effets ne jouaient donc qu'une fois.
+
+La règle est réaffirmée en section 6, après les quatre règles d'animation, plutôt
+que de réordonner le CSS d'origine — le fichier reste diffable contre le kit.
+
+**Pas de `animation-delay`** : il ne s'appliquerait qu'au premier passage, pas
+entre les itérations. La pause demandée est déjà dans les keyframes de Discord,
+qui jouent l'effet sur la première moitié du cycle puis le tiennent immobile
+(`50%, 100%` pour pop, `55%, 100%` pour cartoon, `51%, 100%` pour néon) — soit
+~2 s de repos sur les 4 s du cycle.
+
+### 2. Effet par défaut = pop dans le menu déroulant
+
+`styleToDraft()` prend désormais le `BotCustomizationState` (au lieu du seul
+`config`) et **amorce** le brouillon sur le style global du bot quand la guilde
+n'a jamais rien configuré (`config.style` absent) : effet pop, `#1C98EB`.
+L'identifiant est relu depuis `limits.effect_ids` via `effectSlug()`, jamais codé
+en dur ; si le backend ne propose pas `pop`, l'amorce retombe sur un style vide.
+
+L'amorce passe des **deux côtés du diff** (`stateToDraft` et `diffDraft` appellent
+tous deux `styleToDraft`), donc un formulaire qu'on n'a pas touché n'est jamais
+« modifié » — pas de barre « modifications non enregistrées » fantôme au
+chargement. Un `style` présent mais sans effet n'est pas réamorcé : une guilde
+qui a explicitement retiré l'effet le retrouve bien vide.
+
+### 3. « Aucun effet » veut dire aucun effet
+
+Deux changements :
+
+- `DiscordProfilePreview` ne retombe plus sur `DEFAULT_BOT_NAME_STYLE` quand rien
+  n'est configuré. Ce repli rendait l'absence d'effet **impossible à afficher** :
+  choisir « Aucun effet » ramenait le pop bleu. L'aperçu rend maintenant
+  exactement ce que le formulaire décrit ; le défaut vient de l'amorce du
+  brouillon, pas d'un secours dans le composant.
+- `handleEffectChange(null)` vide aussi les couleurs. Sans ça, la couleur amorcée
+  survivait et l'effet `solid` gardait le pseudo teinté : le retrait n'avait pas
+  l'air d'avoir pris. Le slot couleur reste disponible pour une couleur unie sans
+  effet, il faut juste la rechoisir.
+
+Résultat vérifié au navigateur sur une guilde vierge : amorce `effect_id: 5` /
+`#1C98EB`, formulaire non modifié au chargement, « Aucun effet » → `{"style":
+null}` et pseudo nu dans la couleur de texte de Discord.
+
+### 4. Pas d'attribution sous la bio par défaut
+
+L'aperçu affichait « Propulsé par Moddy » quelle que soit l'origine de la bio.
+Or l'attribution est apposée par le bot **au moment où il écrit la bio de
+serveur** : sans bio de serveur, il n'écrit rien, Discord affiche la bio globale
+du profil telle quelle, sans attribution. L'aperçu promettait donc une ligne qui
+n'existerait jamais sur Discord.
+
+`CustomizationPreview` ne passe plus `bio_attribution` que si le brouillon
+contient une bio de serveur. Le composant, lui, ne décide de rien : la contrainte
+est documentée sur la prop `bioAttribution`, à charge de l'appelant de ne la
+fournir que pour une bio de serveur.
+
+Cas « aucune bio du tout » : même règle, la section bio disparaît entièrement.
+
 ## Prochaines étapes suggérées
 
 - Confirmer la correspondance des `effect_id` 3/4/5 sur un vrai serveur (seul le

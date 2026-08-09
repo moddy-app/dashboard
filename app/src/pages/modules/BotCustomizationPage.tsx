@@ -128,12 +128,19 @@ function CustomizationPreview({
 
   const fallbackName = botProfile?.username ?? "Moddy"
 
+  // L'attribution est ajoutée par le bot **au moment où il écrit la bio de
+  // serveur**. Sans bio de serveur, il n'écrit rien : Discord affiche la bio
+  // globale du profil, telle quelle, sans attribution. L'aperçu doit donc la
+  // taire dès qu'il retombe sur le profil global — sinon il promet une ligne
+  // qui n'existera jamais sur Discord.
+  const guildBio = bio.trim()
+
   return (
     <DiscordProfilePreview
       displayName={nickname.trim() || fallbackName}
       username={fallbackName}
-      bio={bio.trim() || botProfile?.bio || ""}
-      bioAttribution={limits.bio_attribution}
+      bio={guildBio || botProfile?.bio || ""}
+      bioAttribution={guildBio ? limits.bio_attribution : null}
       avatarUrl={avatarUrl ?? botProfile?.avatar_url ?? null}
       bannerUrl={bannerUrl ?? botProfile?.banner_url ?? null}
       accentColor={botProfile?.accent_color ?? null}
@@ -436,8 +443,15 @@ function BotCustomizationForm() {
     (effectId: number | null, limits: BotCustomizationLimits) => {
       setDraft((prev) => {
         if (!prev) return prev
-        // Le nombre de couleurs dépend de l'effet : on ajuste immédiatement
-        // (dégradé → 2 slots, autre effet → 1, sans effet → 0 ou 1).
+        // « Aucun effet » veut dire *aucun* effet : on vide aussi les couleurs,
+        // sinon le pseudo resterait teinté (effet `solid`) et le retrait n'aurait
+        // pas l'air d'avoir pris. Le slot couleur reste disponible pour qui veut
+        // une couleur unie sans effet — il faut juste la rechoisir.
+        if (effectId === null) {
+          return { ...prev, style: { ...prev.style, effect_id: null, colors: [] } }
+        }
+        // Sinon le nombre de couleurs dépend de l'effet : on ajuste immédiatement
+        // (dégradé → 2 slots, autre effet → 1).
         const slots = colorSlots(effectId, limits)
         return {
           ...prev,
