@@ -68,7 +68,14 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   const method = (options.method ?? 'GET').toUpperCase()
   const url = `${API_BASE}${path}`
   const start = performance.now()
-  logger.api('api', `→ ${method} ${path}`, options.body ? { body: options.body } : '')
+  // `FormData` (upload multipart) : le navigateur doit poser lui-même le
+  // Content-Type avec le `boundary` — forcer application/json casserait l'upload.
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  logger.api(
+    'api',
+    `→ ${method} ${path}`,
+    options.body ? { body: isFormData ? '[FormData]' : options.body } : ''
+  )
 
   let response: Response
 
@@ -76,7 +83,9 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
     response = await fetch(url, {
       ...options,
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...options.headers },
+      headers: isFormData
+        ? { ...options.headers }
+        : { 'Content-Type': 'application/json', ...options.headers },
     })
   } catch (e) {
     logger.error('api', `✗ ${method} ${path} — network error`, e)

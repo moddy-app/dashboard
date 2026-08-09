@@ -125,6 +125,7 @@ export type ModuleId =
   | 'adaptive_slowmode'
   | 'social_notifications'
   | 'automod_ai'
+  | 'bot_customization'
 
 export interface StarboardConfig {
   channel_id: string
@@ -344,6 +345,92 @@ export interface AutomodBudget {
   day: string
 }
 
+// ─── Bot Customization ─────────────────────────────────────────────────────────
+
+/**
+ * Style du pseudo (police / effet / couleurs). Toujours des **entiers 24-bit**
+ * en lecture ; l'écriture accepte aussi des `"#RRGGBB"`.
+ */
+export interface BotCustomizationStyle {
+  font_id: number | null
+  effect_id: number | null
+  colors: number[]
+}
+
+/**
+ * Bloc stocké, `{}` si la guilde n'a jamais rien personnalisé. Les hashes
+ * viennent de Discord (aucune image n'est stockée côté Moddy) — l'aperçu passe
+ * par `avatar_url` / `banner_url`, à la racine de {@link BotCustomizationState}.
+ */
+export interface BotCustomizationConfig {
+  nickname?: string | null
+  bio?: string | null
+  avatar_hash?: string | null
+  banner_hash?: string | null
+  /** URL source de la dernière image envoyée au bot (informative). */
+  avatar_source?: string | null
+  banner_source?: string | null
+  style?: BotCustomizationStyle | null
+  updated_at?: string | null
+  /** Snowflake en **chaîne** — ne jamais passer dans `Number()`. */
+  updated_by?: string | null
+}
+
+/**
+ * Limites et listes pilotant le formulaire. À lire depuis l'API à chaque
+ * chargement : polices, effets et plafonds peuvent bouger côté backend.
+ */
+export interface BotCustomizationLimits {
+  nickname_max_length: number
+  /** Ne compte **que** la partie serveur : le bot ajoute `bio_attribution`. */
+  bio_max_length: number
+  /** Dernière ligne ajoutée par le bot, au format markup Discord. */
+  bio_attribution: string
+  image_max_bytes: number
+  image_content_types: string[]
+  font_ids: number[]
+  effect_ids: number[]
+  /** Effet « dégradé » — le seul qui exige exactement 2 couleurs. */
+  gradient_effect_id: number
+}
+
+export interface BotCustomizationState {
+  guild_id: string
+  config: BotCustomizationConfig
+  /** URL CDN Discord de l'avatar de guilde, `null` sans hash. */
+  avatar_url: string | null
+  banner_url: string | null
+  is_premium: boolean
+  limits: BotCustomizationLimits
+  /** Champs réservés au premium (les autres restent toujours modifiables). */
+  premium_fields: string[]
+}
+
+/**
+ * Corps du `PUT`/`PATCH` : **c'est la présence de la clé qui fait foi**.
+ * Clé absente = inchangé, clé à `null` = réinitialisé. N'envoyer que le diff.
+ */
+export interface BotCustomizationUpdate {
+  nickname?: string | null
+  bio?: string | null
+  avatar_url?: string | null
+  banner_url?: string | null
+  style?: {
+    font_id: number | null
+    effect_id: number | null
+    /** `"#RRGGBB"` — le backend normalise en entiers. */
+    colors: string[]
+  } | null
+}
+
+/** Réponse de `POST .../uploads` — l'URL expire (`expires_in`, secondes). */
+export interface BotCustomizationUpload {
+  url: string
+  content_type: string
+  size: number
+  expires_in: number
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
@@ -355,6 +442,7 @@ export type ModuleConfig =
   | AdaptiveSlowmodeConfig
   | SocialNotificationsConfig
   | AutomodAiConfig
+  | BotCustomizationConfig
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 

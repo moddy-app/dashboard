@@ -18,6 +18,7 @@ import {
   BellRingIcon,
   ShieldAlertIcon,
   SparklesIcon,
+  PaletteIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -138,6 +139,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/social_notifications`,
           icon: BellRingIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/social_notifications`,
+        },
+        {
+          title: t("modules.bot_customization.name"),
+          url: `/servers/${selectedGuildId}/modules/bot_customization`,
+          icon: PaletteIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/bot_customization`,
         },
       ]
     : !isOnStaffPage
