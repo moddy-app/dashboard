@@ -528,8 +528,8 @@
       "name": "Bot Customization",
       "description": "Give Moddy its own nickname, bio, avatar, banner and name style on this server.",
       "previewTitle": "Preview",
-      "previewDescription": "How Moddy will look on this server once the changes are applied.",
-      "previewHint": "Rendered with Discord's own fonts and effects. Here the animation loops; on Discord it plays once.",
+      "previewDescription": "The real Discord profile popout, rendered live. Empty fields fall back to Moddy's global profile.",
+      "previewHint": "Rendered with Discord's own fonts, effects and layout. Here the animation loops; on Discord it plays once.",
       "identityTitle": "Identity",
       "identityDescription": "Nickname, bio, avatar and banner of Moddy on this server.",
       "premiumBadge": "Moddy Max",
@@ -621,7 +621,13 @@
         "4": "Toon",
         "5": "Pop"
       },
-      "fontPreviewLabel": "Aa"
+      "preview": {
+        "verifiedApp": "Verified app",
+        "supportsCommands": "Supports commands",
+        "mutualServers_one": "{{count}} mutual server",
+        "mutualServers_other": "{{count}} mutual servers",
+        "badges": "User badges"
+      }
     }
   },
   "staff": {

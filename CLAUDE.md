@@ -172,6 +172,18 @@ Variables CSS définies dans `src/index.css` :
 
 #### Polices des « name styles » Discord
 
+Deux familles de polices supplémentaires vivent hors de la typographie du dashboard,
+uniquement pour reproduire l'affichage de Discord dans le module Bot Customization :
+
+- **`gg sans`** (`app/public/fonts/gg-sans/`, 4 graisses, ~153 Ko) — la police de
+  Discord, extraite du dump du profil. Elle n'est utilisée **que** dans la carte
+  d'aperçu du profil (`.dpp-scope`), jamais dans l'UI du dashboard : sur Discord il
+  n'y a pas de Google Sans, l'aperçu doit donc être en `gg sans`. Police
+  propriétaire Discord, non redistribuable — voir la note de licence dans la
+  session du 2026-08-09.
+- **Les 7 polices de « name styles »** (`app/public/fonts/name-styles/`), décrites
+  ci-dessous.
+
 Sept polices supplémentaires vivent dans `app/public/fonts/name-styles/`. Elles n'ont
 **rien à voir avec la typographie du dashboard** : elles ne servent qu'à rendre le style
 de pseudo Discord dans le module Bot Customization (voir la section dédiée). Familles
@@ -387,6 +399,12 @@ Le système utilise :
 - **Module Bot Customization** (`/servers/:guildId/modules/bot_customization`) — apparence de Moddy dans la guilde : pseudo, bio, avatar, bannière (**premium**) + style du pseudo police/effet/couleurs (**toujours**). Formulaire **piloté par `limits`** (longueurs, types et taille d'image, `font_ids`, `effect_ids`, `gradient_effect_id`) : rien n'est codé en dur. Écriture en **diff strict** (clé absente = inchangé, `null` = reset) — jamais de sérialisation complète du formulaire. Images uploadées **au moment du save** (`POST .../uploads`, URL valable 15 min), aperçu local via `URL.createObjectURL`. Sans premium, les champs premium sont verrouillés avec CTA mais leur **réinitialisation reste permise**. Bio = partie serveur seule (≤ `bio_max_length`) ; `bio_attribution` affichée en aperçu non éditable (emoji animé + gras rendus). Erreurs : `{"error": "<code>"}` mappé sur `modules.bot_customization.errors.<code>` (jamais le code nu) ; **`bot_timeout` (504) n'est jamais rejoué**. `updated_by` reste une chaîne (profil via `useUserProfile`). Types dans `src/types/api.ts`, helpers `src/lib/bot-customization.ts`, service `src/services/bot-customization.ts`, page `src/pages/modules/BotCustomizationPage.tsx`.
 
 - **Rendu des « name styles » Discord** — l'aperçu du style de pseudo utilise le **vrai moteur de rendu Discord** (CSS + 7 polices extraits du build web d'août 2026), pas une approximation. CSS repris tel quel dans `src/styles/discord-name-styles.css` (importé par `index.css`) : **ne pas le « nettoyer »**, chaque marge négative et chaque keyframe vient du CSS réel. Trois adaptations Moddy seulement (familles namespacées `DNS <x>`, `url()` vers `/fonts/name-styles/`, `gg sans` propriétaire remplacé par `--dns-ui-font`). Discord ne transmet qu'**une couleur de base** : les 6 autres variables (`--dns-light-1`, `--dns-dark-2`, `--dns-toon-stroke-color`, `--dns-neon-stroke`…) sont dérivées en HSL par `derivePalette()` (`src/lib/discord-name-styles.ts`) — formules recalées sur 4 palettes réelles, 24 valeurs sur 24 exactes. Le dégradé est le seul effet qui n'utilise **pas** la palette dérivée (deux arrêts explicites). La correspondance `font_id`/`effect_id` → classe CSS est **isolée dans deux tables** (`FONT_ID_TO_SLUG`, `EFFECT_ID_TO_SLUG`) : c'est le seul endroit du code qui connaît les identifiants, un id inconnu retombe silencieusement sur `default`/`solid`. Le dégradé est relu depuis `limits.gradient_effect_id`, jamais codé en dur. Composants `src/components/name-style-preview.tsx` (`NameStylePreview` par slugs, `NameStyleFromIds` par identifiants d'API). `data-dns-text` doit rester **strictement identique** au contenu du span (effets `toon` et `pop` dupliquent le texte dans un `::before`).
+
+- **Aperçu du profil Discord** (module Bot Customization) — l'aperçu n'est plus une carte maison : c'est le **vrai popout de profil Discord**, CSS et polices repris du DOM du client web (août 2026). `src/styles/discord-profile.css` contient les règles Discord **verbatim**, noms de classes hachés compris (`.outer_c0bea0`, `.body__5be3e`, `.displayNameRow__26b1f`…) — `src/components/discord-profile-preview.tsx` reproduit l'arbre DOM et s'aligne sur ces classes, il ne décide d'aucun style. **Trois adaptations seulement**, listées en tête du CSS : `gg sans` self-hostée au lieu d'être en base64, le bloc de variables déplacé de `:root` vers `.dpp-scope` (Discord y définit `--radius-lg`, `--text-default`, `--font-primary`… qui écraseraient les tokens du dashboard), et un bloc `.theme-light` — **seule invention du fichier**, le dump n'ayant été capturé qu'en « midnight » ; il réutilise l'échelle `--neutral-*` en miroir. Le thème suit celui du dashboard via la classe `theme-dark`/`theme-light` sur la carte, c'est-à-dire le mécanisme de Discord lui-même. Les additions Moddy sont regroupées en fin de fichier et se limitent à des replis (pas d'avatar, pas d'icône de serveur) et au déclampage de la bio. ⚠️ Les variables de découpe de la bannière (`--custom-cutout-*`) sont posées **en style inline** sur `.fill_b83360`, comme chez Discord : sans elles le `mask-image` est invalide et la bannière passe derrière l'avatar.
+
+- **Profil global du bot** (`GET /bot/profile`) — profil Discord **global** de l'application (avatar, bannière, `accent_color`, bio, username), à ne pas confondre avec le module `bot_customization` qui personnalise le bot **par guilde**. Sert de **valeur de repli à chaque champ vide** de l'aperçu, exactement comme Discord affiche le profil global là où aucune personnalisation de guilde ne s'applique. `bio` peut être `null` (RPC Discord best-effort). Service `src/services/bot.ts`, hook `src/hooks/useBotProfile.ts` (cache module, une requête par session, échec silencieux — l'aperçu doit rester utilisable sans).
+
+- **Markdown Discord** (`src/components/discord-markup.tsx`) — rendu du markdown des bios : gras, italique, souligné, barré, spoiler, code inline et bloc, citations, titres `#`/`##`/`###`, petit texte `-#`, liens `[texte](url)`, liens nus et émojis custom. ⚠️ Le parseur est **récursif** : les `RegExp` globales sont instanciées à chaque appel, jamais partagées au niveau module — un `lastIndex` écrasé par un appel imbriqué produit une boucle infinie qui fait planter l'onglet.
 
 ### 🚧 Prêt pour le développement
 - Gestion et validation de formulaires
@@ -621,4 +639,4 @@ Ce fichier sert de :
 
 ---
 
-*Dernière mise à jour : 2026-08-09 (rendu des name styles Discord)*
+*Dernière mise à jour : 2026-08-09 (aperçu = vrai popout de profil Discord)*

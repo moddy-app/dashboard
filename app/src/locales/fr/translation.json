@@ -528,8 +528,8 @@
       "name": "Personnalisation du bot",
       "description": "Donnez à Moddy son propre pseudo, sa bio, son avatar, sa bannière et son style de pseudo sur ce serveur.",
       "previewTitle": "Aperçu",
-      "previewDescription": "Le rendu de Moddy sur ce serveur une fois les changements appliqués.",
-      "previewHint": "Rendu avec les polices et effets de Discord. Ici l'animation boucle ; sur Discord elle ne joue qu'une fois.",
+      "previewDescription": "Le vrai popout de profil Discord, rendu en direct. Les champs vides reprennent le profil global de Moddy.",
+      "previewHint": "Rendu avec les polices, les effets et la mise en page de Discord. Ici l'animation boucle ; sur Discord elle ne joue qu'une fois.",
       "identityTitle": "Identité",
       "identityDescription": "Pseudo, bio, avatar et bannière de Moddy sur ce serveur.",
       "premiumBadge": "Moddy Max",
@@ -621,7 +621,13 @@
         "4": "Cartoon",
         "5": "Pop"
       },
-      "fontPreviewLabel": "Aa"
+      "preview": {
+        "verifiedApp": "Application vérifiée",
+        "supportsCommands": "Prend en charge les commandes",
+        "mutualServers_one": "{{count}} serveur en commun",
+        "mutualServers_other": "{{count}} serveurs en commun",
+        "badges": "Badges d'utilisateur"
+      }
     }
   },
   "staff": {

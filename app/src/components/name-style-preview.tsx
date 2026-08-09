@@ -20,6 +20,12 @@ interface NameStylePreviewProps {
   loop?: boolean
   /** Autorise le retour à la ligne (variante « profil » de Discord). */
   wrap?: boolean
+  /**
+   * Rend la police seule, sans effet ni couleur : le texte hérite alors de la
+   * couleur de son conteneur. C'est le cas « aucune couleur choisie », où
+   * Discord affiche le pseudo dans la couleur de texte par défaut.
+   */
+  plain?: boolean
   className?: string
 }
 
@@ -36,8 +42,13 @@ export function NameStylePreview({
   animated = true,
   loop = true,
   wrap = false,
+  plain = false,
   className,
 }: NameStylePreviewProps) {
+  if (plain) {
+    return <span className={cn(`dns-font-${font}`, className)}>{name}</span>
+  }
+
   return (
     <div
       className={cn(

@@ -1,0 +1,412 @@
+/* ==========================================================================
+   Popout de profil Discord — CSS RÉEL, repris tel quel
+   Source : DOM du profil de Moddy sur le client web Discord (août 2026).
+   Les noms de classes hachés (`.outer_c0bea0`, `.body__5be3e`…) sont ceux de
+   Discord : ne pas les « nettoyer », le composant React s'aligne dessus.
+
+   ⚠️ Fichier repris à l'identique. Trois adaptations Moddy, et rien d'autre :
+
+     1. `gg sans` est self-hostée depuis le dump (`/fonts/gg-sans/`) au lieu
+        d'être embarquée en base64 — mêmes fichiers woff2, mêmes graisses.
+     2. Le bloc de variables Discord vit sur `.dpp-scope` au lieu de `:root` :
+        Discord y définit `--radius-lg`, `--text-default`, `--font-primary`…
+        qui écraseraient les tokens du dashboard s'ils restaient globaux.
+     3. Le thème clair n'existait pas dans le dump (capture en « midnight ») :
+        le bloc `.theme-light` plus bas est la seule invention du fichier.
+
+   Tout le reste — valeurs, sélecteurs, pseudo-éléments — est du Discord brut.
+   ========================================================================== */
+
+/* --- 1. gg sans, extraite du dump et self-hostée ------------------------- */
+@font-face{font-family:gg sans;font-style:normal;font-weight:400;font-display:swap;src:url("/fonts/gg-sans/gg-sans-400.woff2")format("woff2")}
+@font-face{font-family:gg sans;font-style:normal;font-weight:500;font-display:swap;src:url("/fonts/gg-sans/gg-sans-500.woff2")format("woff2")}
+@font-face{font-family:gg sans;font-style:normal;font-weight:600;font-display:swap;src:url("/fonts/gg-sans/gg-sans-600.woff2")format("woff2")}
+@font-face{font-family:gg sans;font-style:normal;font-weight:700;font-display:swap;src:url("/fonts/gg-sans/gg-sans-700.woff2")format("woff2")}
+
+/* --- 2. Variables Discord (thème Midnight), verbatim ---------------------
+   `:root` d'origine → `.dpp-scope`, cf. adaptation 2 ci-dessus. */
+.dpp-scope {
+  --saturation-factor: 1;
+  --background-base-lower: var(--neutral-97);
+  --background-brand: var(--blurple-50);
+  --background-code: hsl(var(--opacity-blurple-8-hsl)/0.0784313725490196);
+  --background-mod-subtle: hsl(var(--opacity-12-hsl)/0.12156862745098039);
+  --background-surface-high: var(--neutral-91);
+  --background-surface-highest: var(--neutral-83);
+  --black-hsl: 0 calc(var(--saturation-factor,1)*0%) 0%;
+  --blue-new-27: hsl(var(--blue-new-27-hsl)/1);
+  --blue-new-27-hsl: 213.281 calc(var(--saturation-factor,1)*87.671%) 71.373%;
+  --blue-new-42: hsl(var(--blue-new-42-hsl)/1);
+  --blue-new-42-hsl: 212.514 calc(var(--saturation-factor,1)*80.995%) 56.667%;
+  --blurple-50: hsl(var(--blurple-50-hsl)/1);
+  --blurple-50-hsl: 234.935 calc(var(--saturation-factor,1)*85.556%) 64.706%;
+  --border-muted: hsl(var(--opacity-16-hsl)/0.1607843137254902);
+  --border-normal: hsl(var(--opacity-24-hsl)/0.23921568627450981);
+  --chat-background-default: var(--neutral-91);
+  --chat-markup-line-height: 1.375rem;
+  --custom-emoji-size-emoji: 1.375em;
+  --custom-profile-frame-drop-shadow-opacity: 0.6;
+  --custom-status-bubble-background: linear-gradient(rgb(var(--custom-status-bubble-overlay-color)/0.04),rgb(var(--custom-status-bubble-overlay-color)/0.04)),var(--custom-status-bubble-background-color);
+  --custom-status-bubble-background-color: var(--background-surface-highest);
+  --custom-status-bubble-overlay-color: 255 255 255;
+  --custom-user-profile-banner-height: 0px;
+  --custom-user-profile-base-layer-z-index: 0;
+  --custom-user-profile-middle-layer-z-index: 2;
+  --custom-user-profile-top-layer-z-index: 3;
+  --font-code: "gg mono","Source Code Pro",Consolas,"Andale Mono WT","Andale Mono","Lucida Console","Lucida Sans Typewriter","DejaVu Sans Mono","Bitstream Vera Sans Mono","Liberation Mono","Nimbus Mono L",Monaco,"Courier New",Courier,monospace;
+  --font-display: "gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-primary: "gg sans","Noto Sans","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --font-weight-bold: 700;
+  --font-weight-semibold: 600;
+  --icon-strong: var(--neutral-8);
+  --icon-subtle: var(--neutral-27);
+  --interactive-text-default: var(--neutral-27);
+  --neutral-1: hsl(var(--neutral-1-hsl)/1);
+  --neutral-1-hsl: 0 calc(var(--saturation-factor,1)*0%) 100%;
+  --neutral-10: hsl(var(--neutral-10-hsl)/1);
+  --neutral-10-hsl: 240 calc(var(--saturation-factor,1)*4.478%) 86.863%;
+  --neutral-100: hsl(var(--neutral-100-hsl)/1);
+  --neutral-100-hsl: 0 calc(var(--saturation-factor,1)*0%) 0%;
+  --neutral-16: hsl(var(--neutral-16-hsl)/1);
+  --neutral-16-hsl: 228 calc(var(--saturation-factor,1)*4.505%) 78.235%;
+  --neutral-27: hsl(var(--neutral-27-hsl)/1);
+  --neutral-27-hsl: 232.5 calc(var(--saturation-factor,1)*4.255%) 63.137%;
+  --neutral-38: hsl(var(--neutral-38-hsl)/1);
+  --neutral-38-hsl: 234 calc(var(--saturation-factor,1)*4.065%) 48.235%;
+  --neutral-39: hsl(var(--neutral-39-hsl)/1);
+  --neutral-39-hsl: 234 calc(var(--saturation-factor,1)*4.167%) 47.059%;
+  --neutral-4: hsl(var(--neutral-4-hsl)/1);
+  --neutral-4-hsl: 240 calc(var(--saturation-factor,1)*4.348%) 95.49%;
+  --neutral-47: hsl(var(--neutral-47-hsl)/1);
+  --neutral-47-hsl: 234 calc(var(--saturation-factor,1)*5.319%) 36.863%;
+  --neutral-60: hsl(var(--neutral-60-hsl)/1);
+  --neutral-60-hsl: 233.333 calc(var(--saturation-factor,1)*6.667%) 26.471%;
+  --neutral-64: hsl(var(--neutral-64-hsl)/1);
+  --neutral-64-hsl: 232.5 calc(var(--saturation-factor,1)*6.557%) 23.922%;
+  --neutral-69: hsl(var(--neutral-69-hsl)/1);
+  --neutral-69-hsl: 231.429 calc(var(--saturation-factor,1)*6.542%) 20.98%;
+  --neutral-74: hsl(var(--neutral-74-hsl)/1);
+  --neutral-74-hsl: 240 calc(var(--saturation-factor,1)*6.522%) 18.039%;
+  --neutral-8: hsl(var(--neutral-8-hsl)/1);
+  --neutral-8-hsl: 240 calc(var(--saturation-factor,1)*3.846%) 89.804%;
+  --neutral-83: hsl(var(--neutral-83-hsl)/1);
+  --neutral-83-hsl: 225 calc(var(--saturation-factor,1)*6.25%) 12.549%;
+  --neutral-91: hsl(var(--neutral-91-hsl)/1);
+  --neutral-91-hsl: 220 calc(var(--saturation-factor,1)*7.317%) 8.039%;
+  --neutral-97: hsl(var(--neutral-97-hsl)/1);
+  --neutral-97-hsl: 240 calc(var(--saturation-factor,1)*12.5%) 3.137%;
+  --opacity-12-hsl: 240 calc(var(--saturation-factor,1)*4%) 60.784%;
+  --opacity-16-hsl: 240 calc(var(--saturation-factor,1)*4%) 60.784%;
+  --opacity-20-hsl: 240 calc(var(--saturation-factor,1)*4%) 60.784%;
+  --opacity-24-hsl: 240 calc(var(--saturation-factor,1)*4%) 60.784%;
+  --opacity-4-hsl: 240 calc(var(--saturation-factor,1)*4%) 60.784%;
+  --opacity-black-40: hsl(var(--opacity-black-40-hsl)/0.4);
+  --opacity-black-40-hsl: 0 calc(var(--saturation-factor,1)*0%) 0%;
+  --opacity-blurple-8-hsl: 234.935 calc(var(--saturation-factor,1)*85.556%) 64.706%;
+  --radius-lg: 16px;
+  --radius-round: 2147483647px;
+  --radius-sm: 8px;
+  --radius-xs: 4px;
+  --scrollbar-auto-scrollbar-color-thumb: var(--neutral-47);
+  --scrollbar-auto-scrollbar-color-track: var(--neutral-100);
+  --scrollbar-thin-thumb: var(--neutral-47);
+  --scrollbar-thin-track: hsl(var(--black-hsl)/0);
+  --shadow-border: 0 0 0 1px hsl(none 0% 100%/0.08);
+  --shadow-high: 0 12px 24px 0 hsl(none 0% 0%/0.24);
+  --shadow-low: 0 1px 4px 0 hsl(none 0% 0%/0.14);
+  --space-8: 8px;
+  --text-default: var(--neutral-10);
+  --text-link: var(--blue-new-42);
+  --text-strong: var(--neutral-8);
+  --text-subtle: var(--neutral-27);
+  --user-profile-border: hsl(var(--opacity-20-hsl)/0.2);
+  --white: hsl(var(--white-hsl)/1);
+  --white-hsl: 0 calc(var(--saturation-factor,1)*0%) 100%;
+}
+
+/* --- 3. Thème clair — SEULE invention du fichier -------------------------
+   Discord n'a été capturé qu'en « midnight ». Le thème clair réutilise la même
+   échelle `--neutral-*` en miroir (fonds 1/4, textes 91/83/47) plutôt que
+   d'inventer des couleurs hors palette. Les règles Discord qui testent
+   `.theme-dark` (bordure de la bulle de statut, overlay) ne s'appliquent
+   simplement pas ici — c'est le mécanisme de Discord lui-même. */
+.dpp-scope.theme-light {
+  --background-surface-high: var(--neutral-1);
+  --background-surface-highest: var(--neutral-4);
+  --chat-background-default: var(--neutral-1);
+  --custom-status-bubble-overlay-color: 0 0 0;
+  --icon-strong: var(--neutral-91);
+  --icon-subtle: var(--neutral-47);
+  --interactive-text-default: var(--neutral-47);
+  --shadow-border: 0 0 0 1px hsl(none 0% 0%/0.08);
+  --text-default: var(--neutral-83);
+  --text-strong: var(--neutral-91);
+  --text-subtle: var(--neutral-47);
+}
+
+/* --- 4. Règles Discord, verbatim ----------------------------------------- */
+.anchor_edefb8 {color:var(--text-link);-webkit-text-decoration:var(--link-decoration);text-decoration:var(--link-decoration)}
+.anchorUnderlineOnHover_edefb8:hover {text-decoration:underline}
+.scrollerBase_d125d2 {box-sizing:border-box;flex:1 1 auto;min-height:0;position:relative}
+.scrollbarGutterStable_d125d2 {scrollbar-gutter:stable}
+.thin_d125d2::-webkit-scrollbar {height:8px;width:8px}
+.thin_d125d2::-webkit-scrollbar-track {background-color:var(--scrollbar-thin-track);border:2px solid var(--scrollbar-thin-track);border-color:var(--scrollbar-thin-track)}
+.thin_d125d2::-webkit-scrollbar-thumb {background-clip:padding-box;background-color:var(--scrollbar-thin-thumb);border:2px solid transparent;border-radius:4px;min-height:40px}
+.thin_d125d2::-webkit-scrollbar-corner {background-color:transparent}
+.fade_d125d2::-webkit-scrollbar-thumb,.fade_d125d2::-webkit-scrollbar-track {visibility:hidden}
+.fade_d125d2:hover::-webkit-scrollbar-thumb,.fade_d125d2:hover::-webkit-scrollbar-track {visibility:visible}
+.scrolling_d125d2.fade_d125d2:focus-within::-webkit-scrollbar-thumb,.scrolling_d125d2.fade_d125d2:focus-within::-webkit-scrollbar-track {visibility:visible}
+.has-webkit-scrollbar .fade_d125d2:hover {will-change:scroll-position}
+.no-webkit-scrollbar .thin_d125d2.fade_d125d2:hover {scrollbar-color:var(--scrollbar-thin-thumb) var(--scrollbar-thin-track)}
+.no-webkit-scrollbar .auto_d125d2.fade_d125d2:hover {scrollbar-color:var(--scrollbar-auto-scrollbar-color-thumb) var(--scrollbar-auto-scrollbar-color-track)}
+.hiddenVisually_b18fe2,.showOnFocus_b18fe2:not(:focus-within) {clip:rect(0 0 0 0);clip-path:inset(50%);height:1px;overflow:hidden;position:absolute;-webkit-user-select:none;-moz-user-select:none;user-select:none;white-space:nowrap;width:1px}
+.defaultColor__4bd52 {color:var(--text-default)}
+.heading-lg\/bold_cf4812 {font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1.2}
+.text-sm\/normal_cf4812 {font-family:var(--font-primary);font-size:14px;font-weight:400;line-height:1.2857142857142858}
+.svg__2338f {contain:paint}
+.wrapper__44b0c {border-radius:50%;position:relative}
+.mask__44b0c {display:block;pointer-events:none;width:auto}
+.svg__44b0c {contain:paint}
+.svg__44b0c {position:absolute}
+.avatarStack__44b0c {display:grid;height:100%;width:100%}
+.avatar__44b0c {grid-area:1/1;height:100%;width:100%}
+.avatar__44b0c {border-radius:50%}
+.avatar__44b0c {display:block;-o-object-fit:cover;object-fit:cover;pointer-events:none}
+.avatar__44b0c:before {background-color:var(--background-mod-subtle);content:"";display:block;height:100%;width:100%}
+.icon_f34534 {background-clip:padding-box;background-color:none;background-position:50%;background-size:100% 100%;position:relative}
+.iconActiveSmol_f34534 {border-radius:4px}
+.iconSizeSmol_f34534 {height:16px;width:16px}
+.botTag__82f07 {align-items:center;display:inline-flex;flex-shrink:0;font-size:.625rem;text-indent:0;text-transform:uppercase;vertical-align:top}
+.px__82f07.botTag__82f07 {border-radius:4px;height:16px;padding:0 4px}
+.rem__82f07.botTag__82f07 {border-radius:4px;height:.9375rem;margin-top:.2em;padding:0 .275rem}
+.botTagRegular__82f07 {background:var(--background-brand);color:var(--white)}
+.botTagVerified__82f07 {display:inline-block}
+.px__82f07 .botTagVerified__82f07 {height:16px;margin-inline-start:-2px;width:16px}
+.rem__82f07 .botTagVerified__82f07 {height:1rem;margin-inline-start:-.2rem;margin-top:-.02rem;width:1rem}
+.botText__82f07 {font-weight:var(--font-weight-semibold);position:relative;vertical-align:top}
+.px__82f07 .botText__82f07 {font-size:12px;line-height:16px}
+.rem__82f07 .botText__82f07 {font-size:.8rem;line-height:.9375rem}
+.focusTarget__54e4b {height:0;pointer-events:none;width:0}
+.emoji {height:var(--custom-emoji-size-emoji);-o-object-fit:contain;object-fit:contain;vertical-align:bottom;width:var(--custom-emoji-size-emoji)}
+.emojiContainer__75abc {display:inline-block}
+.emojiContainerClickable__75abc {cursor:pointer}
+@use postcss-pxtorem;.markup__75297 {font-size:1rem;line-height:var(--chat-markup-line-height);white-space:break-spaces;word-wrap:break-word;color:var(--custom-message-content-color,var(--text-default));-webkit-user-select:text;-moz-user-select:text;user-select:text}
+.markup__75297 a {color:var(--text-link);cursor:pointer;-webkit-text-decoration:var(--link-decoration);text-decoration:var(--link-decoration);word-break:break-word}
+.markup__75297 a:hover {text-decoration:underline}
+.markup__75297 strong {font-weight:var(--font-weight-bold)}
+.markup__75297 small:not(.inlineFormat__75297) {color:var(--text-subtle);display:block}
+.markup__75297 small.inlineFormat__75297:after {content:" "}
+.markup__75297 code {background:var(--background-code);border:1px solid var(--border-normal);line-height:1.125rem}
+.markup__75297 code.inline {border-radius:4px;font-family:var(--font-code);font-size:85%;height:auto;margin:-.2em 0;padding:0 .2em;text-indent:0;white-space:pre-wrap;width:auto}
+.markup__75297 .codeContainer__75297:hover .codeActions__75297 {display:block}
+.markup__75297 .inlineFormat__75297 li:before,.markup__75297.inlineFormat__75297 li:before {content:"•";padding-inline-end:4px}
+.markup__75297 .inlineFormat__75297 li li:before,.markup__75297.inlineFormat__75297 li li:before {content:"○";font-size:.625rem;line-height:1rem;padding:0 4px 4px}
+.markup__75297 ol.inlineFormat__75297>li:before {content:counter(inline-ol-counter)"."}
+.markup__75297 h2,.markup__75297 h3 {color:var(--custom-message-content-color,var(--text-strong));font-family:var(--font-display);font-weight:var(--font-weight-bold);line-height:1.375em}
+.markup__75297 h2 {font-size:1.25rem;margin:16px 0 8px}
+.markup__75297 h3 {font-size:1rem;margin:16px 0 8px}
+.nameTag__05e81 {align-items:center;display:flex;justify-content:flex-start;overflow:hidden}
+.username__05e81 {flex:0 1 auto;overflow:hidden}
+.avatars_a05532 {align-items:center;display:flex;flex-grow:0;position:relative}
+.avatars_a05532>li:not(:last-child).size16_a05532 {margin-inline-end:-3px}
+.squircleIcon_a05532 {overflow:hidden}
+.squircleIcon_a05532 {align-items:center;display:flex;height:100%;justify-content:center;width:100%}
+.user-profile-popout .profileFrameContainer__7d80f:before {background:var(--background-surface-high);border-radius:var(--radius-sm);box-shadow:20px 20px 30px rgba(0,0,0,var(--custom-profile-frame-drop-shadow-opacity));content:"";height:100%;position:absolute;width:100%;z-index:-1}
+:where(.avatar__75742) {border-radius:var(--radius-round);position:absolute;z-index:var(--custom-user-profile-base-layer-z-index)}
+.user-profile-popout :where(.avatar__75742) {inset-inline-start:16px;top:61px}
+.user-profile-sidebar.user-profile-sidebar-redesign :where(.avatar__75742) {inset-inline-start:16px;top:57px}
+.clickable__75742 {cursor:pointer}
+.overlay__75742:after {background-color:var(--opacity-black-40);border-radius:var(--radius-round);content:"";inset:0;opacity:0;position:absolute;transition:opacity 50ms ease-in}
+.clickable__75742:hover .overlay__75742:after {opacity:1;transition:opacity .15s ease-out}
+.container__8061a {align-items:center;box-sizing:border-box;display:flex;flex-wrap:wrap;gap:2px;margin:1px 0;width:fit-content}
+.badge__8061a {background-position:50%;background-repeat:no-repeat;background-size:contain;display:block;filter:saturate(var(--saturation-factor,1));height:20px;-o-object-fit:cover;object-fit:cover;overflow:hidden;pointer-events:none;width:20px}
+.badge__8061a:active {opacity:.8}
+.badge__8061a:before {background-color:var(--user-profile-border);border-radius:50%;content:"";display:block;height:100%;width:100%}
+.banner_b83360 {display:inline-block;flex-shrink:0}
+.banner_b83360,.fill_b83360 {position:relative}
+.fill_b83360 {background-position:50%;background-repeat:no-repeat;background-size:cover;height:100%;-webkit-mask-image:radial-gradient(circle var(--custom-cutout-radius) at var(--custom-cutout-x) var(--custom-cutout-y),transparent 0,transparent calc(var(--custom-cutout-radius) - .5px),#000 var(--custom-cutout-radius));mask-image:radial-gradient(circle var(--custom-cutout-radius) at var(--custom-cutout-x) var(--custom-cutout-y),transparent 0,transparent calc(var(--custom-cutout-radius) - .5px),#000 var(--custom-cutout-radius));width:100%}
+.fill_b83360:hover .gifTag_b83360 {opacity:0}
+:where(.banner__68edb) {transition:background-color .1s}
+:not(.custom-user-profile-theme).user-profile-popout :where(.banner__68edb) {border-radius:var(--custom-user-profile-banner-radius,var(--radius-sm) var(--radius-sm)0 0)}
+:where(.banner__68edb):before {border-bottom:1px solid var(--border-muted);bottom:0;content:"";position:absolute;width:100%}
+:root .user-profile-popout {--custom-user-profile-banner-height:105px}
+:where(.outer_c0bea0) {background:var(--background-surface-high);display:flex;flex-direction:column;position:relative}
+:where(.outer_c0bea0).user-profile-popout {border-radius:var(--radius-sm);box-shadow:var(--shadow-border),var(--shadow-high);max-height:calc(100vh - 20px);width:300px}
+:where(.outer_c0bea0).user-profile-sidebar.user-profile-sidebar-redesign {border-radius:var(--radius-sm);box-shadow:var(--shadow-border);height:auto;width:300px}
+:where(.outer_c0bea0).user-profile-sidebar.user-profile-sidebar-redesign:not(.custom-user-profile-theme) {background:var(--chat-background-default)}
+.inner_c0bea0 {border-radius:var(--radius-xs);display:flex;flex-direction:column;flex-grow:1;overflow:hidden}
+.user-profile-popout .inner_c0bea0 {gap:8px;padding-bottom:4px}
+.user-profile-modal .inner_c0bea0:before {border-radius:var(--radius-xs);height:calc(100% - 8px);width:calc(100% - 8px)}
+.user-profile-sidebar .inner_c0bea0 {height:100%}
+.user-profile-sidebar .inner_c0bea0:before {height:100%;width:100%}
+.user-profile-sidebar.user-profile-sidebar-redesign .inner_c0bea0 {border-radius:var(--radius-sm)}
+.enable-forced-colors .outer_c0bea0:before {background-color:Canvas}
+.text-sm\/normal__26b1f {font-family:var(--font-primary);font-size:14px;font-weight:400;line-height:1.2857142857142858}
+.displayNameRow__26b1f {align-items:center;display:flex;flex-direction:row;gap:8px;line-height:24px;-webkit-user-select:text;-moz-user-select:text;user-select:text}
+.displayNameRow__26b1f .botTag__26b1f {vertical-align:baseline}
+.displayNameTrailing__26b1f {align-items:center;align-self:flex-start;display:flex;height:1lh}
+.clickable__26b1f {cursor:pointer}
+.displayName__26b1f {max-height:3lh;word-break:break-word}
+.displayName__26b1f.noStyles__26b1f {overflow:hidden}
+.clickable__26b1f:focus-visible .displayName__26b1f.noStyles__26b1f,.clickable__26b1f:hover .displayName__26b1f.noStyles__26b1f {text-decoration:underline}
+.usernameAndPronounsRow__26b1f {align-items:center;display:flex;flex-direction:row;flex-wrap:wrap;-webkit-user-select:text;-moz-user-select:text;user-select:text}
+.user-profile-popout .usernameAndPronounsRow__26b1f,.user-profile-sidebar .usernameAndPronounsRow__26b1f {row-gap:2px}
+.usernameAndPronounsRow__26b1f.hasPronouns__26b1f,.usernameAndPronounsRow__26b1f.isBot__26b1f {-moz-column-gap:6px;column-gap:6px}
+.usernameAndPronounsRow__26b1f.isBot__26b1f {margin-block-start:8px}
+.userTagUsername__26b1f {color:var(--text-strong);display:inline;text-overflow:unset;vertical-align:top;white-space:normal;word-break:break-all}
+.clickable__26b1f:focus-visible .userTagUsername__26b1f,.clickable__26b1f:hover .userTagUsername__26b1f {text-decoration:underline}
+.userTagDiscriminator__26b1f {color:var(--text-strong);vertical-align:top}
+.container_ab8609 {--custom-status-bubble-background-color:var(--background-surface-highest);--custom-status-bubble-background:var(--custom-status-bubble-background-color);height:fit-content;position:absolute;width:fit-content;z-index:var(--custom-user-profile-middle-layer-z-index)}
+.theme-dark .container_ab8609 {--custom-status-bubble-overlay-color:255 255 255}
+.container_ab8609.editable_ab8609:hover {--custom-status-bubble-background:linear-gradient(rgb(var(--custom-status-bubble-overlay-color)/0.04),rgb(var(--custom-status-bubble-overlay-color)/0.04)),var(--custom-status-bubble-background-color)}
+.user-profile-popout .container_ab8609 {inset-inline-start:105px;top:calc(var(--custom-user-profile-banner-height) - 7px)}
+.user-profile-sidebar .container_ab8609 {inset-inline-start:109px;top:calc(var(--custom-user-profile-banner-height) - 7px)}
+.referenceContainer_ab8609 {pointer-events:none;position:relative;visibility:hidden}
+.user-profile-popout .referenceContainer_ab8609 {margin-top:-10px;margin-inline:109px 12px}
+.user-profile-sidebar .referenceContainer_ab8609 {margin-top:-10px;margin-inline:109px 8px}
+.referenceContainer_ab8609>.outer_ab8609>.inner_ab8609>.content_ab8609 {max-width:155px}
+.referenceContainer_ab8609>.outer_ab8609 {max-width:none;width:max-content}
+.outer_ab8609 {background:var(--custom-status-bubble-background);border-radius:var(--radius-lg);box-shadow:var(--shadow-low);box-sizing:border-box;max-width:181px;min-width:42px;overflow:hidden}
+.outer_ab8609:before {background:inherit;border:inherit;border-radius:50%;box-shadow:inherit;box-sizing:border-box;content:"";height:20px;inset-inline-start:10px;position:absolute;top:-8px;width:20px}
+.outer_ab8609:after {background:inherit;border:inherit;border-radius:50%;box-shadow:inherit;box-sizing:border-box;content:"";height:10px;inset-inline-start:-3px;position:absolute;top:-15px;width:10px}
+.theme-dark .outer_ab8609 {border:1px solid var(--border-muted)}
+.inner_ab8609 {background:var(--custom-status-bubble-background);cursor:text;display:block;font-size:medium;margin:0 auto;padding:8px 12px;position:relative;-webkit-user-select:text;-moz-user-select:text;user-select:text;width:fit-content;word-break:break-word}
+.content_ab8609 {-webkit-box-orient:vertical;-webkit-line-clamp:2;color:var(--text-default);overflow:hidden}
+.content_ab8609.unclamped_ab8609 {display:block;-webkit-line-clamp:unset}
+.referenceMeasurement_ab8609 {inset-inline-start:0;position:absolute;top:0;width:100%}
+.ring_ab8609 {border-radius:var(--radius-lg)}
+.statusText_ab8609 {color:var(--text-default)}
+.statusEmoji_ab8609:has(~.statusText_ab8609) {height:16px;margin-inline-end:4px;width:16px}
+.statusEmoji_ab8609~.statusText_ab8609 {display:inline}
+.outer_ab8609:hover .addStatusPrompt_ab8609 {color:var(--text-default)}
+.outer_ab8609:hover .addStatusIconColor_ab8609 {fill:var(--text-default)}
+:where(.section_bf424d) {display:flex;flex-direction:column;gap:8px}
+.button__0f074 {color:var(--icon-subtle);cursor:pointer;height:16px;opacity:0;transition:color 50ms ease-in;width:16px}
+.button__0f074:focus-visible,.button__0f074:hover {color:var(--icon-strong);transition:color .15s ease-out}
+.button__0f074:focus-visible {opacity:1}
+.descriptionClamp_f5f93a {-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.buttons_bc38cd {flex-wrap:wrap;gap:8px}
+.header__5be3e {flex-shrink:0;min-height:calc(var(--custom-user-profile-banner-height) + 35px);position:relative}
+.body__5be3e {display:flex;flex-direction:column;gap:12px;padding:4px 16px 8px}
+.has-webkit-scrollbar .body__5be3e {padding-inline-end:calc(16px - var(--space-8))}
+.wrapper_da5890 {display:flex;gap:8px;position:absolute;transition:opacity .6s ease;z-index:var(--custom-user-profile-top-layer-z-index)}
+.user-profile-popout .wrapper_da5890 {inset-inline-end:12px;top:calc(var(--custom-user-profile-banner-top,0px) + var(--space-8))}
+.user-profile-sidebar .wrapper_da5890 {inset-inline-end:8px;top:8px}
+.mutuals__530ce {-moz-column-gap:6px;column-gap:6px;flex-wrap:wrap;row-gap:2px}
+.mutuals__530ce,.section__530ce {align-items:center;display:flex;flex-direction:row}
+.section__530ce {cursor:pointer;gap:4px}
+.section__530ce:focus-visible .text__530ce,.section__530ce:hover .text__530ce {text-decoration:underline}
+
+/* --- 5. Additions Moddy -------------------------------------------------
+   Tout ce qui suit est à nous, pas à Discord. Volontairement court : des
+   replis pour les données absentes, et deux contraintes du dump qui n'ont pas
+   de sens dans une page de configuration. */
+
+/* Le popout Discord est un flottant borné à la fenêtre ; ici il est posé dans
+   une carte, et la bio n'est pas tronquée à 3 lignes. */
+.dpp-scope.user-profile-popout {
+  max-height: none;
+  max-width: 100%;
+}
+
+/* Remplace `descriptionClamp_f5f93a` (-webkit-line-clamp: 3) : pendant qu'on
+   édite sa bio, on veut la voir en entier. */
+.dpp-description-unclamped {
+  display: block;
+  overflow: visible;
+}
+
+/* Repli quand le bot n'a pas d'avatar (`avatar__44b0c` fournit déjà la taille
+   et le rond). */
+.dpp-avatar-initials {
+  align-items: center;
+  background: var(--background-brand);
+  color: var(--white);
+  display: flex;
+  font-size: 28px;
+  font-weight: var(--font-weight-semibold);
+  justify-content: center;
+}
+
+/* Repli quand un serveur en commun n'a pas d'icône — initiales, comme la
+   barre de serveurs de Discord. */
+.dpp-guild-initials {
+  align-items: center;
+  background: var(--background-surface-highest);
+  color: var(--text-default);
+  display: flex;
+  font-size: 7px;
+  font-weight: var(--font-weight-semibold);
+  height: 100%;
+  justify-content: center;
+  letter-spacing: -0.02em;
+  width: 100%;
+}
+
+/* L'étiquette APP est un frère du pseudo (le wrapper de style de pseudo est un
+   flex pleine largeur, il la pousserait à la ligne). */
+.displayNameRow__26b1f > .displayName__26b1f {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.displayNameRow__26b1f > .botTag__82f07 {
+  align-self: center;
+  flex-shrink: 0;
+}
+
+/* `DiscordMarkup` sert aussi hors de la carte (aperçu de l'attribution dans le
+   formulaire) : sans le scope, `--custom-emoji-size-emoji` n'existe pas. */
+.emoji {
+  --custom-emoji-size-emoji: 1.375em;
+}
+
+/* Éléments markdown absents de la capture (la bio dumpée ne contenait ni
+   citation, ni titre `#`, ni bloc de code, ni spoiler) : Discord les rend, mais
+   ses règles n'étaient pas dans le fichier source. Valeurs alignées sur celles
+   de `.markup__75297` qui, elles, en viennent. */
+.markup__75297 h1 {
+  color: var(--custom-message-content-color, var(--text-strong));
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.375em;
+  margin: 16px 0 8px;
+}
+
+.markup__75297 h1:first-child,
+.markup__75297 h2:first-child,
+.markup__75297 h3:first-child {
+  margin-top: 0;
+}
+
+.markup__75297 blockquote {
+  border-inline-start: 4px solid var(--border-normal);
+  border-radius: 4px;
+  margin: 2px 0;
+  padding-inline-start: 8px;
+}
+
+.markup__75297 pre {
+  background: var(--background-code);
+  border: 1px solid var(--border-normal);
+  border-radius: 4px;
+  margin: 4px 0;
+  padding: 6px 8px;
+  white-space: pre-wrap;
+}
+
+.markup__75297 pre code {
+  background: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* Le spoiler n'est pas cliquable en aperçu : rendu révélé, sur fond discret. */
+.dpp-spoiler {
+  background: var(--background-mod-subtle);
+  border-radius: 4px;
+  padding: 0 2px;
+}

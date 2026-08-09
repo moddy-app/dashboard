@@ -3,6 +3,7 @@
 @import "shadcn/tailwind.css";
 @import "./fonts.css";
 @import "./styles/discord-name-styles.css";
+@import "./styles/discord-profile.css";
 
 @custom-variant dark (&:is(.dark *));
 
