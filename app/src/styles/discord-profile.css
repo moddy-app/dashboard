@@ -344,11 +344,17 @@
 }
 
 /* L'étiquette APP est un frère du pseudo (le wrapper de style de pseudo est un
-   flex pleine largeur, il la pousserait à la ligne). */
+   flex pleine largeur, il la pousserait à la ligne).
+
+   ⚠️ Surtout PAS d'`overflow` ici. Les effets de name style débordent
+   volontairement de leur boîte via des marges négatives (halo du néon, ombre
+   décalée du pop, contour du cartoon) ; un ancêtre qui découpe rogne l'effet
+   en plein milieu du mot. Discord ne pose `overflow:hidden` sur
+   `.displayName__26b1f` que via `.noStyles__26b1f`, c'est-à-dire uniquement
+   quand il n'y a aucun style de pseudo. */
 .displayNameRow__26b1f > .displayName__26b1f {
   flex: 0 1 auto;
   min-width: 0;
-  overflow: hidden;
 }
 
 .displayNameRow__26b1f > .botTag__82f07 {
@@ -356,10 +362,17 @@
   flex-shrink: 0;
 }
 
-/* `DiscordMarkup` sert aussi hors de la carte (aperçu de l'attribution dans le
-   formulaire) : sans le scope, `--custom-emoji-size-emoji` n'existe pas. */
+/* Deux corrections dues au preflight de Tailwind, qui n'existe pas chez Discord :
+
+   1. `display: inline` — le preflight met TOUS les `img` en `display:block`, ce
+      qui poussait chaque émoji sur sa propre ligne. Chez Discord un `img` est
+      `inline` par défaut, la règle `.emoji` n'a donc jamais eu à le dire.
+   2. `--custom-emoji-size-emoji` — `DiscordMarkup` sert aussi hors de la carte
+      (aperçu de l'attribution dans le formulaire), donc hors du scope où
+      Discord définit cette variable. */
 .emoji {
   --custom-emoji-size-emoji: 1.375em;
+  display: inline;
 }
 
 /* Éléments markdown absents de la capture (la bio dumpée ne contenait ni
@@ -409,4 +422,23 @@
   background: var(--background-mod-subtle);
   border-radius: 4px;
   padding: 0 2px;
+}
+
+/* Squelette de chargement — pas de Discord non plus. */
+.dpp-skeleton {
+  animation: dpp-skeleton-pulse 1.6s ease-in-out infinite;
+  background: var(--background-mod-subtle);
+}
+
+.dpp-skeleton-line {
+  border-radius: var(--radius-xs);
+}
+
+@keyframes dpp-skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dpp-skeleton { animation: none; }
 }

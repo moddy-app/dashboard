@@ -36,19 +36,34 @@ export function invalidateBotProfile() {
   inflight = null
 }
 
-/** Profil global du bot — `null` tant qu'il n'est pas chargé, ou en cas d'échec. */
-export function useBotProfile(): BotProfile | null {
-  const [data, setData] = useState<BotProfile | null>(cache)
+export interface BotProfileState {
+  /** `null` tant que non chargé, ou si l'appel a échoué. */
+  profile: BotProfile | null
+  /** `true` seulement pendant le tout premier chargement de la session. */
+  loading: boolean
+}
+
+/**
+ * Profil global du bot. `loading` permet d'afficher un squelette plutôt que des
+ * valeurs de repli qui sauteraient à l'arrivée des vraies données ; il repasse
+ * à `false` même en cas d'échec, l'aperçu devant rester utilisable sans.
+ */
+export function useBotProfile(): BotProfileState {
+  const [state, setState] = useState<BotProfileState>(() => ({
+    profile: cache,
+    loading: cache === null,
+  }))
 
   useEffect(() => {
+    if (cache) return
     let active = true
-    load().then((d) => {
-      if (active) setData(d)
+    load().then((profile) => {
+      if (active) setState({ profile, loading: false })
     })
     return () => {
       active = false
     }
   }, [])
 
-  return data
+  return state
 }
