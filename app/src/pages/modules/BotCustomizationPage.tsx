@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ErrorPage } from "@/components/error-state"
+import { DebugErrorOverlay } from "@/components/debug-error-overlay"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -48,6 +49,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useUserProfile } from "@/hooks/useProfile"
+import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
@@ -389,6 +391,8 @@ function BotCustomizationForm() {
   const [draft, setDraft] = useState<CustomizationDraft | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  /** Erreur brute, réservée à l'overlay `?debug=true`. */
+  const [loadErrorRaw, setLoadErrorRaw] = useState<unknown>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
@@ -417,11 +421,23 @@ function BotCustomizationForm() {
     if (!selectedGuildId) return
     setIsLoading(true)
     setLoadError(null)
+    setLoadErrorRaw(null)
     try {
       applyState(await getBotCustomization(selectedGuildId))
     } catch (e) {
       logger.error("module:bot_customization", "Load failed", e)
-      setLoadError(e instanceof Error ? e.message : "Failed to load module config")
+      setLoadErrorRaw(e)
+      // Une 5xx porte parfois un message technique (trace SQL, exception
+      // interne) : on ne le montre pas à l'utilisateur — `ErrorState` reconnaît
+      // le code HTTP et affiche le message « erreur serveur ». Le détail reste
+      // dans les logs et dans l'overlay `?debug=true`.
+      setLoadError(
+        e instanceof ApiError && e.isServerError
+          ? `HTTP ${e.status}`
+          : e instanceof Error
+            ? e.message
+            : "Failed to load module config"
+      )
     } finally {
       setIsLoading(false)
     }
@@ -639,7 +655,12 @@ function BotCustomizationForm() {
   }
 
   if (loadError || !state || !draft) {
-    return <ErrorPage error={loadError ?? "Failed to load module config"} onRetry={load} />
+    return (
+      <>
+        <ErrorPage error={loadError ?? "Failed to load module config"} onRetry={load} />
+        <DebugErrorOverlay error={loadErrorRaw} context="bot_customization/load" />
+      </>
+    )
   }
 
   const { limits, is_premium: isPremium, premium_fields: premiumFields } = state
