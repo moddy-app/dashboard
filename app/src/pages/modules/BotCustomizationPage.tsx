@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
@@ -13,10 +13,12 @@ import {
   UploadIcon,
   XIcon,
 } from "lucide-react"
+import { DiscordMarkup } from "@/components/discord-markup"
+import { DiscordProfilePreview } from "@/components/discord-profile-preview"
+import { NameStylePreview } from "@/components/name-style-preview"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ErrorPage } from "@/components/error-state"
 import { DebugErrorOverlay } from "@/components/debug-error-overlay"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,11 +50,13 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useBotProfile } from "@/hooks/useBotProfile"
 import { useUserProfile } from "@/hooks/useProfile"
-import { ApiError } from "@/lib/auth"
+import { ApiError, type Guild } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
+import { effectSlug, fontSlug } from "@/lib/discord-name-styles"
 import {
   DEFAULT_STYLE_COLOR,
   botCustomizationErrorCode,
@@ -75,53 +79,12 @@ import {
   saveBotCustomization,
   uploadBotCustomizationImage,
 } from "@/services/bot-customization"
-import type { BotCustomizationLimits, BotCustomizationState } from "@/types/api"
+import type { BotCustomizationLimits, BotCustomizationState, BotProfile } from "@/types/api"
 
 /** Valeur sentinelle des Select : Radix interdit un SelectItem de valeur vide. */
 const NONE = "__none__"
 
 type FieldErrors = Partial<Record<"nickname" | "bio" | "colors" | "avatar" | "banner", string>>
-
-// ─── Markup Discord (attribution de la bio) ───────────────────────────────────
-
-/**
- * Rend le sous-ensemble de markup utilisé par `limits.bio_attribution` :
- * emojis custom `<a:name:id>` et gras `**texte**`. Affiché en aperçu non
- * éditable — cette ligne est ajoutée par le bot, jamais envoyée dans `bio`.
- */
-function DiscordMarkup({ text }: { text: string }) {
-  const nodes: ReactNode[] = []
-  const re = /<(a?):(\w+):(\d+)>|\*\*([^*]+)\*\*/g
-  let last = 0
-  let match: RegExpExecArray | null
-
-  while ((match = re.exec(text)) !== null) {
-    if (match.index > last) nodes.push(text.slice(last, match.index))
-    const [, animated, name, emojiId, bold] = match
-    if (emojiId) {
-      const ext = animated === "a" ? "gif" : "png"
-      nodes.push(
-        <img
-          key={`${emojiId}-${match.index}`}
-          src={`https://cdn.discordapp.com/emojis/${emojiId}.${ext}?size=32`}
-          alt={`:${name}:`}
-          className="inline-block size-4 align-[-0.2em]"
-          referrerPolicy="no-referrer"
-        />
-      )
-    } else {
-      nodes.push(
-        <strong key={`b-${match.index}`} className="font-semibold">
-          {bold}
-        </strong>
-      )
-    }
-    last = match.index + match[0].length
-  }
-  if (last < text.length) nodes.push(text.slice(last))
-
-  return <>{nodes}</>
-}
 
 // ─── Aperçu ───────────────────────────────────────────────────────────────────
 
@@ -132,9 +95,17 @@ interface PreviewProps {
   limits: BotCustomizationLimits
   avatarUrl: string | null
   bannerUrl: string | null
-  fallbackName: string
+  /** Profil global du bot — valeurs de repli de chaque champ laissé vide. */
+  botProfile: BotProfile | null
+  /** Serveurs que l'utilisateur a en commun avec le bot. */
+  mutualGuilds: Guild[]
 }
 
+/**
+ * Rend le vrai popout de profil Discord. Chaque champ vide du module retombe
+ * sur le profil **global** du bot (`GET /bot/profile`), exactement comme
+ * Discord le fait quand aucune personnalisation de guilde ne s'applique.
+ */
 function CustomizationPreview({
   nickname,
   bio,
@@ -142,63 +113,26 @@ function CustomizationPreview({
   limits,
   avatarUrl,
   bannerUrl,
-  fallbackName,
+  botProfile,
+  mutualGuilds,
 }: PreviewProps) {
-  const { t } = useTranslation()
-  const displayName = nickname.trim() || fallbackName
-  const colors = style.colors.filter(isValidHex)
-
-  // Le dégradé se rend en `background-clip: text` ; une couleur unique suffit
-  // en `color`. Les polices Discord ne sont pas distribuées : elles sont
-  // indiquées en légende plutôt que simulées.
-  const nameStyle =
-    style.effect_id === limits.gradient_effect_id && colors.length >= 2
-      ? {
-          backgroundImage: `linear-gradient(90deg, ${colors[0]}, ${colors[1]})`,
-          WebkitBackgroundClip: "text" as const,
-          backgroundClip: "text" as const,
-          color: "transparent",
-        }
-      : colors.length >= 1
-        ? { color: colors[0] }
-        : undefined
+  const fallbackName = botProfile?.username ?? "Moddy"
 
   return (
-    <div className="overflow-hidden rounded-xl border bg-card">
-      <div className="relative h-28 w-full bg-gradient-to-br from-muted to-muted-foreground/15 sm:h-32">
-        {bannerUrl && (
-          <img
-            src={bannerUrl}
-            alt=""
-            className="size-full object-cover"
-            referrerPolicy="no-referrer"
-          />
-        )}
-      </div>
-      <div className="px-5 pb-5">
-        <Avatar className="-mt-10 size-20 ring-4 ring-card">
-          <AvatarImage src={avatarUrl ?? undefined} alt={displayName} referrerPolicy="no-referrer" />
-          <AvatarFallback className="text-xl font-semibold">
-            {displayName.slice(0, 2).toUpperCase()}
-          </AvatarFallback>
-        </Avatar>
-
-        <p className="mt-3 truncate text-lg font-semibold leading-tight" style={nameStyle}>
-          {displayName}
-        </p>
-
-        <div className="mt-2 space-y-0.5 text-sm text-muted-foreground">
-          {bio.trim() && <p className="whitespace-pre-wrap break-words">{bio.trim()}</p>}
-          <p className="break-words">
-            <DiscordMarkup text={limits.bio_attribution} />
-          </p>
-        </div>
-
-        <p className="mt-3 text-xs text-muted-foreground">
-          {t("modules.bot_customization.previewHint")}
-        </p>
-      </div>
-    </div>
+    <DiscordProfilePreview
+      displayName={nickname.trim() || fallbackName}
+      username={fallbackName}
+      bio={bio.trim() || botProfile?.bio || ""}
+      bioAttribution={limits.bio_attribution}
+      avatarUrl={avatarUrl ?? botProfile?.avatar_url ?? null}
+      bannerUrl={bannerUrl ?? botProfile?.banner_url ?? null}
+      accentColor={botProfile?.accent_color ?? null}
+      mutualGuilds={mutualGuilds}
+      fontId={style.font_id}
+      effectId={style.effect_id}
+      gradientEffectId={limits.gradient_effect_id}
+      colors={style.colors.filter(isValidHex)}
+    />
   )
 }
 
@@ -385,7 +319,10 @@ export function BotCustomizationPage() {
 
 function BotCustomizationForm() {
   const { t, i18n } = useTranslation()
-  const { selectedGuildId } = useGuildContext()
+  const { selectedGuildId, guilds } = useGuildContext()
+  // Profil global du bot : sert de valeur de repli à chaque champ vide de
+  // l'aperçu (avatar, bannière, bio, nom). Chargé une fois par session.
+  const botProfile = useBotProfile()
 
   const [state, setState] = useState<BotCustomizationState | null>(null)
   const [draft, setDraft] = useState<CustomizationDraft | null>(null)
@@ -682,6 +619,10 @@ function BotCustomizationForm() {
           defaultValue: t("modules.bot_customization.effectGeneric", { id }),
         })
 
+  // Couleurs utilisées pour prévisualiser les effets dans le sélecteur : celles
+  // du brouillon, ou la couleur par défaut de Discord tant qu'aucune n'est posée.
+  const previewColors = draft.style.colors.filter(isValidHex)
+
   const previewAvatar =
     draft.avatar.kind === "file"
       ? draft.avatar.previewUrl
@@ -724,7 +665,7 @@ function BotCustomizationForm() {
           <CardTitle className="text-base">{t("modules.bot_customization.previewTitle")}</CardTitle>
           <CardDescription>{t("modules.bot_customization.previewDescription")}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col items-center gap-3">
           <CustomizationPreview
             nickname={draft.nickname}
             bio={draft.bio}
@@ -732,8 +673,12 @@ function BotCustomizationForm() {
             limits={limits}
             avatarUrl={previewAvatar}
             bannerUrl={previewBanner}
-            fallbackName="Moddy"
+            botProfile={botProfile}
+            mutualGuilds={guilds}
           />
+          <p className="text-center text-xs text-muted-foreground">
+            {t("modules.bot_customization.previewHint")}
+          </p>
         </CardContent>
       </Card>
 
@@ -903,16 +848,20 @@ function BotCustomizationForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>{t("modules.bot_customization.fontDefault")}</SelectItem>
+                  {/* Chaque option est écrite dans sa propre police, comme dans le
+                      sélecteur Discord : le nom seul ne dit rien du rendu. */}
                   {limits.font_ids.map((id) => (
                     <SelectItem key={id} value={String(id)}>
-                      {fontLabel(id)}
+                      <span className={`dns-font-${fontSlug(id)}`}>{fontLabel(id)}</span>
                     </SelectItem>
                   ))}
                   {/* Police enregistrée qui n'est plus proposée par l'API :
                       gardée en option désactivée pour ne pas l'effacer en silence. */}
                   {draft.style.font_id !== null && !limits.font_ids.includes(draft.style.font_id) && (
                     <SelectItem value={String(draft.style.font_id)} disabled>
-                      {fontLabel(draft.style.font_id)}
+                      <span className={`dns-font-${fontSlug(draft.style.font_id)}`}>
+                        {fontLabel(draft.style.font_id)}
+                      </span>
                     </SelectItem>
                   )}
                 </SelectContent>
@@ -932,9 +881,19 @@ function BotCustomizationForm() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NONE}>{t("modules.bot_customization.effectNone")}</SelectItem>
+                  {/* Chaque option porte son propre effet, avec les couleurs
+                      courantes. Animation coupée ici : elle tournerait aussi
+                      dans le bouton du Select (Radix y recopie l'option
+                      sélectionnée) — l'aperçu au-dessus l'anime déjà. */}
                   {limits.effect_ids.map((id) => (
                     <SelectItem key={id} value={String(id)}>
-                      {effectLabel(id)}
+                      <NameStylePreview
+                        name={effectLabel(id)}
+                        font={fontSlug(draft.style.font_id)}
+                        effect={effectSlug(id, limits.gradient_effect_id)}
+                        colors={previewColors}
+                        animated={false}
+                      />
                     </SelectItem>
                   ))}
                   {draft.style.effect_id !== null &&

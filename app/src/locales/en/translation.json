@@ -528,8 +528,8 @@
       "name": "Bot Customization",
       "description": "Give Moddy its own nickname, bio, avatar, banner and name style on this server.",
       "previewTitle": "Preview",
-      "previewDescription": "How Moddy will look on this server once the changes are applied.",
-      "previewHint": "Fonts and effects are rendered by Discord — the preview only shows the colors.",
+      "previewDescription": "The real Discord profile popout, rendered live. Empty fields fall back to Moddy's global profile.",
+      "previewHint": "Rendered with Discord's own fonts, effects and layout. Here the animation loops; on Discord it plays once.",
       "identityTitle": "Identity",
       "identityDescription": "Nickname, bio, avatar and banner of Moddy on this server.",
       "premiumBadge": "Moddy Max",
@@ -606,6 +606,27 @@
         "save_failed": "The change could not be saved.",
         "internal_error": "An internal error occurred. Please try again in a few moments.",
         "bot_timeout": "Moddy did not respond in time. The change will be applied as soon as it is back — reload the page in a little while."
+      },
+      "fonts": {
+        "3": "Sakura",
+        "4": "Jellybean",
+        "6": "Modern",
+        "7": "Medieval",
+        "8": "8-bit",
+        "10": "Vampyre",
+        "12": "Tempo"
+      },
+      "effects": {
+        "3": "Neon",
+        "4": "Toon",
+        "5": "Pop"
+      },
+      "preview": {
+        "verifiedApp": "Verified app",
+        "supportsCommands": "Supports commands",
+        "mutualServers_one": "{{count}} mutual server",
+        "mutualServers_other": "{{count}} mutual servers",
+        "badges": "User badges"
       }
     }
   },

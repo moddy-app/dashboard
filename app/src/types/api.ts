@@ -431,6 +431,26 @@ export interface BotCustomizationUpload {
   expires_in: number
 }
 
+/**
+ * Profil Discord **global** du bot (`GET /bot/profile`), lu en direct.
+ *
+ * À ne pas confondre avec le module `bot_customization`, qui personnalise le
+ * bot **par guilde**. Celui-ci est ce que Discord affiche partout où aucune
+ * personnalisation de guilde ne s'applique — donc la valeur de repli de
+ * l'aperçu pour chaque champ laissé vide.
+ */
+export interface BotProfile {
+  /** ID Discord du bot (= `DISCORD_CLIENT_ID`). */
+  id: string
+  username: string
+  avatar_url: string | null
+  banner_url: string | null
+  /** Couleur d'accent, utilisée par Discord en fond quand il n'y a pas de bannière. */
+  accent_color: number | null
+  /** `null` si le RPC Discord est injoignable — best-effort, l'appel n'échoue pas. */
+  bio: string | null
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
