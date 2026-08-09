@@ -1,7 +1,12 @@
 import { useTranslation } from "react-i18next"
 import { DiscordMarkup } from "@/components/discord-markup"
-import { NameStyleFromIds } from "@/components/name-style-preview"
+import { NameStylePreview } from "@/components/name-style-preview"
 import { useTheme } from "@/components/theme-provider"
+import {
+  DEFAULT_BOT_NAME_STYLE,
+  effectSlug,
+  fontSlug,
+} from "@/lib/discord-name-styles"
 import { getGuildIconUrl, type Guild } from "@/lib/auth"
 import { cn } from "@/lib/utils"
 
@@ -169,6 +174,24 @@ export function DiscordProfilePreview({
         }),
   }
 
+  // Rien de configuré dans la guilde → style global du bot (pop bleu), comme
+  // pour l'avatar et la bio. Un seul des trois champs suffit à sortir du défaut.
+  const hasCustomStyle = fontId !== null || effectId !== null || colors.length > 0
+  const nameStyle = hasCustomStyle
+    ? {
+        font: fontSlug(fontId),
+        effect: effectSlug(effectId, gradientEffectId),
+        colors,
+        // Sans couleur choisie, Discord garde la couleur de texte par défaut.
+        plain: colors.length === 0 && effectId === null,
+      }
+    : {
+        font: DEFAULT_BOT_NAME_STYLE.font,
+        effect: DEFAULT_BOT_NAME_STYLE.effect,
+        colors: [DEFAULT_BOT_NAME_STYLE.color],
+        plain: false,
+      }
+
   const hasBio = Boolean(bio.trim() || bioAttribution)
 
   return (
@@ -247,17 +270,7 @@ export function DiscordProfilePreview({
                 className="defaultColor__4bd52 heading-lg/bold_cf4812 displayName__26b1f"
                 data-text-variant="heading-lg/bold"
               >
-                {/* Sans couleur choisie, le pseudo garde la couleur de texte
-                    Discord : on ne pose alors que la police, pas l'effet. */}
-                <NameStyleFromIds
-                  name={displayName}
-                  fontId={fontId}
-                  effectId={colors.length > 0 ? effectId : null}
-                  gradientEffectId={gradientEffectId}
-                  colors={colors}
-                  plain={colors.length === 0}
-                  wrap
-                />
+                <NameStylePreview name={displayName} wrap {...nameStyle} />
               </div>
               <BotTag label={t("modules.bot_customization.preview.verifiedApp")} />
             </div>
@@ -321,6 +334,68 @@ export function DiscordProfilePreview({
               </div>
             </section>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Squelette affiché tant que le profil global du bot n'est pas chargé. Reprend
+ * le gabarit exact de la carte (300 px, bannière de 105 px, avatar à 61 px)
+ * pour qu'aucun décalage ne se produise à l'arrivée des données.
+ */
+export function DiscordProfilePreviewSkeleton({ className }: { className?: string }) {
+  const { theme } = useTheme()
+  const isDark =
+    theme === "dark" ||
+    (theme === "system" &&
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-color-scheme: dark)").matches)
+
+  return (
+    <div
+      className={cn(
+        "dpp-scope outer_c0bea0 user-profile-popout",
+        isDark ? "theme-dark theme-midnight images-dark" : "theme-light images-light",
+        className
+      )}
+      aria-busy="true"
+    >
+      <div className="inner_c0bea0">
+        <div className="header__5be3e">
+          <div className="banner_b83360" style={{ height: 105, width: "100%" }}>
+            <div
+              className="fill_b83360 banner__68edb dpp-skeleton"
+              style={
+                {
+                  "--custom-cutout-radius": "46px",
+                  "--custom-cutout-x": "56px",
+                  "--custom-cutout-y": "calc(100% - 4px)",
+                } as React.CSSProperties
+              }
+            />
+          </div>
+          <div className="avatar__75742">
+            <div className="wrapper__44b0c" style={{ width: 80, height: 80 }}>
+              <div className="avatar__44b0c dpp-skeleton" style={{ width: 80, height: 80 }} />
+            </div>
+          </div>
+        </div>
+        <div className="body__5be3e">
+          <div>
+            <div className="displayNameRow__26b1f">
+              <div className="dpp-skeleton dpp-skeleton-line" style={{ width: 120, height: 24 }} />
+            </div>
+            <div className="usernameAndPronounsRow__26b1f isBot__26b1f">
+              <div className="dpp-skeleton dpp-skeleton-line" style={{ width: 70, height: 14 }} />
+            </div>
+          </div>
+          <div className="dpp-skeleton dpp-skeleton-line" style={{ width: 150, height: 16 }} />
+          <div className="section_bf424d">
+            <div className="dpp-skeleton dpp-skeleton-line" style={{ width: "100%", height: 14 }} />
+            <div className="dpp-skeleton dpp-skeleton-line" style={{ width: "70%", height: 14 }} />
+          </div>
         </div>
       </div>
     </div>

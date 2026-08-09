@@ -529,7 +529,6 @@
       "description": "Donnez à Moddy son propre pseudo, sa bio, son avatar, sa bannière et son style de pseudo sur ce serveur.",
       "previewTitle": "Aperçu",
       "previewDescription": "Le vrai popout de profil Discord, rendu en direct. Les champs vides reprennent le profil global de Moddy.",
-      "previewHint": "Rendu avec les polices, les effets et la mise en page de Discord. Ici l'animation boucle ; sur Discord elle ne joue qu'une fois.",
       "identityTitle": "Identité",
       "identityDescription": "Pseudo, bio, avatar et bannière de Moddy sur ce serveur.",
       "premiumBadge": "Moddy Max",

@@ -209,36 +209,77 @@ export function isKnownEffect(effectId: number, gradientEffectId?: number): bool
 
 // ─── Variables CSS ────────────────────────────────────────────────────────────
 
-/** Style inline à poser sur le conteneur `.dns-name`. */
+/** Style inline prêt à être posé sur le conteneur `.dns-name`. */
 export type NameStyleVars = Record<string, string>
 
+/**
+ * Portage direct de `paletteToCssVars()` du kit. Les valeurs de `--dns-wrap`
+ * sont celles attendues par le CSS (`wrap` / `nowrap`), pas des synonymes.
+ */
+export function paletteToCssVars(
+  baseHex: string,
+  { wrap = "nowrap", opacity = 1 }: { wrap?: "wrap" | "nowrap"; opacity?: number } = {}
+): NameStyleVars {
+  const p = derivePalette(baseHex)
+  return {
+    "--dns-main": p.main,
+    "--dns-light-1": p.light1,
+    "--dns-light-2": p.light2,
+    "--dns-dark-1": p.dark1,
+    "--dns-dark-2": p.dark2,
+    "--dns-toon-stroke-color": p.toonStroke,
+    "--dns-neon-stroke": p.neonStroke,
+    "--dns-wrap": wrap,
+    "--dns-font-opacity": String(opacity),
+  }
+}
+
+/** Le dégradé n'utilise pas la palette dérivée : deux arrêts explicites. */
+export function gradientVars(
+  fromHex: string,
+  toHex: string,
+  { from = 10, to = 90 }: { from?: number; to?: number } = {}
+): NameStyleVars {
+  return {
+    "--dns-gradient-stops": `${fromHex} ${from}%, ${toHex} ${to}%`,
+    "--dns-main": fromHex,
+  }
+}
+
+/**
+ * Variables pour un effet donné. `colors` vient du module : une couleur pour
+ * tous les effets, deux pour le dégradé.
+ */
 export function nameStyleVars(
   colors: string[],
   effect: NameEffectSlug,
   { wrap = false }: { wrap?: boolean } = {}
 ): NameStyleVars {
   const base = colors[0] ?? DEFAULT_NAME_COLOR
-  const p = derivePalette(base)
+  const opts = { wrap: (wrap ? "wrap" : "nowrap") as "wrap" | "nowrap" }
 
-  const vars: NameStyleVars = {
-    '--dns-main': p.main,
-    '--dns-light-1': p.light1,
-    '--dns-light-2': p.light2,
-    '--dns-dark-1': p.dark1,
-    '--dns-dark-2': p.dark2,
-    '--dns-toon-stroke-color': p.toonStroke,
-    '--dns-neon-stroke': p.neonStroke,
-    '--dns-wrap': wrap ? 'normal' : 'nowrap',
+  if (effect === "gradient") {
+    return {
+      ...paletteToCssVars(base, opts),
+      ...gradientVars(base, colors[1] ?? base),
+    }
   }
+  return paletteToCssVars(base, opts)
+}
 
-  // Le dégradé est le seul effet qui n'utilise pas la palette dérivée : deux
-  // arrêts explicites, comme Discord les envoie.
-  if (effect === 'gradient') {
-    const from = colors[0] ?? DEFAULT_NAME_COLOR
-    const to = colors[1] ?? from
-    vars['--dns-gradient-stops'] = `${from} 10%, ${to} 90%`
-    vars['--dns-main'] = from
-  }
+// ─── Style par défaut du bot ──────────────────────────────────────────────────
 
-  return vars
+/**
+ * Style de pseudo global de Moddy : **effet pop, en bleu**. C'est ce que
+ * Discord affiche là où la guilde n'a rien personnalisé — l'aperçu doit donc y
+ * retomber, au même titre que l'avatar ou la bio retombent sur le profil global.
+ *
+ * Aucun endpoint ne l'expose (`/bot/profile` ne renvoie pas le style de pseudo) :
+ * ces trois valeurs sont écrites en dur, ici et nulle part ailleurs. Le bleu est
+ * celui du sélecteur Discord.
+ */
+export const DEFAULT_BOT_NAME_STYLE = {
+  font: 'default' as NameFontSlug,
+  effect: 'pop' as NameEffectSlug,
+  color: '#1C98EB',
 }

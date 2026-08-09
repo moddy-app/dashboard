@@ -14,7 +14,10 @@ import {
   XIcon,
 } from "lucide-react"
 import { DiscordMarkup } from "@/components/discord-markup"
-import { DiscordProfilePreview } from "@/components/discord-profile-preview"
+import {
+  DiscordProfilePreview,
+  DiscordProfilePreviewSkeleton,
+} from "@/components/discord-profile-preview"
 import { NameStylePreview } from "@/components/name-style-preview"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ErrorPage } from "@/components/error-state"
@@ -97,6 +100,8 @@ interface PreviewProps {
   bannerUrl: string | null
   /** Profil global du bot — valeurs de repli de chaque champ laissé vide. */
   botProfile: BotProfile | null
+  /** Le profil global est encore en vol : afficher le squelette. */
+  botProfileLoading: boolean
   /** Serveurs que l'utilisateur a en commun avec le bot. */
   mutualGuilds: Guild[]
 }
@@ -114,8 +119,13 @@ function CustomizationPreview({
   avatarUrl,
   bannerUrl,
   botProfile,
+  botProfileLoading,
   mutualGuilds,
 }: PreviewProps) {
+  // Tant que le profil global n'est pas arrivé, la carte afficherait des replis
+  // faux (initiales au lieu de l'avatar, pas de bio) puis sauterait : squelette.
+  if (botProfileLoading) return <DiscordProfilePreviewSkeleton />
+
   const fallbackName = botProfile?.username ?? "Moddy"
 
   return (
@@ -322,7 +332,7 @@ function BotCustomizationForm() {
   const { selectedGuildId, guilds } = useGuildContext()
   // Profil global du bot : sert de valeur de repli à chaque champ vide de
   // l'aperçu (avatar, bannière, bio, nom). Chargé une fois par session.
-  const botProfile = useBotProfile()
+  const { profile: botProfile, loading: botProfileLoading } = useBotProfile()
 
   const [state, setState] = useState<BotCustomizationState | null>(null)
   const [draft, setDraft] = useState<CustomizationDraft | null>(null)
@@ -674,11 +684,9 @@ function BotCustomizationForm() {
             avatarUrl={previewAvatar}
             bannerUrl={previewBanner}
             botProfile={botProfile}
+            botProfileLoading={botProfileLoading}
             mutualGuilds={guilds}
           />
-          <p className="text-center text-xs text-muted-foreground">
-            {t("modules.bot_customization.previewHint")}
-          </p>
         </CardContent>
       </Card>
 

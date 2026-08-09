@@ -7,16 +7,34 @@ import {
   type NameFontSlug,
 } from '@/lib/discord-name-styles'
 
+/**
+ * Rend un pseudo avec le moteur de rendu Discord (CSS + polices extraits du
+ * build web). Portage direct de `NameStylePreview.jsx` du kit d'intégration :
+ * un conteneur `.dns-name` qui porte les variables et les classes d'état, un
+ * `.dns-text` qui porte l'effet et la police.
+ *
+ * ⚠️ Contraintes du CSS Discord, à respecter partout où ce composant est posé :
+ *
+ *   - **Ne pas mettre `overflow: hidden` sur un ancêtre.** Les effets débordent
+ *     volontairement de leur boîte (halo du néon, ombre décalée du pop, contour
+ *     du cartoon) au moyen de marges négatives. Un ancêtre qui découpe rogne
+ *     l'effet en plein milieu du mot.
+ *   - **`data-dns-text` doit être identique au texte du span** : `toon` et
+ *     `pop` dupliquent le texte dans un `::before` via `attr()`.
+ *   - L'animation vient de `.dns-animated` (+ `.dns-loop`) posées sur le
+ *     conteneur, et cible `> *` : le span doit rester enfant **direct**.
+ */
+
 interface NameStylePreviewProps {
-  /** Texte affiché — c'est lui qui alimente aussi `data-dns-text`. */
+  /** Texte affiché — alimente aussi `data-dns-text`. */
   name: string
   font: NameFontSlug
   effect: NameEffectSlug
-  /** Couleurs en `#RRGGBB` : 1 couleur, ou 2 pour le dégradé. */
+  /** Couleurs en `#RRGGBB` : une seule, ou deux pour le dégradé. */
   colors: string[]
   /** Joue l'animation de l'effet (néon, cartoon, pop). */
   animated?: boolean
-  /** Boucle l'animation — utile en aperçu, Discord ne le fait que sur ses propres sélecteurs. */
+  /** Boucle l'animation — Discord ne boucle que dans ses aperçus. */
   loop?: boolean
   /** Autorise le retour à la ligne (variante « profil » de Discord). */
   wrap?: boolean
@@ -29,11 +47,6 @@ interface NameStylePreviewProps {
   className?: string
 }
 
-/**
- * Rend un pseudo avec le vrai moteur de rendu Discord (CSS + polices extraits
- * du build web). Le style visuel entier vient de `discord-name-styles.css` :
- * ce composant ne fait que poser les classes et les variables CSS.
- */
 export function NameStylePreview({
   name,
   font,
@@ -52,7 +65,8 @@ export function NameStylePreview({
   return (
     <div
       className={cn(
-        'dns-name dns-on',
+        'dns-name',
+        'dns-on',
         animated && 'dns-animated',
         animated && loop && 'dns-loop',
         wrap && 'dns-block',
@@ -60,21 +74,14 @@ export function NameStylePreview({
       )}
       style={nameStyleVars(colors, effect, { wrap })}
     >
-      {/* `data-dns-text` alimente les ::before de `toon` et `pop` : il doit être
-          strictement identique au contenu du span, sinon les deux calques se
-          désalignent. */}
-      <span
-        className={`dns-text dns--${effect} dns-font-${font}`}
-        data-dns-text={name}
-      >
+      <span className={`dns-text dns--${effect} dns-font-${font}`} data-dns-text={name}>
         {name}
       </span>
     </div>
   )
 }
 
-interface NameStyleFromIdsProps
-  extends Omit<NameStylePreviewProps, 'font' | 'effect'> {
+interface NameStyleFromIdsProps extends Omit<NameStylePreviewProps, 'font' | 'effect'> {
   fontId: number | null
   effectId: number | null
   /** `limits.gradient_effect_id` — seul identifiant d'effet confirmé par l'API. */
