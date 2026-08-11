@@ -550,6 +550,12 @@ export interface SubscriptionData {
   stripe_customer_id: string | null
   servers: SubscriptionServer[]
   max_servers: number
+  /**
+   * `true` quand l'abonnement existe et est payé mais rendu **inopérant** par
+   * une sanction globale (`is_active` vaut alors `false`). À afficher comme
+   * « suspendu par une sanction », jamais comme « aucun abonnement ».
+   */
+  blocked_by_global_sanction?: boolean
 }
 
 export interface SubscriptionServersResponse {

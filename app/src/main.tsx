@@ -26,6 +26,7 @@ import { BotCustomizationPage } from "@/pages/modules/BotCustomizationPage"
 import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
 import { MyCasesPage } from "@/pages/MyCasesPage"
+import { ViolationsPage } from "@/pages/ViolationsPage"
 import { GuildCasesPage } from "@/pages/GuildCasesPage"
 import { RouteError } from "@/components/route-error"
 
@@ -43,6 +44,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <GuildSelectionView /> },
       { path: "cases", element: <MyCasesPage /> },
+      { path: "violations", element: <ViolationsPage /> },
       { path: "servers/:guildId", element: <GuildOverviewPage /> },
       { path: "servers/:guildId/cases", element: <GuildCasesPage /> },
       { path: "servers/:guildId/modules/starboard", element: <StarboardPage /> },

@@ -5,12 +5,14 @@ import { toast } from "sonner"
 import { LoaderIcon } from "lucide-react"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
+import { useSanctions } from "@/contexts/SanctionContext"
 
 export function PremiumPage() {
   const { t } = useTranslation()
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const handled = useRef(false)
+  const { user: sanction, isExempt } = useSanctions()
 
   useEffect(() => {
     if (handled.current) return
@@ -34,6 +36,16 @@ export function PremiumPage() {
       return
     }
 
+    // Souscrire est refusé tant que le compte est `restricted` : inutile
+    // d'ouvrir Stripe pour se faire refouler par le back-end.
+    if (!isExempt && sanction.restricted) {
+      toast.error(t("violations.premiumBlockedTitle"), {
+        description: t("violations.premiumBlocked"),
+      })
+      navigate("/violations", { replace: true })
+      return
+    }
+
     const plan: "monthly" | "yearly" = searchParams.has("yearly") ? "yearly" : "monthly"
 
     createCheckout(plan)
@@ -44,7 +56,7 @@ export function PremiumPage() {
         handleSaveError(e, { title: t("premium.toast.checkoutError") })
         navigate("/", { replace: true })
       })
-  }, [searchParams, navigate, t])
+  }, [searchParams, navigate, t, sanction, isExempt])
 
   return (
     <div className="flex flex-1 items-center justify-center">

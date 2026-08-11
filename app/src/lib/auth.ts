@@ -1,4 +1,5 @@
 import { logger } from '@/lib/logger'
+import type { SubjectSanctionStatus } from '@/types/violations'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
 
@@ -156,6 +157,13 @@ export interface User {
   guilds: Guild[]
   is_staff: boolean
   staff_roles: string[]
+  /**
+   * Statut de sanction globale du compte — même objet que `user` dans
+   * `GET /violations/status`. Présent depuis l'ajout des sanctions globales :
+   * `undefined` (back-end plus ancien) ≠ `level: 'none'`, le premier déclenche
+   * un appel de vérification, le second non.
+   */
+  sanction?: SubjectSanctionStatus
 }
 
 // ─── Helpers URL ──────────────────────────────────────────────────────────────

@@ -22,6 +22,8 @@ import {
 } from '@/services/guilds'
 import { ApiError, refreshGuilds as apiRefreshGuilds } from '@/lib/auth'
 import { usePremiumGuilds } from '@/hooks/usePremiumGuilds'
+import { useSanctions } from '@/contexts/SanctionContext'
+import { levelRank, sanctionBlockedError } from '@/lib/sanctions'
 import { logger } from '@/lib/logger'
 
 // ─── Types du contexte ────────────────────────────────────────────────────────
@@ -226,9 +228,56 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     }
   }, [])
 
+  // ── Sanctions globales ──────────────────────────────────────────────────
+  // Une sanction (compte OU serveur, le plus sévère des deux) interdit
+  // *l'activation* d'un module qui n'existe pas encore. Un module déjà
+  // configuré reste pleinement modifiable, sous-ressources comprises.
+  const sanctions = useSanctions()
+  const { ensureGuild } = sanctions
+
+  // Le statut du serveur sélectionné est chargé dès qu'on entre dessus (cache
+  // 60 s côté back-end comme côté client) : les verrous d'UI n'attendent pas
+  // qu'un composant particulier le demande.
+  useEffect(() => {
+    ensureGuild(selectedGuildId)
+  }, [selectedGuildId, ensureGuild])
+
+  const newModuleBlock = useCallback(
+    (moduleId: string) => {
+      if (sanctions.isExempt || !selectedGuildId) return null
+      if (modules[moduleId]) return null // déjà configuré → édition libre
+      const guild = sanctions.guildStatus(selectedGuildId)
+      const guildRestricted =
+        levelRank(guild?.level ?? sanctions.guildLevel(selectedGuildId)) >= levelRank('limited')
+      if (sanctions.user.restricted) return sanctions.user
+      if (guildRestricted && guild) return guild
+      if (guildRestricted) {
+        return {
+          subject_type: 'discord_guild' as const,
+          subject_id: String(selectedGuildId),
+          level: sanctions.guildLevel(selectedGuildId),
+          action: null,
+          suspended: sanctions.guildLevel(selectedGuildId) === 'suspended',
+          restricted: true,
+          sanctions: [],
+        }
+      }
+      return null
+    },
+    [sanctions, selectedGuildId, modules]
+  )
+
   const updateModule = useCallback(
     async (moduleId: string, config: Record<string, unknown>) => {
       if (!selectedGuildId) return
+      // Sous sanction, on ne peut plus *créer* un module — l'éditer reste permis.
+      // On refuse ici plutôt que d'attendre le 403 : le message est le même,
+      // mais le formulaire n'est pas envoyé pour rien.
+      const blocked = newModuleBlock(moduleId)
+      if (blocked) {
+        logger.warn('module', `Blocked new module ${moduleId} — global sanction`, blocked.level)
+        throw sanctionBlockedError('new_module_blocked', blocked)
+      }
       logger.event('module', `Updating ${moduleId} for guild ${selectedGuildId}`, config)
       try {
         await apiUpdateModule(selectedGuildId, moduleId, config)
@@ -239,7 +288,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         throw e
       }
     },
-    [selectedGuildId]
+    [selectedGuildId, newModuleBlock]
   )
 
   const disableModule = useCallback(

@@ -1,11 +1,57 @@
 import { toast } from 'sonner'
+import i18n from '@/i18n'
 import { ApiError } from '@/lib/auth'
+import { asSanctionError, notifySanctionChanged, VIOLATIONS_PATH } from '@/lib/sanctions'
+import type { SanctionErrorPayload } from '@/types/violations'
 
 interface ErrorToastOptions {
   /** Message principal affiché à l'utilisateur */
   title: string
   /** Contexte technique (ex: "starboard/save") — visible uniquement en debug */
   context?: string
+}
+
+/**
+ * Toast dédié aux 403 de sanction globale. Le message vient du back-end quand
+ * il existe, sinon d'une clé i18n par code (`user_suspended`,
+ * `new_module_blocked`…) — jamais le code nu. `subject_type` dit qui porte la
+ * sanction : « votre compte » vs « ce serveur ».
+ */
+export function showSanctionToast(sanction: SanctionErrorPayload): void {
+  // L'UI vient de découvrir une sanction qu'elle ne connaissait pas : on
+  // recharge le statut pour aligner les verrous sur la réalité.
+  notifySanctionChanged()
+  const t = i18n.t.bind(i18n)
+  const title = t(`violations.errors.${sanction.code}`, {
+    defaultValue: t('violations.errors.default'),
+  })
+  const parts = [
+    sanction.message ||
+      t(`violations.errorSubject.${sanction.subject_type}`, { defaultValue: '' }),
+    sanction.references.length > 0
+      ? t('violations.errorReferences', { refs: sanction.references.join(' · ') })
+      : '',
+  ].filter(Boolean)
+
+  toast.error(title, {
+    description: parts.join(' — ') || undefined,
+    action: {
+      label: t('violations.banner.seeDetails'),
+      onClick: () => {
+        // `violations_url` est absolue (https://moddy.app/violations) : sur le
+        // dashboard lui-même, c'est notre propre route — on y reste plutôt que
+        // d'ouvrir un onglet vers la même page.
+        const raw = sanction.violations_url || VIOLATIONS_PATH
+        try {
+          const url = new URL(raw, window.location.origin)
+          if (url.origin === window.location.origin) window.location.assign(url.pathname)
+          else window.open(url.href, '_blank', 'noopener,noreferrer')
+        } catch {
+          window.location.assign(VIOLATIONS_PATH)
+        }
+      },
+    },
+  })
 }
 
 /**
@@ -20,6 +66,15 @@ export function handleSaveError(error: unknown, options: ErrorToastOptions): voi
     if (error.isUnauthorized) return
 
     const isDebug = new URLSearchParams(window.location.search).get('debug')
+
+    // 403 de sanction globale : son `error` est un objet, pas une chaîne. Il
+    // porte son propre message et le lien vers le dossier — le handler
+    // générique le rendrait en « HTTP 403 ».
+    const sanction = asSanctionError(error)
+    if (sanction) {
+      showSanctionToast(sanction)
+      return
+    }
 
     if (error.isForbidden) {
       toast.error("Accès refusé", {

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { ChevronsUpDownIcon, CrownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
+import { BanIcon, ChevronsUpDownIcon, CrownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon, ShieldMinusIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useSanctions } from "@/contexts/SanctionContext"
 import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -38,6 +39,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
   const { guilds, selectedGuildId, selectGuild, guildDetail, user } = useGuildContext()
   const premiumIds = usePremiumGuilds()
   const guildAttributes = useGuildAttributes()
+  const { guildLevel } = useSanctions()
   const [isRefreshing, setIsRefreshing] = useState(false)
 
   const handleRefreshClick = async () => {
@@ -150,13 +152,20 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                 const iconUrl = getGuildIconUrl(guild.id, guild.icon)
                 const initials = guild.name?.slice(0, 2)?.toUpperCase() ?? "??"
                 const isActive = String(guild.id) === selectedGuildId && !isOnStaffPage
+                // Serveur suspendu : le bot l'a quitté et tous ses endpoints
+                // renvoient 403 — on le laisse visible mais désactivé, avec la
+                // mention de la sanction, plutôt que de le faire disparaître.
+                const level = guildLevel(String(guild.id))
+                const suspended = level === "suspended"
 
                 return (
                   <DropdownMenuItem
                     key={guild.id}
-                    onClick={() => selectGuild(String(guild.id))}
+                    onClick={() => !suspended && selectGuild(String(guild.id))}
                     className="gap-2 p-2"
                     data-active={isActive}
+                    disabled={suspended}
+                    title={suspended ? t("violations.guildSuspendedShort") : undefined}
                   >
                     <Avatar className="size-6 rounded-sm shrink-0">
                       <AvatarImage
@@ -178,6 +187,11 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                           {premiumIds.has(String(guild.id)) && kind !== "official" && (
                             <CrownIcon className="size-3 text-violet-500 shrink-0" />
                           )}
+                          {suspended ? (
+                            <BanIcon className="size-3 shrink-0 text-red-500" />
+                          ) : level === "limited" ? (
+                            <ShieldMinusIcon className="size-3 shrink-0 text-orange-500" />
+                          ) : null}
                         </>
                       )
                     })()}

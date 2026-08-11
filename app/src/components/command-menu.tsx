@@ -25,10 +25,12 @@ import {
   PlusIcon,
   ServerIcon,
   SettingsIcon,
+  ShieldAlertIcon,
   ShieldIcon,
   SparklesIcon,
   TicketIcon,
 } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 import { getGuildIconUrl } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 
@@ -76,6 +78,8 @@ export function CommandMenu({
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
   }, [open, onOpenChange])
+
+  const navigate = useNavigate()
 
   const runCommand = (fn: () => void) => {
     onOpenChange(false)
@@ -180,6 +184,10 @@ export function CommandMenu({
             <CommandItem onSelect={() => runCommand(() => {})}>
               <GavelIcon />
               <span>{t('commandMenu.items.myPunishments')}</span>
+            </CommandItem>
+            <CommandItem onSelect={() => runCommand(() => navigate('/violations'))}>
+              <ShieldAlertIcon />
+              <span>{t('violations.title')}</span>
             </CommandItem>
             <CommandItem onSelect={() => runCommand(() => onOpenNotifications?.())}>
               <BellIcon />

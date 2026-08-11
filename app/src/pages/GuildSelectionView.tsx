@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { ArrowUpRightIcon, PlusIcon, CrownIcon } from "lucide-react"
+import { ArrowUpRightIcon, PlusIcon, CrownIcon, BanIcon, ShieldMinusIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -13,6 +13,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useSanctions } from "@/contexts/SanctionContext"
 import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { VerifiedBadge } from "@/components/verified-badge"
@@ -25,6 +26,7 @@ export function GuildSelectionView() {
   const { guilds, selectGuild } = useGuildContext()
   const premiumIds = usePremiumGuilds()
   const guildAttributes = useGuildAttributes()
+  const { guildLevel } = useSanctions()
 
   if (guilds.length === 0) {
     return (
@@ -81,12 +83,21 @@ export function GuildSelectionView() {
           const kind = resolveVerifiedKind(guildAttributes.get(String(guild.id)), undefined)
           // Les serveurs officiels n'affichent pas d'indicateur Max.
           const showMax = premiumIds.has(String(guild.id)) && kind !== 'official'
+          // Un serveur suspendu n'est plus administrable : tous ses endpoints
+          // renvoient 403 et le bot l'a quitté.
+          const level = guildLevel(String(guild.id))
+          const suspended = level === 'suspended'
 
           return (
             <Card
               key={guild.id}
-              className="cursor-pointer transition-all hover:bg-accent hover:text-accent-foreground hover:shadow-sm group py-0"
-              onClick={() => selectGuild(String(guild.id))}
+              aria-disabled={suspended || undefined}
+              className={`transition-all group py-0 ${
+                suspended
+                  ? 'cursor-not-allowed opacity-60 border-red-200 dark:border-red-900/70'
+                  : 'cursor-pointer hover:bg-accent hover:text-accent-foreground hover:shadow-sm'
+              }`}
+              onClick={() => !suspended && selectGuild(String(guild.id))}
             >
               <CardContent className="flex items-center gap-3.5 p-6">
                 <Avatar className="size-11 rounded-xl shrink-0 after:rounded-xl">
@@ -111,12 +122,26 @@ export function GuildSelectionView() {
                         Max
                       </Badge>
                     )}
+                    {suspended && (
+                      <Badge variant="outline" className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] text-red-600 border-red-200 bg-red-50 dark:bg-red-950 dark:text-red-400 dark:border-red-900">
+                        <BanIcon className="size-2.5" />
+                        {t('violations.level.suspended')}
+                      </Badge>
+                    )}
+                    {level === 'limited' && (
+                      <Badge variant="outline" className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-900">
+                        <ShieldMinusIcon className="size-2.5" />
+                        {t('violations.level.limited')}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {t('guildSelection.manage')}
+                    {suspended ? t('violations.guildSuspendedShort') : t('guildSelection.manage')}
                   </p>
                 </div>
-                <ArrowUpRightIcon className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                {!suspended && (
+                  <ArrowUpRightIcon className="size-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                )}
               </CardContent>
             </Card>
           )
