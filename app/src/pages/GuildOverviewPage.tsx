@@ -15,6 +15,7 @@ import {
   XCircleIcon,
   ExternalLinkIcon,
   CrownIcon,
+  LockIcon,
   ZapIcon,
   RadioIcon,
   HashIcon,
@@ -35,6 +36,8 @@ import { DebugErrorOverlay } from "@/components/debug-error-overlay"
 import { VerifiedBadge } from "@/components/verified-badge"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useSanctionGates } from "@/contexts/SanctionContext"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
@@ -85,13 +88,15 @@ interface ModuleCardProps {
   description: string
   icon: LucideIcon
   isEnabled: boolean
+  /** Module jamais configuré alors qu'une sanction interdit d'en activer un. */
+  isLocked: boolean
   guildId: string
   onNavigate: (path: string) => void
 }
 
 function ModuleCard({
   moduleId, name, description, icon: Icon,
-  isEnabled, guildId, onNavigate,
+  isEnabled, isLocked, guildId, onNavigate,
 }: ModuleCardProps) {
   const { t } = useTranslation()
   return (
@@ -112,6 +117,18 @@ function ModuleCard({
               <CheckCircleIcon className="size-3 mr-1" />
               {t('guildOverview.modules.enabled')}
             </Badge>
+          ) : isLocked ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="outline" className="text-xs shrink-0 text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800 dark:text-orange-400">
+                  <LockIcon className="size-3 mr-1" />
+                  {t('violations.locked')}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-64">
+                {t('violations.banner.newModuleBlockedDescription')}
+              </TooltipContent>
+            </Tooltip>
           ) : (
             <Badge variant="outline" className="text-xs shrink-0 text-muted-foreground">
               <XCircleIcon className="size-3 mr-1" />
@@ -120,9 +137,9 @@ function ModuleCard({
           )}
         </div>
         <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-        <div className="flex items-center gap-1 mt-2 text-xs text-primary">
+        <div className={`flex items-center gap-1 mt-2 text-xs ${isLocked ? 'text-muted-foreground' : 'text-primary'}`}>
           <ExternalLinkIcon className="size-3" />
-          <span>{t('guildOverview.modules.configure')}</span>
+          <span>{isLocked ? t('violations.viewOnly') : t('guildOverview.modules.configure')}</span>
         </div>
       </CardContent>
     </Card>
@@ -149,6 +166,7 @@ export function GuildOverviewPage() {
 
   const [isUpgrading, setIsUpgrading] = useState(false)
   const guildAttributes = useGuildAttributes()
+  const gates = useSanctionGates(selectedGuildId)
 
   const handleUpgrade = async () => {
     if (!guildDetail) return
@@ -348,19 +366,41 @@ export function GuildOverviewPage() {
                 <p className="text-xs text-violet-700/80 dark:text-violet-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
               </div>
             </div>
-            <Button
-              size="sm"
-              className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
-            >
-              {isUpgrading ? (
-                <LoaderIcon className="size-4 animate-spin" />
-              ) : (
-                <SparklesIcon className="size-4" />
-              )}
-              {t('guildOverview.premium.cta')}
-            </Button>
+            {gates.canLinkGuild ? (
+              <Button
+                size="sm"
+                className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
+                onClick={handleUpgrade}
+                disabled={isUpgrading}
+              >
+                {isUpgrading ? (
+                  <LoaderIcon className="size-4 animate-spin" />
+                ) : (
+                  <SparklesIcon className="size-4" />
+                )}
+                {t('guildOverview.premium.cta')}
+              </Button>
+            ) : (
+              // `restricted` (limité OU suspendu) ferme la souscription — le
+              // portail Stripe, lui, reste ouvert : on ne bloque pas une résiliation.
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="shrink-0">
+                    <Button size="sm" className="bg-violet-600 text-white shadow-sm" disabled>
+                      <LockIcon className="size-4" />
+                      {t('guildOverview.premium.cta')}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">
+                  {/* Le message nomme le porteur de la sanction : « votre
+                      compte » n'est pas « ce serveur ». */}
+                  {gates.canSubscribe
+                    ? t('violations.premiumGuildBlocked')
+                    : t('violations.premiumBlocked')}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </CardContent>
         </Card>
       )}
@@ -382,6 +422,7 @@ export function GuildOverviewPage() {
               description={t(`modules.${id}.description`)}
               icon={icon}
               isEnabled={isModuleEnabled(id, modules)}
+              isLocked={!gates.canEnableNewModule && !modules[id]}
               guildId={selectedGuildId}
               onNavigate={navigate}
             />

@@ -44,6 +44,10 @@ import {
   removeSubscriptionServer,
 } from "@/services/guilds"
 import { invalidatePremiumGuilds } from "@/hooks/usePremiumGuilds"
+import { useSanctions } from "@/contexts/SanctionContext"
+import { asSanctionError, levelRank } from "@/lib/sanctions"
+import { showSanctionToast } from "@/lib/handle-error"
+import { SanctionNotice } from "@/components/violations/sanction-banner"
 import { toast } from "sonner"
 import type { User } from "@/lib/auth"
 import type { SubscriptionData } from "@/types/api"
@@ -129,6 +133,14 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
       .finally(() => setSubscriptionLoading(false))
   }, [activeTab, open])
 
+  // Sanctions globales : souscrire et lier un serveur sont refusés dès que le
+  // compte est `restricted` (limité OU suspendu) ; le portail Stripe, lui, reste
+  // ouvert — on ne bloque pas une résiliation.
+  const { user: sanction, guildLevel, isExempt } = useSanctions()
+  const linkBlocked = !isExempt && sanction.restricted
+  const selectedGuildBlocked =
+    !isExempt && !!selectedServerId && levelRank(guildLevel(selectedServerId)) >= levelRank('limited')
+
   const handleLangChange = (lang: string | 'auto') => {
     if (lang === 'auto') {
       setPreferences({ language: undefined as unknown as string })
@@ -160,7 +172,10 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
       invalidatePremiumGuilds()
       setSelectedServerId('')
     } catch (e) {
-      if (e instanceof ApiError && e.status === 409) {
+      const blocked = asSanctionError(e)
+      if (blocked) {
+        showSanctionToast(blocked)
+      } else if (e instanceof ApiError && e.status === 409) {
         toast.error(t('settings.billing.servers.alreadyLinked'))
       } else if (e instanceof ApiError && e.isForbidden) {
         toast.error(t('settings.billing.servers.addForbidden'))
@@ -432,6 +447,14 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                     </div>
                   )}
 
+                  {(linkBlocked || selectedGuildBlocked) && (
+                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                      {linkBlocked
+                        ? t('violations.premiumBlocked')
+                        : t('violations.premiumGuildBlocked')}
+                    </p>
+                  )}
+
                   {subscription.servers.length < subscription.max_servers && (
                     <div className="flex gap-2 mt-1">
                       <Select value={selectedServerId} onValueChange={setSelectedServerId}>
@@ -469,7 +492,9 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                       </Select>
                       <Button
                         onClick={handleAddServer}
-                        disabled={!selectedServerId || addingServer}
+                        disabled={
+                          !selectedServerId || addingServer || linkBlocked || selectedGuildBlocked
+                        }
                         className="shrink-0"
                       >
                         {addingServer ? (
@@ -484,6 +509,21 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
 
                 <Separator />
 
+                <Button onClick={handleOpenBilling} variant="outline" className="w-full">
+                  <CreditCardIcon className="size-4 mr-2" />
+                  {t('settings.billing.manageButton')}
+                </Button>
+              </>
+            ) : subscription?.blocked_by_global_sanction ? (
+              // L'abonnement existe et reste payé : il est seulement inopérant.
+              // Dire « aucun abonnement » ici serait faux.
+              <>
+                <SanctionNotice
+                  level={sanction.level === 'none' ? 'limited' : sanction.level}
+                  status={sanction}
+                  title={t('violations.premiumSuspendedTitle')}
+                  description={t('violations.premiumSuspendedDescription')}
+                />
                 <Button onClick={handleOpenBilling} variant="outline" className="w-full">
                   <CreditCardIcon className="size-4 mr-2" />
                   {t('settings.billing.manageButton')}

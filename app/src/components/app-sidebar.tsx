@@ -39,6 +39,7 @@ import {
 import { getAvatarUrl, getDisplayName, type User } from "@/lib/auth"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSubscription } from "@/hooks/useSubscription"
+import { useSanctions } from "@/contexts/SanctionContext"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User | null
@@ -62,6 +63,10 @@ export function AppSidebar({
   const { selectedGuildId, refreshGuildData } = useGuildContext()
   const subscription = useSubscription()
   const isSubscribed = subscription?.is_active ?? false
+  // Sous sanction, souscrire est refusé — gérer un abonnement existant reste
+  // permis (le portail Stripe n'est jamais bloqué).
+  const { user: sanction, isExempt } = useSanctions()
+  const upgradeBlocked = !isExempt && !isSubscribed && sanction.restricted
 
   const [isRefreshing, setIsRefreshing] = React.useState(false)
 
@@ -233,8 +238,22 @@ export function AppSidebar({
           )}
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip={isSubscribed ? t("sidebar.manageSubscription") : "Moddy Max"}
-              onClick={() => navigate(isSubscribed ? "/?openSettings=billing" : "/premium")}
+              tooltip={
+                upgradeBlocked
+                  ? t("violations.premiumBlocked")
+                  : isSubscribed
+                  ? t("sidebar.manageSubscription")
+                  : "Moddy Max"
+              }
+              onClick={() =>
+                navigate(
+                  upgradeBlocked
+                    ? "/violations"
+                    : isSubscribed
+                    ? "/?openSettings=billing"
+                    : "/premium"
+                )
+              }
               isActive={location.pathname === "/premium"}
               className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-violet-950/60 data-[active=true]:bg-violet-50 data-[active=true]:text-violet-700 dark:data-[active=true]:bg-violet-950/60 dark:data-[active=true]:text-violet-300"
             >

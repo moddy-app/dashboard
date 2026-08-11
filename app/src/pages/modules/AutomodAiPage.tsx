@@ -46,6 +46,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
+import { useSanctionGates } from "@/contexts/SanctionContext"
+import { sanctionBlockedError } from "@/lib/sanctions"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
 import {
@@ -276,12 +278,24 @@ function AutomodAiForm() {
 
   // ── Sauvegarde ────────────────────────────────────────────────────────────
 
+  const gates = useSanctionGates(selectedGuildId)
   const isDirty = Boolean(savedConfig && draft && !isSameConfig(savedConfig, draft))
 
   // Annotation explicite : le corps se référence lui-même (bouton « Réessayer »
   // du toast 503), ce que l'inférence de TypeScript ne sait pas résoudre.
   const handleSave: () => Promise<void> = useCallback(async () => {
     if (!selectedGuildId || !draft) return
+
+    // L'automod IA suit le **serveur**, jamais l'utilisateur : un compte limité
+    // peut encore l'éditer sur un serveur sain, mais toute écriture est refusée
+    // dès que le serveur est sanctionné (le module est coupé de toute façon).
+    if (!gates.canWriteAutomod) {
+      handleSaveError(
+        sanctionBlockedError("automod_ai_blocked", gates.guild ?? gates.effective),
+        { title: t("modules.saveError") }
+      )
+      return
+    }
 
     if (draft.indications.length > INDICATIONS_MAX) {
       setFieldErrors({ indications: t("modules.automod_ai.indicationsTooLong", { max: INDICATIONS_MAX }) })
@@ -327,7 +341,7 @@ function AutomodAiForm() {
     } finally {
       setIsSaving(false)
     }
-  }, [selectedGuildId, draft, t, loadStatus])
+  }, [selectedGuildId, draft, t, loadStatus, gates])
 
   const handleDiscard = useCallback(() => {
     if (!savedConfig) return

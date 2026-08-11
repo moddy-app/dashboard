@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { GuildProvider } from '@/contexts/GuildContext'
+import { SanctionProvider } from '@/contexts/SanctionContext'
 import { login } from '@/lib/auth'
 
 type AuthPhase = 'authenticating' | 'authenticated'
@@ -102,9 +103,14 @@ export function HomePage() {
 
   if (showDashboard && auth.status === 'authenticated') {
     return (
-      <GuildProvider guilds={auth.user.guilds} user={auth.user}>
-        <DashboardPage user={auth.user} />
-      </GuildProvider>
+      // SanctionProvider est *au-dessus* de GuildProvider : un compte suspendu
+      // ne doit pas déclencher le chargement d'un serveur (tout renverrait 403),
+      // il bascule directement sur l'écran de suspension.
+      <SanctionProvider user={auth.user}>
+        <GuildProvider guilds={auth.user.guilds} user={auth.user}>
+          <DashboardPage user={auth.user} />
+        </GuildProvider>
+      </SanctionProvider>
     )
   }
 

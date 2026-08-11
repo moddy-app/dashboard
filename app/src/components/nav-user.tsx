@@ -3,6 +3,7 @@ import {
   BellIcon,
   CreditCardIcon,
   ScaleIcon,
+  ShieldAlertIcon,
   LogOutIcon,
   SparklesIcon,
   ChevronsUpDownIcon,
@@ -35,6 +36,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { SettingsDialog } from "@/components/settings-dialog"
+import { useSanctions } from "@/contexts/SanctionContext"
+import { LEVEL_TONE } from "@/lib/sanctions"
 import type { User } from "@/lib/auth"
 
 interface NavUserProps {
@@ -55,6 +58,7 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, 
   const { t } = useTranslation()
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [billingLoading, setBillingLoading] = useState(false)
+  const { user: sanction } = useSanctions()
 
   const handleOpenBilling = async () => {
     setBillingLoading(true)
@@ -145,6 +149,16 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, 
                 <DropdownMenuItem onClick={() => onNavigate?.('/cases')}>
                   <ScaleIcon />
                   {t('navUser.myPunishments')}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onNavigate?.('/violations')}>
+                  <ShieldAlertIcon />
+                  {t('violations.title')}
+                  {sanction.level !== 'none' && (
+                    <span
+                      className={`ml-auto size-1.5 rounded-full ${LEVEL_TONE[sanction.level].dot}`}
+                      aria-hidden
+                    />
+                  )}
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />

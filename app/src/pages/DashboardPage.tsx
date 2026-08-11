@@ -39,6 +39,7 @@ import { useGuildContext } from "@/contexts/GuildContext"
 import { DebugModeBadge } from "@/components/debug-error-overlay"
 import { InfoBanner } from "@/components/info-banner"
 import { useBanner } from "@/hooks/useBanner"
+import { DashboardSanctionBanner } from "@/components/violations/sanction-banner"
 
 interface DashboardPageProps {
   user: User | null
@@ -156,6 +157,17 @@ export function DashboardPage({ user }: DashboardPageProps) {
       return items
     }
 
+    // /violations — infractions & sanctions globales
+    if (path === '/violations') {
+      const groupId = new URLSearchParams(location.search).get('group')
+      const items: Crumb[] = [
+        { label: t('dashboard.breadcrumb.app'), href: '/' },
+        { label: t('violations.title'), href: groupId ? '/violations' : null },
+      ]
+      if (groupId) items.push({ label: t('violations.detail.breadcrumb') })
+      return items
+    }
+
     // /servers/:guildId/cases — modération du serveur
     if (path.match(/^\/servers\/\d+\/cases$/) && guildDetail) {
       const items: Crumb[] = [
@@ -264,7 +276,10 @@ export function DashboardPage({ user }: DashboardPageProps) {
           </div>
         </header>
         {/* Contenu de la route courante via Outlet */}
-        <div className="flex flex-1 flex-col p-6 overflow-y-auto">
+        <div className="flex flex-1 flex-col gap-6 p-6 overflow-y-auto">
+          {/* Sanctions globales — le bandeau décide seul s'il a quelque chose
+              à dire selon la route (serveur suspendu, module non activable…). */}
+          <DashboardSanctionBanner />
           <Outlet />
         </div>
       </SidebarInset>
