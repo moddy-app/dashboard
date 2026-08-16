@@ -21,7 +21,6 @@ import type { SubjectSanctionStatus, ViolationGroup } from "@/types/violations"
 import { ViolationList } from "@/components/violations/violation-list"
 import { ViolationDetailView } from "@/components/violations/violation-detail"
 import { SanctionScale } from "@/components/violations/sanction-scale"
-import { EnforcementNotice } from "@/components/violations/violation-badges"
 
 // ─── Facturation ──────────────────────────────────────────────────────────────
 
@@ -129,11 +128,6 @@ export function SuspendedScreen({
     }),
     [groups]
   )
-
-  // Compte à rebours : celui de la première infraction active qui en porte
-  // un. Affiché une fois, séparément de la liste — la liste, elle, se lit
-  // exactement comme celle des infractions passées.
-  const enforcement = active.find((g) => g.enforcement)?.enforcement ?? null
 
   // Repli si `/violations` n'a rien renvoyé : le statut, lui, vient de
   // `/auth/me` et porte déjà le motif. On construit un groupe minimal pour que
@@ -254,18 +248,10 @@ export function SuspendedScreen({
               />
             </section>
 
-            {enforcement && (
-              <div className="mt-3">
-                <EnforcementNotice
-                  enforcement={enforcement}
-                  appealUrl={APPEAL_URL}
-                  showAppeal={false}
-                />
-              </div>
-            )}
-
-            {/* 3. Le recours — les boutons seuls. Le « comment ça marche » est
-                dans la vue détail : ici on veut agir, pas relire la procédure. */}
+            {/* 3. Le recours — les boutons seuls. Le compte à rebours et le
+                « comment ça marche » vivent dans la vue détail (par groupe,
+                puisque l'échéance peut différer d'une infraction à l'autre) :
+                ici on veut agir, pas relire la procédure. */}
             <div className="mt-6 flex flex-wrap gap-2">
               <Button asChild size="sm">
                 <a href={APPEAL_URL} target="_blank" rel="noopener noreferrer">

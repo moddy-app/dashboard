@@ -386,3 +386,14 @@ présentation par ligne.
 `ActiveSanction` et les clés i18n qu'il consommait seul (`measureLabel`,
 `durationLabel`, `scopeLabel`, `referenceLabel`, `alsoTargets`, `seeDetail`)
 disparaissent avec lui.
+
+---
+
+# Septième passe — le compte à rebours quitte l'écran principal
+
+Le bloc « What happens next » (compte à rebours, résiliation sans
+remboursement) s'affichait deux fois pour la même infraction : une fois isolé
+sur l'écran principal, une seconde fois dans la vue détail au clic. Il ne
+s'affiche plus que dans la vue détail — c'est là qu'on choisit de regarder
+« jusqu'à quand », pas sur l'écran d'accueil dont le rôle est de faire agir
+(les deux boutons, qui restent).
