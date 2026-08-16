@@ -1,8 +1,6 @@
 import { useTranslation } from "react-i18next"
-import { CheckIcon, CopyIcon, GavelIcon, HourglassIcon, PauseIcon } from "lucide-react"
-import { useState } from "react"
+import { CreditCardIcon, GavelIcon, HourglassIcon, PauseIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { copyText } from "@/lib/cases"
 import { LEVEL_TONE, formatDeadline, remainingParts } from "@/lib/sanctions"
 import type {
   Enforcement,
@@ -73,34 +71,29 @@ export function ActionBadge({
   )
 }
 
-// ─── Référence (copiable) ─────────────────────────────────────────────────────
+// ─── Référence ────────────────────────────────────────────────────────────────
 
-export function ReferenceChip({ reference }: { reference: string }) {
+/**
+ * Référence(s) d'un dossier, en texte courant. Volontairement pas un bouton de
+ * copie ni du monospace : c'est une mention de dossier au fil du texte, pas un
+ * identifiant technique à manipuler.
+ */
+export function ReferenceText({
+  references,
+  className,
+}: {
+  references: string[]
+  className?: string
+}) {
   const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (await copyText(reference)) {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1200)
-    }
-  }
-
+  if (references.length === 0) return null
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      title={t("violations.detail.copyReference")}
-      className="group/ref inline-flex items-center gap-1 rounded-md border bg-muted/50 px-1.5 py-0.5 font-mono text-[11px] font-medium tracking-wide text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-    >
-      {reference}
-      {copied ? (
-        <CheckIcon className="size-3 text-green-500" />
-      ) : (
-        <CopyIcon className="size-3 opacity-0 transition-opacity group-hover/ref:opacity-60" />
-      )}
-    </button>
+    <span className={cn("text-xs text-muted-foreground", className)}>
+      {t("violations.reference", {
+        count: references.length,
+        refs: references.join(", "),
+      })}
+    </span>
   )
 }
 
@@ -115,10 +108,13 @@ export function EnforcementNotice({
   enforcement,
   appealUrl,
   className,
+  /** À passer à `false` quand un bloc d'appel suit — deux CTA identiques se nuisent. */
+  showAppeal = true,
 }: {
   enforcement: Enforcement
   appealUrl: string
   className?: string
+  showAppeal?: boolean
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
@@ -174,13 +170,14 @@ export function EnforcementNotice({
             <p className="mt-1 text-xs font-medium tabular-nums">{countdown}</p>
           )}
           {enforcement.premium && pending && (
-            <p className="mt-2 rounded-lg border border-violet-200 bg-violet-50 px-2.5 py-1.5 text-xs text-violet-700 dark:border-violet-900 dark:bg-violet-950/50 dark:text-violet-300">
+            <p className="mt-2 flex items-start gap-2 rounded-lg border bg-background/70 px-2.5 py-2 text-xs font-medium">
+              <CreditCardIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
               {t("violations.enforcement.premiumWarning")}
             </p>
           )}
         </div>
       </div>
-      {pending && (
+      {pending && showAppeal && (
         <a
           href={appealUrl}
           target="_blank"

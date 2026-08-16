@@ -73,6 +73,8 @@ export interface LevelTone {
   dot: string
   /** Fond des blocs pleins (bandeaux, médaillons d'en-tête). */
   bg: string
+  /** Anneau autour d'un avatar — l'écran de suspension s'en sert. */
+  ring: string
 }
 
 export const LEVEL_TONE: Record<SanctionLevel, LevelTone> = {
@@ -83,6 +85,7 @@ export const LEVEL_TONE: Record<SanctionLevel, LevelTone> = {
     border: 'border-green-200 dark:border-green-900',
     dot: 'bg-green-500',
     bg: 'bg-green-100 dark:bg-green-950/60',
+    ring: 'ring-green-200 dark:ring-green-900',
   },
   warn: {
     icon: ShieldAlertIcon,
@@ -91,6 +94,7 @@ export const LEVEL_TONE: Record<SanctionLevel, LevelTone> = {
     border: 'border-amber-200 dark:border-amber-900',
     dot: 'bg-amber-500',
     bg: 'bg-amber-100 dark:bg-amber-950/60',
+    ring: 'ring-amber-200 dark:ring-amber-900',
   },
   limited: {
     icon: ShieldMinusIcon,
@@ -99,6 +103,7 @@ export const LEVEL_TONE: Record<SanctionLevel, LevelTone> = {
     border: 'border-orange-200 dark:border-orange-900',
     dot: 'bg-orange-500',
     bg: 'bg-orange-100 dark:bg-orange-950/60',
+    ring: 'ring-orange-200 dark:ring-orange-900',
   },
   suspended: {
     icon: BanIcon,
@@ -107,6 +112,7 @@ export const LEVEL_TONE: Record<SanctionLevel, LevelTone> = {
     border: 'border-red-200 dark:border-red-900',
     dot: 'bg-red-500',
     bg: 'bg-red-100 dark:bg-red-950/60',
+    ring: 'ring-red-200 dark:ring-red-900',
   },
 }
 

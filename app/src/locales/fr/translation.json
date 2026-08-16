@@ -1263,8 +1263,8 @@
     },
     "action": {
       "warn": "Avertissement",
-      "restrict": "Restriction",
-      "ban": "Bannissement"
+      "restrict": "Limitation",
+      "ban": "Suspension"
     },
     "sanctionStatus": {
       "active": "Active",
@@ -1297,7 +1297,7 @@
     },
     "list": {
       "resolved": "Terminée",
-      "openedAgo": "Ouverte il y a {{time}}",
+      "openedAgo": "Ouverte {{time}}",
       "caseCount": "{{count}} dossiers",
       "deadline": "Conséquences le {{date}}",
       "emptyTitle": "Aucune infraction",
@@ -1309,11 +1309,10 @@
       "cases": "Dossiers de cette infraction ({{count}})",
       "until": "Jusqu'au {{date}}",
       "permanent": "Permanente",
-      "copyReference": "Copier la référence",
       "notFoundTitle": "Infraction introuvable",
       "notFoundDescription": "Cette infraction n'existe pas, ou elle ne vous concerne pas.",
       "appealTitle": "Vous pensez qu'il s'agit d'une erreur ?",
-      "appealDescription": "Les appels se déposent sur le site de support Moddy et sont examinés par un humain. En déposer un ne lève pas la sanction à lui seul."
+      "appealDescription": "Les appels sont traités par un humain sur le serveur de support Moddy. En déposer un ne lève pas la sanction à lui seul."
     },
     "enforcement": {
       "title": {
@@ -1360,14 +1359,26 @@
     "errorReferences": "Référence : {{refs}}",
     "suspended": {
       "title": "Votre accès à Moddy est suspendu",
-      "description": "Une sanction globale a retiré votre accès. Cette page est la seule qui reste disponible : le motif, les références, et comment faire appel.",
+      "headlinePrefix": "Votre accès à Moddy est",
+      "description": "Une sanction globale a retiré votre accès. Cette page est la seule qui reste : le motif, la durée, et comment faire appel.",
+      "reasonLabel": "Motif retenu",
       "recheck": "Vérifier à nouveau",
-      "appealNote": "Les appels se déposent sur le site de support Moddy et sont examinés par un humain — le dashboard ne fait que vous y renvoyer.",
-      "record": "Votre dossier",
+      "activeRecord": "Infractions en cours",
+      "pastRecord": "Infractions terminées",
+      "billingTitle": "Facturation",
+      "billingDescription": "Une sanction ne bloque jamais votre argent : vos factures et la résiliation restent accessibles.",
+      "billingAction": "Gérer la facturation",
+      "billingError": "Impossible d'ouvrir le portail de facturation. Réessayez dans un instant.",
       "backToSummary": "Retour au résumé",
       "emptyTitle": "Aucun détail disponible",
-      "emptyDescription": "Aucune infraction n'a pu être chargée. Contactez le support avec votre identifiant de compte.",
-      "recordNote": "Toutes les infractions visant votre compte ou vos serveurs."
+      "emptyDescription": "Aucune infraction n'a pu être chargée. Contactez le support avec votre identifiant de compte."
+    },
+    "reference": "Réf. {{refs}}",
+    "ladder": {
+      "none": "Tout va bien",
+      "warn": "Avertissement",
+      "limited": "Limité",
+      "suspended": "Suspendu"
     }
   }
 }

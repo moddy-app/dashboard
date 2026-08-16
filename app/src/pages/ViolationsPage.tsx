@@ -13,6 +13,7 @@ import { LEVEL_TONE } from "@/lib/sanctions"
 import { ViolationList } from "@/components/violations/violation-list"
 import { ViolationDetailView } from "@/components/violations/violation-detail"
 import { SanctionNotice } from "@/components/violations/sanction-banner"
+import { SanctionScale } from "@/components/violations/sanction-scale"
 
 type Scope = "all" | "active" | "user" | "guilds"
 
@@ -111,12 +112,16 @@ export function ViolationsPage() {
 
       {/* État du compte — un `warn` informe, il ne verrouille rien. */}
       {user.level !== "none" && (
-        <SanctionNotice
-          level={user.level}
-          status={user}
-          title={t(`violations.status.${user.level}.title`)}
-          description={t(`violations.status.${user.level}.description`)}
-        />
+        <div className="flex flex-col gap-5">
+          <SanctionNotice
+            level={user.level}
+            status={user}
+            title={t(`violations.status.${user.level}.title`)}
+            description={t(`violations.status.${user.level}.description`)}
+          />
+          {/* Même échelle que l'écran de suspension : on se situe d'un coup d'œil. */}
+          <SanctionScale level={user.level} className="max-w-lg px-1" />
+        </div>
       )}
 
       {/* Portées */}
