@@ -1251,7 +1251,6 @@
     "reference": "Ref. {{refs}}",
     "locked": "Unavailable",
     "viewOnly": "View only",
-    "cacheNote": "Your account standing is cached for up to a minute, so a change may take that long to show here.",
     "guildSuspendedShort": "Server suspended",
     "premiumBlockedTitle": "Moddy Max unavailable",
     "premiumBlocked": "You cannot subscribe while a sanction is on your account. An existing paid subscription stays manageable and cancellable.",
@@ -1386,7 +1385,8 @@
       "billingError": "Could not open the billing portal. Try again in a moment.",
       "backToSummary": "Back to summary",
       "emptyTitle": "Details unavailable",
-      "emptyDescription": "The sanction details could not be loaded. Contact support with your account ID."
+      "emptyDescription": "The sanction details could not be loaded. Contact support with your account ID.",
+      "seeDetail": "See the per-server breakdown"
     }
   }
 }

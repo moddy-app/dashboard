@@ -1251,7 +1251,6 @@
     "reference": "Réf. {{refs}}",
     "locked": "Indisponible",
     "viewOnly": "Consultation seule",
-    "cacheNote": "L'état de votre compte est mis en cache jusqu'à une minute : un changement peut mettre ce délai à apparaître ici.",
     "guildSuspendedShort": "Serveur suspendu",
     "premiumBlockedTitle": "Moddy Max indisponible",
     "premiumBlocked": "Vous ne pouvez pas souscrire tant qu'une sanction pèse sur votre compte. Un abonnement déjà payé reste gérable et résiliable.",
@@ -1386,7 +1385,8 @@
       "billingError": "Impossible d'ouvrir le portail de facturation. Réessayez dans un instant.",
       "backToSummary": "Retour au résumé",
       "emptyTitle": "Détail indisponible",
-      "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte."
+      "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte.",
+      "seeDetail": "Voir le détail par serveur"
     }
   }
 }

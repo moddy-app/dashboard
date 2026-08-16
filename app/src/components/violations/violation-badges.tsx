@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { ClockIcon, CreditCardIcon, HourglassIcon, InfinityIcon, PauseIcon } from "lucide-react"
+import { ClockIcon, HourglassIcon, InfinityIcon, PauseIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ACTION_META } from "@/lib/cases"
 import { LEVEL_TONE, formatDeadline, globalActionTone, remainingParts } from "@/lib/sanctions"
@@ -120,6 +120,23 @@ export function ExpiryLabel({
   )
 }
 
+// ─── Statut d'une mesure ──────────────────────────────────────────────────────
+
+/**
+ * « En vigueur » n'apporte rien : c'est l'état par défaut de tout ce qu'on
+ * affiche. Seule une mesure levée ou expirée mérite d'être signalée — sinon
+ * chaque ligne porterait une étiquette qui ne distingue rien.
+ */
+export function MeasureStatus({ status }: { status: "active" | "expired" | "revoked" }) {
+  const { t } = useTranslation()
+  if (status === "active") return null
+  return (
+    <span className="text-xs text-muted-foreground">
+      {t(`violations.sanctionStatus.${status}`)}
+    </span>
+  )
+}
+
 // ─── Référence ────────────────────────────────────────────────────────────────
 
 /**
@@ -161,12 +178,19 @@ export function EnforcementNotice({
   className,
   /** À passer à `false` quand un bloc d'appel suit — deux CTA identiques se nuisent. */
   showAppeal = true,
+  /**
+   * `card` : bloc autonome, encadré et teinté. `inline` : à l'intérieur d'un
+   * panneau — un cadre dans un cadre n'ajoute qu'un rectangle, l'icône colorée
+   * suffit à porter le ton.
+   */
+  variant = "card",
 }: {
   enforcement: Enforcement
   appealUrl: string
   active?: boolean
   className?: string
   showAppeal?: boolean
+  variant?: "card" | "inline"
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
@@ -196,51 +220,49 @@ export function EnforcementNotice({
         ? t("violations.enforcement.inHours", { hours: left.hours, minutes: left.minutes })
         : t("violations.enforcement.inMinutes", { minutes: Math.max(left.minutes, 1) }))
 
+  const body = pending
+    ? deadline && t("violations.enforcement.pendingDescription", { date: deadline })
+    : halted
+      ? t("violations.enforcement.haltedDescription")
+      : executed && t("violations.enforcement.executedDescription", { date: executed })
+
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-xl border p-4",
-        tone.border,
-        tone.softBg,
+        "flex items-start gap-3",
+        variant === "card" ? cn("rounded-xl border p-4", tone.border, tone.softBg) : "pt-1",
         className
       )}
     >
-      <div className="flex items-start gap-3">
-        <Icon className={cn("mt-0.5 size-4 shrink-0", tone.text)} />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">
-            {t(`violations.enforcement.title.${enforcement.status}`)}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {pending && deadline
-              ? t("violations.enforcement.pendingDescription", { date: deadline })
-              : halted
-                ? t("violations.enforcement.haltedDescription")
-                : enforcement.status === "executed" && executed
-                  ? t("violations.enforcement.executedDescription", { date: executed })
-                  : t(`violations.enforcement.title.${enforcement.status}`)}
-          </p>
+      <Icon className={cn("mt-0.5 size-4 shrink-0", tone.text)} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold">
+          {t(`violations.enforcement.title.${enforcement.status}`)}
           {pending && countdown && (
-            <p className="mt-1 text-xs font-medium tabular-nums">{countdown}</p>
+            <span className="ml-2 text-xs font-medium tabular-nums text-muted-foreground">
+              {countdown}
+            </span>
           )}
-          {enforcement.premium && pending && (
-            <p className="mt-2 flex items-start gap-2 rounded-lg border bg-background/70 px-2.5 py-2 text-xs font-medium">
-              <CreditCardIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-              {t("violations.enforcement.premiumWarning")}
-            </p>
-          )}
-        </div>
+        </p>
+        {body && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{body}</p>}
+        {/* La résiliation sans remboursement est la conséquence la plus lourde :
+            elle se dit dans la même phrase, pas dans une boîte de plus. */}
+        {enforcement.premium && pending && (
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {t("violations.enforcement.premiumWarning")}
+          </p>
+        )}
+        {pending && showAppeal && (
+          <a
+            href={appealUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {t("violations.appeal")}
+          </a>
+        )}
       </div>
-      {pending && showAppeal && (
-        <a
-          href={appealUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-8 items-center justify-center self-start rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          {t("violations.appeal")}
-        </a>
-      )}
     </div>
   )
 }

@@ -8,11 +8,10 @@ import { usePageTitle } from "@/hooks/usePageTitle"
 import { useSanctions } from "@/contexts/SanctionContext"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { cn } from "@/lib/utils"
-import { FILTER_ACCENT_BUTTON, FILTER_ACCENT_CHIP } from "@/lib/cases"
-import { TERMS_URL } from "@/lib/sanctions"
+import { FILTER_ACCENT_CHIP } from "@/lib/cases"
+import { LEVEL_TONE, TERMS_URL } from "@/lib/sanctions"
 import { ViolationList } from "@/components/violations/violation-list"
 import { ViolationDetailView } from "@/components/violations/violation-detail"
-import { SanctionNotice } from "@/components/violations/sanction-banner"
 import { SanctionScale } from "@/components/violations/sanction-scale"
 
 type Scope = "all" | "active" | "user" | "guilds"
@@ -76,12 +75,14 @@ export function ViolationsPage() {
     )
   }
 
+  const tone = LEVEL_TONE[user.level]
+
   return (
     <div className="flex flex-col gap-6">
-      {/* En-tête : ce que la page montre, et de quoi il est question. */}
+      {/* En-tête : ce que la page montre, et sur quelles règles elle repose. */}
       <div>
         <h1 className="text-xl font-semibold leading-none">{t("violations.title")}</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
           {t("violations.description")}{" "}
           <a
             href={TERMS_URL}
@@ -94,35 +95,35 @@ export function ViolationsPage() {
         </p>
       </div>
 
-      {/* État du compte — un `warn` informe, il ne verrouille rien. */}
-      {user.level !== "none" && (
-        <SanctionNotice
-          level={user.level}
-          status={user}
-          title={t(`violations.status.${user.level}.title`)}
-          description={t(`violations.status.${user.level}.description`)}
-        />
-      )}
-
-      {/* Où le compte se situe — la même échelle que l'écran de suspension. */}
-      <div className="rounded-xl border bg-card p-4">
-        <p className="mb-4 text-sm font-semibold">{t("violations.scaleTitle")}</p>
-        <SanctionScale level={user.level} />
+      {/* État du compte : l'échelle et ce que le niveau courant change,
+          dans un seul bloc. Deux encarts qui disaient la même chose n'en
+          font plus qu'un. */}
+      <div className="flex flex-col gap-5 rounded-xl border bg-card p-5">
+        {/* Bornée : au-delà, les quatre paliers s'éloignent au point qu'on ne
+            lit plus une progression mais quatre étiquettes isolées. */}
+        <SanctionScale level={user.level} className="max-w-xl" />
+        <div className="border-t pt-4">
+          <p className={cn("text-sm font-semibold", user.level !== "none" && tone.text)}>
+            {t(`violations.status.${user.level}.title`)}
+          </p>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            {t(`violations.status.${user.level}.description`)}
+          </p>
+        </div>
       </div>
 
-      {/* Barre d'outils — filtres à gauche, rafraîchissement à droite, comme la
-          liste des dossiers de modération. */}
+      {/* Filtres + liste */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <div className="flex flex-1 flex-wrap items-center gap-1.5">
             {SCOPES.map((value) => {
-              const active = scope === value
+              const isActive = scope === value
               return (
                 <Button
                   key={value}
                   size="sm"
                   variant="outline"
-                  className={cn("h-7 rounded-full px-3 text-xs", active && FILTER_ACCENT_CHIP)}
+                  className={cn("h-7 rounded-full px-3 text-xs", isActive && FILTER_ACCENT_CHIP)}
                   onClick={() => setParam("scope", value === "all" ? null : value)}
                 >
                   {t(`violations.scope.${value}`)}
@@ -139,7 +140,7 @@ export function ViolationsPage() {
                 aria-label={t("violations.refresh")}
                 onClick={handleRefresh}
                 disabled={refreshing || groupsLoading}
-                className={cn("size-9 shrink-0", refreshing && FILTER_ACCENT_BUTTON)}
+                className="size-9 shrink-0"
               >
                 <RefreshCwIcon className={cn("size-4", refreshing && "animate-spin")} />
               </Button>
@@ -154,8 +155,6 @@ export function ViolationsPage() {
           onOpen={(groupId) => setParam("group", groupId)}
         />
       </div>
-
-      <p className="text-xs text-muted-foreground">{t("violations.cacheNote")}</p>
     </div>
   )
 }

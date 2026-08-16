@@ -198,3 +198,50 @@ moment. Les trois points d'entrée disparaissent quand le compte est
 - Modifiés : `lib/cases.ts` (ton `emerald`), `lib/sanctions.ts` (`LEVEL_TONE`
   dérivé, `TERMS_URL`, `globalActionTone`), `app-sidebar.tsx`,
   `GuildOverviewPage.tsx`, `settings-dialog.tsx`.
+
+---
+
+# Troisième passe — hiérarchie et redites
+
+La seconde passe avait la bonne grammaire visuelle mais pas la bonne
+**hiérarchie** : tout était au même niveau, et la même information revenait
+deux ou trois fois sous des formes différentes.
+
+## Les redites supprimées
+
+| Répétition | Décision |
+|---|---|
+| Le motif écrit dans une carte « ce qui vous est reproché » **puis** répété en première ligne de « sanctions en cours » | Un seul bloc `ActiveSanction` porte le motif ; la liste en dessous ne montre plus que les sanctions **passées** |
+| Ligne de liste portant une chip « Suspension » *et* une pastille « Suspendu » — deux formes pour une seule idée | La ligne ne garde que la pastille de niveau : le niveau **est** le résumé des mesures actives. Le détail par mesure vit dans la vue détail |
+| Vue détail : aside « Qui est visé » + « Mesures prises » recopiant la colonne centrale, et une date déjà sous le titre | Aside supprimé. `case-detail` en a un parce qu'il a de quoi le remplir (auteur, portée, groupe, appels) ; une infraction n'a que ses sujets et ses mesures |
+| « En vigueur » affiché sur chaque mesure active | `MeasureStatus` ne dit plus rien pour `active` — c'est l'état par défaut. Seuls « levée » et « expirée » méritent un mot |
+| Compte à rebours encadré et teinté **à l'intérieur** d'une carte | `EnforcementNotice` gagne `variant="inline"` : dans un panneau, un simple filet et l'icône colorée suffisent |
+| `/violations` : bandeau d'état **et** carte d'échelle disant la même chose | Un seul bloc « état du compte » : l'échelle, un filet, le niveau courant et ce qu'il change |
+| Note sur le cache de 60 s en pied de page | Supprimée — détail d'implémentation, pas information utilisateur |
+
+## La facturation redescend au pied de page
+
+Ce n'est pas ce qu'on vient chercher sur un écran de suspension : plus de
+section, plus de carte, plus de phrase d'explication. Un bouton fantôme
+« Gérer la facturation » en pied de page, sous un filet, avec le reste des
+utilitaires. La logique de masquage ne change pas.
+
+## L'ordre de lecture
+
+L'écran suit désormais les questions dans l'ordre où on se les pose :
+
+1. **Qu'est-ce qui m'arrive** — le verdict, et l'échelle qui le situe ;
+2. **Pourquoi** — le motif, les mesures, la référence, une seule fois ;
+3. **Jusqu'à quand** — le compte à rebours, en filet sous le motif ;
+4. **Comment le contester** — un bouton principal, un secondaire ;
+5. le reste (historique, facturation) en périphérie.
+
+## Détails de finition
+
+- L'échelle est bornée à `max-w-xl` : au-delà, les quatre paliers s'éloignent
+  au point qu'on ne lit plus une progression mais quatre étiquettes isolées.
+- Le point séparateur des lignes de liste est passé **dans** le conteneur des
+  sujets : dehors, il laissait un point orphelin sur mobile, où les sujets
+  sont masqués faute de place.
+- Un espaceur de 3 rem précède le pied de page pour que `mt-auto` ne colle pas
+  le filet à la dernière section quand la page dépasse l'écran.

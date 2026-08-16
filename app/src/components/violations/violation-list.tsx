@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { absoluteTime, relativeTime } from "@/lib/cases"
 import type { ViolationGroup } from "@/types/violations"
 import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
-import { GlobalActionChip, LevelPill, ClosedPill } from "./violation-badges"
+import { LevelPill, ClosedPill } from "./violation-badges"
 
 // ─── Séparateur (point) ───────────────────────────────────────────────────────
 // Repris à l'identique de `case-list.tsx` : les deux listes se lisent pareil.
@@ -40,9 +40,6 @@ function ViolationRow({
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
-
-  // Les actions levées ou expirées restent visibles, mais éteintes.
-  const inactive = group.actions.filter((a) => !group.active_actions.includes(a))
 
   return (
     <div
@@ -78,34 +75,30 @@ function ViolationRow({
               {t("violations.reference", { refs: group.references.join(", ") })}
             </span>
           )}
+          {/* Le séparateur vit dans le même conteneur que les sujets : sorti,
+              il laissait un point orphelin sur mobile, où les sujets sont
+              masqués faute de place. */}
           {group.subjects.length > 0 && (
-            <>
+            <span className="hidden min-w-0 items-center gap-1.5 sm:inline-flex">
               <Dot />
-              <span className="hidden min-w-0 items-center gap-2 sm:inline-flex">
-                {group.subjects.slice(0, 2).map((subject) => (
-                  <EntityRef
-                    key={`${subject.subject_type}:${subject.subject_id}`}
-                    kind={subject.subject_type as EntityKind}
-                    id={subject.subject_id}
-                    variant="inline"
-                  />
-                ))}
-              </span>
-            </>
+              {group.subjects.slice(0, 2).map((subject) => (
+                <EntityRef
+                  key={`${subject.subject_type}:${subject.subject_id}`}
+                  kind={subject.subject_type as EntityKind}
+                  id={subject.subject_id}
+                  variant="inline"
+                />
+              ))}
+            </span>
           )}
         </div>
       </div>
 
-      {/* État + actions + date */}
-      <div className="flex shrink-0 items-center gap-2">
-        <div className="hidden items-center gap-1 md:flex">
-          {group.active_actions.map((action) => (
-            <GlobalActionChip key={`a-${action}`} action={action} size="xs" />
-          ))}
-          {inactive.map((action) => (
-            <GlobalActionChip key={`i-${action}`} action={action} size="xs" muted />
-          ))}
-        </div>
+      {/* État + date. Pas de chips de mesure ici : le niveau les résume déjà
+          (« Suspendu » = une suspension), et deux étiquettes de formes
+          différentes qui disent la même chose ne font que du bruit. Le détail
+          par sujet vit dans la vue détail. */}
+      <div className="flex shrink-0 items-center gap-3">
         {group.active ? <LevelPill level={group.level} /> : <ClosedPill />}
         <span
           className="w-14 text-right text-xs tabular-nums text-muted-foreground"
