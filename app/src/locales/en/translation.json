@@ -1248,7 +1248,6 @@
     "scaleTitle": "Your account standing",
     "refresh": "Refresh",
     "appeal": "Contest this decision",
-    "reference": "Ref. {{refs}}",
     "locked": "Unavailable",
     "viewOnly": "View only",
     "guildSuspendedShort": "Server suspended",
@@ -1307,7 +1306,9 @@
       "activeTitle": "Active",
       "resolved": "Closed",
       "emptyTitle": "No violations",
-      "emptyDescription": "Nothing has been held against your account or your servers."
+      "emptyDescription": "Nothing has been held against your account or your servers.",
+      "affects": "Affects",
+      "moreServers": "+{{count}} servers"
     },
     "detail": {
       "back": "Back",
@@ -1324,7 +1325,9 @@
       "notFoundTitle": "Violation not found",
       "notFoundDescription": "This violation does not exist, or it does not concern you.",
       "appealTitle": "Think this is a mistake?",
-      "appealDescription": "Contests are handled on the Moddy support server, where a team member picks the case back up. Contesting does not pause the sanction: it stays in force while it is reviewed."
+      "appealDescription": "Contests are handled on the Moddy support server, where a team member picks the case back up. Contesting does not pause the sanction: it stays in force while it is reviewed.",
+      "issuedBy": "Issued by {{issuer}}",
+      "issuedByModdy": "the Moddy team"
     },
     "enforcement": {
       "title": {
@@ -1368,7 +1371,7 @@
       "discord_user": "A sanction applies to your account.",
       "discord_guild": "A sanction applies to this server."
     },
-    "errorReferences": "Ref. {{refs}}",
+    "errorReferences": "{{refs}}",
     "suspended": {
       "title": "Your access to Moddy is suspended",
       "headlinePrefix": "Your access to Moddy is",
@@ -1386,7 +1389,12 @@
       "backToSummary": "Back to summary",
       "emptyTitle": "Details unavailable",
       "emptyDescription": "The sanction details could not be loaded. Contact support with your account ID.",
-      "seeDetail": "See the per-server breakdown"
+      "seeDetail": "See the per-server breakdown",
+      "alsoTargets": "This violation also targets {{count}} of your servers."
+    },
+    "subject": {
+      "you": "your account",
+      "guild": "this server"
     }
   }
 }

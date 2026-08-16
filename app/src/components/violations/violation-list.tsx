@@ -11,7 +11,8 @@ import {
 import { cn } from "@/lib/utils"
 import { absoluteTime, relativeTime } from "@/lib/cases"
 import type { ViolationGroup } from "@/types/violations"
-import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
+import { EntityRef } from "@/components/cases/entity-ref"
+import { useSanctions } from "@/contexts/SanctionContext"
 import { LevelPill, ClosedPill } from "./violation-badges"
 
 // ─── Séparateur (point) ───────────────────────────────────────────────────────
@@ -40,6 +41,43 @@ function ViolationRow({
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
+  const { user } = useSanctions()
+
+  // « Votre compte » plutôt que son propre pseudo : sur une page qui parle de
+  // vous, votre nom d'utilisateur est la façon la moins claire de vous
+  // désigner. Les serveurs, eux, gardent leur nom — c'est ce qui les distingue.
+  const subjects = group.subjects
+  const isSelfTargeted = subjects.some(
+    (s) => s.subject_type === "discord_user" && String(s.subject_id) === user.subject_id
+  )
+  const guilds = subjects.filter((s) => s.subject_type === "discord_guild")
+
+  // Le compte d'abord (c'est ce qui touche la personne en premier), puis ses
+  // serveurs, séparés par des virgules — une énumération, pas un empilement.
+  const affected: React.ReactNode[] = [
+    ...(isSelfTargeted
+      ? [
+          <span key="self" className="shrink-0 font-medium text-foreground">
+            {t("violations.subject.you")}
+          </span>,
+        ]
+      : []),
+    ...guilds.slice(0, 2).map((subject) => (
+      <EntityRef
+        key={subject.subject_id}
+        kind="discord_guild"
+        id={subject.subject_id}
+        variant="inline"
+      />
+    )),
+    ...(guilds.length > 2
+      ? [
+          <span key="more" className="shrink-0">
+            {t("violations.list.moreServers", { count: guilds.length - 2 })}
+          </span>,
+        ]
+      : []),
+  ]
 
   return (
     <div
@@ -71,23 +109,21 @@ function ViolationRow({
         <p className="truncate text-sm font-medium">{group.reason}</p>
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
           {group.references.length > 0 && (
-            <span className="shrink-0">
-              {t("violations.reference", { refs: group.references.join(", ") })}
-            </span>
+            <span className="shrink-0">{group.references.join(", ")}</span>
           )}
-          {/* Le séparateur vit dans le même conteneur que les sujets : sorti,
-              il laissait un point orphelin sur mobile, où les sujets sont
-              masqués faute de place. */}
-          {group.subjects.length > 0 && (
+          {/* Qui est visé, annoncé comme tel : une suite de pseudos et
+              d'icônes de serveurs ne dit pas d'elle-même qu'il s'agit des
+              sujets de la sanction. Le séparateur vit dans le même conteneur,
+              sinon il reste orphelin sur mobile où les sujets sont masqués. */}
+          {subjects.length > 0 && (
             <span className="hidden min-w-0 items-center gap-1.5 sm:inline-flex">
               <Dot />
-              {group.subjects.slice(0, 2).map((subject) => (
-                <EntityRef
-                  key={`${subject.subject_type}:${subject.subject_id}`}
-                  kind={subject.subject_type as EntityKind}
-                  id={subject.subject_id}
-                  variant="inline"
-                />
+              <span className="shrink-0">{t("violations.list.affects")}</span>
+              {affected.map((node, index) => (
+                <span key={index} className="inline-flex min-w-0 items-center">
+                  {index > 0 && <span className="mr-1.5 shrink-0">,</span>}
+                  {node}
+                </span>
               ))}
             </span>
           )}

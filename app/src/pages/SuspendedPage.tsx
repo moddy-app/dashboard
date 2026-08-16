@@ -19,7 +19,7 @@ import { getViolations } from "@/services/violations"
 import { getSubscriptionStatus, openBillingPortal } from "@/services/guilds"
 import { logger } from "@/lib/logger"
 import type { SubscriptionData } from "@/types/api"
-import type { SubjectSanctionStatus, ViolationGroup } from "@/types/violations"
+import type { SanctionSummary, SubjectSanctionStatus, ViolationGroup } from "@/types/violations"
 import { ViolationList } from "@/components/violations/violation-list"
 import { ViolationDetailView } from "@/components/violations/violation-detail"
 import { SanctionScale } from "@/components/violations/sanction-scale"
@@ -39,29 +39,46 @@ import {
  */
 function ActiveSanction({
   group,
+  userSanctions,
   onOpen,
 }: {
   group: ViolationGroup
+  /** Mesures visant **le compte** dans ce groupe (`/violations/status`). */
+  userSanctions: SanctionSummary[]
   onOpen: (groupId: string) => void
 }) {
   const { t } = useTranslation()
 
-  // L'échéance des mesures actives : la même pour tout le groupe en pratique.
-  const expiresAt = group.enforcement?.deadline ?? null
+  // Un groupe peut mélanger les niveaux — avertissement au compte, limitation
+  // sur un serveur, suspension sur un autre. On affiche donc ce qui vise **le
+  // compte**, jamais les actions agrégées du groupe, qui laisseraient croire
+  // que tout s'applique partout. Le détail par serveur est à un clic.
+  const own = userSanctions.length > 0 ? userSanctions : null
+  const otherSubjects = group.subjects.filter((s) => s.subject_type === "discord_guild").length
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-5">
       <div className="flex flex-col gap-2">
         <p className="text-base font-medium leading-relaxed">{group.reason}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-          {group.active_actions.map((action) => (
-            <GlobalActionChip key={action} action={action} />
-          ))}
-          {!group.enforcement && (
-            <ExpiryLabel expiresAt={expiresAt} className="text-xs text-muted-foreground" />
-          )}
-          <ReferenceText references={group.references} />
+          {own
+            ? own.map((sanction) => (
+                <GlobalActionChip key={sanction.reference} action={sanction.action} />
+              ))
+            : group.active_actions.map((action) => (
+                <GlobalActionChip key={action} action={action} />
+              ))}
+          <ExpiryLabel
+            expiresAt={own?.[0]?.expires_at ?? null}
+            className="text-xs text-muted-foreground"
+          />
+          <ReferenceText references={own ? own.map((s) => s.reference) : group.references} />
         </div>
+        {otherSubjects > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {t("violations.suspended.alsoTargets", { count: otherSubjects })}
+          </p>
+        )}
       </div>
 
       {group.enforcement && (
@@ -287,7 +304,14 @@ export function SuspendedScreen({
               ) : active.length > 0 ? (
                 <div className="flex flex-col gap-3">
                   {active.map((group) => (
-                    <ActiveSanction key={group.group_id} group={group} onOpen={setSelected} />
+                    <ActiveSanction
+                      key={group.group_id}
+                      group={group}
+                      userSanctions={status.sanctions.filter(
+                        (s) => s.group_id === group.group_id
+                      )}
+                      onOpen={setSelected}
+                    />
                   ))}
                 </div>
               ) : fallback ? (

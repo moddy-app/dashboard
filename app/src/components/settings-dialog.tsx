@@ -45,7 +45,7 @@ import {
 } from "@/services/guilds"
 import { invalidatePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { useSanctions } from "@/contexts/SanctionContext"
-import { asSanctionError, levelRank } from "@/lib/sanctions"
+import { asSanctionError, levelRank, LEVEL_TONE } from "@/lib/sanctions"
 import { showSanctionToast } from "@/lib/handle-error"
 import { SanctionNotice } from "@/components/violations/sanction-banner"
 import { toast } from "sonner"
@@ -448,7 +448,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                   )}
 
                   {(linkBlocked || selectedGuildBlocked) && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                    <p className={`text-xs ${LEVEL_TONE.limited.text}`}>
                       {linkBlocked
                         ? t('violations.premiumBlocked')
                         : t('violations.premiumGuildBlocked')}

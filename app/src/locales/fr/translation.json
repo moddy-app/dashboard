@@ -1248,7 +1248,6 @@
     "scaleTitle": "État de votre compte",
     "refresh": "Actualiser",
     "appeal": "Contester la décision",
-    "reference": "Réf. {{refs}}",
     "locked": "Indisponible",
     "viewOnly": "Consultation seule",
     "guildSuspendedShort": "Serveur suspendu",
@@ -1307,7 +1306,9 @@
       "activeTitle": "En cours",
       "resolved": "Terminée",
       "emptyTitle": "Aucune infraction",
-      "emptyDescription": "Rien n'a été reproché à votre compte ni à vos serveurs."
+      "emptyDescription": "Rien n'a été reproché à votre compte ni à vos serveurs.",
+      "affects": "Vise",
+      "moreServers": "+{{count}} serveurs"
     },
     "detail": {
       "back": "Retour",
@@ -1324,7 +1325,9 @@
       "notFoundTitle": "Infraction introuvable",
       "notFoundDescription": "Cette infraction n'existe pas, ou elle ne vous concerne pas.",
       "appealTitle": "Vous pensez que c'est une erreur ?",
-      "appealDescription": "Les contestations se font sur le serveur de support Moddy, où un membre de l'équipe reprend le dossier. Contester ne suspend pas la sanction : elle reste en vigueur pendant l'examen."
+      "appealDescription": "Les contestations se font sur le serveur de support Moddy, où un membre de l'équipe reprend le dossier. Contester ne suspend pas la sanction : elle reste en vigueur pendant l'examen.",
+      "issuedBy": "Prononcée par {{issuer}}",
+      "issuedByModdy": "l'équipe Moddy"
     },
     "enforcement": {
       "title": {
@@ -1368,7 +1371,7 @@
       "discord_user": "Une sanction pèse sur votre compte.",
       "discord_guild": "Une sanction pèse sur ce serveur."
     },
-    "errorReferences": "Réf. {{refs}}",
+    "errorReferences": "{{refs}}",
     "suspended": {
       "title": "Votre accès à Moddy est suspendu",
       "headlinePrefix": "Votre accès à Moddy est",
@@ -1386,7 +1389,12 @@
       "backToSummary": "Retour au résumé",
       "emptyTitle": "Détail indisponible",
       "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte.",
-      "seeDetail": "Voir le détail par serveur"
+      "seeDetail": "Voir le détail par serveur",
+      "alsoTargets": "Cette infraction vise aussi {{count}} de vos serveurs."
+    },
+    "subject": {
+      "you": "votre compte",
+      "guild": "ce serveur"
     }
   }
 }

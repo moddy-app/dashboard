@@ -14,8 +14,8 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { ACTION_META, actionTone, absoluteTime } from "@/lib/cases"
-import type { Sanction } from "@/types/cases"
+import { ACTION_META, actionLabelKey, actionTone, absoluteTime } from "@/lib/cases"
+import type { CaseType, Sanction } from "@/types/cases"
 import { SanctionStatusBadge } from "./case-badges"
 import { EntityRef, type EntityKind } from "./entity-ref"
 
@@ -27,9 +27,11 @@ interface SanctionsPanelProps {
   sanctions: Sanction[]
   canWrite: boolean
   onRevoke: (sanctionId: string, note?: string) => Promise<void>
+  /** Portée du dossier — décide du vocabulaire (cf. `actionLabelKey`). */
+  caseType?: CaseType | null
 }
 
-export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanelProps) {
+export function SanctionsPanel({ sanctions, canWrite, onRevoke, caseType }: SanctionsPanelProps) {
   const { t, i18n } = useTranslation()
   const [revoking, setRevoking] = useState<Sanction | null>(null)
   const [revokeNote, setRevokeNote] = useState("")
@@ -75,7 +77,7 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke }: SanctionsPanel
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-medium">{t(`cases.action.${s.action}`)}</span>
+                  <span className="text-sm font-medium">{t(actionLabelKey(s.action, caseType))}</span>
                   <SanctionStatusBadge status={s.status} />
                 </div>
 

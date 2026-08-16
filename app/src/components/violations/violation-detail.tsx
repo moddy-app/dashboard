@@ -18,9 +18,10 @@ import {
 import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
 import { cn } from "@/lib/utils"
 import { absoluteTime } from "@/lib/cases"
-import { APPEAL_URL } from "@/lib/sanctions"
+import { APPEAL_URL, levelFromActions } from "@/lib/sanctions"
 import { ApiError } from "@/lib/auth"
 import { getViolation } from "@/services/violations"
+import { useSanctions } from "@/contexts/SanctionContext"
 import { logger } from "@/lib/logger"
 import type { ViolationCase, ViolationDetail } from "@/types/violations"
 import {
@@ -40,12 +41,33 @@ import {
  * seule fois où le détail par sujet apparaît — l'en-tête donne le résumé, ce
  * bloc donne la précision, rien n'est dit deux fois.
  */
-function SubjectBlock({ item }: { item: ViolationCase }) {
+function SubjectBlock({ item, selfId }: { item: ViolationCase; selfId: string }) {
+  const { t } = useTranslation()
+  // Le niveau du sujet vient de SES mesures actives, jamais de celui du groupe :
+  // une même infraction peut valoir un avertissement au compte et une
+  // suspension à l'un de ses serveurs.
+  const level = levelFromActions(
+    item.sanctions.filter((s) => s.status === "active").map((s) => s.action)
+  )
+
+  // Son propre compte se désigne par « votre compte », pas par son pseudo :
+  // sur une page qui parle de vous, c'est la formulation la moins ambiguë.
+  const isSelf = item.subject_type === "discord_user" && String(item.subject_id) === selfId
+
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <EntityRef kind={item.subject_type as EntityKind} id={item.subject_id} variant="inline" />
-        <ReferenceText references={[item.reference]} />
+        {isSelf ? (
+          <span className="text-sm font-medium">{t("violations.subject.you")}</span>
+        ) : (
+          <EntityRef kind={item.subject_type as EntityKind} id={item.subject_id} variant="inline" />
+        )}
+        {level !== "none" ? (
+          <LevelPill level={level} size="xs" />
+        ) : (
+          <ClosedPill size="xs" />
+        )}
+        <ReferenceText references={[item.reference]} className="ml-auto" />
       </div>
 
       <div className="flex flex-col gap-2">
@@ -92,6 +114,8 @@ export function ViolationDetailView({
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
+  const { user } = useSanctions()
+  const selfId = user.subject_id
   const [detail, setDetail] = useState<ViolationDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -154,6 +178,11 @@ export function ViolationDetailView({
   const references = detail.cases.map((c) => c.reference)
   const headline = detail.cases[0]?.reason ?? t(`violations.level.${detail.level}`)
   const openedAt = detail.cases[0]?.created_at ?? null
+  const first = detail.cases[0]
+  const issuer =
+    first?.issuer_id && first.issuer_type
+      ? { kind: first.issuer_type as EntityKind, id: first.issuer_id }
+      : null
 
   return (
     <div className="flex max-w-3xl flex-col gap-5">
@@ -170,11 +199,24 @@ export function ViolationDetailView({
         <h1 className="wrap-break-word text-lg font-semibold leading-snug sm:text-xl">
           {headline}
         </h1>
-        {openedAt && (
-          <p className="mt-1.5 text-xs text-muted-foreground">
-            {t("violations.detail.openedOn", { date: absoluteTime(openedAt, locale) })}
-          </p>
-        )}
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+          {openedAt && (
+            <span>{t("violations.detail.openedOn", { date: absoluteTime(openedAt, locale) })}</span>
+          )}
+          {openedAt && <span className="opacity-40">·</span>}
+          {/* « Par qui » : un dossier global est toujours prononcé par l'équipe,
+              mais l'API peut nommer l'auteur — on l'affiche quand elle le fait. */}
+          <span className="inline-flex items-center gap-1">
+            {issuer ? (
+              <>
+                {t("violations.detail.issuedBy", { issuer: "" }).trim()}
+                <EntityRef kind={issuer.kind} id={issuer.id} variant="inline" />
+              </>
+            ) : (
+              t("violations.detail.issuedBy", { issuer: t("violations.detail.issuedByModdy") })
+            )}
+          </span>
+        </div>
       </div>
 
       {/* Ce qui va se passer — jamais sur une infraction close. */}
@@ -193,7 +235,7 @@ export function ViolationDetailView({
         <div className="flex flex-col divide-y rounded-xl border bg-card">
           {detail.cases.map((item) => (
             <div key={item.id ?? item.reference} className="p-4">
-              <SubjectBlock item={item} />
+              <SubjectBlock item={item} selfId={selfId} />
             </div>
           ))}
         </div>

@@ -1,12 +1,6 @@
-import {
-  BanIcon,
-  ShieldAlertIcon,
-  ShieldMinusIcon,
-  ShieldCheckIcon,
-  type LucideIcon,
-} from 'lucide-react'
+import { type LucideIcon } from 'lucide-react'
 import { ApiError } from '@/lib/auth'
-import { ACTION_TONE, actionTone } from '@/lib/cases'
+import { ACTION_TONE, SANCTION_LEVEL_HUE, SANCTION_LEVEL_ICON } from '@/lib/cases'
 import type {
   Enforcement,
   GlobalAction,
@@ -90,13 +84,6 @@ export interface LevelTone {
   ring: string
 }
 
-const LEVEL_ICON: Record<SanctionLevel, LucideIcon> = {
-  none: ShieldCheckIcon,
-  warn: ShieldAlertIcon,
-  limited: ShieldMinusIcon,
-  suspended: BanIcon,
-}
-
 const LEVEL_RING: Record<SanctionLevel, string> = {
   none: 'ring-emerald-200 dark:ring-emerald-900',
   warn: 'ring-amber-200 dark:ring-amber-900',
@@ -104,12 +91,11 @@ const LEVEL_RING: Record<SanctionLevel, string> = {
   suspended: 'ring-red-200 dark:ring-red-900',
 }
 
-const LEVEL_HUE: Record<SanctionLevel, keyof typeof ACTION_TONE> = {
-  none: 'emerald',
-  warn: 'amber',
-  limited: 'orange',
-  suspended: 'red',
-}
+// Ton et icône viennent de `lib/cases` : `ActionChip` s'en sert aussi pour les
+// mesures d'un dossier global. Une seule source, donc jamais deux couleurs pour
+// la même idée.
+const LEVEL_ICON = SANCTION_LEVEL_ICON as Record<SanctionLevel, LucideIcon>
+const LEVEL_HUE = SANCTION_LEVEL_HUE as Record<SanctionLevel, keyof typeof ACTION_TONE>
 
 export const LEVEL_TONE = Object.fromEntries(
   (Object.keys(LEVEL_HUE) as SanctionLevel[]).map((level) => [
@@ -118,12 +104,29 @@ export const LEVEL_TONE = Object.fromEntries(
   ])
 ) as Record<SanctionLevel, LevelTone>
 
+// ─── Niveau d'un jeu de mesures ───────────────────────────────────────────────
+
+const ACTION_LEVEL: Record<GlobalAction, SanctionLevel> = {
+  warn: 'warn',
+  restrict: 'limited',
+  ban: 'suspended',
+}
+
 /**
- * Ton d'une action globale, aligné sur celui des cases (`actionTone`) : une
- * suspension est rouge des deux côtés du dashboard.
+ * Niveau résolu d'un jeu de mesures — **le plus sévère** des mesures actives.
+ *
+ * ⚠️ Un groupe d'infraction peut mélanger les niveaux : un avertissement pour le
+ * compte, une limitation sur un serveur, une suspension sur un autre. Le
+ * `level` du groupe est donc un *résumé* (le pire), jamais ce qui s'applique à
+ * un sujet donné. Pour ça, on repasse par cette fonction avec les mesures du
+ * sujet — c'est ce que fait la vue détail, sujet par sujet.
  */
-export function globalActionTone(action: GlobalAction) {
-  return actionTone(action)
+export function levelFromActions(actions: GlobalAction[]): SanctionLevel {
+  return actions.reduce<SanctionLevel>(
+    (worst, action) =>
+      levelRank(ACTION_LEVEL[action]) > levelRank(worst) ? ACTION_LEVEL[action] : worst,
+    'none'
+  )
 }
 
 // ─── 403 de sanction ──────────────────────────────────────────────────────────

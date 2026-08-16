@@ -245,3 +245,72 @@ L'écran suit désormais les questions dans l'ordre où on se les pose :
   sont masqués faute de place.
 - Un espaceur de 3 rem précède le pied de page pour que `mt-auto` ne colle pas
   le filet à la dernière section quand la page dépasse l'écran.
+
+---
+
+# Quatrième passe — tout ce qui touche aux sanctions globales
+
+Les vues `/violations` étaient propres, mais les **autres** surfaces qui parlent
+de sanctions globales ne l'étaient pas — et surtout, le même dossier ne se
+lisait pas pareil selon la page.
+
+## Un dossier global se lit pareil partout
+
+Une case `global`/`network` **est** une sanction globale. Elle disait pourtant
+« Bannir » dans les vues `cases` et « Suspension » sur `/violations`, en violet
+d'un côté et en rouge de l'autre. Deux fonctions dans `lib/cases.ts` règlent ça
+à la source, pour tout le dashboard :
+
+| Helper | Rôle |
+|---|---|
+| `isGlobalCaseType(type)` | `global` ou `network` = sanction globale |
+| `actionLabelKey(action, caseType)` | `violations.action.*` sur un dossier global, `cases.action.*` sinon |
+| `actionAppearance(action, caseType)` | ton + icône **du niveau** sur un dossier global (limitation orange comme « limité »), de l'action sinon |
+
+`ActionChip` les consomme : la portée du dossier suffit, aucun appelant n'a de
+couleur à choisir. `case-list`, `case-detail`, `sanctions-panel` et
+`case-timeline` reçoivent désormais le `caseType`, et `GlobalActionChip` n'est
+plus qu'`ActionChip` figée sur `global`.
+
+`SANCTION_LEVEL_HUE` / `SANCTION_LEVEL_ICON` vivent maintenant dans
+`lib/cases.ts` : `LEVEL_TONE` (`lib/sanctions.ts`) **et** `ActionChip` en
+dépendent, et devaient s'accorder au pixel. Une seule source, donc jamais une
+« limitation » violette à côté d'un « limité » orange.
+
+## Un groupe peut mélanger les niveaux
+
+Un avertissement au compte, une limitation sur un serveur, une suspension sur un
+autre : `group.level` n'est qu'un **résumé** (le plus sévère), jamais ce qui
+s'applique à un sujet donné.
+
+- `levelFromActions()` déduit le niveau d'un jeu de mesures ;
+- la vue détail affiche le niveau **de chaque sujet**, calculé sur ses propres
+  mesures actives — c'est là qu'on voit qui prend quoi ;
+- l'écran de suspension n'affiche plus les actions agrégées du groupe mais les
+  mesures visant **le compte** (`/violations/status`, filtrées par `group_id`),
+  plus une ligne « cette infraction vise aussi N de vos serveurs ».
+
+## Qui, quoi, par qui
+
+- La ligne de liste annonce ses sujets : `WUD2EW · Vise votre compte, Serveur A`
+  — une énumération étiquetée, pas une rangée d'avatars muets.
+- Son propre compte se dit « votre compte », jamais son pseudo : sur une page
+  qui parle de vous, votre nom d'utilisateur est la façon la moins claire de
+  vous désigner.
+- La vue détail dit **par qui** : « Prononcée par l'équipe Moddy », ou l'auteur
+  nommé quand l'API le fournit (`issuer_type`/`issuer_id`).
+
+## Composants partagés au lieu de copies
+
+| Avant | Après |
+|---|---|
+| `GuildSelectionView` : deux badges rouge/orange écrits à la main | `LevelPill size="xs"`, et seulement si `restricted` — un `warn` ne verrouille rien, l'annoncer serait une alerte pour rien |
+| `team-switcher` : `BanIcon`/`ShieldMinusIcon` colorés en dur | `LevelDot`, le point de `LEVEL_TONE` |
+| `GuildOverviewPage` : badge « verrouillé » en orange codé en dur | tons de `LEVEL_TONE.limited` |
+| `settings-dialog` : `text-orange-600` | idem |
+| `SanctionNotice` : références en `font-mono` | `ReferenceText`, comme partout ailleurs |
+
+## Références sans préfixe
+
+`Réf. WUD2EW` devient `WUD2EW`. Le code se reconnaît seul ; l'annoncer allonge
+la ligne sans rien apprendre. La clé `violations.reference` disparaît.

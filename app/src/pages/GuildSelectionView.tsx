@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { ArrowUpRightIcon, PlusIcon, CrownIcon, BanIcon, ShieldMinusIcon } from "lucide-react"
+import { ArrowUpRightIcon, PlusIcon, CrownIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -17,6 +17,7 @@ import { useSanctions } from "@/contexts/SanctionContext"
 import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { LevelPill } from "@/components/violations/violation-badges"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { getGuildIconUrl } from "@/lib/auth"
 import { ServerIcon } from "lucide-react"
@@ -87,6 +88,7 @@ export function GuildSelectionView() {
           // renvoient 403 et le bot l'a quitté.
           const level = guildLevel(String(guild.id))
           const suspended = level === 'suspended'
+          const restricted = suspended || level === 'limited'
 
           return (
             <Card
@@ -122,18 +124,9 @@ export function GuildSelectionView() {
                         Max
                       </Badge>
                     )}
-                    {suspended && (
-                      <Badge variant="outline" className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] text-red-600 border-red-200 bg-red-50 dark:bg-red-950 dark:text-red-400 dark:border-red-900">
-                        <BanIcon className="size-2.5" />
-                        {t('violations.level.suspended')}
-                      </Badge>
-                    )}
-                    {level === 'limited' && (
-                      <Badge variant="outline" className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-950 dark:text-orange-400 dark:border-orange-900">
-                        <ShieldMinusIcon className="size-2.5" />
-                        {t('violations.level.limited')}
-                      </Badge>
-                    )}
+                    {/* Un `warn` ne verrouille rien : le signaler ici serait
+                        une alerte pour une situation qui ne change rien. */}
+                    {restricted && <LevelPill level={level} size="xs" className="shrink-0" />}
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {suspended ? t('violations.guildSuspendedShort') : t('guildSelection.manage')}

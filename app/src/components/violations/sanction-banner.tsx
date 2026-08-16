@@ -6,6 +6,7 @@ import { LEVEL_TONE, VIOLATIONS_PATH, formatDeadline } from "@/lib/sanctions"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
 import type { SanctionLevel, SubjectSanctionStatus } from "@/types/violations"
+import { ReferenceText } from "./violation-badges"
 
 // ─── Bandeau générique ────────────────────────────────────────────────────────
 
@@ -44,12 +45,15 @@ export function SanctionNotice({
     >
       <Icon className={cn("mt-0.5 size-4 shrink-0", tone.text)} />
       <div className="min-w-0 flex-1">
-        <p className={cn("text-sm font-semibold", tone.text)}>{title}</p>
-        {!compact && <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>}
+        <p className="text-sm font-semibold">{title}</p>
+        {!compact && (
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
+        )}
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          {references.length > 0 && (
-            <span className="font-mono tracking-wide">{references.join(" · ")}</span>
-          )}
+          {/* Même rendu de référence que partout ailleurs : le code seul, en
+              typographie courante. Le monospace en faisait un identifiant
+              technique, ce qu'il n'est pas. */}
+          <ReferenceText references={references} />
           {expires && <span>{t("violations.banner.until", { date: expires })}</span>}
           <button
             type="button"

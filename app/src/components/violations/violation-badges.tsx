@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next"
 import { ClockIcon, HourglassIcon, InfinityIcon, PauseIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ACTION_META } from "@/lib/cases"
-import { LEVEL_TONE, formatDeadline, globalActionTone, remainingParts } from "@/lib/sanctions"
+import { ActionChip } from "@/components/cases/case-badges"
+import { LEVEL_TONE, formatDeadline, remainingParts } from "@/lib/sanctions"
 import type { Enforcement, GlobalAction, SanctionLevel } from "@/types/violations"
 
 // ─── Niveau ───────────────────────────────────────────────────────────────────
@@ -14,9 +15,11 @@ import type { Enforcement, GlobalAction, SanctionLevel } from "@/types/violation
  */
 export function LevelPill({
   level,
+  size = "sm",
   className,
 }: {
   level: SanctionLevel
+  size?: "sm" | "xs"
   className?: string
 }) {
   const { t } = useTranslation()
@@ -24,41 +27,67 @@ export function LevelPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center rounded-full border font-medium",
+        size === "xs" ? "gap-1 px-1.5 py-0 text-[10px]" : "gap-1.5 px-2 py-0.5 text-xs",
         tone.border,
         tone.softBg,
         tone.text,
         className
       )}
     >
-      <span className={cn("size-1.5 rounded-full", tone.dot)} />
+      <span className={cn("shrink-0 rounded-full", size === "xs" ? "size-1" : "size-1.5", tone.dot)} />
       {t(`violations.level.${level}`)}
     </span>
   )
 }
 
 /** Pastille des infractions closes — le pendant neutre de `LevelPill`. */
-export function ClosedPill({ className }: { className?: string }) {
+export function ClosedPill({
+  size = "sm",
+  className,
+}: {
+  size?: "sm" | "xs"
+  className?: string
+}) {
   const { t } = useTranslation()
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground",
+        "inline-flex items-center rounded-full border border-border bg-muted font-medium text-muted-foreground",
+        size === "xs" ? "gap-1 px-1.5 py-0 text-[10px]" : "gap-1.5 px-2 py-0.5 text-xs",
         className
       )}
     >
-      <span className="size-1.5 rounded-full bg-muted-foreground/50" />
+      <span
+        className={cn(
+          "shrink-0 rounded-full bg-muted-foreground/50",
+          size === "xs" ? "size-1" : "size-1.5"
+        )}
+      />
       {t("violations.list.resolved")}
     </span>
+  )
+}
+
+/**
+ * Le même point que `LevelPill`, sans libellé : dans le sélecteur de serveurs
+ * une pastille complète déborderait. Le `title` porte le sens.
+ */
+export function LevelDot({ level, title }: { level: SanctionLevel; title?: string }) {
+  return (
+    <span
+      title={title}
+      className={cn("size-2 shrink-0 rounded-full", LEVEL_TONE[level].dot)}
+    />
   )
 }
 
 // ─── Action ───────────────────────────────────────────────────────────────────
 
 /**
- * Chip d'action, jumelle de `ActionChip` (cases) : même icône, même ton, même
- * gabarit. Seul le libellé diffère — côté sanctions globales, `ban` se dit
- * « suspension » et `restrict` « limitation ».
+ * Mesure d'une sanction globale. Ce n'est qu'`ActionChip` (cases) figée sur la
+ * portée `global` : même composant, même icône, même ton — c'est `caseType` qui
+ * choisit le libellé (« suspension » plutôt que « bannir »).
  */
 export function GlobalActionChip({
   action,
@@ -71,23 +100,14 @@ export function GlobalActionChip({
   muted?: boolean
   className?: string
 }) {
-  const { t } = useTranslation()
-  const tone = globalActionTone(action)
-  const Icon = ACTION_META[action].icon
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-md border font-medium",
-        size === "xs" ? "px-1 py-0.5 text-[10px]" : "px-1.5 py-0.5 text-[11px]",
-        muted
-          ? "border-border bg-muted text-muted-foreground"
-          : cn(tone.border, tone.softBg, tone.text),
-        className
-      )}
-    >
-      <Icon className={size === "xs" ? "size-2.5" : "size-3"} />
-      {t(`violations.action.${action}`)}
-    </span>
+    <ActionChip
+      action={action}
+      size={size}
+      muted={muted}
+      className={className}
+      caseType="global"
+    />
   )
 }
 
@@ -140,9 +160,10 @@ export function MeasureStatus({ status }: { status: "active" | "expired" | "revo
 // ─── Référence ────────────────────────────────────────────────────────────────
 
 /**
- * Référence(s) de l'infraction, en texte courant. Volontairement pas un bouton
- * de copie ni du monospace : c'est un numéro à citer au support quand on fait
- * appel, pas un identifiant qu'on manipule.
+ * Référence(s) de l'infraction, en texte courant et **sans préfixe** : le code
+ * se reconnaît seul, l'annoncer par « Réf. » ne fait qu'allonger la ligne. Pas
+ * de bouton de copie ni de monospace non plus — c'est un numéro à citer au
+ * support, pas un identifiant qu'on manipule.
  */
 export function ReferenceText({
   references,
@@ -151,11 +172,10 @@ export function ReferenceText({
   references: string[]
   className?: string
 }) {
-  const { t } = useTranslation()
   if (references.length === 0) return null
   return (
     <span className={cn("text-xs text-muted-foreground", className)}>
-      {t("violations.reference", { refs: references.join(", ") })}
+      {references.join(", ")}
     </span>
   )
 }

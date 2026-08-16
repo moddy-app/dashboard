@@ -37,6 +37,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
+import { LEVEL_TONE } from "@/lib/sanctions"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { getGuildIconUrl } from "@/lib/auth"
@@ -120,7 +121,10 @@ function ModuleCard({
           ) : isLocked ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="outline" className="text-xs shrink-0 text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800 dark:text-orange-400">
+                <Badge
+                  variant="outline"
+                  className={`text-xs shrink-0 ${LEVEL_TONE.limited.text} ${LEVEL_TONE.limited.border} ${LEVEL_TONE.limited.softBg}`}
+                >
                   <LockIcon className="size-3 mr-1" />
                   {t('violations.locked')}
                 </Badge>

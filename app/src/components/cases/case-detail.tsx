@@ -396,7 +396,7 @@ export function CaseDetailView({
           {/* Activité */}
           <section>
             <h2 className="mb-3 text-sm font-semibold">{t("cases.detail.activity")}</h2>
-            <CaseTimeline events={data.events} />
+            <CaseTimeline events={data.events} caseType={data.type} />
 
             {writable && (
               <div className="mt-4">
@@ -462,7 +462,12 @@ export function CaseDetailView({
               ) : undefined
             }
           >
-            <SanctionsPanel sanctions={data.sanctions} canWrite={writable} onRevoke={handleRevoke} />
+            <SanctionsPanel
+              sanctions={data.sanctions}
+              canWrite={writable}
+              onRevoke={handleRevoke}
+              caseType={data.type}
+            />
           </Panel>
 
           {/* Appels */}
