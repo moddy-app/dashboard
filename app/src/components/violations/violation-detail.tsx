@@ -24,7 +24,7 @@ import { ApiError } from "@/lib/auth"
 import { getViolation } from "@/services/violations"
 import { logger } from "@/lib/logger"
 import type { ViolationCase, ViolationDetail } from "@/types/violations"
-import { ActionBadge, EnforcementNotice, LevelBadge, ReferenceChip } from "./violation-badges"
+import { ActionBadge, EnforcementNotice, LevelBadge, ReferenceText } from "./violation-badges"
 
 // ─── Panneau d'une case ───────────────────────────────────────────────────────
 
@@ -34,8 +34,8 @@ function CasePanel({ item }: { item: ViolationCase }) {
 
   return (
     <div className="rounded-xl border">
-      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
-        <ReferenceChip reference={item.reference} />
+      <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+        <ReferenceText references={[item.reference]} />
         <EntityRef
           kind={item.subject_type as EntityKind}
           id={item.subject_id}
@@ -192,10 +192,8 @@ export function ViolationDetailView({
             {inactive.map((action) => (
               <ActionBadge key={`i-${action}`} action={action} muted />
             ))}
-            {references.map((reference) => (
-              <ReferenceChip key={reference} reference={reference} />
-            ))}
           </div>
+          <ReferenceText references={references} className="mt-2 block" />
         </div>
       </div>
 

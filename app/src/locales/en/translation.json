@@ -1263,8 +1263,8 @@
     },
     "action": {
       "warn": "Warning",
-      "restrict": "Restriction",
-      "ban": "Ban"
+      "restrict": "Limitation",
+      "ban": "Suspension"
     },
     "sanctionStatus": {
       "active": "Active",
@@ -1297,7 +1297,7 @@
     },
     "list": {
       "resolved": "Resolved",
-      "openedAgo": "Opened {{time}} ago",
+      "openedAgo": "Opened {{time}}",
       "caseCount": "{{count}} cases",
       "deadline": "Consequences on {{date}}",
       "emptyTitle": "No violations",
@@ -1309,11 +1309,10 @@
       "cases": "Cases in this violation ({{count}})",
       "until": "Until {{date}}",
       "permanent": "Permanent",
-      "copyReference": "Copy reference",
       "notFoundTitle": "Violation not found",
       "notFoundDescription": "This violation does not exist, or it does not concern you.",
       "appealTitle": "Think this is a mistake?",
-      "appealDescription": "Appeals are filed on the Moddy support site and reviewed by a human. Filing one does not lift the sanction on its own."
+      "appealDescription": "Appeals are handled by a human on the Moddy support server. Filing one does not lift the sanction on its own."
     },
     "enforcement": {
       "title": {
@@ -1360,14 +1359,26 @@
     "errorReferences": "Reference: {{refs}}",
     "suspended": {
       "title": "Your access to Moddy is suspended",
-      "description": "A global sanction removed your access. This page is all that remains available: the reason, the references, and how to appeal.",
+      "headlinePrefix": "Your access to Moddy is",
+      "description": "A global sanction removed your access. This page is all that remains: why, for how long, and how to appeal.",
+      "reasonLabel": "Reason on file",
       "recheck": "Check again",
-      "appealNote": "Appeals are filed on the Moddy support site and reviewed by a human — the dashboard only points you there.",
-      "record": "Your record",
+      "activeRecord": "Active violations",
+      "pastRecord": "Past violations",
+      "billingTitle": "Billing",
+      "billingDescription": "A sanction never locks your money: invoices and cancellation stay accessible.",
+      "billingAction": "Manage billing",
+      "billingError": "Could not open the billing portal. Try again in a moment.",
       "backToSummary": "Back to summary",
       "emptyTitle": "No details available",
-      "emptyDescription": "No violation could be loaded. Contact support with your account ID.",
-      "recordNote": "Every violation involving your account or your servers."
+      "emptyDescription": "No violation could be loaded. Contact support with your account ID."
+    },
+    "reference": "Ref. {{refs}}",
+    "ladder": {
+      "none": "All good",
+      "warn": "Warning",
+      "limited": "Limited",
+      "suspended": "Suspended"
     }
   }
 }

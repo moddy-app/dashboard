@@ -13,7 +13,7 @@ import { absoluteTime, relativeTime } from "@/lib/cases"
 import { LEVEL_TONE, formatDeadline } from "@/lib/sanctions"
 import type { ViolationGroup } from "@/types/violations"
 import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
-import { ActionBadge, LevelBadge, ReferenceChip } from "./violation-badges"
+import { ActionBadge, LevelBadge, ReferenceText } from "./violation-badges"
 
 // ─── Carte d'infraction ───────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ export function ViolationCard({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="min-w-0 flex-1 truncate text-sm font-medium">{group.reason}</p>
+          <p className="min-w-0 flex-1 text-sm font-medium line-clamp-2">{group.reason}</p>
           {group.active ? (
             <LevelBadge level={group.level} />
           ) : (
@@ -96,12 +96,10 @@ export function ViolationCard({
           {inactive.map((action) => (
             <ActionBadge key={`i-${action}`} action={action} muted />
           ))}
-          {group.references.map((reference) => (
-            <ReferenceChip key={reference} reference={reference} />
-          ))}
         </div>
 
         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <ReferenceText references={group.references} />
           <span title={absoluteTime(group.created_at, locale)}>
             {t("violations.list.openedAgo", { time: relativeTime(group.created_at, locale) })}
           </span>
