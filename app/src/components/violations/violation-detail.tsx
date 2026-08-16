@@ -18,7 +18,7 @@ import {
 import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
 import { cn } from "@/lib/utils"
 import { absoluteTime } from "@/lib/cases"
-import { APPEAL_URL, levelFromActions } from "@/lib/sanctions"
+import { APPEAL_URL } from "@/lib/sanctions"
 import { ApiError } from "@/lib/auth"
 import { getViolation } from "@/services/violations"
 import { useSanctions } from "@/contexts/SanctionContext"
@@ -43,17 +43,14 @@ import {
  */
 function SubjectBlock({ item, selfId }: { item: ViolationCase; selfId: string }) {
   const { t } = useTranslation()
-  // Le niveau du sujet vient de SES mesures actives, jamais de celui du groupe :
-  // une même infraction peut valoir un avertissement au compte et une
-  // suspension à l'un de ses serveurs.
-  const level = levelFromActions(
-    item.sanctions.filter((s) => s.status === "active").map((s) => s.action)
-  )
 
   // Son propre compte se désigne par « votre compte », pas par son pseudo :
   // sur une page qui parle de vous, c'est la formulation la moins ambiguë.
   const isSelf = item.subject_type === "discord_user" && String(item.subject_id) === selfId
 
+  // Pas de pastille de niveau ici : elle répéterait mot pour mot la mesure
+  // juste en dessous (« Warning » au-dessus de « Warning »). Le niveau du
+  // sujet se lit dans ses mesures — même libellé, même couleur.
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -61,11 +58,6 @@ function SubjectBlock({ item, selfId }: { item: ViolationCase; selfId: string })
           <span className="text-sm font-medium">{t("violations.subject.you")}</span>
         ) : (
           <EntityRef kind={item.subject_type as EntityKind} id={item.subject_id} variant="inline" />
-        )}
-        {level !== "none" ? (
-          <LevelPill level={level} size="xs" />
-        ) : (
-          <ClosedPill size="xs" />
         )}
         <ReferenceText references={[item.reference]} className="ml-auto" />
       </div>

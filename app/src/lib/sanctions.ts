@@ -3,7 +3,6 @@ import { ApiError } from '@/lib/auth'
 import { ACTION_TONE, SANCTION_LEVEL_HUE, SANCTION_LEVEL_ICON } from '@/lib/cases'
 import type {
   Enforcement,
-  GlobalAction,
   SanctionErrorPayload,
   SanctionLevel,
   SubjectSanctionStatus,
@@ -103,31 +102,6 @@ export const LEVEL_TONE = Object.fromEntries(
     { ...ACTION_TONE[LEVEL_HUE[level]], icon: LEVEL_ICON[level], ring: LEVEL_RING[level] },
   ])
 ) as Record<SanctionLevel, LevelTone>
-
-// ─── Niveau d'un jeu de mesures ───────────────────────────────────────────────
-
-const ACTION_LEVEL: Record<GlobalAction, SanctionLevel> = {
-  warn: 'warn',
-  restrict: 'limited',
-  ban: 'suspended',
-}
-
-/**
- * Niveau résolu d'un jeu de mesures — **le plus sévère** des mesures actives.
- *
- * ⚠️ Un groupe d'infraction peut mélanger les niveaux : un avertissement pour le
- * compte, une limitation sur un serveur, une suspension sur un autre. Le
- * `level` du groupe est donc un *résumé* (le pire), jamais ce qui s'applique à
- * un sujet donné. Pour ça, on repasse par cette fonction avec les mesures du
- * sujet — c'est ce que fait la vue détail, sujet par sujet.
- */
-export function levelFromActions(actions: GlobalAction[]): SanctionLevel {
-  return actions.reduce<SanctionLevel>(
-    (worst, action) =>
-      levelRank(ACTION_LEVEL[action]) > levelRank(worst) ? ACTION_LEVEL[action] : worst,
-    'none'
-  )
-}
 
 // ─── 403 de sanction ──────────────────────────────────────────────────────────
 
