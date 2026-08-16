@@ -66,16 +66,17 @@ pastilles de bord.
 ### Facturation d'un compte suspendu
 
 Une sanction ne gèle pas l'argent de quelqu'un : consulter ses factures et
-résilier doivent rester possibles. La section appelle `GET /stripe/subscription`
-puis, au clic, `POST /stripe/portal`.
+résilier restent possibles. `POST /stripe/portal` n'est bloqué par aucune
+sanction, suspension comprise — c'est la **création** d'un paiement
+(`create-checkout`) qui est refusée.
 
-> ⚠️ **Dépendance back-end.** `docs/API_ENDPOINTS.md` exempte explicitement
-> `/stripe/portal` du niveau **limité**, mais le niveau **suspendu** bloque
-> « tous les endpoints authentifiés » sauf `/auth/me`, `/auth/refresh`,
-> `/auth/logout`, les lectures `/cases` et `/violations`. Tant que ces deux
-> routes ne sont pas ajoutées à cette liste, l'appel renvoie `403` : la section
-> se **masque alors silencieusement** plutôt que d'afficher une porte fermée.
-> Rien à changer côté front une fois l'exemption posée.
+`GET /stripe/subscription`, en revanche, ne figure pas dans les exemptions du
+niveau « suspendu » listées en tête de `docs/API_ENDPOINTS.md`. Il ne sert donc
+qu'à **masquer** la section, et seulement quand il répond et qu'il n'y a rien à
+gérer (ni `tier`, ni `stripe_customer_id`). Tant qu'on n'a pas sa réponse — ou
+s'il renvoie `403` — la section reste affichée : fermer l'accès au portail sur
+la foi d'un endpoint qui n'a peut-être pas le droit de répondre couperait un
+accès qui, lui, fonctionne.
 
 ### Références de dossier
 
@@ -116,7 +117,8 @@ l'autre. Le compte à rebours donne l'urgence, le bloc d'appel donne la sortie.
 
 ## Prochaines étapes suggérées
 
-- Exempter `/stripe/subscription` et `/stripe/portal` du blocage « suspendu »
-  côté back-end (sans quoi la section facturation reste invisible).
+- Exempter `GET /stripe/subscription` du blocage « suspendu » côté back-end :
+  la section facturation s'affiche sans lui, mais elle ne peut alors pas se
+  masquer pour un compte qui n'a jamais rien payé.
 - Section « Sanctions » dans `/debug` (toujours en attente).
 - Vue staff des infractions (filtres `subject_type` / `subject_id`).

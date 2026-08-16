@@ -38,10 +38,16 @@ import {
 // ─── Facturation ──────────────────────────────────────────────────────────────
 
 /**
- * Un compte suspendu garde la main sur son argent : le portail Stripe reste
- * accessible pour consulter ses factures ou résilier. Si le back-end refuse
- * malgré tout (`403`), la section disparaît silencieusement plutôt que de
- * promettre une porte fermée.
+ * Un compte suspendu garde la main sur son argent : `POST /stripe/portal` n'est
+ * bloqué par aucune sanction — on n'empêche personne de consulter ses factures
+ * ni de résilier.
+ *
+ * `GET /stripe/subscription`, lui, ne figure pas dans les exemptions du niveau
+ * « suspendu » : il ne sert donc qu'à **masquer** la section quand il répond et
+ * qu'il n'y a effectivement rien à gérer. Tant qu'on n'a pas sa réponse — ou
+ * s'il refuse — la section reste affichée : couper l'accès au portail sur la
+ * foi d'un endpoint qui n'a peut-être pas le droit de répondre serait le pire
+ * des deux mondes.
  */
 function BillingSection() {
   const { t } = useTranslation()
@@ -52,7 +58,7 @@ function BillingSection() {
     let active = true
     getSubscriptionStatus()
       .then((data) => active && setSubscription(data))
-      .catch((e) => logger.warn("sanctions", "Billing unavailable while suspended", e))
+      .catch((e) => logger.warn("sanctions", "Subscription status unavailable", e))
     return () => {
       active = false
     }
@@ -69,8 +75,9 @@ function BillingSection() {
     }
   }
 
-  // Rien à gérer : ni abonnement, ni client Stripe (donc aucune facture).
-  if (!subscription || (!subscription.tier && !subscription.stripe_customer_id)) return null
+  // Seul cas de masquage : le back-end a répondu, et il n'y a ni abonnement ni
+  // client Stripe — donc aucune facture à consulter.
+  if (subscription && !subscription.tier && !subscription.stripe_customer_id) return null
 
   return (
     <section className="flex flex-col gap-4 rounded-2xl border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
