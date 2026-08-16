@@ -2,6 +2,33 @@
 
 Toutes les reponses sont en JSON. Les erreurs suivent le format `{"error": "message"}`.
 
+**Sanctions globales** — un compte ou un serveur sous sanction globale se voit
+refuser certaines requetes avec un `403` dont le `error` est un **objet**
+(`{"code", "level", "subject_type", "subject_id", "references", "expires_at",
+"message", "violations_url"}`). Le niveau retenu est le plus severe entre
+l'utilisateur agissant et le serveur ou il agit.
+
+- *suspendu* (`ban`) : bloque sur tous les endpoints authentifies, sauf
+  `GET /auth/me`, `POST /auth/refresh`, `POST /auth/logout`, les lectures de
+  `/cases` (ses propres dossiers) et tout `/violations` ;
+- *limite* (`restrict`) : rien n'est coupe cote interactions — seuls le premium et
+  la configuration d'un **nouveau** module sont refuses (un module deja configure
+  reste pleinement modifiable, sous-ressources comprises). L'automod IA n'est coupe
+  que si c'est le SERVEUR qui est limite.
+
+Codes possibles :
+
+| `code` | Quand |
+|---|---|
+| `user_suspended` | compte suspendu — sur tout endpoint authentifie non exempte |
+| `guild_suspended` | serveur suspendu — sur tout endpoint du serveur |
+| `premium_blocked_user` / `premium_blocked_guild` | souscription ou liaison d'un serveur a un abonnement, par un compte ou pour un serveur limite |
+| `new_module_blocked` | configurer un module qui n'existe pas encore, quand l'utilisateur agissant OU le serveur est limite |
+| `automod_ai_blocked` | ecrire sur `automod_ai` quand le SERVEUR est limite |
+
+Voir `docs/GLOBAL_SANCTIONS.md` (regles backend) et
+`docs/DASHBOARD_SANCTIONS_INTEGRATION.md` (guide front).
+
 ---
 
 ## Auth
@@ -122,7 +149,16 @@ Retourne le profil complet de l'utilisateur connecte (donnees issues de la sessi
     {"id": 555666777888, "name": "Autre Serveur", "icon": null}
   ],
   "is_staff": true,
-  "staff_roles": ["Manager", "Dev"]
+  "staff_roles": ["Manager", "Dev"],
+  "sanction": {
+    "subject_type": "discord_user",
+    "subject_id": "123456789012345678",
+    "level": "none",
+    "action": null,
+    "suspended": false,
+    "restricted": false,
+    "sanctions": []
+  }
 }
 ```
 
@@ -151,6 +187,11 @@ Retourne le profil complet de l'utilisateur connecte (donnees issues de la sessi
 | `guilds` | array | Serveurs ou l'utilisateur est admin ET le bot est present |
 | `is_staff` | bool | Statut staff Moddy |
 | `staff_roles` | string[] | Roles staff Moddy (vide si non-staff) |
+| `sanction` | object | Sanction globale du compte (`level` = `none`/`warn`/`limited`/`suspended`) — voir §Violations |
+
+**Note :** `GET /auth/me` reste accessible a un compte suspendu, justement pour que
+le dashboard puisse afficher l'ecran de suspension plutot qu'une erreur. Idem pour
+`POST /auth/refresh` (garder la session vivante) et `POST /auth/logout`.
 
 **Valeurs possibles de `discord_badges` :**
 
@@ -351,6 +392,7 @@ Verifie si un serveur a un abonnement premium actif et quel utilisateur l'a lie.
 1. Lit `guilds.attributes` pour `PREMIUM`
 2. Joint `subscription_servers` + `users` sur `server_id` pour trouver l'abonne dont l'abonnement est encore actif (`subscription_tier IS NOT NULL AND subscription_expires_at > NOW()`)
 3. Si un subscriber actif est trouve, `is_premium = true` meme si l'attribut `PREMIUM` n'est pas encore positionne
+4. **Sanctions globales** : `is_premium` retombe a `false` si le serveur est limite/suspendu OU si l'abonne qui l'a lie l'est — « aucun abonnement actif, meme paye ». Les champs `subscriber_id`/`tier`/`expires_at` restent affiches : l'abonnement n'est pas encore resilie, seulement inoperant (`docs/GLOBAL_SANCTIONS.md`)
 
 ---
 
@@ -458,6 +500,15 @@ sans spec sont stockes tels quels (passthrough legacy, aucune validation).
 ```json
 {"channel_id": 999, "reaction_count": 3, "emoji": "🌟"}
 ```
+
+**Erreurs (sanctions globales) :**
+
+| Code | Cas |
+|---|---|
+| `403 new_module_blocked` | le module n'existe pas encore ET l'utilisateur agissant ou le serveur est **limite**. Un module deja configure reste pleinement modifiable. |
+| `403 automod_ai_blocked` | `module_id = automod_ai` et le **serveur** est limite (une sanction d'utilisateur ne coupe pas l'automod) |
+
+`DELETE` n'est jamais bloque : desactiver un module reste possible sous sanction.
 
 ---
 
@@ -724,7 +775,10 @@ Ajoute ou met à jour la config d'un seul salon.
 }
 ```
 
-**Erreurs :** `400` channel_id invalide, `422` validation, `404` serveur introuvable
+**Erreurs :** `400` channel_id invalide, `422` validation, `404` serveur introuvable,
+`403 new_module_blocked` si le module `adaptive_slowmode` n'est pas encore configure
+et que l'utilisateur agissant ou le serveur est **limite** (une fois le module en
+place, ajouter ou modifier un salon reste permis).
 
 ---
 
@@ -859,13 +913,19 @@ Comme pour tout module, une écriture invalide le cache et publie `{"type": "mod
   "running": false,
   "enabled": true,
   "dry_run": false,
+  "blocked_by_global_sanction": false,
   "notify_channel_id": null,
   "active_features": ["content"],
   "warnings": ["missing_notify_channel"]
 }
 ```
 
-`warnings` : `missing_notify_channel` (mauvaise config la plus fréquente), `no_feature_enabled`, `dry_run` (le module tourne mais n'applique rien).
+`warnings` : `missing_notify_channel` (mauvaise config la plus fréquente), `no_feature_enabled`, `dry_run` (le module tourne mais n'applique rien), `blocked_by_global_sanction`.
+
+`blocked_by_global_sanction: true` = le serveur est sous sanction globale
+`restrict`/`ban` : l'automod IA est coupé côté bot, `running` et `enabled` sont
+donc forcés à `false` quelle que soit la config stockée, et toute écriture sur
+`automod_ai` est refusée (`403 automod_ai_blocked`). Voir `docs/GLOBAL_SANCTIONS.md`.
 
 ---
 
@@ -1005,6 +1065,7 @@ La réponse du bot `{"ok": false, "error": "<code>"}` est mappée :
 | `limit_reached_premium` | `422` | `{"error":"limit_reached_premium","limit":5}` — quota 5 comptes/plateforme dépassé |
 | autres (`unknown_platform`, `platform_disabled`, `channel_not_found`, `user_not_found`, `handle_not_found`, `unsafe_url`, `no_entries`, `missing_identifier`, `not_supported`, …) | `422` | — |
 | Bot ne répond pas dans le délai | `504` | `bot_timeout` |
+| Sanction globale : module pas encore configure, utilisateur agissant ou serveur **limite** | `403` | `new_module_blocked` (objet, cf. en-tete du document). Sur un module deja en place, ajouter un abonnement reste permis. |
 
 ---
 
@@ -1122,13 +1183,18 @@ Sert l'image hébergée. **Public, sans authentification** (le bot n'a ni sessio
 | Code | HTTP |
 |---|---|
 | `premium_required`, `missing_permissions` | `403` |
+| `new_module_blocked` (sanction globale, module pas encore configure) | `403` |
 | `guild_not_found` | `404` |
 | `rate_limited` | `429` |
 | `empty_update`, `nickname_too_long`, `bio_too_long`, `invalid_color`, `invalid_font`, `invalid_effect`, `gradient_needs_two_colors`, `effect_needs_color`, `invalid_image_type`, `image_too_large`, `invalid_config` | `422` |
 | `image_download_failed`, `rejected_by_discord`, `discord_error`, `save_failed`, `internal_error` | `502` |
 | `bot_timeout` (aucun résultat en 25 s) | `504` |
 
-Le corps d'erreur est toujours `{"error": "<code>"}` — les codes sont aussi des clés i18n. Sur `bot_timeout`, la tâche reste dans le stream et sera rejouée : **ne pas ré-émettre**, prévoir un simple message côté dashboard.
+`premium_required` couvre aussi le cas d'une **sanction globale** : un serveur limite
+ou suspendu, ou dont l'abonne l'est, n'est plus premium (« aucun abonnement actif,
+meme paye ») — la remise a `null` d'un champ premium reste possible.
+
+Le corps d'erreur est toujours `{"error": "<code>"}` — les codes sont aussi des clés i18n. (Exception : les blocages par sanction globale, dont `error` est un objet.) Sur `bot_timeout`, la tâche reste dans le stream et sera rejouée : **ne pas ré-émettre**, prévoir un simple message côté dashboard.
 
 ---
 
@@ -1141,6 +1207,11 @@ réimplémentés). Les cases `guild` sont éditables (raison/statut/notes en dir
 mais leurs **sanctions** sont déléguées au bot via `moddy:tasks`. Détails :
 `docs/MODERATION_CASES.md` (§4.2). **Note :** `case_type = platform` et
 `sanction_action = kick` sont retirés du flux actif (lecture d'historique seulement).
+
+**Les lectures restent accessibles à un utilisateur suspendu** (son périmètre
+habituel : ses propres cases et celles de ses serveurs) — c'est l'équivalent du
+`/mycases` que le bot laisse ouvert pour contester une sanction. Les écritures
+restent réservées au staff modérateur.
 
 ### `GET /cases/meta`
 
@@ -1308,6 +1379,103 @@ Révoque une sanction ; le statut du case est recalculé automatiquement.
 Ajoute un commentaire à la timeline (interne, sans effet Discord ; `global`/`network`/`guild`).
 **Auth : staff mod.** Body : `{ content }`.
 Réponse `201` : le case complet.
+
+---
+
+## Violations (sanctions globales)
+
+Projection en **lecture seule** de `cases` + `case_sanctions` + `case_enforcements`,
+filtrée sur `type = 'global'` et groupée par `cases.group_id` : une infraction =
+plusieurs cases partageant un groupe (l'utilisateur ET ses serveurs, par exemple).
+C'est ce qui alimente moddy.app/violations. Rien ne s'écrit ici (les sanctions se
+posent via `POST /cases` ou le bot).
+
+**Auth : session** — accessible même à un compte **suspendu** : il doit pouvoir
+consulter ce qu'on lui reproche. Un non-staff ne voit que ses propres infractions
+et celles des serveurs qu'il administre ; le staff voit tout.
+
+Niveaux : `none` < `warn` < `limited` (`restrict`) < `suspended` (`ban`).
+Effets et blocages : `docs/GLOBAL_SANCTIONS.md`.
+
+### `GET /violations`
+
+Query : `subject_type` (`discord_user`|`discord_guild`), `subject_id`,
+`level` (`warn`|`restrict`|`ban`), `limit` (≤100), `offset`.
+
+```json
+[
+  {
+    "group_id": "0e5f6b0a-…",
+    "grouped": true,
+    "level": "suspended",
+    "actions": ["ban", "restrict"],
+    "active_actions": ["ban"],
+    "active": true,
+    "reason": "Coordinated raid",
+    "case_count": 2,
+    "references": ["A7F2K9", "B8G3L2"],
+    "subjects": [
+      {"subject_type": "discord_guild", "subject_id": "222"},
+      {"subject_type": "discord_user", "subject_id": "111"}
+    ],
+    "created_at": "2026-08-10T12:00:00Z",
+    "updated_at": "2026-08-10T12:00:00Z",
+    "enforcement": {
+      "group_id": "0e5f6b0a-…",
+      "level": "suspended",
+      "status": "pending",
+      "deadline": "2026-08-12T12:00:00Z",
+      "premium": true,
+      "notified": true,
+      "halted_by": null,
+      "halted_reason": null,
+      "halted_at": null,
+      "executed_at": null
+    }
+  }
+]
+```
+
+`grouped: false` = ancienne case globale sans `group_id` : le `group_id` renvoyé est
+alors l'UUID de la case. `enforcement` vaut `null` pour un `warn` (pas de compte à
+rebours) et tant que la table `case_enforcements` n'existe pas.
+`status` ∈ `pending` | `halted` | `executed` | `cancelled`.
+
+### `GET /violations/status`
+
+Query : `guild_id` (optionnel, doit être un serveur de l'utilisateur).
+
+```json
+{
+  "user": {
+    "subject_type": "discord_user",
+    "subject_id": "111",
+    "level": "limited",
+    "action": "restrict",
+    "suspended": false,
+    "restricted": true,
+    "sanctions": [
+      {
+        "case_id": "…", "reference": "A7F2K9", "group_id": "…",
+        "action": "restrict", "level": "limited", "reason": "Coordinated raid",
+        "sanctioned_at": "2026-08-10T12:00:00Z",
+        "expires_at": "2026-08-17T12:00:00Z", "expires_in_seconds": 518400
+      }
+    ]
+  },
+  "guild": { "…": "même forme, présent seulement si guild_id est fourni" }
+}
+```
+
+Le dashboard s'en sert pour son bandeau et pour griser ce qui est bloqué, sans
+attendre un `403`.
+
+### `GET /violations/{group_id}`
+
+Détail d'une infraction : `group_id`, `level`, `actions`, `active_actions`,
+`active`, `cases` (chaque case avec ses `sanctions`), `enforcement`, et
+`appeal_url` (moddy.app/support — l'appel est traité par un humain).
+`404` si l'infraction n'existe pas **ou** n'est pas visible par l'appelant.
 
 ---
 
@@ -1518,6 +1686,60 @@ métadonnées publiques. **Auth : utilisateur connecté.**
 `member_count`, `presence_count`, `features`, `vanity_url_code`, `is_premium`,
 `is_beta`, `in_database`.
 
+`is_premium` tient compte des sanctions globales, comme
+`GET /guilds/{id}/premium` : un serveur limité/suspendu, ou dont l'abonné l'est,
+n'est plus premium.
+
+---
+
+## Bot (profil global)
+
+### `GET /bot/profile`
+
+Avatar, banniere et bio **actuels** du bot, lus **en direct sur Discord** (pas en
+DB). A ne pas confondre avec `guilds.data.modules.bot_customization` (personnalisation
+PAR GUILDE, ecrite par le bot) : ceci reflete le profil GLOBAL de l'application,
+tel qu'affiche par Discord partout ou aucune personnalisation de guilde ne
+s'applique.
+
+Combine `GET /users/{id}` (bot token — avatar/banniere globaux, meme cache que
+`GET /users/{user_id}`) et `GET /applications/{id}/rpc` (public Discord — bio,
+onglet "A propos" du profil de l'application).
+
+**Auth :** utilisateur connecte (session cookie)
+**Cache :** Redis `discord:user:{bot_id}` (avatar/banniere, TTL 5min) + `discord:app:{bot_id}:rpc` (bio, TTL 5min)
+
+**Reponse :**
+
+```json
+{
+  "id": "942386103000000000",
+  "username": "moddy",
+  "avatar_url": "https://cdn.discordapp.com/avatars/942386103000000000/a_1c9e4f2b.gif?size=256",
+  "banner_url": "https://cdn.discordapp.com/banners/942386103000000000/b_77f2a91d.png?size=256",
+  "accent_color": 5793266,
+  "bio": "Le bot de moderation tout-en-un pour Discord."
+}
+```
+
+| Champ | Type | Description |
+|---|---|---|
+| `id` | string | Discord ID du bot (= `DISCORD_CLIENT_ID`) |
+| `username` | string | Nom d'utilisateur Discord du bot |
+| `avatar_url` | string\|null | URL CDN de l'avatar global |
+| `banner_url` | string\|null | URL CDN de la banniere globale |
+| `accent_color` | int\|null | Couleur d'accent (si pas de banniere) |
+| `bio` | string\|null | Description de l'application (`null` si le RPC Discord est injoignable — best-effort, ne fait pas echouer l'appel) |
+
+**Erreurs :**
+
+| Code | Description |
+|---|---|
+| `404` | Bot introuvable sur Discord |
+| `429` | Rate limit Discord atteint |
+| `502` | Erreur API Discord |
+| `503` | Bot token non configure |
+
 ---
 
 ## Redirections
@@ -1627,6 +1849,11 @@ Cree une session Stripe Checkout pour un abonnement premium utilisateur.
 {"url": "https://checkout.stripe.com/c/pay/cs_test_xxx"}
 ```
 
+**Erreur (sanction globale) :** `403 premium_blocked_user` — un compte **limite** ou
+**suspendu** ne peut pas souscrire (« pas de premium ») : aucun lien de paiement
+n'est cree, la session Stripe n'est meme pas ouverte. Le portail
+(`POST /stripe/portal`) reste accessible pour resilier.
+
 Le frontend redirige l'utilisateur vers cette URL.
 
 ---
@@ -1680,6 +1907,7 @@ Statut d'abonnement complet de l'utilisateur connecte.
   "tier": "monthly",
   "expires_at": "2026-06-01T00:00:00+00:00",
   "is_active": true,
+  "blocked_by_global_sanction": false,
   "stripe_customer_id": "cus_UAf6a2WKTw6yCI",
   "servers": [
     {"server_id": "111222333444555666", "added_at": "2026-05-01T00:00:00+00:00"},
@@ -1693,7 +1921,8 @@ Statut d'abonnement complet de l'utilisateur connecte.
 |---|---|---|
 | `tier` | string\|null | `"monthly"`, `"yearly"`, `"free_trial"` ou `null` si pas d'abonnement |
 | `expires_at` | ISO 8601\|null | Date d'expiration UTC ; `null` = pas d'expiration (lifetime) |
-| `is_active` | bool | `tier != null AND (expires_at == null OR expires_at > now())` |
+| `is_active` | bool | `tier != null AND (expires_at == null OR expires_at > now())`, **et** aucune sanction globale en cours |
+| `blocked_by_global_sanction` | bool | `true` = compte limite/suspendu : l'abonnement existe mais ne donne plus rien (il sera resilie a l'echeance de l'appel) |
 | `stripe_customer_id` | string\|null | ID client Stripe |
 | `servers` | array | Serveurs lies a l'abonnement |
 | `max_servers` | int | Limite maximale (actuellement 5) |
@@ -1748,6 +1977,7 @@ Lie un serveur a l'abonnement de l'utilisateur.
 |---|---|
 | `400` | `server_id` manquant ou invalide |
 | `403` | Acces au serveur refuse ou bot absent |
+| `403` | `premium_blocked_user` / `premium_blocked_guild` — abonne ou serveur sous sanction globale **limite**/**suspendu** |
 | `403` | Abonnement inactif |
 | `409` | Limite de 5 serveurs atteinte |
 | `409` | Serveur deja lie |
@@ -1782,6 +2012,10 @@ Delie un serveur de l'abonnement.
 ### `POST /stripe/portal`
 
 Cree une session Stripe Customer Portal pour gerer/annuler l'abonnement.
+
+Volontairement **non bloque** par une sanction globale « limite » : on n'empeche pas
+quelqu'un de resilier. C'est la creation d'un paiement (`create-checkout`) qui est
+refusee.
 
 **Auth :** session cookie
 **Body (optionnel) :**
