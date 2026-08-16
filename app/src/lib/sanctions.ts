@@ -1,11 +1,6 @@
-import {
-  BanIcon,
-  ShieldAlertIcon,
-  ShieldMinusIcon,
-  ShieldCheckIcon,
-  type LucideIcon,
-} from 'lucide-react'
+import { type LucideIcon } from 'lucide-react'
 import { ApiError } from '@/lib/auth'
+import { ACTION_TONE, SANCTION_LEVEL_HUE, SANCTION_LEVEL_ICON } from '@/lib/cases'
 import type {
   Enforcement,
   SanctionErrorPayload,
@@ -14,8 +9,14 @@ import type {
   ViolationGroup,
 } from '@/types/violations'
 
-/** Page publique où déposer un appel (il n'existe aucun endpoint d'appel). */
+/**
+ * Serveur de support Moddy — c'est là, et nulle part ailleurs, qu'un appel se
+ * dépose : il n'existe aucun endpoint d'appel côté API.
+ */
 export const APPEAL_URL = 'https://moddy.app/support'
+
+/** Conditions d'utilisation — ce qu'une sanction globale sanctionne. */
+export const TERMS_URL = 'https://moddy.app/terms'
 
 /** Route interne de la page des infractions. */
 export const VIOLATIONS_PATH = '/violations'
@@ -65,56 +66,42 @@ export function noSanction(
 
 // ─── Apparence ────────────────────────────────────────────────────────────────
 
+/**
+ * Les tons viennent de `ACTION_TONE` (`lib/cases.ts`), pas d'une palette
+ * parallèle : les infractions se lisent comme les dossiers de modération, avec
+ * les mêmes rouges et les mêmes ambres. Seuls l'icône et l'anneau d'avatar sont
+ * propres aux niveaux.
+ */
 export interface LevelTone {
   icon: LucideIcon
   text: string
   softBg: string
   border: string
   dot: string
-  /** Fond des blocs pleins (bandeaux, médaillons d'en-tête). */
   bg: string
   /** Anneau autour d'un avatar — l'écran de suspension s'en sert. */
   ring: string
 }
 
-export const LEVEL_TONE: Record<SanctionLevel, LevelTone> = {
-  none: {
-    icon: ShieldCheckIcon,
-    text: 'text-green-600 dark:text-green-400',
-    softBg: 'bg-green-50 dark:bg-green-950/40',
-    border: 'border-green-200 dark:border-green-900',
-    dot: 'bg-green-500',
-    bg: 'bg-green-100 dark:bg-green-950/60',
-    ring: 'ring-green-200 dark:ring-green-900',
-  },
-  warn: {
-    icon: ShieldAlertIcon,
-    text: 'text-amber-600 dark:text-amber-400',
-    softBg: 'bg-amber-50 dark:bg-amber-950/40',
-    border: 'border-amber-200 dark:border-amber-900',
-    dot: 'bg-amber-500',
-    bg: 'bg-amber-100 dark:bg-amber-950/60',
-    ring: 'ring-amber-200 dark:ring-amber-900',
-  },
-  limited: {
-    icon: ShieldMinusIcon,
-    text: 'text-orange-600 dark:text-orange-400',
-    softBg: 'bg-orange-50 dark:bg-orange-950/40',
-    border: 'border-orange-200 dark:border-orange-900',
-    dot: 'bg-orange-500',
-    bg: 'bg-orange-100 dark:bg-orange-950/60',
-    ring: 'ring-orange-200 dark:ring-orange-900',
-  },
-  suspended: {
-    icon: BanIcon,
-    text: 'text-red-600 dark:text-red-400',
-    softBg: 'bg-red-50 dark:bg-red-950/40',
-    border: 'border-red-200 dark:border-red-900',
-    dot: 'bg-red-500',
-    bg: 'bg-red-100 dark:bg-red-950/60',
-    ring: 'ring-red-200 dark:ring-red-900',
-  },
+const LEVEL_RING: Record<SanctionLevel, string> = {
+  none: 'ring-emerald-200 dark:ring-emerald-900',
+  warn: 'ring-amber-200 dark:ring-amber-900',
+  limited: 'ring-orange-200 dark:ring-orange-900',
+  suspended: 'ring-red-200 dark:ring-red-900',
 }
+
+// Ton et icône viennent de `lib/cases` : `ActionChip` s'en sert aussi pour les
+// mesures d'un dossier global. Une seule source, donc jamais deux couleurs pour
+// la même idée.
+const LEVEL_ICON = SANCTION_LEVEL_ICON as Record<SanctionLevel, LucideIcon>
+const LEVEL_HUE = SANCTION_LEVEL_HUE as Record<SanctionLevel, keyof typeof ACTION_TONE>
+
+export const LEVEL_TONE = Object.fromEntries(
+  (Object.keys(LEVEL_HUE) as SanctionLevel[]).map((level) => [
+    level,
+    { ...ACTION_TONE[LEVEL_HUE[level]], icon: LEVEL_ICON[level], ring: LEVEL_RING[level] },
+  ])
+) as Record<SanctionLevel, LevelTone>
 
 // ─── 403 de sanction ──────────────────────────────────────────────────────────
 

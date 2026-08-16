@@ -17,9 +17,9 @@ import {
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
 import { cn } from "@/lib/utils"
-import { relativeTime, absoluteTime, ACTION_META } from "@/lib/cases"
+import { relativeTime, absoluteTime, ACTION_META, actionLabelKey } from "@/lib/cases"
 import { useGuildContext } from "@/contexts/GuildContext"
-import type { CaseEvent, SanctionAction } from "@/types/cases"
+import type { CaseEvent, CaseType, SanctionAction } from "@/types/cases"
 import { EntityAvatar, type EntityKind } from "./entity-ref"
 
 // ─── Helpers de payload (défensifs) ──────────────────────────────────────────
@@ -116,7 +116,7 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
 
 // ─── Item unique ──────────────────────────────────────────────────────────────
 
-function TimelineItem({ event }: { event: CaseEvent }) {
+function TimelineItem({ event, caseType }: { event: CaseEvent; caseType?: CaseType | null }) {
   const { t } = useTranslation()
   const kind = asString(event.payload?.["kind"] ?? null)
 
@@ -152,7 +152,7 @@ function TimelineItem({ event }: { event: CaseEvent }) {
       return (
         <MarkerRow icon={PlusCircleIcon} iconClass="text-red-500" time={event.created_at}>
           {t("cases.timeline.sanctionAdded", {
-            action: action ? t(`cases.action.${action}`) : t("cases.timeline.aSanction"),
+            action: action ? t(actionLabelKey(action, caseType)) : t("cases.timeline.aSanction"),
           })}
         </MarkerRow>
       )
@@ -168,7 +168,7 @@ function TimelineItem({ event }: { event: CaseEvent }) {
       return (
         <MarkerRow icon={TimerOffIcon} iconClass="text-muted-foreground" time={event.created_at}>
           {t("cases.timeline.sanctionExpired", {
-            action: action ? t(`cases.action.${action}`) : t("cases.timeline.aSanction"),
+            action: action ? t(actionLabelKey(action, caseType)) : t("cases.timeline.aSanction"),
           })}
         </MarkerRow>
       )
@@ -201,7 +201,13 @@ function TimelineItem({ event }: { event: CaseEvent }) {
 
 // ─── Timeline ─────────────────────────────────────────────────────────────────
 
-export function CaseTimeline({ events }: { events: CaseEvent[] }) {
+export function CaseTimeline({
+  events,
+  caseType,
+}: {
+  events: CaseEvent[]
+  caseType?: CaseType | null
+}) {
   const { t } = useTranslation()
 
   // Les preuves sont affichées dans leur propre section (hors activité).
@@ -224,7 +230,7 @@ export function CaseTimeline({ events }: { events: CaseEvent[] }) {
   return (
     <div className="flex flex-col gap-4">
       {sorted.map((event) => (
-        <TimelineItem key={event.id} event={event} />
+        <TimelineItem key={event.id} event={event} caseType={caseType} />
       ))}
     </div>
   )

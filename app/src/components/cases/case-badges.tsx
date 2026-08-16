@@ -3,8 +3,8 @@ import { LockIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
-  ACTION_META,
-  actionTone,
+  actionAppearance,
+  actionLabelKey,
   CASE_TYPE_TONE,
   ACTION_TONE,
 } from "@/lib/cases"
@@ -104,16 +104,23 @@ export function ActionChip({
   size = "sm",
   muted = false,
   className,
+  /**
+   * Portée du dossier. Sur un dossier `global`/`network`, l'action prend le
+   * vocabulaire des sanctions globales (« suspension » plutôt que « bannir ») —
+   * c'est la même sanction que celle affichée sur `/violations`.
+   */
+  caseType,
 }: {
   action: SanctionAction
   size?: "sm" | "xs"
   muted?: boolean
   className?: string
+  caseType?: CaseType | null
 }) {
   const { t } = useTranslation()
-  const meta = ACTION_META[action]
-  const tone = actionTone(action)
-  const Icon = meta.icon
+  // Ton + icône suivent la portée : sur un dossier global, une mesure prend
+  // l'apparence de son niveau (cf. `actionAppearance`).
+  const { tone, icon: Icon } = actionAppearance(action, caseType)
   return (
     <span
       className={cn(
@@ -126,7 +133,7 @@ export function ActionChip({
       )}
     >
       <Icon className={size === "xs" ? "size-2.5" : "size-3"} />
-      {t(`cases.action.${action}`)}
+      {t(actionLabelKey(action, caseType))}
     </span>
   )
 }

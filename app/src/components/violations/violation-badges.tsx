@@ -1,20 +1,19 @@
 import { useTranslation } from "react-i18next"
-import { CreditCardIcon, GavelIcon, HourglassIcon, PauseIcon } from "lucide-react"
+import { ClockIcon, HourglassIcon, InfinityIcon, PauseIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ACTION_META } from "@/lib/cases"
+import { ActionChip } from "@/components/cases/case-badges"
 import { LEVEL_TONE, formatDeadline, remainingParts } from "@/lib/sanctions"
-import type {
-  Enforcement,
-  GlobalAction,
-  SanctionLevel,
-} from "@/types/violations"
+import type { Enforcement, GlobalAction, SanctionLevel } from "@/types/violations"
 
 // ─── Niveau ───────────────────────────────────────────────────────────────────
 
 /**
- * Pastille de niveau. `warn` reste volontairement discret : un avertissement ne
- * bloque rien, il ne doit pas être crié comme une restriction.
+ * Pastille de niveau, calée sur `CaseStatusPill` : même forme, même graisse.
+ * `warn` reste volontairement discret — un avertissement ne bloque rien, il ne
+ * doit pas être crié comme une limitation.
  */
-export function LevelBadge({
+export function LevelPill({
   level,
   size = "sm",
   className,
@@ -25,48 +24,135 @@ export function LevelBadge({
 }) {
   const { t } = useTranslation()
   const tone = LEVEL_TONE[level]
-  const Icon = tone.icon
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border font-medium",
-        size === "xs" ? "px-1 py-0.5 text-[10px]" : "px-1.5 py-0.5 text-[11px]",
+        "inline-flex items-center rounded-full border font-medium",
+        size === "xs" ? "gap-1 px-1.5 py-0 text-[10px]" : "gap-1.5 px-2 py-0.5 text-xs",
         tone.border,
         tone.softBg,
         tone.text,
         className
       )}
     >
-      <Icon className={size === "xs" ? "size-2.5" : "size-3"} />
+      <span className={cn("shrink-0 rounded-full", size === "xs" ? "size-1" : "size-1.5", tone.dot)} />
       {t(`violations.level.${level}`)}
     </span>
   )
 }
 
-// ─── Action ───────────────────────────────────────────────────────────────────
-
-export function ActionBadge({
-  action,
-  muted = false,
+/** Pastille des infractions closes — le pendant neutre de `LevelPill`. */
+export function ClosedPill({
+  size = "sm",
   className,
 }: {
-  action: GlobalAction
-  muted?: boolean
+  size?: "sm" | "xs"
   className?: string
 }) {
   const { t } = useTranslation()
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
-        muted
-          ? "border-border bg-muted text-muted-foreground line-through decoration-1"
-          : "border-border bg-muted/60 text-foreground",
+        "inline-flex items-center rounded-full border border-border bg-muted font-medium text-muted-foreground",
+        size === "xs" ? "gap-1 px-1.5 py-0 text-[10px]" : "gap-1.5 px-2 py-0.5 text-xs",
         className
       )}
     >
-      <GavelIcon className="size-3 opacity-70" />
-      {t(`violations.action.${action}`)}
+      <span
+        className={cn(
+          "shrink-0 rounded-full bg-muted-foreground/50",
+          size === "xs" ? "size-1" : "size-1.5"
+        )}
+      />
+      {t("violations.list.resolved")}
+    </span>
+  )
+}
+
+/**
+ * Le même point que `LevelPill`, sans libellé : dans le sélecteur de serveurs
+ * une pastille complète déborderait. Le `title` porte le sens.
+ */
+export function LevelDot({ level, title }: { level: SanctionLevel; title?: string }) {
+  return (
+    <span
+      title={title}
+      className={cn("size-2 shrink-0 rounded-full", LEVEL_TONE[level].dot)}
+    />
+  )
+}
+
+// ─── Action ───────────────────────────────────────────────────────────────────
+
+/**
+ * Mesure d'une sanction globale. Ce n'est qu'`ActionChip` (cases) figée sur la
+ * portée `global` : même composant, même icône, même ton — c'est `caseType` qui
+ * choisit le libellé (« suspension » plutôt que « bannir »).
+ */
+export function GlobalActionChip({
+  action,
+  size = "sm",
+  muted = false,
+  className,
+}: {
+  action: GlobalAction
+  size?: "sm" | "xs"
+  muted?: boolean
+  className?: string
+}) {
+  return (
+    <ActionChip
+      action={action}
+      size={size}
+      muted={muted}
+      className={className}
+      caseType="global"
+    />
+  )
+}
+
+// ─── Échéance ─────────────────────────────────────────────────────────────────
+
+/** « Jusqu'au 17 août » ou « Définitive » — même formulation que `SanctionsPanel`. */
+export function ExpiryLabel({
+  expiresAt,
+  className,
+}: {
+  expiresAt: string | null | undefined
+  className?: string
+}) {
+  const { t, i18n } = useTranslation()
+  const until = formatDeadline(expiresAt, i18n.language)
+  return (
+    <span className={cn("inline-flex items-center gap-1", className)}>
+      {until ? (
+        <>
+          <ClockIcon className="size-3 shrink-0" />
+          {t("violations.detail.until", { date: until })}
+        </>
+      ) : (
+        <>
+          <InfinityIcon className="size-3 shrink-0" />
+          {t("violations.detail.permanent")}
+        </>
+      )}
+    </span>
+  )
+}
+
+// ─── Statut d'une mesure ──────────────────────────────────────────────────────
+
+/**
+ * « En vigueur » n'apporte rien : c'est l'état par défaut de tout ce qu'on
+ * affiche. Seule une mesure levée ou expirée mérite d'être signalée — sinon
+ * chaque ligne porterait une étiquette qui ne distingue rien.
+ */
+export function MeasureStatus({ status }: { status: "active" | "expired" | "revoked" }) {
+  const { t } = useTranslation()
+  if (status === "active") return null
+  return (
+    <span className="text-xs text-muted-foreground">
+      {t(`violations.sanctionStatus.${status}`)}
     </span>
   )
 }
@@ -74,9 +160,10 @@ export function ActionBadge({
 // ─── Référence ────────────────────────────────────────────────────────────────
 
 /**
- * Référence(s) d'un dossier, en texte courant. Volontairement pas un bouton de
- * copie ni du monospace : c'est une mention de dossier au fil du texte, pas un
- * identifiant technique à manipuler.
+ * Référence(s) de l'infraction, en texte courant et **sans préfixe** : le code
+ * se reconnaît seul, l'annoncer par « Réf. » ne fait qu'allonger la ligne. Pas
+ * de bouton de copie ni de monospace non plus — c'est un numéro à citer au
+ * support, pas un identifiant qu'on manipule.
  */
 export function ReferenceText({
   references,
@@ -85,14 +172,10 @@ export function ReferenceText({
   references: string[]
   className?: string
 }) {
-  const { t } = useTranslation()
   if (references.length === 0) return null
   return (
     <span className={cn("text-xs text-muted-foreground", className)}>
-      {t("violations.reference", {
-        count: references.length,
-        refs: references.join(", "),
-      })}
+      {references.join(", ")}
     </span>
   )
 }
@@ -100,26 +183,39 @@ export function ReferenceText({
 // ─── Compte à rebours ─────────────────────────────────────────────────────────
 
 /**
- * Résumé du compte à rebours d'application des conséquences.
- * `premium` est mis en avant tant que `status = pending` : c'est ce qui mène à
- * une résiliation sans remboursement, donc ce qui pousse à faire appel à temps.
+ * Ce qui va se passer, et quand. Les conséquences d'une sanction (résiliation
+ * de l'abonnement, départ du bot) ne tombent pas immédiatement : ce bloc
+ * explique le délai qui reste pour se manifester.
+ *
+ * ⚠️ Il ne doit **jamais** s'afficher pour une infraction close : « un humain a
+ * stoppé le compte à rebours » n'a aucun sens quand la sanction a été levée.
+ * L'appelant passe `active` ; par sécurité, `cancelled` disparaît aussi.
  */
 export function EnforcementNotice({
   enforcement,
   appealUrl,
+  active = true,
   className,
   /** À passer à `false` quand un bloc d'appel suit — deux CTA identiques se nuisent. */
   showAppeal = true,
+  /**
+   * `card` : bloc autonome, encadré et teinté. `inline` : à l'intérieur d'un
+   * panneau — un cadre dans un cadre n'ajoute qu'un rectangle, l'icône colorée
+   * suffit à porter le ton.
+   */
+  variant = "card",
 }: {
   enforcement: Enforcement
   appealUrl: string
+  active?: boolean
   className?: string
   showAppeal?: boolean
+  variant?: "card" | "inline"
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
 
-  if (enforcement.status === "cancelled") return null
+  if (!active || enforcement.status === "cancelled") return null
 
   const deadline = formatDeadline(enforcement.deadline, locale)
   const executed = formatDeadline(enforcement.executed_at, locale)
@@ -129,17 +225,12 @@ export function EnforcementNotice({
   const halted = enforcement.status === "halted"
 
   const tone = pending
-    ? "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/40"
+    ? LEVEL_TONE.suspended
     : halted
-      ? "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40"
-      : "border-border bg-muted/40"
+      ? LEVEL_TONE.none
+      : LEVEL_TONE.warn
 
-  const Icon = pending ? HourglassIcon : halted ? PauseIcon : GavelIcon
-  const iconTone = pending
-    ? "text-red-500"
-    : halted
-      ? "text-sky-500"
-      : "text-muted-foreground"
+  const Icon = pending ? HourglassIcon : halted ? PauseIcon : ACTION_META.ban.icon
 
   const countdown =
     left &&
@@ -149,44 +240,49 @@ export function EnforcementNotice({
         ? t("violations.enforcement.inHours", { hours: left.hours, minutes: left.minutes })
         : t("violations.enforcement.inMinutes", { minutes: Math.max(left.minutes, 1) }))
 
+  const body = pending
+    ? deadline && t("violations.enforcement.pendingDescription", { date: deadline })
+    : halted
+      ? t("violations.enforcement.haltedDescription")
+      : executed && t("violations.enforcement.executedDescription", { date: executed })
+
   return (
-    <div className={cn("flex flex-col gap-3 rounded-xl border p-4", tone, className)}>
-      <div className="flex items-start gap-3">
-        <Icon className={cn("mt-0.5 size-4 shrink-0", iconTone)} />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold">
-            {t(`violations.enforcement.title.${enforcement.status}`)}
-          </p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            {pending && deadline
-              ? t("violations.enforcement.pendingDescription", { date: deadline })
-              : halted
-                ? t("violations.enforcement.haltedDescription")
-                : enforcement.status === "executed" && executed
-                  ? t("violations.enforcement.executedDescription", { date: executed })
-                  : t(`violations.enforcement.title.${enforcement.status}`)}
-          </p>
-          {pending && countdown && (
-            <p className="mt-1 text-xs font-medium tabular-nums">{countdown}</p>
-          )}
-          {enforcement.premium && pending && (
-            <p className="mt-2 flex items-start gap-2 rounded-lg border bg-background/70 px-2.5 py-2 text-xs font-medium">
-              <CreditCardIcon className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-              {t("violations.enforcement.premiumWarning")}
-            </p>
-          )}
-        </div>
-      </div>
-      {pending && showAppeal && (
-        <a
-          href={appealUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex h-8 items-center justify-center self-start rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-        >
-          {t("violations.appeal")}
-        </a>
+    <div
+      className={cn(
+        "flex items-start gap-3",
+        variant === "card" ? cn("rounded-xl border p-4", tone.border, tone.softBg) : "pt-1",
+        className
       )}
+    >
+      <Icon className={cn("mt-0.5 size-4 shrink-0", tone.text)} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold">
+          {t(`violations.enforcement.title.${enforcement.status}`)}
+          {pending && countdown && (
+            <span className="ml-2 text-xs font-medium tabular-nums text-muted-foreground">
+              {countdown}
+            </span>
+          )}
+        </p>
+        {body && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{body}</p>}
+        {/* La résiliation sans remboursement est la conséquence la plus lourde :
+            elle se dit dans la même phrase, pas dans une boîte de plus. */}
+        {enforcement.premium && pending && (
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {t("violations.enforcement.premiumWarning")}
+          </p>
+        )}
+        {pending && showAppeal && (
+          <a
+            href={appealUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-3 inline-flex h-8 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+          >
+            {t("violations.appeal")}
+          </a>
+        )}
+      </div>
     </div>
   )
 }

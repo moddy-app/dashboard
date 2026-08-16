@@ -1,18 +1,17 @@
 import { useCallback, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { RefreshCwIcon, ShieldAlertIcon } from "lucide-react"
+import { RefreshCwIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePageTitle } from "@/hooks/usePageTitle"
 import { useSanctions } from "@/contexts/SanctionContext"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { cn } from "@/lib/utils"
-import { FILTER_ACCENT_BUTTON } from "@/lib/cases"
-import { LEVEL_TONE } from "@/lib/sanctions"
+import { FILTER_ACCENT_CHIP } from "@/lib/cases"
+import { LEVEL_TONE, TERMS_URL } from "@/lib/sanctions"
 import { ViolationList } from "@/components/violations/violation-list"
 import { ViolationDetailView } from "@/components/violations/violation-detail"
-import { SanctionNotice } from "@/components/violations/sanction-banner"
 import { SanctionScale } from "@/components/violations/sanction-scale"
 
 type Scope = "all" | "active" | "user" | "guilds"
@@ -28,7 +27,7 @@ export function ViolationsPage() {
   usePageTitle(t("violations.title"))
 
   // L'infraction ouverte vit dans l'URL (?group=<uuid>) : partageable et
-  // reprise telle quelle par le fil d'Ariane.
+  // reprise telle quelle par le fil d'Ariane — même mécanique que ?case=REF.
   const selected = searchParams.get("group")
   const scope = (searchParams.get("scope") as Scope) ?? "all"
 
@@ -49,13 +48,9 @@ export function ViolationsPage() {
       case "active":
         return groups.filter((g) => g.active)
       case "user":
-        return groups.filter((g) =>
-          g.subjects.some((s) => s.subject_type === "discord_user")
-        )
+        return groups.filter((g) => g.subjects.some((s) => s.subject_type === "discord_user"))
       case "guilds":
-        return groups.filter((g) =>
-          g.subjects.some((s) => s.subject_type === "discord_guild")
-        )
+        return groups.filter((g) => g.subjects.some((s) => s.subject_type === "discord_guild"))
       default:
         return groups
     }
@@ -84,71 +79,82 @@ export function ViolationsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* En-tête */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", tone.bg)}>
-            <ShieldAlertIcon className={cn("size-5", tone.text)} />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold leading-none">{t("violations.title")}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{t("violations.description")}</p>
-          </div>
-        </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRefresh}
-              disabled={refreshing || groupsLoading}
-            >
-              <RefreshCwIcon className={cn("size-4", refreshing && "animate-spin")} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t("violations.refresh")}</TooltipContent>
-        </Tooltip>
+      {/* En-tête : ce que la page montre, et sur quelles règles elle repose. */}
+      <div>
+        <h1 className="text-xl font-semibold leading-none">{t("violations.title")}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          {t("violations.description")}{" "}
+          <a
+            href={TERMS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-foreground underline underline-offset-2"
+          >
+            {t("violations.termsLink")}
+          </a>
+        </p>
       </div>
 
-      {/* État du compte — un `warn` informe, il ne verrouille rien. */}
-      {user.level !== "none" && (
-        <div className="flex flex-col gap-5">
-          <SanctionNotice
-            level={user.level}
-            status={user}
-            title={t(`violations.status.${user.level}.title`)}
-            description={t(`violations.status.${user.level}.description`)}
-          />
-          {/* Même échelle que l'écran de suspension : on se situe d'un coup d'œil. */}
-          <SanctionScale level={user.level} className="max-w-lg px-1" />
+      {/* État du compte : l'échelle et ce que le niveau courant change,
+          dans un seul bloc. Deux encarts qui disaient la même chose n'en
+          font plus qu'un. */}
+      <div className="flex flex-col gap-5 rounded-xl border bg-card p-5">
+        {/* Bornée : au-delà, les quatre paliers s'éloignent au point qu'on ne
+            lit plus une progression mais quatre étiquettes isolées. */}
+        <SanctionScale level={user.level} className="max-w-xl" />
+        <div className="border-t pt-4">
+          <p className={cn("text-sm font-semibold", user.level !== "none" && tone.text)}>
+            {t(`violations.status.${user.level}.title`)}
+          </p>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+            {t(`violations.status.${user.level}.description`)}
+          </p>
         </div>
-      )}
-
-      {/* Portées */}
-      <div className="flex flex-wrap items-center gap-1.5">
-        {SCOPES.map((value) => {
-          const active = scope === value
-          return (
-            <Button
-              key={value}
-              size="sm"
-              variant="outline"
-              className={cn("h-7 rounded-full px-3 text-xs", active && FILTER_ACCENT_BUTTON)}
-              onClick={() => setParam("scope", value === "all" ? null : value)}
-            >
-              {t(`violations.scope.${value}`)}
-            </Button>
-          )
-        })}
       </div>
 
-      <ViolationList
-        groups={filtered}
-        loading={groupsLoading}
-        onOpen={(groupId) => setParam("group", groupId)}
-      />
+      {/* Filtres + liste */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 flex-wrap items-center gap-1.5">
+            {SCOPES.map((value) => {
+              const isActive = scope === value
+              return (
+                <Button
+                  key={value}
+                  size="sm"
+                  variant="outline"
+                  className={cn("h-7 rounded-full px-3 text-xs", isActive && FILTER_ACCENT_CHIP)}
+                  onClick={() => setParam("scope", value === "all" ? null : value)}
+                >
+                  {t(`violations.scope.${value}`)}
+                </Button>
+              )
+            })}
+          </div>
 
-      <p className="text-xs text-muted-foreground">{t("violations.cacheNote")}</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label={t("violations.refresh")}
+                onClick={handleRefresh}
+                disabled={refreshing || groupsLoading}
+                className="size-9 shrink-0"
+              >
+                <RefreshCwIcon className={cn("size-4", refreshing && "animate-spin")} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{t("violations.refresh")}</TooltipContent>
+          </Tooltip>
+        </div>
+
+        <ViolationList
+          groups={filtered}
+          loading={groupsLoading}
+          onOpen={(groupId) => setParam("group", groupId)}
+        />
+      </div>
     </div>
   )
 }

@@ -3,6 +3,8 @@ import {
   BanIcon,
   MicOffIcon,
   DoorOpenIcon,
+  ShieldAlertIcon,
+  ShieldCheckIcon,
   ShieldMinusIcon,
   KeyRoundIcon,
   GavelIcon,
@@ -90,10 +92,91 @@ export const ACTION_TONE = {
     border: 'border-slate-200 dark:border-slate-800',
     dot: 'bg-slate-500',
   },
+  // Aucune action de case n'est « verte » — ce ton sert au niveau *sain* des
+  // sanctions globales (`LEVEL_TONE.none`), qui partage cette palette pour que
+  // les deux vues aient exactement les mêmes couleurs.
+  emerald: {
+    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-100 dark:bg-emerald-950/60',
+    softBg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    border: 'border-emerald-200 dark:border-emerald-900',
+    dot: 'bg-emerald-500',
+  },
 } as const
 
 export function actionTone(action: SanctionAction) {
   return ACTION_TONE[ACTION_META[action].tone]
+}
+
+// ─── Niveaux de sanction globale (source unique) ─────────────────────────────
+
+/**
+ * Ton et icône des quatre niveaux de sanction globale. Ils vivent ici, avec
+ * `ACTION_TONE`, parce que **deux** consommateurs en dépendent et doivent
+ * s'accorder au pixel : `LEVEL_TONE` (`lib/sanctions.ts`) pour les pastilles de
+ * niveau, et `ActionChip` pour les mesures d'un dossier global. Sans source
+ * unique, une « limitation » finit violette à côté d'un « limité » orange.
+ */
+export const SANCTION_LEVEL_HUE = {
+  none: 'emerald',
+  warn: 'amber',
+  limited: 'orange',
+  suspended: 'red',
+} as const satisfies Record<string, keyof typeof ACTION_TONE>
+
+export const SANCTION_LEVEL_ICON = {
+  none: ShieldCheckIcon,
+  warn: ShieldAlertIcon,
+  limited: ShieldMinusIcon,
+  suspended: BanIcon,
+}
+
+/** Niveau porté par une mesure globale. Les autres actions n'existent pas en global. */
+const GLOBAL_ACTION_LEVEL = {
+  warn: 'warn',
+  restrict: 'limited',
+  ban: 'suspended',
+} as const
+
+/**
+ * Apparence d'une action : ton + icône. Sur un dossier **global**, une mesure
+ * emprunte celles de son niveau — une suspension est rouge comme le niveau
+ * « suspendu », une limitation orange comme « limité ». Ailleurs, elle garde
+ * l'apparence de l'action de modération correspondante.
+ */
+export function actionAppearance(action: SanctionAction, caseType?: CaseType | null) {
+  const level = GLOBAL_ACTION_LEVEL[action as keyof typeof GLOBAL_ACTION_LEVEL]
+  if (isGlobalCaseType(caseType) && level) {
+    return { tone: ACTION_TONE[SANCTION_LEVEL_HUE[level]], icon: SANCTION_LEVEL_ICON[level] }
+  }
+  return { tone: actionTone(action), icon: ACTION_META[action].icon }
+}
+
+// ─── Vocabulaire : modération de serveur vs sanction globale ─────────────────
+
+/**
+ * Les cases `global` et `network` portent des **sanctions globales** — les
+ * mêmes que celles de `/violations`. Leur vocabulaire doit donc être celui-là :
+ * un `ban` global est une « suspension », pas un « bannissement ». Sans ça, le
+ * même dossier se lit différemment selon la page où on le regarde.
+ */
+export function isGlobalCaseType(type: CaseType | null | undefined): boolean {
+  return type === 'global' || type === 'network'
+}
+
+/**
+ * Clé i18n du libellé d'une action, selon la portée du dossier.
+ * `violations.action.*` ne couvre que `warn` / `restrict` / `ban` : les autres
+ * actions n'existent pas en global et gardent le libellé de modération.
+ */
+export function actionLabelKey(
+  action: SanctionAction,
+  caseType?: CaseType | null
+): string {
+  const isGlobalAction = action === 'warn' || action === 'restrict' || action === 'ban'
+  return isGlobalCaseType(caseType) && isGlobalAction
+    ? `violations.action.${action}`
+    : `cases.action.${action}`
 }
 
 // ─── Métadonnées de type de case ─────────────────────────────────────────────

@@ -37,6 +37,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
+import { LEVEL_TONE } from "@/lib/sanctions"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { getGuildIconUrl } from "@/lib/auth"
@@ -120,7 +121,10 @@ function ModuleCard({
           ) : isLocked ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Badge variant="outline" className="text-xs shrink-0 text-orange-600 border-orange-200 bg-orange-50 dark:bg-orange-950 dark:border-orange-800 dark:text-orange-400">
+                <Badge
+                  variant="outline"
+                  className={`text-xs shrink-0 ${LEVEL_TONE.limited.text} ${LEVEL_TONE.limited.border} ${LEVEL_TONE.limited.softBg}`}
+                >
                   <LockIcon className="size-3 mr-1" />
                   {t('violations.locked')}
                 </Badge>
@@ -354,7 +358,10 @@ export function GuildOverviewPage() {
       </div>
 
       {/* ── CTA Premium ─────────────────────────────────────────────────── */}
-      {!isPremium && !hidePremium && (
+      {/* Sous sanction globale, la carte disparaît entièrement : proposer un
+          abonnement que le back-end refusera ensuite est une fausse promesse.
+          Le bandeau de sanction, lui, dit déjà ce qui est fermé et pourquoi. */}
+      {!isPremium && !hidePremium && gates.canLinkGuild && (
         <Card className="py-0 border-violet-400/60 dark:border-violet-600/40 bg-violet-400/15 dark:bg-violet-900/25">
           <CardContent className="flex items-center justify-between gap-4 p-6 flex-wrap">
             <div className="flex items-center gap-4">
@@ -366,41 +373,19 @@ export function GuildOverviewPage() {
                 <p className="text-xs text-violet-700/80 dark:text-violet-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
               </div>
             </div>
-            {gates.canLinkGuild ? (
-              <Button
-                size="sm"
-                className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
-                onClick={handleUpgrade}
-                disabled={isUpgrading}
-              >
-                {isUpgrading ? (
-                  <LoaderIcon className="size-4 animate-spin" />
-                ) : (
-                  <SparklesIcon className="size-4" />
-                )}
-                {t('guildOverview.premium.cta')}
-              </Button>
-            ) : (
-              // `restricted` (limité OU suspendu) ferme la souscription — le
-              // portail Stripe, lui, reste ouvert : on ne bloque pas une résiliation.
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span className="shrink-0">
-                    <Button size="sm" className="bg-violet-600 text-white shadow-sm" disabled>
-                      <LockIcon className="size-4" />
-                      {t('guildOverview.premium.cta')}
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent className="max-w-64">
-                  {/* Le message nomme le porteur de la sanction : « votre
-                      compte » n'est pas « ce serveur ». */}
-                  {gates.canSubscribe
-                    ? t('violations.premiumGuildBlocked')
-                    : t('violations.premiumBlocked')}
-                </TooltipContent>
-              </Tooltip>
-            )}
+            <Button
+              size="sm"
+              className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
+              onClick={handleUpgrade}
+              disabled={isUpgrading}
+            >
+              {isUpgrading ? (
+                <LoaderIcon className="size-4 animate-spin" />
+              ) : (
+                <SparklesIcon className="size-4" />
+              )}
+              {t('guildOverview.premium.cta')}
+            </Button>
           </CardContent>
         </Card>
       )}

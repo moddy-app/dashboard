@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  ArrowLeftIcon,
+  ChevronLeftIcon,
   ExternalLinkIcon,
   FileTextIcon,
-  InfoIcon,
   LoaderIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,65 +18,67 @@ import {
 import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
 import { cn } from "@/lib/utils"
 import { absoluteTime } from "@/lib/cases"
-import { APPEAL_URL, LEVEL_TONE, formatDeadline } from "@/lib/sanctions"
+import { APPEAL_URL } from "@/lib/sanctions"
 import { ApiError } from "@/lib/auth"
 import { getViolation } from "@/services/violations"
+import { useSanctions } from "@/contexts/SanctionContext"
 import { logger } from "@/lib/logger"
 import type { ViolationCase, ViolationDetail } from "@/types/violations"
-import { ActionBadge, EnforcementNotice, LevelBadge, ReferenceText } from "./violation-badges"
+import {
+  ClosedPill,
+  EnforcementNotice,
+  ExpiryLabel,
+  GlobalActionChip,
+  LevelPill,
+  MeasureStatus,
+  ReferenceText,
+} from "./violation-badges"
 
-// ─── Panneau d'une case ───────────────────────────────────────────────────────
+// ─── Ce qui s'applique à un sujet ─────────────────────────────────────────────
 
-function CasePanel({ item }: { item: ViolationCase }) {
-  const { t, i18n } = useTranslation()
-  const locale = i18n.language
+/**
+ * Un bloc par sujet visé : qui, puis les mesures qui le frappent. C'est la
+ * seule fois où le détail par sujet apparaît — l'en-tête donne le résumé, ce
+ * bloc donne la précision, rien n'est dit deux fois.
+ */
+function SubjectBlock({ item, selfId }: { item: ViolationCase; selfId: string }) {
+  const { t } = useTranslation()
 
+  // Son propre compte se désigne par « votre compte », pas par son pseudo :
+  // sur une page qui parle de vous, c'est la formulation la moins ambiguë.
+  const isSelf = item.subject_type === "discord_user" && String(item.subject_id) === selfId
+
+  // Pas de pastille de niveau ici : elle répéterait mot pour mot la mesure
+  // juste en dessous (« Warning » au-dessus de « Warning »). Le niveau du
+  // sujet se lit dans ses mesures — même libellé, même couleur.
   return (
-    <div className="rounded-xl border">
-      <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
-        <ReferenceText references={[item.reference]} />
-        <EntityRef
-          kind={item.subject_type as EntityKind}
-          id={item.subject_id}
-          variant="inline"
-        />
-        <span className="ml-auto text-xs text-muted-foreground">
-          {absoluteTime(item.created_at, locale)}
-        </span>
+    <div className="flex flex-col gap-2.5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        {isSelf ? (
+          <span className="text-sm font-medium">{t("violations.subject.you")}</span>
+        ) : (
+          <EntityRef kind={item.subject_type as EntityKind} id={item.subject_id} variant="inline" />
+        )}
+        <ReferenceText references={[item.reference]} className="ml-auto" />
       </div>
 
-      <div className="flex flex-col gap-3 px-4 py-3">
-        <p className="text-sm">{item.reason}</p>
-
-        {item.sanctions.length > 0 && (
-          <div className="flex flex-col gap-1.5">
-            {item.sanctions.map((sanction, index) => {
-              const expires = formatDeadline(sanction.expires_at, locale)
-              const active = sanction.status === "active"
-              return (
-                <div
-                  key={sanction.id ?? `${sanction.action}-${index}`}
-                  className="flex flex-wrap items-center gap-2 rounded-lg bg-muted/40 px-2.5 py-2"
-                >
-                  <ActionBadge action={sanction.action} muted={!active} />
-                  <span
-                    className={cn(
-                      "text-xs font-medium",
-                      active ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {t(`violations.sanctionStatus.${sanction.status}`)}
-                  </span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {expires
-                      ? t("violations.detail.until", { date: expires })
-                      : t("violations.detail.permanent")}
-                  </span>
-                </div>
-              )
-            })}
+      <div className="flex flex-col gap-2">
+        {item.sanctions.map((sanction, index) => (
+          <div
+            key={sanction.id ?? `${sanction.action}-${index}`}
+            className={cn(
+              "flex flex-wrap items-center gap-x-2.5 gap-y-1",
+              sanction.status !== "active" && "opacity-60"
+            )}
+          >
+            <GlobalActionChip action={sanction.action} muted={sanction.status !== "active"} />
+            <MeasureStatus status={sanction.status} />
+            <ExpiryLabel
+              expiresAt={sanction.expires_at}
+              className="text-xs text-muted-foreground"
+            />
           </div>
-        )}
+        ))}
       </div>
     </div>
   )
@@ -85,6 +86,15 @@ function CasePanel({ item }: { item: ViolationCase }) {
 
 // ─── Vue détail ───────────────────────────────────────────────────────────────
 
+/**
+ * Reprend la grammaire de `CaseDetailView` — barre de retour, référence et
+ * pastille d'état, puis le motif en titre pleine largeur.
+ *
+ * Une différence assumée : **une seule colonne**. L'aside de `case-detail`
+ * porte l'auteur, la portée, le groupe, les sanctions et les appels ; une
+ * infraction n'a que ses sujets et ses mesures, déjà affichés au centre. Un
+ * aside n'y aurait recopié que ce qui est en dessous.
+ */
 export function ViolationDetailView({
   groupId,
   onBack,
@@ -94,7 +104,10 @@ export function ViolationDetailView({
   onBack: () => void
   backLabel?: string
 }) {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
+  const locale = i18n.language
+  const { user } = useSanctions()
+  const selfId = user.subject_id
   const [detail, setDetail] = useState<ViolationDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -119,28 +132,28 @@ export function ViolationDetailView({
     void load()
   }, [load])
 
-  const back = (
-    <Button variant="ghost" size="sm" className="-ml-2 w-fit" onClick={onBack}>
-      <ArrowLeftIcon className="size-4" />
+  const backButton = (
+    <Button variant="ghost" size="sm" className="-ml-2 shrink-0" onClick={onBack}>
+      <ChevronLeftIcon className="size-4" />
       {backLabel ?? t("violations.detail.back")}
     </Button>
   )
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-6">
-        {back}
-        <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-40 rounded-xl" />
+      <div className="flex max-w-3xl flex-col gap-5">
+        <div className="flex flex-wrap items-center gap-2">{backButton}</div>
+        <Skeleton className="h-7 w-2/3" />
+        <Skeleton className="h-32 rounded-xl" />
       </div>
     )
   }
 
   if (notFound || !detail) {
     return (
-      <div className="flex flex-col gap-6">
-        {back}
-        <Empty className="border border-dashed">
+      <div className="flex max-w-3xl flex-col gap-5">
+        <div className="flex flex-wrap items-center gap-2">{backButton}</div>
+        <Empty className="rounded-xl border border-dashed">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <FileTextIcon />
@@ -153,83 +166,86 @@ export function ViolationDetailView({
     )
   }
 
-  const tone = LEVEL_TONE[detail.level]
-  const Icon = tone.icon
   const appealUrl = detail.appeal_url || APPEAL_URL
   const references = detail.cases.map((c) => c.reference)
-  const inactive = detail.actions.filter((a) => !detail.active_actions.includes(a))
   const headline = detail.cases[0]?.reason ?? t(`violations.level.${detail.level}`)
+  const openedAt = detail.cases[0]?.created_at ?? null
+  const first = detail.cases[0]
+  const issuer =
+    first?.issuer_id && first.issuer_type
+      ? { kind: first.issuer_type as EntityKind, id: first.issuer_id }
+      : null
 
   return (
-    <div className="flex flex-col gap-6">
-      {back}
-
+    <div className="flex max-w-3xl flex-col gap-5">
       {/* En-tête */}
-      <div className="flex items-start gap-4">
-        <div
-          className={cn(
-            "flex size-11 shrink-0 items-center justify-center rounded-xl",
-            detail.active ? tone.bg : "bg-muted"
+      <div className="flex flex-wrap items-center gap-2">
+        {backButton}
+        <div className="mx-1 h-4 w-px bg-border" />
+        <ReferenceText references={references} />
+        {detail.active ? <LevelPill level={detail.level} /> : <ClosedPill />}
+      </div>
+
+      {/* Titre — le motif retenu, en toutes lettres */}
+      <div className="min-w-0">
+        <h1 className="wrap-break-word text-lg font-semibold leading-snug sm:text-xl">
+          {headline}
+        </h1>
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted-foreground">
+          {openedAt && (
+            <span>{t("violations.detail.openedOn", { date: absoluteTime(openedAt, locale) })}</span>
           )}
-        >
-          <Icon
-            className={cn("size-5", detail.active ? tone.text : "text-muted-foreground")}
-          />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold leading-tight">{headline}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {detail.active ? (
-              <LevelBadge level={detail.level} />
+          {openedAt && <span className="opacity-40">·</span>}
+          {/* « Par qui » : un dossier global est toujours prononcé par l'équipe,
+              mais l'API peut nommer l'auteur — on l'affiche quand elle le fait. */}
+          <span className="inline-flex items-center gap-1">
+            {issuer ? (
+              <>
+                {t("violations.detail.issuedBy", { issuer: "" }).trim()}
+                <EntityRef kind={issuer.kind} id={issuer.id} variant="inline" />
+              </>
             ) : (
-              <span className="rounded-md border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                {t("violations.list.resolved")}
-              </span>
+              t("violations.detail.issuedBy", { issuer: t("violations.detail.issuedByModdy") })
             )}
-            {detail.active_actions.map((action) => (
-              <ActionBadge key={`a-${action}`} action={action} />
-            ))}
-            {inactive.map((action) => (
-              <ActionBadge key={`i-${action}`} action={action} muted />
-            ))}
-          </div>
-          <ReferenceText references={references} className="mt-2 block" />
+          </span>
         </div>
       </div>
 
-      {/* Compte à rebours */}
+      {/* Ce qui va se passer — jamais sur une infraction close. */}
       {detail.enforcement && (
-        <EnforcementNotice enforcement={detail.enforcement} appealUrl={appealUrl} />
+        <EnforcementNotice
+          enforcement={detail.enforcement}
+          appealUrl={appealUrl}
+          active={detail.active}
+          showAppeal={false}
+        />
       )}
 
-      {/* Cases du groupe */}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-sm font-semibold">
-          {t("violations.detail.cases", { count: detail.cases.length })}
-        </h2>
-        {detail.cases.map((item) => (
-          <CasePanel key={item.id ?? item.reference} item={item} />
-        ))}
-      </div>
-
-      {/* Appel — aucun endpoint : on ne fait que rediriger vers le support */}
-      <div className="flex flex-col gap-3 rounded-xl border p-4">
-        <div className="flex items-start gap-3">
-          <InfoIcon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
-          <div>
-            <p className="text-sm font-medium">{t("violations.detail.appealTitle")}</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("violations.detail.appealDescription")}
-            </p>
-          </div>
+      {/* Ce qui s'applique, sujet par sujet */}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold">{t("violations.detail.applies")}</h2>
+        <div className="flex flex-col divide-y rounded-xl border bg-card">
+          {detail.cases.map((item) => (
+            <div key={item.id ?? item.reference} className="p-4">
+              <SubjectBlock item={item} selfId={selfId} />
+            </div>
+          ))}
         </div>
-        <Button asChild size="sm" className="w-fit">
+      </section>
+
+      {/* Recours — il n'existe aucun endpoint d'appel : on renvoie au support. */}
+      <section className="rounded-xl border bg-card p-4">
+        <h2 className="text-sm font-semibold">{t("violations.detail.appealTitle")}</h2>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          {t("violations.detail.appealDescription")}
+        </p>
+        <Button asChild size="sm" className="mt-3 w-fit">
           <a href={appealUrl} target="_blank" rel="noopener noreferrer">
             <ExternalLinkIcon className="size-4" />
             {t("violations.appeal")}
           </a>
         </Button>
-      </div>
+      </section>
     </div>
   )
 }

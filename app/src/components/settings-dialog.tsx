@@ -45,7 +45,7 @@ import {
 } from "@/services/guilds"
 import { invalidatePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { useSanctions } from "@/contexts/SanctionContext"
-import { asSanctionError, levelRank } from "@/lib/sanctions"
+import { asSanctionError, levelRank, LEVEL_TONE } from "@/lib/sanctions"
 import { showSanctionToast } from "@/lib/handle-error"
 import { SanctionNotice } from "@/components/violations/sanction-banner"
 import { toast } from "sonner"
@@ -448,14 +448,17 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                   )}
 
                   {(linkBlocked || selectedGuildBlocked) && (
-                    <p className="text-xs text-orange-600 dark:text-orange-400">
+                    <p className={`text-xs ${LEVEL_TONE.limited.text}`}>
                       {linkBlocked
                         ? t('violations.premiumBlocked')
                         : t('violations.premiumGuildBlocked')}
                     </p>
                   )}
 
-                  {subscription.servers.length < subscription.max_servers && (
+                  {/* Sous sanction, le sélecteur disparaît : l'explication
+                      ci-dessus remplace un contrôle qui ne mènerait qu'à un
+                      refus. Retirer un serveur, en revanche, reste permis. */}
+                  {!linkBlocked && subscription.servers.length < subscription.max_servers && (
                     <div className="flex gap-2 mt-1">
                       <Select value={selectedServerId} onValueChange={setSelectedServerId}>
                         <SelectTrigger className="flex-1 w-0">

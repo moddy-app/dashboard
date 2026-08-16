@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { BanIcon, ChevronsUpDownIcon, CrownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon, ShieldMinusIcon } from "lucide-react"
+import { ChevronsUpDownIcon, CrownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -23,6 +23,7 @@ import { useSanctions } from "@/contexts/SanctionContext"
 import { usePremiumGuilds } from "@/hooks/usePremiumGuilds"
 import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { VerifiedBadge } from "@/components/verified-badge"
+import { LevelDot } from "@/components/violations/violation-badges"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { getGuildIconUrl } from "@/lib/auth"
 import { logger } from "@/lib/logger"
@@ -187,11 +188,12 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                           {premiumIds.has(String(guild.id)) && kind !== "official" && (
                             <CrownIcon className="size-3 text-violet-500 shrink-0" />
                           )}
-                          {suspended ? (
-                            <BanIcon className="size-3 shrink-0 text-red-500" />
-                          ) : level === "limited" ? (
-                            <ShieldMinusIcon className="size-3 shrink-0 text-orange-500" />
-                          ) : null}
+                          {(suspended || level === "limited") && (
+                            <LevelDot
+                              level={level}
+                              title={t(`violations.level.${level}`)}
+                            />
+                          )}
                         </>
                       )
                     })()}

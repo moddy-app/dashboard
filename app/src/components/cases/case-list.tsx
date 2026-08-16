@@ -187,7 +187,13 @@ function CaseRow({
           <div className="flex shrink-0 items-center gap-2">
             <div className="hidden items-center gap-1 md:flex">
               {uniqueActions.slice(0, 3).map((a) => (
-                <ActionChip key={a} action={a} size="xs" muted={!item.has_active} />
+                <ActionChip
+                  key={a}
+                  action={a}
+                  size="xs"
+                  muted={!item.has_active}
+                  caseType={item.type}
+                />
               ))}
             </div>
             <span
