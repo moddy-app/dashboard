@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { ChevronRightIcon, ShieldCheckIcon } from "lucide-react"
+import { CircleDotIcon, CheckCircle2Icon, ShieldCheckIcon } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Empty,
@@ -10,19 +10,28 @@ import {
 } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
 import { absoluteTime, relativeTime } from "@/lib/cases"
-import { LEVEL_TONE, formatDeadline } from "@/lib/sanctions"
 import type { ViolationGroup } from "@/types/violations"
 import { EntityRef, type EntityKind } from "@/components/cases/entity-ref"
-import { ActionBadge, LevelBadge, ReferenceText } from "./violation-badges"
+import { GlobalActionChip, LevelPill, ClosedPill } from "./violation-badges"
 
-// ─── Carte d'infraction ───────────────────────────────────────────────────────
+// ─── Séparateur (point) ───────────────────────────────────────────────────────
+// Repris à l'identique de `case-list.tsx` : les deux listes se lisent pareil.
+
+function Dot() {
+  return <span className="size-1 shrink-0 rounded-full bg-current opacity-40" />
+}
+
+// ─── Ligne ────────────────────────────────────────────────────────────────────
 
 /**
- * Une carte = un `group_id`. Une infraction peut viser le compte ET ses serveurs
- * à la fois : les afficher séparément donnerait l'impression de plusieurs
- * sanctions distinctes.
+ * Une ligne = un `group_id`, jamais un dossier isolé. Une même infraction peut
+ * viser le compte ET ses serveurs ; les afficher séparément donnerait
+ * l'impression de plusieurs sanctions distinctes.
+ *
+ * La structure est celle de `CaseRow` : pastille d'état, titre, ligne de méta
+ * ponctuée de points, puis chips et date à droite.
  */
-export function ViolationCard({
+function ViolationRow({
   group,
   onOpen,
 }: {
@@ -31,12 +40,9 @@ export function ViolationCard({
 }) {
   const { t, i18n } = useTranslation()
   const locale = i18n.language
-  const tone = LEVEL_TONE[group.level]
-  const Icon = tone.icon
 
-  // Les actions révoquées / expirées restent affichées, mais barrées.
+  // Les actions levées ou expirées restent visibles, mais éteintes.
   const inactive = group.actions.filter((a) => !group.active_actions.includes(a))
-  const deadline = formatDeadline(group.enforcement?.deadline, locale)
 
   return (
     <div
@@ -49,77 +55,65 @@ export function ViolationCard({
           onOpen(group.group_id)
         }
       }}
-      className={cn(
-        "group flex cursor-pointer items-start gap-4 rounded-xl border p-4 transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none",
-        !group.active && "opacity-70 hover:opacity-100"
-      )}
+      className="group flex cursor-pointer items-center gap-3 px-3 py-2.5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none sm:px-4"
     >
-      <div
-        className={cn(
-          "flex size-9 shrink-0 items-center justify-center rounded-lg",
-          group.active ? tone.bg : "bg-muted"
-        )}
+      {/* Indicateur d'état */}
+      <span
+        className="shrink-0"
+        title={group.active ? t("violations.list.activeTitle") : t("violations.list.resolved")}
       >
-        <Icon className={cn("size-4", group.active ? tone.text : "text-muted-foreground")} />
-      </div>
+        {group.active ? (
+          <CircleDotIcon className="size-4 text-red-500" />
+        ) : (
+          <CheckCircle2Icon className="size-4 text-muted-foreground/60" />
+        )}
+      </span>
 
+      {/* Corps */}
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <p className="min-w-0 flex-1 text-sm font-medium line-clamp-2">{group.reason}</p>
-          {group.active ? (
-            <LevelBadge level={group.level} />
-          ) : (
-            <span className="rounded-md border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-              {t("violations.list.resolved")}
+        <p className="truncate text-sm font-medium">{group.reason}</p>
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+          {group.references.length > 0 && (
+            <span className="shrink-0">
+              {t("violations.reference", { refs: group.references.join(", ") })}
             </span>
           )}
+          {group.subjects.length > 0 && (
+            <>
+              <Dot />
+              <span className="hidden min-w-0 items-center gap-2 sm:inline-flex">
+                {group.subjects.slice(0, 2).map((subject) => (
+                  <EntityRef
+                    key={`${subject.subject_type}:${subject.subject_id}`}
+                    kind={subject.subject_type as EntityKind}
+                    id={subject.subject_id}
+                    variant="inline"
+                  />
+                ))}
+              </span>
+            </>
+          )}
         </div>
+      </div>
 
-        {/* Sujets visés — compte et/ou serveurs */}
-        {group.subjects.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            {group.subjects.map((subject) => (
-              <EntityRef
-                key={`${subject.subject_type}:${subject.subject_id}`}
-                kind={subject.subject_type as EntityKind}
-                id={subject.subject_id}
-                variant="inline"
-              />
-            ))}
-          </div>
-        )}
-
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      {/* État + actions + date */}
+      <div className="flex shrink-0 items-center gap-2">
+        <div className="hidden items-center gap-1 md:flex">
           {group.active_actions.map((action) => (
-            <ActionBadge key={`a-${action}`} action={action} />
+            <GlobalActionChip key={`a-${action}`} action={action} size="xs" />
           ))}
           {inactive.map((action) => (
-            <ActionBadge key={`i-${action}`} action={action} muted />
+            <GlobalActionChip key={`i-${action}`} action={action} size="xs" muted />
           ))}
         </div>
-
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-          <ReferenceText references={group.references} />
-          <span title={absoluteTime(group.created_at, locale)}>
-            {t("violations.list.openedAgo", { time: relativeTime(group.created_at, locale) })}
-          </span>
-          {group.case_count > 1 && (
-            <span>{t("violations.list.caseCount", { count: group.case_count })}</span>
-          )}
-          {group.enforcement?.status === "pending" && deadline && (
-            <span className="font-medium text-red-600 dark:text-red-400">
-              {t("violations.list.deadline", { date: deadline })}
-            </span>
-          )}
-          {group.enforcement?.status === "halted" && (
-            <span className="font-medium text-sky-600 dark:text-sky-400">
-              {t("violations.enforcement.title.halted")}
-            </span>
-          )}
-        </div>
+        {group.active ? <LevelPill level={group.level} /> : <ClosedPill />}
+        <span
+          className="w-14 text-right text-xs tabular-nums text-muted-foreground"
+          title={absoluteTime(group.created_at, locale)}
+        >
+          {relativeTime(group.created_at, locale)}
+        </span>
       </div>
-
-      <ChevronRightIcon className="mt-2 size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
     </div>
   )
 }
@@ -145,9 +139,16 @@ export function ViolationList({
 
   if (loading) {
     return (
-      <div className={cn("flex flex-col gap-3", className)}>
+      <div className={cn("flex flex-col divide-y rounded-xl border", className)}>
         {[...Array(3)].map((_, i) => (
-          <Skeleton key={i} className="h-28 rounded-xl" />
+          <div key={i} className="flex items-center gap-3 px-4 py-3">
+            <Skeleton className="size-4 rounded-full" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-2/3" />
+              <Skeleton className="h-3 w-1/3" />
+            </div>
+            <Skeleton className="h-3 w-10" />
+          </div>
         ))}
       </div>
     )
@@ -155,7 +156,7 @@ export function ViolationList({
 
   if (groups.length === 0) {
     return (
-      <Empty className={cn("border border-dashed", className)}>
+      <Empty className={cn("rounded-xl border border-dashed", className)}>
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <ShieldCheckIcon />
@@ -170,9 +171,14 @@ export function ViolationList({
   }
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div
+      className={cn(
+        "flex flex-col divide-y overflow-hidden rounded-xl border",
+        className
+      )}
+    >
       {groups.map((group) => (
-        <ViolationCard key={group.group_id} group={group} onOpen={onOpen} />
+        <ViolationRow key={group.group_id} group={group} onOpen={onOpen} />
       ))}
     </div>
   )

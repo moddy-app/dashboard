@@ -455,7 +455,10 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                     </p>
                   )}
 
-                  {subscription.servers.length < subscription.max_servers && (
+                  {/* Sous sanction, le sélecteur disparaît : l'explication
+                      ci-dessus remplace un contrôle qui ne mènerait qu'à un
+                      refus. Retirer un serveur, en revanche, reste permis. */}
+                  {!linkBlocked && subscription.servers.length < subscription.max_servers && (
                     <div className="flex gap-2 mt-1">
                       <Select value={selectedServerId} onValueChange={setSelectedServerId}>
                         <SelectTrigger className="flex-1 w-0">

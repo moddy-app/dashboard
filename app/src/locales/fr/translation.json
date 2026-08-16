@@ -1243,20 +1243,29 @@
   },
   "violations": {
     "title": "Infractions",
-    "description": "Sanctions globales visant votre compte et vos serveurs.",
+    "description": "Moddy sanctionne les manquements à ses règles d'utilisation. Cette page liste ce qui a été reproché à votre compte ou à vos serveurs, ce que ça change concrètement, et comment contester. Les règles sont détaillées dans",
+    "termsLink": "nos Conditions d'utilisation",
+    "scaleTitle": "État de votre compte",
     "refresh": "Actualiser",
-    "appeal": "Faire appel",
-    "locked": "Verrouillé",
+    "appeal": "Contester la décision",
+    "reference": "Réf. {{refs}}",
+    "locked": "Indisponible",
     "viewOnly": "Consultation seule",
-    "cacheNote": "Les niveaux de sanction sont mis en cache jusqu'à une minute — un changement peut mettre ce délai à apparaître ici.",
-    "guildSuspendedShort": "Suspendu par une sanction globale",
+    "cacheNote": "L'état de votre compte est mis en cache jusqu'à une minute : un changement peut mettre ce délai à apparaître ici.",
+    "guildSuspendedShort": "Serveur suspendu",
     "premiumBlockedTitle": "Moddy Max indisponible",
-    "premiumBlocked": "Souscrire est indisponible tant que votre compte est sous sanction globale. La gestion d'un abonnement existant reste ouverte.",
-    "premiumGuildBlocked": "Ce serveur est sous sanction globale : il ne peut pas être lié à un abonnement.",
+    "premiumBlocked": "Vous ne pouvez pas souscrire tant qu'une sanction pèse sur votre compte. Un abonnement déjà payé reste gérable et résiliable.",
+    "premiumGuildBlocked": "Ce serveur est sanctionné : il ne peut pas être rattaché à un abonnement.",
     "premiumSuspendedTitle": "Abonnement suspendu par une sanction",
-    "premiumSuspendedDescription": "Votre abonnement existe toujours et reste payé, mais une sanction globale le rend inopérant. Il sera résilié — sans remboursement — si aucun appel ne stoppe le compte à rebours.",
+    "premiumSuspendedDescription": "Votre abonnement existe toujours et reste payé, mais la sanction le rend inopérant : les fonctionnalités Max ne s'appliquent plus. Il sera résilié, sans remboursement, si la sanction n'est pas levée à temps.",
     "level": {
       "none": "Aucune sanction",
+      "warn": "Avertissement",
+      "limited": "Limité",
+      "suspended": "Suspendu"
+    },
+    "ladder": {
+      "none": "Tout va bien",
       "warn": "Avertissement",
       "limited": "Limité",
       "suspended": "Suspendu"
@@ -1267,9 +1276,9 @@
       "ban": "Suspension"
     },
     "sanctionStatus": {
-      "active": "Active",
+      "active": "En vigueur",
       "expired": "Expirée",
-      "revoked": "Révoquée"
+      "revoked": "Levée"
     },
     "scope": {
       "all": "Toutes",
@@ -1280,105 +1289,104 @@
     "status": {
       "none": {
         "title": "Aucune sanction active",
-        "description": "Votre compte est en règle."
+        "description": "Rien ne vous est reproché : vous avez accès à tout Moddy."
       },
       "warn": {
-        "title": "Avertissement au dossier",
-        "description": "Un avertissement a été enregistré. Rien n'est bloqué : votre accès à Moddy est inchangé."
+        "title": "Vous avez reçu un avertissement",
+        "description": "Un manquement à nos règles a été relevé et noté. Rien n'est bloqué pour l'instant : votre accès à Moddy est exactement le même qu'avant. Un nouveau manquement, en revanche, mènera à une limitation."
       },
       "limited": {
         "title": "Votre accès est limité",
-        "description": "Moddy continue de tourner : vous pouvez toujours configurer les modules déjà en place. Souscrire à Moddy Max et activer un nouveau module sont indisponibles."
+        "description": "Moddy continue de fonctionner sur vos serveurs et vous pouvez toujours régler ce qui est déjà en place. Deux choses vous sont fermées : souscrire à Moddy Max, et mettre en service un module que vous n'aviez encore jamais configuré."
       },
       "suspended": {
         "title": "Votre accès est suspendu",
-        "description": "Vous n'avez plus accès à Moddy, sauf pour consulter ce dossier et faire appel."
+        "description": "Vous n'avez plus accès au dashboard ni à Moddy. Il vous reste cette page, pour comprendre pourquoi et contester."
       }
     },
     "list": {
+      "activeTitle": "En cours",
       "resolved": "Terminée",
-      "openedAgo": "Ouverte {{time}}",
-      "caseCount": "{{count}} dossiers",
-      "deadline": "Conséquences le {{date}}",
       "emptyTitle": "Aucune infraction",
-      "emptyDescription": "Ni votre compte ni vos serveurs n'ont d'infraction enregistrée."
+      "emptyDescription": "Rien n'a été reproché à votre compte ni à vos serveurs."
     },
     "detail": {
       "back": "Retour",
       "breadcrumb": "Infraction",
-      "cases": "Dossiers de cette infraction ({{count}})",
+      "openedOn": "Constatée le {{date}}",
+      "created": "Constatée {{date}}",
+      "details": "Détails",
+      "subjects": "Qui est visé",
+      "measures": "Mesures prises",
+      "dates": "Date",
+      "applies": "Ce qui s'applique",
       "until": "Jusqu'au {{date}}",
-      "permanent": "Permanente",
+      "permanent": "Définitive",
       "notFoundTitle": "Infraction introuvable",
       "notFoundDescription": "Cette infraction n'existe pas, ou elle ne vous concerne pas.",
-      "appealTitle": "Vous pensez qu'il s'agit d'une erreur ?",
-      "appealDescription": "Les appels sont traités par un humain sur le serveur de support Moddy. En déposer un ne lève pas la sanction à lui seul."
+      "appealTitle": "Vous pensez que c'est une erreur ?",
+      "appealDescription": "Les contestations se font sur le serveur de support Moddy, où un membre de l'équipe reprend le dossier. Contester ne suspend pas la sanction : elle reste en vigueur pendant l'examen."
     },
     "enforcement": {
       "title": {
-        "pending": "Conséquences en attente",
-        "halted": "Appel en cours d'examen",
-        "executed": "Conséquences appliquées",
+        "pending": "Ce qui va se passer",
+        "halted": "Contestation en cours d'examen",
+        "executed": "Mesures appliquées",
         "cancelled": "Annulé"
       },
-      "pendingDescription": "Sauf appel stoppant le compte à rebours, les conséquences seront appliquées le {{date}}.",
-      "haltedDescription": "Un humain a stoppé le compte à rebours le temps d'examiner l'appel. La sanction, elle, reste en vigueur.",
-      "executedDescription": "Les conséquences ont été appliquées le {{date}}.",
+      "pendingDescription": "Sans contestation retenue d'ici le {{date}}, les mesures ci-dessous seront appliquées.",
+      "haltedDescription": "L'équipe a mis le décompte en pause le temps d'examiner votre contestation. La sanction, elle, reste en vigueur.",
+      "executedDescription": "Les mesures ont été appliquées le {{date}}.",
       "inDays": "Encore {{days}} j {{hours}} h",
       "inHours": "Encore {{hours}} h {{minutes}} min",
       "inMinutes": "Encore {{minutes}} min",
-      "premiumWarning": "Un abonnement payant est rattaché : il sera résilié sans remboursement à l'échéance."
+      "premiumWarning": "Votre abonnement payant sera résilié à l'échéance, sans remboursement."
     },
     "banner": {
       "seeDetails": "Voir le détail",
       "until": "Jusqu'au {{date}}",
       "userLimitedTitle": "Votre accès à Moddy est limité",
-      "userLimitedDescription": "Vous pouvez toujours configurer les modules déjà en place. Souscrire à Moddy Max et activer un nouveau module sont indisponibles.",
+      "userLimitedDescription": "Vous pouvez toujours régler les modules déjà en place. Souscrire à Moddy Max et mettre en service un nouveau module vous sont fermés.",
       "guildLimitedTitle": "Ce serveur est limité",
-      "guildLimitedDescription": "{{guild}} continue de tourner, mais l'automod IA est coupé et aucun nouveau module ne peut y être activé.",
+      "guildLimitedDescription": "Moddy continue de tourner sur {{guild}}, mais la modération par IA y est coupée et aucun nouveau module ne peut y être mis en service.",
       "guildSuspendedTitle": "Ce serveur est suspendu",
       "guildSuspendedDescription": "Moddy a quitté {{guild}}. Sa configuration n'est plus accessible.",
-      "newModuleBlockedTitle": "Ce module ne peut plus être activé",
-      "newModuleBlockedDescription": "Une sanction globale interdit d'activer un module jamais configuré. Les modules déjà en place restent pleinement modifiables.",
-      "automodBlockedTitle": "L'automod IA est coupé sur ce serveur",
-      "automodBlockedDescription": "Une sanction globale visant ce serveur a coupé l'automod IA : sa configuration ne peut plus être modifiée tant que la sanction n'est pas levée."
+      "newModuleBlockedTitle": "Ce module ne peut pas être mis en service",
+      "newModuleBlockedDescription": "Une sanction interdit d'activer un module encore jamais configuré. Ceux déjà en place restent entièrement modifiables.",
+      "automodBlockedTitle": "La modération par IA est coupée ici",
+      "automodBlockedDescription": "Une sanction visant ce serveur a coupé la modération par IA : sa configuration est figée tant que la sanction n'est pas levée."
     },
     "errors": {
-      "default": "Action refusée par une sanction globale",
+      "default": "Action refusée par une sanction",
       "user_suspended": "Votre compte est suspendu",
       "guild_suspended": "Ce serveur est suspendu",
-      "premium_blocked_user": "Moddy Max indisponible sous sanction",
-      "premium_blocked_guild": "Ce serveur ne peut pas être lié à un abonnement",
-      "new_module_blocked": "Vous ne pouvez plus activer de nouveau module",
-      "automod_ai_blocked": "L'automod IA est coupé sur ce serveur"
+      "premium_blocked_user": "Souscription fermée tant que votre compte est sanctionné",
+      "premium_blocked_guild": "Ce serveur ne peut pas être rattaché à un abonnement",
+      "new_module_blocked": "Vous ne pouvez pas mettre en service un nouveau module",
+      "automod_ai_blocked": "La modération par IA est coupée sur ce serveur"
     },
     "errorSubject": {
-      "discord_user": "Votre compte est sous sanction globale.",
-      "discord_guild": "Ce serveur est sous sanction globale."
+      "discord_user": "Une sanction pèse sur votre compte.",
+      "discord_guild": "Une sanction pèse sur ce serveur."
     },
-    "errorReferences": "Référence : {{refs}}",
+    "errorReferences": "Réf. {{refs}}",
     "suspended": {
       "title": "Votre accès à Moddy est suspendu",
       "headlinePrefix": "Votre accès à Moddy est",
-      "description": "Une sanction globale a retiré votre accès. Cette page est la seule qui reste : le motif, la durée, et comment faire appel.",
-      "reasonLabel": "Motif retenu",
+      "description": "Un manquement à nos règles a mis fin à votre accès. Cette page reste disponible pour comprendre ce qui vous est reproché et contester. Les règles sont détaillées dans",
+      "reasonLabel": "Ce qui vous est reproché",
       "recheck": "Vérifier à nouveau",
-      "activeRecord": "Infractions en cours",
-      "pastRecord": "Infractions terminées",
+      "activeRecord": "Sanctions en cours",
+      "activeRecordDescription": "Elles s'appliquent tant qu'elles n'ont pas été levées ou qu'elles n'ont pas expiré.",
+      "pastRecord": "Sanctions passées",
+      "pastRecordDescription": "Levées ou expirées : elles n'ont plus aucun effet, mais restent à votre historique.",
       "billingTitle": "Facturation",
-      "billingDescription": "Une sanction ne bloque jamais votre argent : vos factures et la résiliation restent accessibles.",
+      "billingDescription": "Une sanction ne touche pas à votre argent : vos factures restent consultables et votre abonnement résiliable à tout moment.",
       "billingAction": "Gérer la facturation",
       "billingError": "Impossible d'ouvrir le portail de facturation. Réessayez dans un instant.",
       "backToSummary": "Retour au résumé",
-      "emptyTitle": "Aucun détail disponible",
-      "emptyDescription": "Aucune infraction n'a pu être chargée. Contactez le support avec votre identifiant de compte."
-    },
-    "reference": "Réf. {{refs}}",
-    "ladder": {
-      "none": "Tout va bien",
-      "warn": "Avertissement",
-      "limited": "Limité",
-      "suspended": "Suspendu"
+      "emptyTitle": "Détail indisponible",
+      "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte."
     }
   }
 }

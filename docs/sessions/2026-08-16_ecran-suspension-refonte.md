@@ -1,5 +1,10 @@
 # Session du 2026-08-16 — Refonte de l'écran de suspension
 
+> **Seconde passe (même jour).** Le premier jet inventait sa propre grammaire
+> visuelle au lieu de reprendre celle des `cases`, et parlait de « dossiers » à
+> des gens qui veulent juste savoir ce qu'on leur reproche. Tout est repris
+> ci-dessous à partir de « Seconde passe ».
+
 ## Objectif
 
 Reprendre l'écran d'un compte suspendu (`SuspendedScreen`) et le vocabulaire des
@@ -122,3 +127,74 @@ l'autre. Le compte à rebours donne l'urgence, le bloc d'appel donne la sortie.
   masquer pour un compte qui n'a jamais rien payé.
 - Section « Sanctions » dans `/debug` (toujours en attente).
 - Vue staff des infractions (filtres `subject_type` / `subject_id`).
+
+---
+
+# Seconde passe — alignement sur les `cases` et refonte du texte
+
+## Ce qui n'allait pas dans le premier jet
+
+| Problème | Correction |
+|---|---|
+| Grammaire visuelle inventée (`rounded-2xl`, grosses cartes empilées, médaillons d'icône) là où le dashboard utilise `rounded-xl border bg-card p-4` et des listes `divide-y` | Liste et détail reconstruits sur les gabarits de `case-list.tsx` / `case-detail.tsx` |
+| Palette parallèle : `LEVEL_TONE` redéfinissait des rouges et des ambres à côté de `ACTION_TONE` | `LEVEL_TONE` **dérive** de `ACTION_TONE` ; un ton `emerald` a été ajouté à la source commune pour le niveau sain |
+| `ActionBadge` dupliquait `ActionChip` (mêmes classes, icône différente) | `GlobalActionChip` réutilise `ACTION_META` (icône) et `actionTone` (couleur) — seul le libellé diffère |
+| `EnforcementNotice` codait ses couleurs en dur (`border-red-200 bg-red-50 dark:…`) | Passe par `LEVEL_TONE` |
+| Vocabulaire de back-office : « dossier », « case », « portée » | Vocabulaire de l'utilisateur : ce qui lui est reproché, ce que ça change, comment contester |
+| Rien ne disait **pourquoi** une sanction existe | Chaque écran renvoie aux Conditions d'utilisation (`TERMS_URL`) |
+| Deux cartes rouges empilées sur l'écran de suspension | Le rouge est réservé au bloc « ce qui va se passer » ; le motif est neutre |
+| « Appel en cours d'examen » restait affiché sur une sanction levée | `EnforcementNotice` prend `active` et ne rend rien pour une infraction close |
+| Souscription verrouillée mais toujours visible (bouton grisé + tooltip) | L'entrée disparaît : sidebar, carte premium, sélecteur de serveur |
+| Logo minuscule et page centrée | Logo `h-8`/`h-9`, tout est aligné à gauche |
+
+## Les vues, désormais
+
+**Liste** (`violation-list.tsx`) — un conteneur `divide-y rounded-xl border`,
+une ligne par infraction : pastille d'état (`CircleDotIcon` / `CheckCircle2Icon`
+comme les cases), motif tronqué, méta ponctuée de points (référence, sujets),
+puis chips d'action, pastille de niveau et date relative. Plus aucune carte.
+
+**Détail** (`violation-detail.tsx`) — le gabarit de `CaseDetailView` : barre
+retour + référence + pastille d'état, titre pleine largeur, puis deux colonnes.
+À gauche ce qui s'applique et le recours, à droite un `Panel` de `PropRow`
+(qui est visé, mesures prises, date). Pas de composeur ni d'action d'écriture :
+une infraction ne se modifie pas depuis le dashboard.
+
+## Le texte
+
+Le mot « dossier » n'apparaît plus dans l'interface. Une sanction globale
+sanctionne un **manquement aux Conditions d'utilisation** ; les trois écrans le
+disent et pointent vers `moddy.app/terms`. Le reste suit :
+
+- `ban` → « suspension », `restrict` → « limitation » (déjà fait en 1ʳᵉ passe) ;
+- `active` → « en vigueur », `revoked` → « levée » ;
+- « faire appel » → « contester », et la contestation est décrite pour ce
+  qu'elle est : traitée par un humain sur le **serveur de support**, sans
+  suspendre la sanction pendant l'examen ;
+- chaque niveau explique ce qu'il change **concrètement** plutôt que de répéter
+  son nom (« vous pouvez toujours régler ce qui est déjà en place ; souscrire à
+  Max et mettre en service un module jamais configuré vous sont fermés »).
+
+## Souscription sous sanction : on retire, on ne grise pas
+
+Un bouton grisé avec un tooltip est une promesse qu'on retire au dernier
+moment. Les trois points d'entrée disparaissent quand le compte est
+`restricted` :
+
+- `app-sidebar.tsx` — l'entrée Moddy Max n'est plus rendue… **sauf** si un
+  abonnement existe (`tier` ou `stripe_customer_id`), auquel cas elle devient
+  « Gérer l'abonnement ». Le test ne peut pas porter sur `is_active` : une
+  sanction le fait retomber à `false`, ce qui aurait coupé l'accès à la
+  facturation d'un abonné qui paie encore.
+- `GuildOverviewPage.tsx` — la carte premium entière disparaît (`canLinkGuild`).
+- `settings-dialog.tsx` — le sélecteur « ajouter un serveur » disparaît ;
+  l'explication au-dessus reste, et **retirer** un serveur reste permis.
+
+## Fichiers de la seconde passe
+
+- Créé : rien.
+- Réécrits : `violation-badges.tsx`, `violation-list.tsx`, `violation-detail.tsx`,
+  `ViolationsPage.tsx`, `SuspendedPage.tsx`, bloc `violations.*` des deux locales.
+- Modifiés : `lib/cases.ts` (ton `emerald`), `lib/sanctions.ts` (`LEVEL_TONE`
+  dérivé, `TERMS_URL`, `globalActionTone`), `app-sidebar.tsx`,
+  `GuildOverviewPage.tsx`, `settings-dialog.tsx`.

@@ -62,11 +62,14 @@ export function AppSidebar({
   const location = useLocation()
   const { selectedGuildId, refreshGuildData } = useGuildContext()
   const subscription = useSubscription()
-  const isSubscribed = subscription?.is_active ?? false
-  // Sous sanction, souscrire est refusé — gérer un abonnement existant reste
-  // permis (le portail Stripe n'est jamais bloqué).
   const { user: sanction, isExempt } = useSanctions()
-  const upgradeBlocked = !isExempt && !isSubscribed && sanction.restricted
+  // Une sanction globale ferme la souscription : on **retire** l'entrée plutôt
+  // que de la laisser mener à un refus. Un abonnement déjà payé garde la
+  // sienne, même rendu inopérant par la sanction (`is_active` retombe alors à
+  // `false`) : le portail Stripe n'est jamais bloqué, et résilier doit rester
+  // possible.
+  const hasBilling = Boolean(subscription?.tier || subscription?.stripe_customer_id)
+  const hidePremiumEntry = !isExempt && !hasBilling && sanction.restricted
 
   const [isRefreshing, setIsRefreshing] = React.useState(false)
 
@@ -236,31 +239,19 @@ export function AppSidebar({
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
+          {!hidePremiumEntry && (
           <SidebarMenuItem>
             <SidebarMenuButton
-              tooltip={
-                upgradeBlocked
-                  ? t("violations.premiumBlocked")
-                  : isSubscribed
-                  ? t("sidebar.manageSubscription")
-                  : "Moddy Max"
-              }
-              onClick={() =>
-                navigate(
-                  upgradeBlocked
-                    ? "/violations"
-                    : isSubscribed
-                    ? "/?openSettings=billing"
-                    : "/premium"
-                )
-              }
+              tooltip={hasBilling ? t("sidebar.manageSubscription") : "Moddy Max"}
+              onClick={() => navigate(hasBilling ? "/?openSettings=billing" : "/premium")}
               isActive={location.pathname === "/premium"}
               className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-violet-950/60 data-[active=true]:bg-violet-50 data-[active=true]:text-violet-700 dark:data-[active=true]:bg-violet-950/60 dark:data-[active=true]:text-violet-300"
             >
               <CrownIcon />
-              <span>{isSubscribed ? t("sidebar.manageSubscription") : "Moddy Max"}</span>
+              <span>{hasBilling ? t("sidebar.manageSubscription") : "Moddy Max"}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
+          )}
           <SidebarMenuItem>
             <SidebarMenuButton tooltip={t("sidebar.search")} onClick={onOpenCommandMenu}>
               <SearchIcon />

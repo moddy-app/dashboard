@@ -90,6 +90,16 @@ export const ACTION_TONE = {
     border: 'border-slate-200 dark:border-slate-800',
     dot: 'bg-slate-500',
   },
+  // Aucune action de case n'est « verte » — ce ton sert au niveau *sain* des
+  // sanctions globales (`LEVEL_TONE.none`), qui partage cette palette pour que
+  // les deux vues aient exactement les mêmes couleurs.
+  emerald: {
+    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-100 dark:bg-emerald-950/60',
+    softBg: 'bg-emerald-50 dark:bg-emerald-950/40',
+    border: 'border-emerald-200 dark:border-emerald-900',
+    dot: 'bg-emerald-500',
+  },
 } as const
 
 export function actionTone(action: SanctionAction) {
