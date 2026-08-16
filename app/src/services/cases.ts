@@ -139,3 +139,30 @@ export async function getUserProfile(userId: string): Promise<DiscordUserProfile
 export async function getGuildProfile(guildId: string): Promise<DiscordGuildProfile> {
   return (await api(`/guilds/${guildId}/profile`)) as DiscordGuildProfile
 }
+
+/**
+ * Repli des deux appels ci-dessus : identité Discord seule, sans le statut
+ * Moddy (premium, staff). `GET /users/{id}` est **public** et `GET /guilds/{id}`
+ * n'est plus bloqué par une suspension — c'est ce qui permet à un compte
+ * suspendu de voir des pseudos et des icônes plutôt que des snowflakes.
+ */
+export async function getPublicUser(userId: string): Promise<DiscordUserProfile> {
+  const u = (await api(`/users/${userId}`)) as Omit<
+    DiscordUserProfile,
+    'display_name' | 'is_premium' | 'is_beta' | 'is_staff' | 'staff_roles' | 'in_database'
+  >
+  return {
+    ...u,
+    display_name: u.global_name ?? u.username,
+    is_premium: false,
+    is_beta: false,
+    is_staff: false,
+    staff_roles: [],
+    in_database: false,
+  }
+}
+
+export async function getPublicGuild(guildId: string): Promise<DiscordGuildProfile> {
+  const g = (await api(`/guilds/${guildId}`)) as DiscordGuildProfile
+  return { ...g, is_premium: false, is_beta: false }
+}

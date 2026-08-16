@@ -58,9 +58,14 @@ function ActiveSanction({
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border bg-card p-5">
-      <div className="flex flex-col gap-2">
-        <p className="text-base font-medium leading-relaxed">{group.reason}</p>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <p className="text-base font-medium leading-relaxed">{group.reason}</p>
+
+      {/* Chaque fait est étiqueté : une rangée de puces côte à côte oblige à
+          deviner ce que chacune désigne. Ici on lit « Mesure : suspension,
+          Durée : définitive » sans effort. */}
+      <dl className="grid grid-cols-[auto_1fr] items-center gap-x-5 gap-y-2 text-xs">
+        <dt className="text-muted-foreground">{t("violations.detail.measureLabel")}</dt>
+        <dd className="flex flex-wrap items-center gap-1.5">
           {own
             ? own.map((sanction) => (
                 <GlobalActionChip key={sanction.reference} action={sanction.action} />
@@ -68,18 +73,28 @@ function ActiveSanction({
             : group.active_actions.map((action) => (
                 <GlobalActionChip key={action} action={action} />
               ))}
+        </dd>
+
+        <dt className="text-muted-foreground">{t("violations.detail.durationLabel")}</dt>
+        <dd>
           <ExpiryLabel
             expiresAt={own?.[0]?.expires_at ?? null}
-            className="text-xs text-muted-foreground"
+            className="text-xs text-foreground"
           />
-          <ReferenceText references={own ? own.map((s) => s.reference) : group.references} />
-        </div>
+        </dd>
+
         {otherSubjects > 0 && (
-          <p className="text-xs text-muted-foreground">
-            {t("violations.suspended.alsoTargets", { count: otherSubjects })}
-          </p>
+          <>
+            <dt className="text-muted-foreground">{t("violations.detail.scopeLabel")}</dt>
+            <dd>{t("violations.suspended.alsoTargets", { count: otherSubjects })}</dd>
+          </>
         )}
-      </div>
+
+        <dt className="text-muted-foreground">{t("violations.detail.referenceLabel")}</dt>
+        <dd>
+          <ReferenceText references={own ? own.map((s) => s.reference) : group.references} />
+        </dd>
+      </dl>
 
       {group.enforcement && (
         <div className="border-t pt-3">
@@ -297,7 +312,7 @@ export function SuspendedScreen({
             {/* 2. Ce qui vous est reproché — écrit une seule fois */}
             <section className="mt-10 flex flex-col gap-3">
               <h2 className="text-sm font-semibold">
-                {t("violations.suspended.reasonLabel")}
+                {t("violations.suspended.activeRecord")}
               </h2>
               {loading ? (
                 <Skeleton className="h-32 rounded-xl" />
@@ -336,27 +351,20 @@ export function SuspendedScreen({
               )}
             </section>
 
-            {/* 3. Le recours */}
-            <section className="mt-10 flex flex-col gap-3">
-              <div>
-                <h2 className="text-sm font-semibold">{t("violations.detail.appealTitle")}</h2>
-                <p className="mt-1 max-w-xl text-xs leading-relaxed text-muted-foreground">
-                  {t("violations.detail.appealDescription")}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button asChild size="sm">
-                  <a href={APPEAL_URL} target="_blank" rel="noopener noreferrer">
-                    <ExternalLinkIcon className="size-4" />
-                    {t("violations.appeal")}
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
-                  <RefreshCwIcon className="size-4" />
-                  {t("violations.suspended.recheck")}
-                </Button>
-              </div>
-            </section>
+            {/* 3. Le recours — les boutons seuls. Le « comment ça marche » est
+                dans la vue détail : ici on veut agir, pas relire la procédure. */}
+            <div className="mt-6 flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <a href={APPEAL_URL} target="_blank" rel="noopener noreferrer">
+                  <ExternalLinkIcon className="size-4" />
+                  {t("violations.appeal")}
+                </a>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                <RefreshCwIcon className="size-4" />
+                {t("violations.suspended.recheck")}
+              </Button>
+            </div>
 
             {/* 4. L'historique — secondaire, et jamais un doublon de ci-dessus */}
             {past.length > 0 && (

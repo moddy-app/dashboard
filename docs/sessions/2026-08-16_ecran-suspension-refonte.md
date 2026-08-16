@@ -314,3 +314,51 @@ s'applique à un sujet donné.
 
 `Réf. WUD2EW` devient `WUD2EW`. Le code se reconnaît seul ; l'annoncer allonge
 la ligne sans rien apprendre. La clé `violations.reference` disparaît.
+
+---
+
+# Cinquième passe — profils sous suspension et lisibilité de la carte
+
+## Les pseudos et icônes se résolvent même suspendu
+
+`GET /users/{id}/profile` et `GET /guilds/{id}/profile` exigent une session
+valide : un compte suspendu ne voyait donc que des snowflakes là où l'écran
+parle de lui et de ses serveurs.
+
+`useProfile` tente le profil enrichi (il porte le statut Moddy — premium, staff)
+puis retombe sur l'identité publique :
+
+| Enrichi (auth requise) | Repli |
+|---|---|
+| `GET /users/{id}/profile` | `GET /users/{id}` — **public, sans authentification** |
+| `GET /guilds/{id}/profile` | `GET /guilds/{id}` — droits d'admin requis, mais plus bloqué par une suspension (`guild_reader`) |
+
+`getPublicUser()` / `getPublicGuild()` (`services/cases.ts`) comblent les champs
+manquants : `display_name` se dérive de `global_name ?? username`, et le statut
+Moddy retombe à `false`. Le cache module de `useProfile` ne voit qu'une seule
+promesse par id, quel que soit le chemin emprunté.
+
+## La carte d'infraction s'explique
+
+Une rangée de puces côte à côte oblige à deviner ce que chacune désigne. Les
+faits sont désormais **étiquetés**, en liste de définitions compacte :
+
+```
+Mesure       [Suspension]
+Durée        ∞ Définitive
+Portée       Votre compte et 1 de vos serveurs
+Référence    [WUD2EW]
+```
+
+## Autres corrections
+
+- **« Infractions en cours » toujours au pluriel**, même à une seule : c'est le
+  nom de la section, pas un décompte. La clé `reasonLabel` est renommée
+  `activeRecord` — elle ne portait plus un motif mais un titre de section.
+- **La référence est un label**, pas du texte nu : chaque code dans sa propre
+  puce, typographie courante, sans préfixe ni bouton de copie. Utilisé
+  identiquement en liste, en détail et sur l'écran de suspension.
+- **La procédure de contestation n'est plus sur l'écran de suspension** — seuls
+  les deux boutons y restent. Le « comment ça marche » vit dans la vue détail :
+  sur l'écran d'accueil d'une suspension on veut agir, pas relire une
+  procédure.

@@ -13,7 +13,7 @@ import { absoluteTime, relativeTime } from "@/lib/cases"
 import type { ViolationGroup } from "@/types/violations"
 import { EntityRef } from "@/components/cases/entity-ref"
 import { useSanctions } from "@/contexts/SanctionContext"
-import { LevelPill, ClosedPill } from "./violation-badges"
+import { LevelPill, ClosedPill, ReferenceText } from "./violation-badges"
 
 // ─── Séparateur (point) ───────────────────────────────────────────────────────
 // Repris à l'identique de `case-list.tsx` : les deux listes se lisent pareil.
@@ -108,9 +108,7 @@ function ViolationRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-medium">{group.reason}</p>
         <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-          {group.references.length > 0 && (
-            <span className="shrink-0">{group.references.join(", ")}</span>
-          )}
+          <ReferenceText references={group.references} className="shrink-0" />
           {/* Qui est visé, annoncé comme tel : une suite de pseudos et
               d'icônes de serveurs ne dit pas d'elle-même qu'il s'agit des
               sujets de la sanction. Le séparateur vit dans le même conteneur,
