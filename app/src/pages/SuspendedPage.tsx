@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  ArrowUpRightIcon,
   CreditCardIcon,
   ExternalLinkIcon,
   LogOutIcon,
@@ -10,7 +9,6 @@ import {
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Skeleton } from "@/components/ui/skeleton"
 import { ModdyLogo } from "@/components/moddy-logo"
 import { getAvatarUrl, getDisplayName, logout, type User } from "@/lib/auth"
 import { usePageTitle } from "@/hooks/usePageTitle"
@@ -19,106 +17,11 @@ import { getViolations } from "@/services/violations"
 import { getSubscriptionStatus, openBillingPortal } from "@/services/guilds"
 import { logger } from "@/lib/logger"
 import type { SubscriptionData } from "@/types/api"
-import type { SanctionSummary, SubjectSanctionStatus, ViolationGroup } from "@/types/violations"
+import type { SubjectSanctionStatus, ViolationGroup } from "@/types/violations"
 import { ViolationList } from "@/components/violations/violation-list"
 import { ViolationDetailView } from "@/components/violations/violation-detail"
 import { SanctionScale } from "@/components/violations/sanction-scale"
-import {
-  EnforcementNotice,
-  ExpiryLabel,
-  GlobalActionChip,
-  ReferenceText,
-} from "@/components/violations/violation-badges"
-
-// ─── Sanction en cours ────────────────────────────────────────────────────────
-
-/**
- * Le bloc que la personne est venue lire : ce qu'on lui reproche, ce que ça lui
- * coûte, jusqu'à quand. C'est le **seul** endroit de l'écran où le motif est
- * écrit — l'historique en dessous ne montre que les sanctions passées.
- */
-function ActiveSanction({
-  group,
-  userSanctions,
-  onOpen,
-}: {
-  group: ViolationGroup
-  /** Mesures visant **le compte** dans ce groupe (`/violations/status`). */
-  userSanctions: SanctionSummary[]
-  onOpen: (groupId: string) => void
-}) {
-  const { t } = useTranslation()
-
-  // Un groupe peut mélanger les niveaux — avertissement au compte, limitation
-  // sur un serveur, suspension sur un autre. On affiche donc ce qui vise **le
-  // compte**, jamais les actions agrégées du groupe, qui laisseraient croire
-  // que tout s'applique partout. Le détail par serveur est à un clic.
-  const own = userSanctions.length > 0 ? userSanctions : null
-  const otherSubjects = group.subjects.filter((s) => s.subject_type === "discord_guild").length
-
-  return (
-    <div className="flex flex-col gap-4 rounded-xl border bg-card p-5">
-      <p className="text-base font-medium leading-relaxed">{group.reason}</p>
-
-      {/* Chaque fait est étiqueté : une rangée de puces côte à côte oblige à
-          deviner ce que chacune désigne. Ici on lit « Mesure : suspension,
-          Durée : définitive » sans effort. */}
-      <dl className="grid grid-cols-[auto_1fr] items-center gap-x-5 gap-y-2 text-xs">
-        <dt className="text-muted-foreground">{t("violations.detail.measureLabel")}</dt>
-        <dd className="flex flex-wrap items-center gap-1.5">
-          {own
-            ? own.map((sanction) => (
-                <GlobalActionChip key={sanction.reference} action={sanction.action} />
-              ))
-            : group.active_actions.map((action) => (
-                <GlobalActionChip key={action} action={action} />
-              ))}
-        </dd>
-
-        <dt className="text-muted-foreground">{t("violations.detail.durationLabel")}</dt>
-        <dd>
-          <ExpiryLabel
-            expiresAt={own?.[0]?.expires_at ?? null}
-            className="text-xs text-foreground"
-          />
-        </dd>
-
-        {otherSubjects > 0 && (
-          <>
-            <dt className="text-muted-foreground">{t("violations.detail.scopeLabel")}</dt>
-            <dd>{t("violations.suspended.alsoTargets", { count: otherSubjects })}</dd>
-          </>
-        )}
-
-        <dt className="text-muted-foreground">{t("violations.detail.referenceLabel")}</dt>
-        <dd>
-          <ReferenceText references={own ? own.map((s) => s.reference) : group.references} />
-        </dd>
-      </dl>
-
-      {group.enforcement && (
-        <div className="border-t pt-3">
-          <EnforcementNotice
-            enforcement={group.enforcement}
-            appealUrl={APPEAL_URL}
-            active={group.active}
-            showAppeal={false}
-            variant="inline"
-          />
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={() => onOpen(group.group_id)}
-        className="inline-flex w-fit items-center gap-0.5 text-xs font-medium text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline"
-      >
-        {t("violations.suspended.seeDetail")}
-        <ArrowUpRightIcon className="size-3" />
-      </button>
-    </div>
-  )
-}
+import { EnforcementNotice } from "@/components/violations/violation-badges"
 
 // ─── Facturation ──────────────────────────────────────────────────────────────
 
@@ -227,9 +130,37 @@ export function SuspendedScreen({
     [groups]
   )
 
+  // Compte à rebours : celui de la première infraction active qui en porte
+  // un. Affiché une fois, séparément de la liste — la liste, elle, se lit
+  // exactement comme celle des infractions passées.
+  const enforcement = active.find((g) => g.enforcement)?.enforcement ?? null
+
   // Repli si `/violations` n'a rien renvoyé : le statut, lui, vient de
-  // `/auth/me` et porte déjà le motif.
-  const fallback = status.sanctions[0] ?? null
+  // `/auth/me` et porte déjà le motif. On construit un groupe minimal pour que
+  // la liste reste la même, qu'elle vienne de `/violations` ou de ce repli.
+  const fallbackSanction = status.sanctions[0] ?? null
+  const displayGroups: ViolationGroup[] =
+    active.length > 0
+      ? active
+      : fallbackSanction
+        ? [
+            {
+              group_id: fallbackSanction.group_id,
+              grouped: true,
+              level: fallbackSanction.level,
+              actions: [fallbackSanction.action],
+              active_actions: [fallbackSanction.action],
+              active: true,
+              reason: fallbackSanction.reason,
+              case_count: 1,
+              references: status.sanctions.map((s) => s.reference),
+              subjects: [{ subject_type: status.subject_type, subject_id: status.subject_id }],
+              created_at: fallbackSanction.sanctioned_at ?? new Date().toISOString(),
+              updated_at: fallbackSanction.sanctioned_at ?? new Date().toISOString(),
+              enforcement: null,
+            },
+          ]
+        : []
   const displayName = getDisplayName(user)
 
   return (
@@ -309,47 +240,29 @@ export function SuspendedScreen({
               <SanctionScale level="suspended" className="max-w-xl" />
             </section>
 
-            {/* 2. Ce qui vous est reproché — écrit une seule fois */}
+            {/* 2. Ce qui vous est reproché — même liste que l'historique */}
             <section className="mt-10 flex flex-col gap-3">
               <h2 className="text-sm font-semibold">
                 {t("violations.suspended.activeRecord")}
               </h2>
-              {loading ? (
-                <Skeleton className="h-32 rounded-xl" />
-              ) : active.length > 0 ? (
-                <div className="flex flex-col gap-3">
-                  {active.map((group) => (
-                    <ActiveSanction
-                      key={group.group_id}
-                      group={group}
-                      userSanctions={status.sanctions.filter(
-                        (s) => s.group_id === group.group_id
-                      )}
-                      onOpen={setSelected}
-                    />
-                  ))}
-                </div>
-              ) : fallback ? (
-                <div className="flex flex-col gap-2 rounded-xl border bg-card p-5">
-                  <p className="text-base font-medium leading-relaxed">{fallback.reason}</p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-                    {fallback.action && <GlobalActionChip action={fallback.action} />}
-                    <ExpiryLabel
-                      expiresAt={fallback.expires_at}
-                      className="text-xs text-muted-foreground"
-                    />
-                    <ReferenceText references={status.sanctions.map((s) => s.reference)} />
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed p-5">
-                  <p className="text-sm font-medium">{t("violations.suspended.emptyTitle")}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {t("violations.suspended.emptyDescription")}
-                  </p>
-                </div>
-              )}
+              <ViolationList
+                groups={displayGroups}
+                loading={loading}
+                onOpen={setSelected}
+                emptyTitle={t("violations.suspended.emptyTitle")}
+                emptyDescription={t("violations.suspended.emptyDescription")}
+              />
             </section>
+
+            {enforcement && (
+              <div className="mt-3">
+                <EnforcementNotice
+                  enforcement={enforcement}
+                  appealUrl={APPEAL_URL}
+                  showAppeal={false}
+                />
+              </div>
+            )}
 
             {/* 3. Le recours — les boutons seuls. Le « comment ça marche » est
                 dans la vue détail : ici on veut agir, pas relire la procédure. */}

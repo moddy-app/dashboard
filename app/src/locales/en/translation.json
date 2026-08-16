@@ -1327,11 +1327,7 @@
       "appealTitle": "Think this is a mistake?",
       "appealDescription": "Contests are handled on the Moddy support server, where a team member picks the case back up. Contesting does not pause the sanction: it stays in force while it is reviewed.",
       "issuedBy": "Issued by {{issuer}}",
-      "issuedByModdy": "the Moddy team",
-      "measureLabel": "Measure",
-      "durationLabel": "Duration",
-      "referenceLabel": "Reference",
-      "scopeLabel": "Scope"
+      "issuedByModdy": "the Moddy team"
     },
     "enforcement": {
       "title": {
@@ -1389,8 +1385,6 @@
       "backToSummary": "Back to summary",
       "emptyTitle": "Details unavailable",
       "emptyDescription": "The sanction details could not be loaded. Contact support with your account ID.",
-      "seeDetail": "See the per-server breakdown",
-      "alsoTargets": "Your account and {{count}} of your servers",
       "activeRecord": "Active violations"
     },
     "subject": {

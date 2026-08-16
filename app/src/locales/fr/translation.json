@@ -1327,11 +1327,7 @@
       "appealTitle": "Vous pensez que c'est une erreur ?",
       "appealDescription": "Les contestations se font sur le serveur de support Moddy, où un membre de l'équipe reprend le dossier. Contester ne suspend pas la sanction : elle reste en vigueur pendant l'examen.",
       "issuedBy": "Prononcée par {{issuer}}",
-      "issuedByModdy": "l'équipe Moddy",
-      "measureLabel": "Mesure",
-      "durationLabel": "Durée",
-      "referenceLabel": "Référence",
-      "scopeLabel": "Portée"
+      "issuedByModdy": "l'équipe Moddy"
     },
     "enforcement": {
       "title": {
@@ -1389,8 +1385,6 @@
       "backToSummary": "Retour au résumé",
       "emptyTitle": "Détail indisponible",
       "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte.",
-      "seeDetail": "Voir le détail par serveur",
-      "alsoTargets": "Votre compte et {{count}} de vos serveurs",
       "activeRecord": "Infractions en cours"
     },
     "subject": {

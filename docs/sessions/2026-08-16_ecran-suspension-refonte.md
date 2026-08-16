@@ -362,3 +362,27 @@ Référence    [WUD2EW]
   les deux boutons y restent. Le « comment ça marche » vit dans la vue détail :
   sur l'écran d'accueil d'une suspension on veut agir, pas relire une
   procédure.
+
+---
+
+# Sixième passe — la liste active identique à l'historique
+
+La carte détaillée (`ActiveSanction`, avec sa liste de définitions Mesure /
+Durée / Portée / Référence) faisait de la section « Infractions en cours » un
+composant à part, différent de « Infractions passées » juste en dessous — deux
+présentations pour la même notion de ligne d'infraction.
+
+Les deux sections utilisent maintenant exactement le même `ViolationList` :
+même conteneur `divide-y`, même pastille d'état, même méta. Le repli (quand
+`/violations` n'a rien renvoyé mais que `/auth/me` porte déjà un motif) devient
+un `ViolationGroup` minimal construit à la volée, pour ne jamais bifurquer sur
+une présentation différente selon la source des données.
+
+Le compte à rebours (`EnforcementNotice`) ne disparaît pas : il redescend en
+bloc unique sous la liste, sourcé sur la première infraction active qui en
+porte un — l'information « jusqu'à quand » reste visible sans dupliquer sa
+présentation par ligne.
+
+`ActiveSanction` et les clés i18n qu'il consommait seul (`measureLabel`,
+`durationLabel`, `scopeLabel`, `referenceLabel`, `alsoTargets`, `seeDetail`)
+disparaissent avec lui.
