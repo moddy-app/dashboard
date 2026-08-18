@@ -1376,12 +1376,8 @@
       "title": "Your access to Moddy is suspended",
       "headlinePrefix": "Your access to Moddy is",
       "description": "A breach of our rules ended your access. This page stays available so you can see what you were flagged for and contest it. The rules are set out in",
-      "reasonLabel": "What you were flagged for",
       "recheck": "Check again",
-      "activeRecord": "Sanctions in force",
-      "activeRecordDescription": "They apply until they are lifted or expire.",
-      "pastRecord": "Past sanctions",
-      "pastRecordDescription": "Lifted or expired: they no longer have any effect, but stay on your record.",
+      "pastRecord": "Past violations",
       "billingTitle": "Billing",
       "billingDescription": "A sanction never touches your money: your invoices stay readable and your subscription cancellable at any time.",
       "billingAction": "Manage billing",
@@ -1389,8 +1385,7 @@
       "backToSummary": "Back to summary",
       "emptyTitle": "Details unavailable",
       "emptyDescription": "The sanction details could not be loaded. Contact support with your account ID.",
-      "seeDetail": "See the per-server breakdown",
-      "alsoTargets": "This violation also targets {{count}} of your servers."
+      "activeRecord": "Active violations"
     },
     "subject": {
       "you": "your account",

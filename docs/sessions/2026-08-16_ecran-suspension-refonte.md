@@ -314,3 +314,86 @@ s'applique à un sujet donné.
 
 `Réf. WUD2EW` devient `WUD2EW`. Le code se reconnaît seul ; l'annoncer allonge
 la ligne sans rien apprendre. La clé `violations.reference` disparaît.
+
+---
+
+# Cinquième passe — profils sous suspension et lisibilité de la carte
+
+## Les pseudos et icônes se résolvent même suspendu
+
+`GET /users/{id}/profile` et `GET /guilds/{id}/profile` exigent une session
+valide : un compte suspendu ne voyait donc que des snowflakes là où l'écran
+parle de lui et de ses serveurs.
+
+`useProfile` tente le profil enrichi (il porte le statut Moddy — premium, staff)
+puis retombe sur l'identité publique :
+
+| Enrichi (auth requise) | Repli |
+|---|---|
+| `GET /users/{id}/profile` | `GET /users/{id}` — **public, sans authentification** |
+| `GET /guilds/{id}/profile` | `GET /guilds/{id}` — droits d'admin requis, mais plus bloqué par une suspension (`guild_reader`) |
+
+`getPublicUser()` / `getPublicGuild()` (`services/cases.ts`) comblent les champs
+manquants : `display_name` se dérive de `global_name ?? username`, et le statut
+Moddy retombe à `false`. Le cache module de `useProfile` ne voit qu'une seule
+promesse par id, quel que soit le chemin emprunté.
+
+## La carte d'infraction s'explique
+
+Une rangée de puces côte à côte oblige à deviner ce que chacune désigne. Les
+faits sont désormais **étiquetés**, en liste de définitions compacte :
+
+```
+Mesure       [Suspension]
+Durée        ∞ Définitive
+Portée       Votre compte et 1 de vos serveurs
+Référence    [WUD2EW]
+```
+
+## Autres corrections
+
+- **« Infractions en cours » toujours au pluriel**, même à une seule : c'est le
+  nom de la section, pas un décompte. La clé `reasonLabel` est renommée
+  `activeRecord` — elle ne portait plus un motif mais un titre de section.
+- **La référence est un label**, pas du texte nu : chaque code dans sa propre
+  puce, typographie courante, sans préfixe ni bouton de copie. Utilisé
+  identiquement en liste, en détail et sur l'écran de suspension.
+- **La procédure de contestation n'est plus sur l'écran de suspension** — seuls
+  les deux boutons y restent. Le « comment ça marche » vit dans la vue détail :
+  sur l'écran d'accueil d'une suspension on veut agir, pas relire une
+  procédure.
+
+---
+
+# Sixième passe — la liste active identique à l'historique
+
+La carte détaillée (`ActiveSanction`, avec sa liste de définitions Mesure /
+Durée / Portée / Référence) faisait de la section « Infractions en cours » un
+composant à part, différent de « Infractions passées » juste en dessous — deux
+présentations pour la même notion de ligne d'infraction.
+
+Les deux sections utilisent maintenant exactement le même `ViolationList` :
+même conteneur `divide-y`, même pastille d'état, même méta. Le repli (quand
+`/violations` n'a rien renvoyé mais que `/auth/me` porte déjà un motif) devient
+un `ViolationGroup` minimal construit à la volée, pour ne jamais bifurquer sur
+une présentation différente selon la source des données.
+
+Le compte à rebours (`EnforcementNotice`) ne disparaît pas : il redescend en
+bloc unique sous la liste, sourcé sur la première infraction active qui en
+porte un — l'information « jusqu'à quand » reste visible sans dupliquer sa
+présentation par ligne.
+
+`ActiveSanction` et les clés i18n qu'il consommait seul (`measureLabel`,
+`durationLabel`, `scopeLabel`, `referenceLabel`, `alsoTargets`, `seeDetail`)
+disparaissent avec lui.
+
+---
+
+# Septième passe — le compte à rebours quitte l'écran principal
+
+Le bloc « What happens next » (compte à rebours, résiliation sans
+remboursement) s'affichait deux fois pour la même infraction : une fois isolé
+sur l'écran principal, une seconde fois dans la vue détail au clic. Il ne
+s'affiche plus que dans la vue détail — c'est là qu'on choisit de regarder
+« jusqu'à quand », pas sur l'écran d'accueil dont le rôle est de faire agir
+(les deux boutons, qui restent).

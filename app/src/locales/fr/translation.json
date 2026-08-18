@@ -1376,12 +1376,8 @@
       "title": "Votre accès à Moddy est suspendu",
       "headlinePrefix": "Votre accès à Moddy est",
       "description": "Un manquement à nos règles a mis fin à votre accès. Cette page reste disponible pour comprendre ce qui vous est reproché et contester. Les règles sont détaillées dans",
-      "reasonLabel": "Ce qui vous est reproché",
       "recheck": "Vérifier à nouveau",
-      "activeRecord": "Sanctions en cours",
-      "activeRecordDescription": "Elles s'appliquent tant qu'elles n'ont pas été levées ou qu'elles n'ont pas expiré.",
-      "pastRecord": "Sanctions passées",
-      "pastRecordDescription": "Levées ou expirées : elles n'ont plus aucun effet, mais restent à votre historique.",
+      "pastRecord": "Infractions passées",
       "billingTitle": "Facturation",
       "billingDescription": "Une sanction ne touche pas à votre argent : vos factures restent consultables et votre abonnement résiliable à tout moment.",
       "billingAction": "Gérer la facturation",
@@ -1389,8 +1385,7 @@
       "backToSummary": "Retour au résumé",
       "emptyTitle": "Détail indisponible",
       "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte.",
-      "seeDetail": "Voir le détail par serveur",
-      "alsoTargets": "Cette infraction vise aussi {{count}} de vos serveurs."
+      "activeRecord": "Infractions en cours"
     },
     "subject": {
       "you": "votre compte",

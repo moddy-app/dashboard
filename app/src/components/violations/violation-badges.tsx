@@ -160,10 +160,10 @@ export function MeasureStatus({ status }: { status: "active" | "expired" | "revo
 // ─── Référence ────────────────────────────────────────────────────────────────
 
 /**
- * Référence(s) de l'infraction, en texte courant et **sans préfixe** : le code
- * se reconnaît seul, l'annoncer par « Réf. » ne fait qu'allonger la ligne. Pas
- * de bouton de copie ni de monospace non plus — c'est un numéro à citer au
- * support, pas un identifiant qu'on manipule.
+ * Référence(s) de l'infraction, chacune dans son propre label. **Sans
+ * préfixe** : le code se reconnaît seul, l'annoncer par « Réf. » ne fait
+ * qu'allonger la ligne. Typographie courante et pas de bouton de copie — c'est
+ * un numéro à citer au support, pas un identifiant qu'on manipule.
  */
 export function ReferenceText({
   references,
@@ -174,8 +174,15 @@ export function ReferenceText({
 }) {
   if (references.length === 0) return null
   return (
-    <span className={cn("text-xs text-muted-foreground", className)}>
-      {references.join(", ")}
+    <span className={cn("inline-flex flex-wrap items-center gap-1", className)}>
+      {references.map((reference) => (
+        <span
+          key={reference}
+          className="inline-flex items-center rounded-md border bg-muted/50 px-1.5 py-0.5 text-[11px] font-medium tracking-wide text-muted-foreground"
+        >
+          {reference}
+        </span>
+      ))}
     </span>
   )
 }

@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react'
-import { getUserProfile, getGuildProfile } from '@/services/cases'
+import {
+  getUserProfile,
+  getGuildProfile,
+  getPublicUser,
+  getPublicGuild,
+} from '@/services/cases'
 import type { DiscordUserProfile, DiscordGuildProfile } from '@/types/cases'
 import { logger } from '@/lib/logger'
 
@@ -9,13 +14,20 @@ import { logger } from '@/lib/logger'
 const userCache = new Map<string, Promise<DiscordUserProfile>>()
 const guildCache = new Map<string, Promise<DiscordGuildProfile>>()
 
+// Le profil enrichi d'abord (il porte le statut Moddy), l'identité publique en
+// repli : sous sanction, `/users/{id}/profile` et `/guilds/{id}/profile` sont
+// refusés alors que `GET /users/{id}` (public) et `GET /guilds/{id}` répondent
+// encore. Sans ce repli, un compte suspendu ne voit que des snowflakes.
+
 function loadUser(id: string): Promise<DiscordUserProfile> {
   let p = userCache.get(id)
   if (!p) {
-    p = getUserProfile(id).catch((e) => {
-      userCache.delete(id) // autorise un nouvel essai plus tard
-      throw e
-    })
+    p = getUserProfile(id)
+      .catch(() => getPublicUser(id))
+      .catch((e) => {
+        userCache.delete(id) // autorise un nouvel essai plus tard
+        throw e
+      })
     userCache.set(id, p)
   }
   return p
@@ -24,10 +36,12 @@ function loadUser(id: string): Promise<DiscordUserProfile> {
 function loadGuild(id: string): Promise<DiscordGuildProfile> {
   let p = guildCache.get(id)
   if (!p) {
-    p = getGuildProfile(id).catch((e) => {
-      guildCache.delete(id)
-      throw e
-    })
+    p = getGuildProfile(id)
+      .catch(() => getPublicGuild(id))
+      .catch((e) => {
+        guildCache.delete(id)
+        throw e
+      })
     guildCache.set(id, p)
   }
   return p
