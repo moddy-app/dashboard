@@ -36,6 +36,7 @@ import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
 import { isNotificationExpired } from "@/types/notification"
 import type { Notification } from "@/types/notification"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { useSanctions } from "@/contexts/SanctionContext"
 import { DebugModeBadge } from "@/components/debug-error-overlay"
 import { InfoBanner } from "@/components/info-banner"
 import { useBanner } from "@/hooks/useBanner"
@@ -50,6 +51,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const location = useLocation()
   const navigate = useNavigate()
   const { selectGuild, guilds, guildDetail, selectedGuildId } = useGuildContext()
+  const { groups: sanctionGroups } = useSanctions()
   usePageTitle(t('pageTitle.dashboard'))
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
@@ -164,7 +166,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
         { label: t('dashboard.breadcrumb.app'), href: '/' },
         { label: t('violations.title'), href: groupId ? '/violations' : null },
       ]
-      if (groupId) items.push({ label: t('violations.detail.breadcrumb') })
+      if (groupId) {
+        // La référence (KEZK6T), pas un libellé générique — comme /cases
+        // affiche directement sa référence puisqu'elle vit déjà dans l'URL.
+        // Ici l'URL porte le group_id (UUID) : on relit la référence depuis
+        // la liste déjà chargée par SanctionProvider, sans appel réseau de plus.
+        const references = sanctionGroups.find((g) => g.group_id === groupId)?.references
+        items.push({ label: references?.join(', ') || t('violations.detail.breadcrumb') })
+      }
       return items
     }
 

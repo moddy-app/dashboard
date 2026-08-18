@@ -141,7 +141,7 @@ export function ViolationDetailView({
 
   if (loading) {
     return (
-      <div className="flex max-w-3xl flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-2">{backButton}</div>
         <Skeleton className="h-7 w-2/3" />
         <Skeleton className="h-32 rounded-xl" />
@@ -151,7 +151,7 @@ export function ViolationDetailView({
 
   if (notFound || !detail) {
     return (
-      <div className="flex max-w-3xl flex-col gap-5">
+      <div className="flex flex-col gap-5">
         <div className="flex flex-wrap items-center gap-2">{backButton}</div>
         <Empty className="rounded-xl border border-dashed">
           <EmptyHeader>
@@ -177,7 +177,7 @@ export function ViolationDetailView({
       : null
 
   return (
-    <div className="flex max-w-3xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       {/* En-tête */}
       <div className="flex flex-wrap items-center gap-2">
         {backButton}
