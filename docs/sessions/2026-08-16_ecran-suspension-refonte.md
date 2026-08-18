@@ -397,3 +397,24 @@ sur l'écran principal, une seconde fois dans la vue détail au clic. Il ne
 s'affiche plus que dans la vue détail — c'est là qu'on choisit de regarder
 « jusqu'à quand », pas sur l'écran d'accueil dont le rôle est de faire agir
 (les deux boutons, qui restent).
+
+---
+
+# Huitième passe — pleine largeur et référence au fil d'Ariane
+
+Deux régressions introduites en cours de route :
+
+- **`/violations` et sa vue détail étaient bridées** — `max-w-3xl` sur la vue
+  détail (hérité de la suppression de l'aside, quand elle est passée à une
+  seule colonne) et `max-w-2xl`/`max-w-xl` sur les paragraphes d'en-tête de la
+  liste. `case-detail.tsx` n'a lui aucune de ces limites : le conteneur du
+  dashboard est déjà fluide. Les deux vues suivent maintenant la même règle —
+  seule `SanctionScale` garde une largeur bornée (au-delà, quatre paliers
+  espacés perdent leur lecture de progression).
+
+- **Le fil d'Ariane affichait un libellé générique** (« Infraction ») au lieu
+  de la référence, contrairement à `/cases?case=REF` où la référence vit déjà
+  dans l'URL. `/violations?group=<uuid>` porte un identifiant interne, pas la
+  référence publique : `DashboardPage` la retrouve désormais dans les groupes
+  déjà chargés par `SanctionProvider` (`groups.find(g => g.group_id === groupId)`)
+  plutôt que de faire un appel réseau de plus.

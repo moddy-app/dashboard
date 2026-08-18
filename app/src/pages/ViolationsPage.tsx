@@ -82,7 +82,7 @@ export function ViolationsPage() {
       {/* En-tête : ce que la page montre, et sur quelles règles elle repose. */}
       <div>
         <h1 className="text-xl font-semibold leading-none">{t("violations.title")}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {t("violations.description")}{" "}
           <a
             href={TERMS_URL}
@@ -100,13 +100,14 @@ export function ViolationsPage() {
           font plus qu'un. */}
       <div className="flex flex-col gap-5 rounded-xl border bg-card p-5">
         {/* Bornée : au-delà, les quatre paliers s'éloignent au point qu'on ne
-            lit plus une progression mais quatre étiquettes isolées. */}
+            lit plus une progression mais quatre étiquettes isolées. Le reste
+            du bloc, lui, suit la largeur du contenu comme partout ailleurs. */}
         <SanctionScale level={user.level} className="max-w-xl" />
         <div className="border-t pt-4">
           <p className={cn("text-sm font-semibold", user.level !== "none" && tone.text)}>
             {t(`violations.status.${user.level}.title`)}
           </p>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
             {t(`violations.status.${user.level}.description`)}
           </p>
         </div>
