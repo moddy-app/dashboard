@@ -460,7 +460,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                       refus. Retirer un serveur, en revanche, reste permis. */}
                   {!linkBlocked && subscription.servers.length < subscription.max_servers && (
                     <div className="flex gap-2 mt-1">
-                      <Select value={selectedServerId} onValueChange={setSelectedServerId}>
+                      <Select value={selectedServerId} onValueChange={setSelectedServerId} modal={false}>
                         <SelectTrigger className="flex-1 w-0">
                           <SelectValue placeholder={t('settings.billing.servers.addPlaceholder')} />
                         </SelectTrigger>
