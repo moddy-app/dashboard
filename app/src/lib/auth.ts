@@ -6,7 +6,10 @@ const REDIRECT_URI = `${API_URL}/auth/discord/callback`
  * Appelle le proxy Vercel pour signer les requêtes de manière sécurisée
  * La clé API n'est jamais exposée au client
  */
-async function callBackendProxy(endpoint: string, body: any = {}) {
+async function callBackendProxy<T>(
+  endpoint: '/api/website/auth/init',
+  body: Record<string, unknown> = {},
+): Promise<T> {
   const response = await fetch('/api/backend-proxy', {
     method: 'POST',
     headers: {
@@ -79,7 +82,7 @@ export async function verifySession(): Promise<VerifyResponse> {
 export async function signInWithDiscord() {
   try {
     // 1. Initialiser l'auth via le proxy (signature côté serveur)
-    const { state } = await callBackendProxy('/api/website/auth/init', {
+    const { state } = await callBackendProxy<{ state: string }>('/api/website/auth/init', {
       current_page: window.location.href,
     })
 

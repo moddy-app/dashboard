@@ -410,48 +410,34 @@ console.log('Has Nitro:', userInfo.premium_type > 0);
 Les origines autorisées :
 - `https://moddy.app`
 - `https://www.moddy.app`
-- `https://*.moddy.app` (tous sous-domaines)
+- `https://dashboard.moddy.app`
 
-Headers autorisés : Tous (`*`)
+Headers autorisés : liste explicite selon la route
 Méthodes autorisées : `GET`, `POST`, `PUT`, `DELETE`, `OPTIONS`
 Credentials : Oui (pour cookies)
 
 ## Exemples d'intégration
 
+> La clé `API_KEY` est un secret serveur. Les applications navigateur appellent
+> `/api/backend-proxy`; seule cette fonction ajoute la signature HMAC.
+
 ### React/Next.js
 
 ```typescript
 // lib/api.ts
-import crypto from 'crypto';
-
-const API_URL = 'https://api.moddy.app';
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!;
-
-export async function apiRequest(endpoint: string, body: any = {}) {
-  const requestId = crypto.randomUUID();
-  const payload = { request_id: requestId, body };
-  const signature = crypto
-    .createHmac('sha256', API_KEY)
-    .update(JSON.stringify(payload))
-    .digest('hex');
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
+export async function apiRequest(body: Record<string, unknown>) {
+  const response = await fetch('/api/backend-proxy', {
     method: 'POST',
-    credentials: 'include', // Important pour cookies
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Request-Id': requestId,
-      'X-Signature': signature
-    },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ endpoint: '/api/website/auth/init', body })
   });
-
+  if (!response.ok) throw new Error(`Proxy failed: ${response.status}`);
   return response.json();
 }
 
 // Usage
 export async function initiateDiscordAuth() {
-  const data = await apiRequest('/api/website/auth/init', {
+  const data = await apiRequest({
     current_page: window.location.href
   });
 
@@ -465,26 +451,13 @@ export async function initiateDiscordAuth() {
 
 ```javascript
 // api/auth.js
-import { v4 as uuidv4 } from 'uuid';
-import CryptoJS from 'crypto-js';
-
-const API_URL = 'https://api.moddy.app';
-const API_KEY = import.meta.env.VITE_API_KEY;
-
 async function makeRequest(endpoint, body = {}) {
-  const requestId = uuidv4();
-  const payload = JSON.stringify({ request_id: requestId, body });
-  const signature = CryptoJS.HmacSHA256(payload, API_KEY).toString();
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  const response = await fetch('/api/backend-proxy', {
     method: 'POST',
-    credentials: 'include',
     headers: {
-      'Content-Type': 'application/json',
-      'X-Request-Id': requestId,
-      'X-Signature': signature
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ endpoint, body })
   });
 
   return response.json();

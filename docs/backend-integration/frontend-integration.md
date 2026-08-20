@@ -1,5 +1,9 @@
 # Guide d'intégration Frontend - Moddy Backend API
 
+> **Règle de sécurité actuelle :** la clé HMAC `API_KEY` reste exclusivement
+> dans la fonction serveur `api/backend-proxy.ts`. Une variable préfixée par
+> `NEXT_PUBLIC_` ou `VITE_` est publique et ne doit jamais contenir cette clé.
+
 Documentation complète pour intégrer l'authentification Discord et la gestion de session sur le frontend.
 
 ## 📋 Table des matières
@@ -48,7 +52,9 @@ Créer un fichier `.env` ou `.env.local` :
 ```bash
 # API Backend
 NEXT_PUBLIC_API_URL=https://api.moddy.app
-NEXT_PUBLIC_API_KEY=your-shared-api-key-here
+
+# Fonction serveur uniquement, jamais disponible dans le bundle navigateur
+API_KEY=your-shared-api-key-here
 
 # Discord OAuth
 NEXT_PUBLIC_DISCORD_CLIENT_ID=123456789012345678
@@ -56,7 +62,7 @@ NEXT_PUBLIC_DISCORD_CLIENT_ID=123456789012345678
 
 ### ⚠️ Sécurité importante
 
-- ✅ `NEXT_PUBLIC_API_KEY` - Peut être exposée au frontend (utilisée pour HMAC)
+- ❌ `API_KEY` ne doit jamais être exposée au frontend. La signature est faite par le proxy serveur.
 - ✅ `NEXT_PUBLIC_DISCORD_CLIENT_ID` - Publique (visible dans l'URL OAuth)
 - ❌ **NE JAMAIS** exposer `DISCORD_CLIENT_SECRET` côté frontend
 - ❌ **NE JAMAIS** exposer `DATABASE_URL` côté frontend
@@ -70,7 +76,8 @@ NEXT_PUBLIC_DISCORD_CLIENT_ID=123456789012345678
 ```
 1. User clique "Sign in with Discord"
    ↓
-2. Frontend → POST /api/website/auth/init (avec HMAC)
+2. Frontend → POST /api/backend-proxy (sans secret)
+   Le proxy serveur → POST /api/website/auth/init (avec HMAC)
    ↓
 3. Backend → Génère un state token, retourne {state: "uuid"}
    ↓
@@ -549,13 +556,13 @@ interface User {
 
 ## Exemples de code
 
-### Configuration HMAC
+### Configuration HMAC côté serveur uniquement
 
 ```typescript
 // lib/hmac.ts
 import crypto from 'crypto'
 
-const API_KEY = process.env.NEXT_PUBLIC_API_KEY!
+const API_KEY = process.env.API_KEY!
 
 /**
  * Trie récursivement toutes les clés d'un objet (alphabétiquement)
