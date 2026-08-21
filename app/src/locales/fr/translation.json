@@ -627,6 +627,60 @@
         "mutualServers_other": "{{count}} serveurs en commun",
         "badges": "Badges d'utilisateur"
       }
+    },
+    "altguard": {
+      "name": "AltGuard",
+      "description": "Retient chaque nouveau membre derrière une vérification anti multi-comptes avant l'accès au serveur.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "incompleteTitle": "Module inactif",
+      "incompleteDescription": "Il manque : {{fields}}. La configuration est bien enregistrée, mais la vérification reste coupée et le bot retire le panneau tant que tout n'est pas rempli.",
+      "fields": {
+        "channel_id": "le salon de vérification",
+        "unverified_role_id": "le rôle non vérifié",
+        "verified_role_id": "le rôle vérifié"
+      },
+      "configTitle": "Vérification à l'entrée",
+      "configDescription": "Choisissez le salon où arrivent les nouveaux et les deux rôles qu'AltGuard échange une fois la vérification passée.",
+      "channel": "Salon de vérification",
+      "channelDescription": "Seul salon visible par les membres non vérifiés — le bot y poste son panneau.",
+      "unverifiedRole": "Rôle non vérifié",
+      "unverifiedRoleDescription": "Donné au join. Il doit bloquer l'accès à tous les autres salons.",
+      "verifiedRole": "Rôle vérifié",
+      "verifiedRoleDescription": "Donné quand la vérification passe.",
+      "logChannel": "Salon de logs",
+      "logChannelDescription": "Les verdicts et les décisions manuelles y sont publiés.",
+      "noLogChannel": "Aucun salon de logs",
+      "optional": "facultatif",
+      "selectRole": "Choisir un rôle",
+      "noRoles": "Aucun rôle attribuable",
+      "roleAboveBot": "au-dessus de Moddy",
+      "panelLocale": "Langue du panneau",
+      "panelLocaleDescription": "Le texte du panneau n'est pas configurable — seule sa langue l'est.",
+      "locales": {
+        "en-US": "English",
+        "fr": "Français",
+        "es-ES": "Español",
+        "pt-BR": "Português (Brasil)",
+        "de": "Deutsch"
+      },
+      "saveDurationHint": "L'enregistrement peut prendre jusqu'à 25 secondes : le bot republie le panneau, reverrouille les salons et resynchronise.",
+      "confirmDisableTitle": "Désactiver AltGuard ?",
+      "confirmDisableDescription": "La configuration est supprimée et le bot retire le panneau de vérification. Les nouveaux membres ne seront plus retenus.",
+      "cancel": "Annuler",
+      "apply": {
+        "savedOnly": "Configuration enregistrée.",
+        "applied": "Configuration enregistrée et appliquée.",
+        "deleted": "AltGuard désactivé et panneau retiré.",
+        "appliedWithProblems": "Configuration enregistrée, mais Discord n'a pas suivi.",
+        "pending": "Configuration enregistrée. Application dans Discord en cours…",
+        "transportUnavailable": "Configuration enregistrée, mais le bot n'a pas pu être contacté. Contactez le support.",
+        "notApplied": "Configuration enregistrée, mais le bot n'a pas pu l'appliquer.",
+        "panelFailed": "Le bot n'a pas pu poster le panneau dans le salon de vérification (permission « Envoyer des messages » manquante).",
+        "permissionsFailed": "{{count}} salon(s) n'ont pas pu être verrouillés (permission « Gérer les rôles » manquante).",
+        "hookError": "Une erreur est survenue côté Discord. La configuration est enregistrée.",
+        "notCleaned": "Le bot n'a pas retrouvé le panneau à supprimer — retirez le message manuellement dans Discord."
+      }
     }
   },
   "staff": {

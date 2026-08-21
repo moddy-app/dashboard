@@ -81,6 +81,15 @@ export interface Role {
   mentionable: boolean
   managed: boolean
   hoist: boolean
+  /**
+   * Objets rôle Discord bruts : `tags` n'est présent que sur les rôles liés à
+   * une intégration (`bot_id`), un booster (`premium_subscriber`)…
+   */
+  tags?: {
+    bot_id?: string
+    integration_id?: string
+    premium_subscriber?: null
+  }
 }
 
 export function roleColorToHex(color: number): string {
@@ -126,6 +135,7 @@ export type ModuleId =
   | 'social_notifications'
   | 'automod_ai'
   | 'bot_customization'
+  | 'altguard'
 
 export interface StarboardConfig {
   channel_id: string
@@ -451,6 +461,70 @@ export interface BotProfile {
   bio: string | null
 }
 
+// ─── AltGuard ─────────────────────────────────────────────────────────────────
+
+/** Langues disponibles pour le panneau de vérification (le texte, lui, est figé). */
+export const ALTGUARD_PANEL_LOCALES = ['en-US', 'fr', 'es-ES', 'pt-BR', 'de'] as const
+
+export type AltGuardPanelLocale = (typeof ALTGUARD_PANEL_LOCALES)[number]
+
+/** Langue appliquée par le bot quand `panel_locale` est absent. */
+export const ALTGUARD_DEFAULT_LOCALE: AltGuardPanelLocale = 'en-US'
+
+/**
+ * Config du module AltGuard. Tous les snowflakes sont des **chaînes** : un id de
+ * 19 chiffres dépasse `Number.MAX_SAFE_INTEGER`, le passer par `Number()` le
+ * corromprait.
+ */
+export interface AltGuardConfig {
+  /** Salon de vérification — seul salon visible par le rôle non vérifié. */
+  channel_id: string | null
+  /** Rôle donné au join, qui bloque l'accès. */
+  unverified_role_id: string | null
+  /** Rôle donné quand la vérification passe. */
+  verified_role_id: string | null
+  /** Verdicts et décisions manuelles. Optionnel. */
+  log_channel_id: string | null
+  panel_locale: AltGuardPanelLocale
+  /**
+   * Bookkeeping du bot (id du panneau posté). **Jamais affiché ni envoyé** —
+   * présent uniquement parce que le `GET` le renvoie.
+   */
+  message_id?: string | null
+  /**
+   * **Lecture seule** : calculé côté serveur (salon + les deux rôles). L'envoyer
+   * est sans effet ; il n'existe pas d'interrupteur d'activation.
+   */
+  enabled?: boolean
+}
+
+/**
+ * Accusé du bot renvoyé sous `_apply` par le `PUT` et le `DELETE` : une
+ * sauvegarde peut réussir en base et échouer à moitié dans Discord.
+ * Ce n'est **pas** de la config — à ne jamais stocker dans le formulaire ni
+ * renvoyer dans le body suivant.
+ */
+export interface AltGuardApply {
+  ok: boolean
+  action?: 'updated' | 'deleted'
+  enabled?: boolean
+  panel?: 'posted' | 'failed' | 'deleted'
+  panel_message_id?: string
+  permissions?: { updated: number; failed: number; skipped: number }
+  /** `bot_timeout`, `task_transport_unavailable`, `invalid_config`… */
+  error?: string
+  /** Le côté Discord a planté ; la config reste stockée et chargée. */
+  hook_error?: string
+  /** `DELETE` uniquement : `false` = le bot n'a pas retrouvé le panneau. */
+  cleaned?: boolean
+}
+
+/** Réponse d'une écriture AltGuard : la config persistée + l'accusé du bot. */
+export interface AltGuardSaveResult {
+  config: AltGuardConfig
+  apply: AltGuardApply | null
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
@@ -463,6 +537,7 @@ export type ModuleConfig =
   | SocialNotificationsConfig
   | AutomodAiConfig
   | BotCustomizationConfig
+  | AltGuardConfig
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 

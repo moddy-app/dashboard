@@ -627,6 +627,60 @@
         "mutualServers_other": "{{count}} mutual servers",
         "badges": "User badges"
       }
+    },
+    "altguard": {
+      "name": "AltGuard",
+      "description": "Hold every new member behind an anti-alt verification before they can access the server.",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "incompleteTitle": "Module inactive",
+      "incompleteDescription": "Missing: {{fields}}. Your settings are saved, but the gate stays off and the bot removes the panel until everything is filled in.",
+      "fields": {
+        "channel_id": "verification channel",
+        "unverified_role_id": "unverified role",
+        "verified_role_id": "verified role"
+      },
+      "configTitle": "Verification gate",
+      "configDescription": "Pick the channel newcomers land in and the two roles AltGuard swaps once they pass.",
+      "channel": "Verification channel",
+      "channelDescription": "The only channel visible to unverified members — the bot posts its panel there.",
+      "unverifiedRole": "Unverified role",
+      "unverifiedRoleDescription": "Given on join. It should block access to every other channel.",
+      "verifiedRole": "Verified role",
+      "verifiedRoleDescription": "Given once the verification passes.",
+      "logChannel": "Log channel",
+      "logChannelDescription": "Verdicts and manual decisions are posted here.",
+      "noLogChannel": "No log channel",
+      "optional": "optional",
+      "selectRole": "Select a role",
+      "noRoles": "No assignable role found",
+      "roleAboveBot": "above Moddy",
+      "panelLocale": "Panel language",
+      "panelLocaleDescription": "The panel text itself isn't configurable — only the language it's written in.",
+      "locales": {
+        "en-US": "English",
+        "fr": "Français",
+        "es-ES": "Español",
+        "pt-BR": "Português (Brasil)",
+        "de": "Deutsch"
+      },
+      "saveDurationHint": "Saving can take up to 25 seconds: the bot reposts the panel, re-locks every channel and resynchronises.",
+      "confirmDisableTitle": "Disable AltGuard?",
+      "confirmDisableDescription": "The settings are deleted and the bot removes the verification panel. New members will no longer be held back.",
+      "cancel": "Cancel",
+      "apply": {
+        "savedOnly": "Settings saved.",
+        "applied": "Settings saved and applied.",
+        "deleted": "AltGuard disabled and panel removed.",
+        "appliedWithProblems": "Settings saved, but Discord didn't follow through.",
+        "pending": "Settings saved. Applying in Discord…",
+        "transportUnavailable": "Settings saved, but the bot couldn't be reached. Contact support.",
+        "notApplied": "Settings saved, but the bot couldn't apply them.",
+        "panelFailed": "The bot couldn't post the panel in the verification channel (missing “Send Messages” permission).",
+        "permissionsFailed": "{{count}} channel(s) couldn't be locked (missing “Manage Roles” permission).",
+        "hookError": "Something went wrong on the Discord side. The settings are saved.",
+        "notCleaned": "The bot couldn't find the panel to delete — remove the message manually in Discord."
+      }
     }
   },
   "staff": {
