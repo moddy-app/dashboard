@@ -165,13 +165,36 @@ export const MAX_WELCOME_MESSAGES = 5
 /** Couleur d'accent appliquée par le bot quand `accent_color` vaut `null`. */
 export const WELCOME_DEFAULT_ACCENT = 0x5865f2
 
-export interface WelcomeDmConfig {
-  message_template: string
-  embed_enabled: boolean
-  embed_title?: string
-  embed_description?: string | null
-  embed_color?: number
+/**
+ * Message privé de bienvenue (welcome_dm, v2). Jumeau de {@link WelcomeMessage}
+ * à une différence structurelle près : **pas de `channel_id`** (le message part
+ * en DM). Préfixe d'id `wdm_`, plafond {@link MAX_WELCOME_DMS} — à ne jamais
+ * croiser avec ceux de `welcome_channel`.
+ */
+export interface WelcomeDmMessage {
+  /** `wdm_` + 8 hex minuscules, unique dans la guilde. Généré côté client. */
+  id: string
+  /** 1–1500 caractères (trim côté serveur). */
+  message: string
+  /** Entier décimal 0–0xFFFFFF ; `null` = couleur par défaut (0x5865F2). */
+  accent_color: number | null
+  enabled: boolean
+  /** Informatif seulement (rempli par le backend), snowflake en chaîne. */
+  created_by: string | null
+  /** Informatif seulement, ISO 8601 UTC. */
+  created_at: string | null
 }
+
+export interface WelcomeDmConfig {
+  version: 2
+  messages: WelcomeDmMessage[]
+}
+
+/** Plafond serveur (MAX_WELCOME_DMS) — un dépassement renvoie 422. */
+export const MAX_WELCOME_DMS = 3
+
+/** Couleur d'accent appliquée par le bot quand `accent_color` vaut `null`. */
+export const WELCOME_DM_DEFAULT_ACCENT = 0x5865f2
 
 export interface AutoRoleConfig {
   role_ids: string[]

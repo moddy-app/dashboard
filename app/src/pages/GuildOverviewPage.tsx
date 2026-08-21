@@ -7,6 +7,7 @@ import {
   ShieldAlertIcon,
   UsersIcon,
   StarIcon,
+  MailIcon,
   MessageSquareIcon,
   ScrollTextIcon,
   GaugeIcon,
@@ -49,8 +50,10 @@ import type {
   BotCustomizationConfig,
   ModuleConfig,
   WelcomeChannelConfig,
+  WelcomeDmConfig,
 } from "@/types/api"
 import { isWelcomeActive } from "@/lib/welcome"
+import { isWelcomeDmActive } from "@/lib/welcome-dm"
 import { isBotCustomizationActive } from "@/lib/bot-customization"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
@@ -75,6 +78,9 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   // welcome_channel n'a pas d'interrupteur global : il est actif dès qu'un
   // message est activé et rattaché à un salon.
   if (id === 'welcome_channel') return isWelcomeActive(config as WelcomeChannelConfig)
+  // welcome_dm non plus (et il n'a même pas de salon) : actif dès qu'un message
+  // est activé.
+  if (id === 'welcome_dm') return isWelcomeDmActive(config as WelcomeDmConfig)
   // bot_customization non plus : le bloc peut exister vide (`{}`) — il est actif
   // dès qu'un champ (pseudo, bio, avatar, bannière, style) est renseigné.
   if (id === 'bot_customization') return isBotCustomizationActive(config as BotCustomizationConfig)
@@ -255,6 +261,7 @@ export function GuildOverviewPage() {
   const allModules = [
     { id: 'starboard', icon: StarIcon },
     { id: 'welcome_channel', icon: MessageSquareIcon },
+    { id: 'welcome_dm', icon: MailIcon },
     { id: 'auto_role', icon: UsersIcon },
     { id: 'logging', icon: ScrollTextIcon },
     { id: 'adaptive_slowmode', icon: GaugeIcon },

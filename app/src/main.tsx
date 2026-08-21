@@ -17,6 +17,7 @@ import { GuildOverviewPage } from "@/pages/GuildOverviewPage"
 import { GuildSelectionView } from "@/pages/GuildSelectionView"
 import { StarboardPage } from "@/pages/modules/StarboardPage"
 import { WelcomeChannelPage } from "@/pages/modules/WelcomeChannelPage"
+import { WelcomeDmPage } from "@/pages/modules/WelcomeDmPage"
 import { AutoRolePage } from "@/pages/modules/AutoRolePage"
 import { LoggingPage } from "@/pages/modules/LoggingPage"
 import { AdaptiveSlowmodePage } from "@/pages/modules/AdaptiveSlowmodePage"
@@ -49,6 +50,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/cases", element: <GuildCasesPage /> },
       { path: "servers/:guildId/modules/starboard", element: <StarboardPage /> },
       { path: "servers/:guildId/modules/welcome_channel", element: <WelcomeChannelPage /> },
+      { path: "servers/:guildId/modules/welcome_dm", element: <WelcomeDmPage /> },
       { path: "servers/:guildId/modules/auto_role", element: <AutoRolePage /> },
       { path: "servers/:guildId/modules/logging", element: <LoggingPage /> },
       { path: "servers/:guildId/modules/adaptive_slowmode", element: <AdaptiveSlowmodePage /> },

@@ -644,15 +644,46 @@ message vide ou > 1500 caractères, `accent_color` hors [0, 0xFFFFFF], ou
 
 #### Module `welcome_dm`
 
+Config **v2**, jumelle de `welcome_channel` à une différence structurelle près :
+**pas de `channel_id`** (le message part en DM), 3 entrées max et un préfixe
+d'id `wdm_`. Ne jamais croiser les constantes des deux modules.
+
 ```typescript
+interface WelcomeDmMessage {
+  id: string;                   // "wdm_" + 8 hex minuscules, unique dans la guilde,
+                                // généré côté client, jamais réutilisé
+  message: string;              // 1–1500 caractères (trim côté serveur)
+  accent_color: number | null;  // 0–0xFFFFFF ; null = défaut 0x5865F2
+  enabled: boolean;             // pause sans supprimer
+  created_by: string | null;    // informatif, snowflake en string
+  created_at: string | null;    // ISO 8601 UTC, informatif
+}
+
 interface WelcomeDmConfig {
-  message_template: string;
-  embed_enabled: boolean;
-  embed_title?: string;
-  embed_description?: string | null;
-  embed_color?: number;
+  version: 2;
+  messages: WelcomeDmMessage[]; // max 3 (MAX_WELCOME_DMS), sinon 422
 }
 ```
+
+Pas de clé `enabled` à la racine (ignorée par le backend) : le module est actif
+côté UI dès qu'un message a `enabled: true`. Le PUT / PATCH remplace **toujours**
+la liste complète — il n'existe pas de patch par entrée, et `PATCH` ne fait
+aucun merge. Une liste vide se traduit par un `DELETE` (module désactivé).
+
+Les entrées v1 (`message_template` + `embed_*`) sont migrées automatiquement à
+la lecture, sous l'id `wdm_00000000` : le GET renvoie toujours du v2, aucune
+détection de v1 à écrire côté frontend. Un `404` sur le GET veut dire « jamais
+configuré » → `{ version: 2, messages: [] }`, pas une erreur.
+
+Mêmes placeholders que `welcome_channel`, substitués littéralement (un token
+inconnu reste visible dans le DM) : `{server}`, `{user}`, `{display_name}`,
+`{username}`, `{member_count}`, `{timestamp}` (secondes Unix — à envelopper,
+`<t:{timestamp}:R>`).
+
+422 si : plus de 3 messages, id dupliqué, id hors format `^wdm_[0-9a-f]{8}$`,
+message vide ou > 1500 caractères, ou `accent_color` hors [0, 0xFFFFFF]. Le
+champ `error` d'un 422 est un **tableau** d'erreurs Pydantic, celui d'un 403 de
+sanction (`new_module_blocked`) un **objet** — `ApiError` aplatit les deux.
 
 #### Module `auto_role`
 
