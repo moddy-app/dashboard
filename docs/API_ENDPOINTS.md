@@ -501,6 +501,27 @@ sans spec sont stockes tels quels (passthrough legacy, aucune validation).
 {"channel_id": 999, "reaction_count": 3, "emoji": "🌟"}
 ```
 
+**Livraison garantie (`notify`) :** un module dont la config a un pendant *dans
+Discord* (panneau poste, permissions de salons) ne peut pas se contenter du
+Pub/Sub de l'etape 4 — un message publie pendant un redemarrage du bot est perdu
+silencieusement. Ces modules declarent un hook `notify` qui **remplace** la
+publication Pub/Sub par une tache sur le stream `moddy:tasks` (rejouee au
+redemarrage) et attend l'accuse du bot sur `moddy:dashboard`. L'accuse est alors
+renvoye dans la reponse sous la cle **`_apply`** :
+
+```json
+{
+  "channel_id": "999",
+  "_apply": {"type": "module_config_applied", "ok": true, "enabled": true,
+             "panel": "posted", "panel_message_id": "1416…",
+             "permissions": {"updated": 12, "failed": 0, "skipped": 30}}
+}
+```
+
+`_apply` n'est jamais stocke en base et n'apparait que pour les modules
+concernes (aujourd'hui **`altguard`**, voir plus bas). Le renvoyer tel quel dans
+un `PUT` suivant est sans effet : les cles inconnues sont ignorees.
+
 **Erreurs (sanctions globales) :**
 
 | Code | Cas |
@@ -539,7 +560,9 @@ Desactive un module (supprime sa config).
 **Actions declenchees :**
 1. `UPDATE guilds SET data = data #- '{modules,starboard}' WHERE guild_id = $1`
 2. Invalide le cache
-3. Notifie le bot : `PUBLISH moddy:bot {"type": "module_disabled", ...}`
+3. Notifie le bot : `PUBLISH moddy:bot {"type": "module_disabled", ...}` — ou,
+   pour un module a hook `notify`, une tache `update_panel` avec
+   `action: "deleted"` sur `moddy:tasks`, dont l'accuse est renvoye sous `_apply`
 
 **Reponse :**
 
@@ -635,6 +658,123 @@ Désactive le module entier. Endpoint générique (voir `DELETE /guilds/{guild_i
 ```json
 {"guild_id": "123456789", "module_id": "starboard", "status": "disabled"}
 ```
+
+---
+
+## Module — Welcome DM
+
+Le module `welcome_dm` envoie jusqu'à **3** messages en DM au membre qui
+rejoint le serveur. Il est piloté par un `ModuleSpec`
+(`app/modules/specs/welcome_dm.py`) : aucun routeur dédié, tout passe par les
+endpoints **génériques** `GET/PUT/PATCH/DELETE /guilds/{id}/modules/welcome_dm`.
+
+C'est le jumeau de `welcome_channel` à une différence structurelle près :
+**il n'y a pas de `channel_id`** (le message part en DM). Ne pas croiser les
+deux : préfixe d'id `wdm_` ici, `wm_` là-bas, et 3 messages max contre 5.
+
+**Structure stockée en DB** (`guilds.data.modules.welcome_dm`) :
+
+```json
+{
+  "version": 2,
+  "messages": [
+    {
+      "id": "wdm_3f9a1c72",
+      "message": "Bienvenue sur **{server}**, {display_name} !\n-# Tu es le **{member_count}**ᵉ membre à nous rejoindre.",
+      "accent_color": 5793266,
+      "enabled": true,
+      "created_by": 987654321098765432,
+      "created_at": "2026-08-21T12:34:56.789012+00:00"
+    }
+  ]
+}
+```
+
+| Champ | Type | Défaut | Description |
+|---|---|---|---|
+| `version` | `integer` | `2` | Version du schéma, toujours écrire `2` |
+| `messages` | `array` | `[]` | **Max 3** entrées ; tableau vide = module désactivé |
+| `messages[].id` | `string` | — | `"wdm_"` + 8 hex minuscules, unique dans la guilde |
+| `messages[].message` | `string` | — | Texte + placeholders, non vide après trim, `≤ 1500` caractères |
+| `messages[].accent_color` | `integer \| null` | `null` (= `0x5865F2` à l'usage) | `0`–`0xFFFFFF`, **entier** (pas `#RRGGBB`) |
+| `messages[].enabled` | `bool` | `true` | Pause sans supprimer |
+| `messages[].created_by` | `integer \| null` | `null` | Informatif — exposé en **chaîne** en réponse |
+| `messages[].created_at` | `string \| null` | `null` | ISO 8601 UTC, informatif |
+
+**Pas de clé racine `enabled`** : l'état « module actif » est **calculé** (au
+moins une entrée `enabled: true`). Un on/off dans le dashboard doit mettre en
+pause / réactiver les entrées ; une clé `enabled` racine serait ignorée par le
+bot (et n'est pas persistée par le schéma).
+
+**Écriture = remplacement complet.** Il n'existe pas de patch par entrée :
+`PUT`/`PATCH` remplacent tout l'objet, `version` comprise. Un message supprimé
+doit disparaître du tableau — un merge clé à clé le ressusciterait. Le
+dashboard génère l'`id` des nouvelles entrées (`wdm_` + 8 hex) et ne doit
+**jamais** réutiliser ni renuméroter un id existant : le bot matche les entrées
+par `id`.
+
+**Validation (miroir de `WelcomeDmModule.validate_config()` côté bot)** — toute
+violation rejette la config **entière** en `422` :
+
+| # | Règle |
+|---|---|
+| 1 | au plus 3 entrées |
+| 2 | pas de doublon d'`id` dans la guilde |
+| 3 | `message` non vide après trim |
+| 4 | `message` ≤ 1500 caractères |
+| 5 | `accent_color` vaut `null` ou un entier dans `[0, 0xFFFFFF]` |
+
+Rien d'autre n'est contraint : markdown, titres (`#`, `##`, `###`), subtext
+(`-#`) et `{tokens}` inconnus sont autorisés dans `message`.
+
+**Migration v1 → v2 (lecture seule).** Une guilde qui n'a pas resauvegardé
+depuis le rework a encore l'ancien objet (`message_template` + `embed_*`). Il
+est migré **à la volée** à chaque lecture (`GET /modules`, `GET
+/modules/welcome_dm`) et avant validation d'une écriture — la base n'est
+réécrite qu'à la prochaine sauvegarde :
+
+| Clé v1 | Devient |
+|---|---|
+| `embed_title` (si `embed_enabled`) | titre `### ` en première ligne de `messages[0].message` |
+| `message_template` | corps du message |
+| `embed_description` (si `embed_enabled` et différent du corps) | ajouté à la suite |
+| `embed_color` (si `embed_enabled`) | `messages[0].accent_color` |
+| `embed_footer`, `embed_image_url`, `embed_thumbnail_enabled`, `embed_author_enabled` | abandonnées |
+
+Le texte composé est tronqué à 1500 caractères et reçoit l'id `wdm_00000000`
+(déterministe : la migration tourne à chaque lecture, un id aléatoire changerait
+d'un `GET` à l'autre). Si la composition est vide, le résultat est
+`{"version": 2, "messages": []}` (module éteint).
+
+**Placeholders** (substitution littérale au moment de l'envoi, jamais un
+`format()` — un `{` isolé est inoffensif, un token inconnu reste visible dans le
+DM). Un aperçu dashboard doit faire exactement le même remplacement :
+
+| Placeholder | Valeur |
+|---|---|
+| `{server}` | nom du serveur |
+| `{user}` | mention du membre (`<@id>`) |
+| `{display_name}` | pseudo / nom affiché |
+| `{username}` | nom de compte |
+| `{member_count}` | nombre de membres après l'arrivée |
+| `{timestamp}` | heure d'arrivée en **secondes Unix** — à envelopper : `<t:{timestamp}:R>` |
+
+**Constantes à garder synchronisées avec le bot :** `MAX_WELCOME_DMS = 3`,
+`MAX_MESSAGE_LENGTH = 1500`, `DEFAULT_ACCENT_COLOR = 0x5865F2` (5793266),
+`CONFIG_VERSION = 2`, préfixe d'id `wdm_`.
+
+**Réponse.** `created_by` est renvoyé en **chaîne** (snowflake > `Number.MAX_SAFE_INTEGER`)
+et une `accent_color` stockée sous une forme aberrante (héritage) est exposée à
+`null` — comme le fait le bot à la lecture. Cette normalisation est en lecture
+seule : une écriture avec une couleur invalide reste refusée en `422`.
+
+**Invalidation du cache :** le endpoint générique invalide `guild:{id}:config`
+et publie `{"type": "module_updated", "guild_id": …, "module_id": "welcome_dm"}`
+sur `moddy:bot` après **chaque** écriture — sans ça le bot continuerait
+d'envoyer les anciens DM jusqu'à son redémarrage.
+
+**Désactiver le module :** `messages: []`, ou toutes les entrées `enabled: false`,
+ou `DELETE /guilds/{id}/modules/welcome_dm`.
 
 ---
 
@@ -1195,6 +1335,98 @@ ou suspendu, ou dont l'abonne l'est, n'est plus premium (« aucun abonnement act
 meme paye ») — la remise a `null` d'un champ premium reste possible.
 
 Le corps d'erreur est toujours `{"error": "<code>"}` — les codes sont aussi des clés i18n. (Exception : les blocages par sanction globale, dont `error` est un objet.) Sur `bot_timeout`, la tâche reste dans le stream et sera rejouée : **ne pas ré-émettre**, prévoir un simple message côté dashboard.
+
+---
+
+## Module — AltGuard
+
+`altguard` retient chaque humain qui rejoint le serveur derrière une
+vérification anti multi-comptes. Tout le parcours (panneau, consentement, jeton,
+verdict, DM) est géré **par le bot** ; le backend ne gère que la config, via le
+endpoint **générique** `GET/PUT/PATCH/DELETE /guilds/{id}/modules/altguard` — pas
+de routeur dédié. Détails complets : `docs/ALTGUARD.md`.
+
+**Structure stockée en DB** (`guilds.data.modules.altguard`) :
+
+```json
+{
+  "channel_id": 111111111111111111,
+  "unverified_role_id": 222222222222222222,
+  "verified_role_id": 333333333333333333,
+  "log_channel_id": 444444444444444444,
+  "panel_locale": "fr",
+  "message_id": 1416000000000000000
+}
+```
+
+| Champ | Type | Requis | Rôle |
+|---|---|---|---|
+| `channel_id` | int | ✅ | Salon de vérification — seul salon visible par le rôle non vérifié |
+| `unverified_role_id` | int | ✅ | Donné au join, bloque l'accès |
+| `verified_role_id` | int | ✅ | Donné quand la vérification passe |
+| `log_channel_id` | int | — | Verdicts + décisions manuelles |
+| `panel_locale` | str | — | `fr`, `en-US`, `es-ES`, `pt-BR`, `de` (défaut `en-US`) |
+| `message_id` | int | — | Bookkeeping du bot (id du panneau posté). **Jamais géré à la main** |
+
+`enabled` n'est **pas stocké** : il est calculé (`channel_id` + les deux rôles) et
+ajouté en lecture seule dans les réponses `GET`/`PUT`. Le texte du panneau n'est pas
+configurable, seule sa langue l'est.
+
+**Snowflakes en chaînes :** en lecture, `channel_id`, `unverified_role_id`,
+`verified_role_id`, `log_channel_id` et `message_id` sont renvoyés en **string**
+(un id de 19 chiffres déborde `Number` en JS). En écriture, les deux formes sont
+acceptées.
+
+### `PUT` / `PATCH /guilds/{guild_id}/modules/altguard`
+
+**Validation (422) :** `panel_locale` supportée, les deux rôles différents ; et,
+quand Discord répond : salons = salons texte/annonces du serveur, rôles
+existants, ni `@everyone` ni gérés par une intégration, **sous** le rôle le plus
+haut du bot, et bot disposant de « Gérer les rôles ». Si Discord est injoignable,
+la sauvegarde passe (le bot reste juge final).
+
+Une config **incomplète** est acceptée (le dashboard sauvegarde au fil de l'eau) :
+elle désactive simplement le gate et fait retirer le panneau par le bot.
+
+**Reponse :** config + accusé du bot sous `_apply`
+
+```json
+{
+  "channel_id": "111111111111111111",
+  "unverified_role_id": "222222222222222222",
+  "verified_role_id": "333333333333333333",
+  "log_channel_id": "444444444444444444",
+  "panel_locale": "fr",
+  "message_id": "1416000000000000000",
+  "enabled": true,
+  "_apply": {
+    "type": "module_config_applied", "ok": true, "action": "updated",
+    "enabled": true, "panel": "posted", "panel_message_id": "1416…",
+    "permissions": {"updated": 12, "failed": 0, "skipped": 30}
+  }
+}
+```
+
+**À afficher côté dashboard :** `panel: "failed"` et `permissions.failed > 0`
+sont les **seuls** signaux qu'il manque une permission au bot — sans eux la
+sauvegarde a l'air réussie alors qu'elle ne l'est qu'à moitié.
+
+| `_apply.error` | Sens |
+|---|---|
+| `unknown_module`, `no_database`, `invalid_config`, `config_unreadable`, `invalid_guild`, `internal_error` | Le bot a refusé/raté le reload (`ok: false`) |
+| `hook_error` (champ à part) | Le côté Discord a planté ; la config reste stockée et chargée |
+| `bot_timeout` | Pas d'accusé en 25 s. **La config est enregistrée** et la tâche reste dans le stream : ne pas ré-émettre |
+| `task_transport_unavailable` | `TASK_STREAM_SECRET` absent/trop court. Config enregistrée, rien appliqué dans Discord |
+
+### `DELETE /guilds/{guild_id}/modules/altguard`
+
+Supprime la config et demande au bot de retirer le panneau (`action: "deleted"`).
+Réponse standard + `_apply`. Le bot ne réécrit **rien** en base sur une suppression.
+
+> **Limite connue :** une suppression qui arrive avec un cache bot froid
+> (redémarrage entre les deux) ne peut rien nettoyer — la config est déjà vide,
+> le bot ne sait plus quel `message_id` chercher. L'accusé renvoie
+> `cleaned: false` et le panneau reste orphelin dans Discord.
 
 ---
 
