@@ -9,6 +9,7 @@ import {
   SearchIcon,
   StarIcon,
   UsersIcon,
+  MailIcon,
   MessageSquareIcon,
   ActivityIcon,
   ScrollTextIcon,
@@ -117,6 +118,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/welcome_channel`,
           icon: MessageSquareIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_channel`,
+        },
+        {
+          title: t("modules.welcome_dm.name"),
+          url: `/servers/${selectedGuildId}/modules/welcome_dm`,
+          icon: MailIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_dm`,
         },
         {
           title: t("modules.auto_role.name"),
