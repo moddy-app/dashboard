@@ -460,7 +460,21 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                       refus. Retirer un serveur, en revanche, reste permis. */}
                   {!linkBlocked && subscription.servers.length < subscription.max_servers && (
                     <div className="flex gap-2 mt-1">
-                      <Select value={selectedServerId} onValueChange={setSelectedServerId}>
+                      <Select
+                        value={selectedServerId}
+                        onValueChange={setSelectedServerId}
+                        onOpenChange={(isOpen) => {
+                          // Le SelectContent portalé appelle hideOthers() sans
+                          // condition à l'ouverture (pas de prop `modal` dans
+                          // cette version de radix-ui), ce qui aria-hide le
+                          // Dialog parent — si un élément à l'intérieur a
+                          // encore le focus, Chrome avertit "Blocked
+                          // aria-hidden". On le fait perdre avant coup.
+                          if (isOpen && document.activeElement instanceof HTMLElement) {
+                            document.activeElement.blur()
+                          }
+                        }}
+                      >
                         <SelectTrigger className="flex-1 w-0">
                           <SelectValue placeholder={t('settings.billing.servers.addPlaceholder')} />
                         </SelectTrigger>
