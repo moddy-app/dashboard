@@ -27,20 +27,32 @@ export const WELCOME_PLACEHOLDERS = [
 ] as const
 
 /**
- * Génère un identifiant `wm_xxxxxxxx` (8 hex minuscules). Un nouvel id est tiré
- * pour chaque entrée créée — jamais de réutilisation, même après suppression.
+ * Génère un identifiant `<prefix>xxxxxxxx` (8 hex **minuscules** — le backend
+ * rejette les majuscules en 422). Un nouvel id est tiré pour chaque entrée
+ * créée — jamais de réutilisation, même après suppression.
+ *
+ * Le préfixe est un paramètre : `welcome_channel` utilise `wm_`, `welcome_dm`
+ * `wdm_`. Les deux modules ne partagent aucune constante.
  */
-export function generateWelcomeId(existing: readonly WelcomeMessage[] = []): string {
-  const taken = new Set(existing.map((m) => m.id))
+export function generateMessageId(
+  prefix: string,
+  existingIds: readonly string[] = []
+): string {
+  const taken = new Set(existingIds)
   for (let attempt = 0; attempt < 20; attempt++) {
     const bytes = new Uint8Array(4)
     crypto.getRandomValues(bytes)
-    const id = `wm_${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`
+    const id = `${prefix}${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`
     if (!taken.has(id)) return id
   }
   // Collision 20 fois de suite sur 2^32 : impossible en pratique, mais on ne
   // renvoie jamais un id déjà pris (le backend renverrait 422).
   throw new Error("Could not generate a unique welcome message id")
+}
+
+/** Génère un identifiant `wm_xxxxxxxx` pour une entrée `welcome_channel`. */
+export function generateWelcomeId(existing: readonly WelcomeMessage[] = []): string {
+  return generateMessageId("wm_", existing.map((m) => m.id))
 }
 
 /** `#5865F2` → `5793266`. Renvoie `null` si le hex est invalide. */
@@ -50,9 +62,15 @@ export function accentHexToInt(hex: string): number | null {
   return parseInt(match[1], 16)
 }
 
-/** `5793266` → `#5865F2`. `null` → couleur par défaut du bot. */
-export function accentIntToHex(color: number | null): string {
-  const value = color ?? WELCOME_DEFAULT_ACCENT
+/**
+ * `5793266` → `#5865F2`. `null` → `fallback`, la couleur que le bot applique
+ * faute de choix (chaque module passe la sienne).
+ */
+export function accentIntToHex(
+  color: number | null,
+  fallback: number = WELCOME_DEFAULT_ACCENT
+): string {
+  const value = color ?? fallback
   return `#${value.toString(16).padStart(6, "0").toUpperCase()}`
 }
 
