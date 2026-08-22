@@ -5,6 +5,7 @@ import {
   LoaderIcon,
   SparklesIcon,
   ShieldAlertIcon,
+  ShieldCheckIcon,
   UsersIcon,
   StarIcon,
   MailIcon,
@@ -46,6 +47,7 @@ import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
 import type {
+  AltGuardConfig,
   AutomodAiConfig,
   BotCustomizationConfig,
   ModuleConfig,
@@ -55,6 +57,7 @@ import type {
 import { isWelcomeActive } from "@/lib/welcome"
 import { isWelcomeDmActive } from "@/lib/welcome-dm"
 import { isBotCustomizationActive } from "@/lib/bot-customization"
+import { isAltGuardActive } from "@/lib/altguard"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -84,6 +87,9 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   // bot_customization non plus : le bloc peut exister vide (`{}`) — il est actif
   // dès qu'un champ (pseudo, bio, avatar, bannière, style) est renseigné.
   if (id === 'bot_customization') return isBotCustomizationActive(config as BotCustomizationConfig)
+  // altguard non plus : il est actif dès que le salon de vérification et les
+  // deux rôles sont renseignés (`enabled` est calculé, jamais stocké).
+  if (id === 'altguard') return isAltGuardActive(config as AltGuardConfig)
   return true
 }
 
@@ -268,6 +274,7 @@ export function GuildOverviewPage() {
     { id: 'social_notifications', icon: BellRingIcon },
     { id: 'automod_ai', icon: SparklesIcon },
     { id: 'bot_customization', icon: PaletteIcon },
+    { id: 'altguard', icon: ShieldCheckIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null

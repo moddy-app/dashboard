@@ -18,6 +18,7 @@ import {
   ClipboardListIcon,
   BellRingIcon,
   ShieldAlertIcon,
+  ShieldCheckIcon,
   SparklesIcon,
   PaletteIcon,
 } from "lucide-react"
@@ -154,6 +155,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/social_notifications`,
           icon: BellRingIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/social_notifications`,
+        },
+        {
+          title: t("modules.altguard.name"),
+          url: `/servers/${selectedGuildId}/modules/altguard`,
+          icon: ShieldCheckIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
         },
         {
           title: t("modules.bot_customization.name"),

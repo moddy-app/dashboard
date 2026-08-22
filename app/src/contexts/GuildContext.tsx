@@ -59,6 +59,13 @@ interface GuildContextValue {
   refreshGuildList: () => Promise<void>
   updateModule: (moduleId: string, config: Record<string, unknown>) => Promise<void>
   disableModule: (moduleId: string) => Promise<void>
+  /**
+   * Aligne l'état local sur une écriture faite hors du contexte (module ayant
+   * son propre service, comme `altguard`). `null` = module supprimé. Sans ça,
+   * la vue d'ensemble et la sidebar gardent l'état d'avant la sauvegarde
+   * jusqu'au prochain chargement du serveur.
+   */
+  syncModule: (moduleId: string, config: Record<string, unknown> | null) => void
 }
 
 const GuildContext = createContext<GuildContextValue | null>(null)
@@ -311,6 +318,18 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     [selectedGuildId]
   )
 
+  const syncModule = useCallback(
+    (moduleId: string, config: Record<string, unknown> | null) => {
+      setModules((prev) => {
+        const next = { ...prev }
+        if (config === null) delete next[moduleId]
+        else next[moduleId] = config as unknown as ModuleConfig
+        return next
+      })
+    },
+    []
+  )
+
   // Premium = le serveur est lié à l'abonnement Max actif de l'utilisateur
   // (cf. API_ENDPOINTS.md → GET /stripe/subscription). On n'utilise PAS l'attribut
   // PREMIUM de la guilde. `/guilds/{id}/premium` (jointure subscription_servers)
@@ -340,6 +359,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         refreshGuildList,
         updateModule,
         disableModule,
+        syncModule,
       }}
     >
       {children}
