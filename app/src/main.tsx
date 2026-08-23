@@ -25,6 +25,7 @@ import { SocialNotificationsPage } from "@/pages/modules/SocialNotificationsPage
 import { AutomodAiPage } from "@/pages/modules/AutomodAiPage"
 import { BotCustomizationPage } from "@/pages/modules/BotCustomizationPage"
 import { AltGuardPage } from "@/pages/modules/AltGuardPage"
+import { LogsPage } from "@/pages/modules/LogsPage"
 import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
 import { MyCasesPage } from "@/pages/MyCasesPage"
@@ -59,6 +60,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/automod_ai", element: <AutomodAiPage /> },
       { path: "servers/:guildId/modules/bot_customization", element: <BotCustomizationPage /> },
       { path: "servers/:guildId/modules/altguard", element: <AltGuardPage /> },
+      { path: "servers/:guildId/modules/logs", element: <LogsPage /> },
       { path: "staff", element: <StaffPage /> },
       { path: "premium", element: <PremiumPage /> },
       { path: "select-premium-servers", element: <Navigate to="/?openSettings=billing" replace /> },

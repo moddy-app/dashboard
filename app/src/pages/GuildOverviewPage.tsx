@@ -6,6 +6,7 @@ import {
   SparklesIcon,
   ShieldAlertIcon,
   ShieldCheckIcon,
+  FileClockIcon,
   UsersIcon,
   StarIcon,
   MailIcon,
@@ -48,6 +49,7 @@ import { handleSaveError } from "@/lib/handle-error"
 import type { LucideIcon } from "lucide-react"
 import type {
   AltGuardConfig,
+  LogsConfig,
   AutomodAiConfig,
   BotCustomizationConfig,
   ModuleConfig,
@@ -58,6 +60,7 @@ import { isWelcomeActive } from "@/lib/welcome"
 import { isWelcomeDmActive } from "@/lib/welcome-dm"
 import { isBotCustomizationActive } from "@/lib/bot-customization"
 import { isAltGuardActive } from "@/lib/altguard"
+import { isLogsActive } from "@/lib/logs"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -90,6 +93,9 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   // altguard non plus : il est actif dès que le salon de vérification et les
   // deux rôles sont renseignés (`enabled` est calculé, jamais stocké).
   if (id === 'altguard') return isAltGuardActive(config as AltGuardConfig)
+  // logs non plus : il tourne dès qu'une catégorie a un salon (`enabled` est
+  // calculé côté serveur, jamais stocké).
+  if (id === 'logs') return isLogsActive(config as LogsConfig)
   return true
 }
 
@@ -275,6 +281,7 @@ export function GuildOverviewPage() {
     { id: 'automod_ai', icon: SparklesIcon },
     { id: 'bot_customization', icon: PaletteIcon },
     { id: 'altguard', icon: ShieldCheckIcon },
+    { id: 'logs', icon: FileClockIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null

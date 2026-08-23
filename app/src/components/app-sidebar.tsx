@@ -13,6 +13,7 @@ import {
   MessageSquareIcon,
   ActivityIcon,
   ScrollTextIcon,
+  FileClockIcon,
   AlertTriangleIcon,
   ServerIcon,
   ClipboardListIcon,
@@ -161,6 +162,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/altguard`,
           icon: ShieldCheckIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
+        },
+        {
+          title: t("modules.logs.name"),
+          url: `/servers/${selectedGuildId}/modules/logs`,
+          icon: FileClockIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/logs`,
         },
         {
           title: t("modules.bot_customization.name"),
