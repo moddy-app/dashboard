@@ -638,13 +638,6 @@
       "description": "Hold every new member behind an anti-alt verification before they can access the server.",
       "statusActive": "Active",
       "statusInactive": "Inactive",
-      "incompleteTitle": "Module inactive",
-      "incompleteDescription": "Missing: {{fields}}. Your settings are saved, but the gate stays off and the bot removes the panel until everything is filled in.",
-      "fields": {
-        "channel_id": "verification channel",
-        "unverified_role_id": "unverified role",
-        "verified_role_id": "verified role"
-      },
       "configTitle": "Verification gate",
       "configDescription": "Pick the channel newcomers land in and the two roles AltGuard swaps once they pass.",
       "channel": "Verification channel",
@@ -692,8 +685,6 @@
       "description": "Route Discord events to your log channels, category by category.",
       "statusActive": "Active",
       "statusInactive": "Inactive",
-      "noChannelTitle": "No log channel linked",
-      "noChannelDescription": "Logs only start once at least one category points to a channel. Your exclusions are kept either way.",
       "savedButInactive": "Saved, but no category has a channel — nothing will be logged.",
       "errorsTitle": "Settings refused",
       "categoriesTitle": "Categories",

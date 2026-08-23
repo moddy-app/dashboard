@@ -409,13 +409,6 @@ function LogsForm() {
         )}
       </div>
 
-      {/* Aucun salon dans le brouillon : rien ne partira. */}
-      {draftLinked.length === 0 && (
-        <Notice level="warning" title={t("modules.logs.noChannelTitle")}>
-          {t("modules.logs.noChannelDescription")}
-        </Notice>
-      )}
-
       {/* Erreurs sans champ d'ancrage (`loc: []`) et validation locale : sans cet
           emplacement global, ces messages n'auraient nulle part où s'afficher. */}
       {(errors.global.length > 0 || clientIssues.length > 0) && (

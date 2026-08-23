@@ -428,13 +428,39 @@ function fillKey(template: string, categoryId: string, event: string): string {
 }
 
 /**
- * Nom court d'un événement, résolu via `locale_keys` du catalogue (les libellés
- * vivent dans les locales du bot, jamais réinventés ici). Clé absente →
- * identifiant nu, comme prescrit : mieux vaut `user_kick` qu'un vide.
+ * Rend un identifiant lisible sans le traduire mot à mot : chaque segment passe
+ * par `modules.logs.words.<mot>` (repli sur le mot lui-même), et la phrase est
+ * capitalisée. `role_delete` devient « Rôle supprimé » plutôt que `role_delete`.
+ *
+ * C'est le **dernier** repli : un identifiant nu à l'écran n'apprend rien à un
+ * admin, mais une approximation reste moins fiable que le vrai libellé du bot.
+ */
+export function humanizeId(id: string): string {
+  const words = id
+    .split(/[._-]/)
+    .filter(Boolean)
+    .map((word) => i18n.t(`modules.logs.words.${word}`, { defaultValue: word }))
+  const phrase = words.join(' ')
+  return phrase.charAt(0).toUpperCase() + phrase.slice(1)
+}
+
+/**
+ * Nom court d'un événement, dans cet ordre :
+ *
+ * 1. `locale_keys.event` du catalogue — les libellés du **bot**, la seule source
+ *    qui garantit que `/config` sur Discord et le dashboard nomment un événement
+ *    pareil. Poser le fichier de locales du bot dans `src/locales/` suffit ;
+ * 2. `modules.logs.eventNames.<event>` — traductions du dashboard, en attendant ;
+ * 3. l'identifiant rendu lisible ({@link humanizeId}).
  */
 export function eventLabel(catalog: LogsCatalog, categoryId: string, event: string): string {
-  const key = fillKey(catalog.locale_keys.event, categoryId, event)
-  return i18n.exists(key) ? i18n.t(key) : event
+  const botKey = fillKey(catalog.locale_keys.event, categoryId, event)
+  if (i18n.exists(botKey)) return i18n.t(botKey)
+
+  const ownKey = `modules.logs.eventNames.${event}`
+  if (i18n.exists(ownKey)) return i18n.t(ownKey)
+
+  return humanizeId(event)
 }
 
 /** Phrase du log (utile en complément du nom court). `null` si non traduite. */
@@ -447,9 +473,13 @@ export function eventTitle(
   return i18n.exists(key) ? i18n.t(key) : null
 }
 
-/** Nom d'une catégorie. Le catalogue n'en sert pas : repli sur l'identifiant. */
+/**
+ * Nom d'une catégorie. Le catalogue ne sert aucune clé pour elles : traduction
+ * du dashboard, puis identifiant rendu lisible.
+ */
 export function categoryLabel(categoryId: string): string {
-  return i18n.t(`modules.logs.categories.${categoryId}`, { defaultValue: categoryId })
+  const key = `modules.logs.categories.${categoryId}`
+  return i18n.exists(key) ? i18n.t(key) : humanizeId(categoryId)
 }
 
 // ─── Sélecteurs de salons ─────────────────────────────────────────────────────

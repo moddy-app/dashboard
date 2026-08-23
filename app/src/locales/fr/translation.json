@@ -638,13 +638,6 @@
       "description": "Retient chaque nouveau membre derrière une vérification anti multi-comptes avant l'accès au serveur.",
       "statusActive": "Actif",
       "statusInactive": "Inactif",
-      "incompleteTitle": "Module inactif",
-      "incompleteDescription": "Il manque : {{fields}}. La configuration est bien enregistrée, mais la vérification reste coupée et le bot retire le panneau tant que tout n'est pas rempli.",
-      "fields": {
-        "channel_id": "le salon de vérification",
-        "unverified_role_id": "le rôle non vérifié",
-        "verified_role_id": "le rôle vérifié"
-      },
       "configTitle": "Vérification à l'entrée",
       "configDescription": "Choisissez le salon où arrivent les nouveaux et les deux rôles qu'AltGuard échange une fois la vérification passée.",
       "channel": "Salon de vérification",
@@ -692,8 +685,6 @@
       "description": "Envoie les événements Discord vers tes salons de logs, catégorie par catégorie.",
       "statusActive": "Actif",
       "statusInactive": "Inactif",
-      "noChannelTitle": "Aucun salon de logs",
-      "noChannelDescription": "Les logs ne démarrent qu'une fois qu'au moins une catégorie pointe vers un salon. Tes décochages sont conservés dans tous les cas.",
       "savedButInactive": "Enregistré, mais aucune catégorie n'a de salon — rien ne sera logué.",
       "errorsTitle": "Configuration refusée",
       "categoriesTitle": "Catégories",
