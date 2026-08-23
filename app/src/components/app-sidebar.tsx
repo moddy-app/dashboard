@@ -12,7 +12,7 @@ import {
   MailIcon,
   MessageSquareIcon,
   ActivityIcon,
-  ScrollTextIcon,
+  FileClockIcon,
   AlertTriangleIcon,
   ServerIcon,
   ClipboardListIcon,
@@ -133,12 +133,6 @@ export function AppSidebar({
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/auto_role`,
         },
         {
-          title: t("modules.logging.name"),
-          url: `/servers/${selectedGuildId}/modules/logging`,
-          icon: ScrollTextIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/logging`,
-        },
-        {
           title: t("modules.adaptive_slowmode.name"),
           url: `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
           icon: GaugeIcon,
@@ -161,6 +155,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/altguard`,
           icon: ShieldCheckIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
+        },
+        {
+          title: t("modules.logs.name"),
+          url: `/servers/${selectedGuildId}/modules/logs`,
+          icon: FileClockIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/logs`,
         },
         {
           title: t("modules.bot_customization.name"),

@@ -68,9 +68,19 @@ export const CHANNEL_TYPES = {
   VOICE: 2,
   CATEGORY: 4,
   ANNOUNCEMENT: 5,
+  ANNOUNCEMENT_THREAD: 10,
+  PUBLIC_THREAD: 11,
+  PRIVATE_THREAD: 12,
   STAGE: 13,
   FORUM: 15,
 } as const
+
+/** Fils Discord — acceptés comme destination de logs tant qu'ils sont actifs. */
+export const THREAD_CHANNEL_TYPES: number[] = [
+  CHANNEL_TYPES.ANNOUNCEMENT_THREAD,
+  CHANNEL_TYPES.PUBLIC_THREAD,
+  CHANNEL_TYPES.PRIVATE_THREAD,
+]
 
 export interface Role {
   id: string
@@ -130,12 +140,12 @@ export type ModuleId =
   | 'auto_restore_roles'
   | 'interserver'
   | 'youtube_notifications'
-  | 'logging'
   | 'adaptive_slowmode'
   | 'social_notifications'
   | 'automod_ai'
   | 'bot_customization'
   | 'altguard'
+  | 'logs'
 
 export interface StarboardConfig {
   channel_id: string
@@ -219,11 +229,6 @@ export interface InterserverConfig {
   channel_id: string
   network_id: string
   webhook_url: string
-}
-
-export interface LoggingConfig {
-  channel_id: string
-  events: string[]
 }
 
 export type Sensitivity = 'low' | 'medium' | 'high'
@@ -548,6 +553,105 @@ export interface AltGuardSaveResult {
   apply: AltGuardApply | null
 }
 
+// ─── Logs ─────────────────────────────────────────────────────────────────────
+//
+// L'ancien module `logging` (endpoints `/guilds/{id}/logging`) n'est plus exposé
+// par le dashboard : `logs` est le seul écran de logs.
+
+/**
+ * Une catégorie du catalogue reliée à ses salons. Le routage se fait **par
+ * catégorie**, jamais par événement.
+ */
+export interface LogCategoryConfig {
+  /** Snowflakes en chaînes. Limite lue dans `LogsCatalog.limits`. */
+  channel_ids: string[]
+  /**
+   * **Exclusions uniquement** : ce qui est *coupé*, tout le reste de la
+   * catégorie est actif. Stocker la liste des activés casserait la propriété
+   * voulue — un événement ajouté plus tard au registre démarre allumé.
+   */
+  disabled_events: string[]
+}
+
+/**
+ * Document de configuration du module. Il est lu et réécrit **en entier** :
+ * `PUT` comme `PATCH` remplacent tout, il n'existe pas de patch partiel.
+ */
+export interface LogsConfig {
+  categories: Record<string, LogCategoryConfig>
+  ignored_channel_ids: string[]
+  ignored_role_ids: string[]
+  ignore_bots: boolean
+  /** `false` → les `.txt` (transcripts, contenus débordants) sont retirés. */
+  attach_transcripts: boolean
+  /** Un log par *acte* plutôt qu'un par événement du registre (délai ~3 s). */
+  merge_duplicates: boolean
+  /** Valeurs autorisées lues dans `LogsCatalog.locales`, jamais codées en dur. */
+  locale: string
+  /**
+   * **Lecture seule** : calculé côté serveur (`any(categories[*].channel_ids)`).
+   * Ne jamais l'envoyer — il n'y a pas d'interrupteur d'activation.
+   */
+  enabled?: boolean
+}
+
+/** Une catégorie du catalogue : ses événements, dans l'ordre du registre du bot. */
+export interface LogsCatalogCategory {
+  events: string[]
+  /**
+   * Déclarés au registre mais qu'aucune source n'émet aujourd'hui. Configurables
+   * (ils s'allumeront tout seuls) : à **griser**, jamais à masquer.
+   */
+  unimplemented: string[]
+}
+
+/**
+ * Source de vérité du formulaire : catégories, limites et locales viennent
+ * d'ici. Rien de tout ça ne doit être codé en dur côté dashboard — ce sont des
+ * valeurs de travail susceptibles de bouger.
+ */
+export interface LogsCatalog {
+  categories: Record<string, LogsCatalogCategory>
+  category_count: number
+  event_count: number
+  locales: string[]
+  /** Gabarits de clés i18n des libellés, servis par les locales du bot. */
+  locale_keys: { event: string; title: string }
+  limits: {
+    channels_per_category: number
+    ignored_channels: number
+    ignored_roles: number
+  }
+  required_channel_permissions: string[]
+  recommended_channel_permissions: string[]
+}
+
+export interface LogsChannelDiagnostic {
+  channel_id: string
+  exists: boolean
+  is_thread: boolean
+  unsupported_type: boolean
+  ok: boolean
+  /** Bloquant : rien ne sera logué dans ce salon. */
+  missing_permissions: string[]
+  /** Avertissement seulement (`manage_webhooks`) — la config reste valide. */
+  degraded_permissions: string[]
+  /** Catégories qui routent vers ce salon. */
+  categories: string[]
+}
+
+/**
+ * Inspecte la config **en base**, pas le brouillon. Seul endroit qui remonte les
+ * problèmes non bloquants (permissions perdues après coup, `manage_webhooks`).
+ */
+export interface LogsDiagnostics {
+  guild_id: string
+  enabled: boolean
+  /** `false` = Discord injoignable : rien à conclure, surtout pas une alerte. */
+  checked: boolean
+  channels: LogsChannelDiagnostic[]
+}
+
 export type ModuleConfig =
   | StarboardConfig
   | WelcomeChannelConfig
@@ -555,12 +659,12 @@ export type ModuleConfig =
   | AutoRoleConfig
   | AutoRestoreRolesConfig
   | InterserverConfig
-  | LoggingConfig
   | AdaptiveSlowmodeConfig
   | SocialNotificationsConfig
   | AutomodAiConfig
   | BotCustomizationConfig
   | AltGuardConfig
+  | LogsConfig
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 
