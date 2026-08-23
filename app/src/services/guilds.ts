@@ -8,7 +8,6 @@ import type {
   ModuleConfig,
   GuildStats,
   GuildPremium,
-  LoggingConfig,
   AdaptiveSlowmodeConfig,
   ChannelSlowmodeConfig,
   SubscriptionData,
@@ -110,28 +109,6 @@ export async function disableModule(
   moduleId: string
 ): Promise<void> {
   await api(`/guilds/${guildId}/modules/${moduleId}`, { method: 'DELETE' })
-}
-
-// ─── Logging (endpoint dédié) ─────────────────────────────────────────────────
-
-export async function getLoggingConfig(
-  guildId: string | number
-): Promise<LoggingConfig> {
-  const data = (await api(`/guilds/${guildId}/logging`)) as {
-    guild_id: number
-    config: LoggingConfig
-  }
-  return data.config
-}
-
-export async function updateLogging(
-  guildId: string | number,
-  config: LoggingConfig
-): Promise<void> {
-  await api(`/guilds/${guildId}/logging`, {
-    method: 'PATCH',
-    body: JSON.stringify(config),
-  })
 }
 
 // ─── Adaptive Slowmode ────────────────────────────────────────────────────────

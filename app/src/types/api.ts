@@ -140,7 +140,6 @@ export type ModuleId =
   | 'auto_restore_roles'
   | 'interserver'
   | 'youtube_notifications'
-  | 'logging'
   | 'adaptive_slowmode'
   | 'social_notifications'
   | 'automod_ai'
@@ -230,11 +229,6 @@ export interface InterserverConfig {
   channel_id: string
   network_id: string
   webhook_url: string
-}
-
-export interface LoggingConfig {
-  channel_id: string
-  events: string[]
 }
 
 export type Sensitivity = 'low' | 'medium' | 'high'
@@ -561,8 +555,8 @@ export interface AltGuardSaveResult {
 
 // ─── Logs ─────────────────────────────────────────────────────────────────────
 //
-// ⚠️ À ne pas confondre avec `logging` (module historique, endpoints
-// `/guilds/{id}/logging`) : `logs` est un module distinct, il ne le remplace pas.
+// L'ancien module `logging` (endpoints `/guilds/{id}/logging`) n'est plus exposé
+// par le dashboard : `logs` est le seul écran de logs.
 
 /**
  * Une catégorie du catalogue reliée à ses salons. Le routage se fait **par
@@ -665,7 +659,6 @@ export type ModuleConfig =
   | AutoRoleConfig
   | AutoRestoreRolesConfig
   | InterserverConfig
-  | LoggingConfig
   | AdaptiveSlowmodeConfig
   | SocialNotificationsConfig
   | AutomodAiConfig

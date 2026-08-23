@@ -303,43 +303,6 @@
       "name": "YouTube Notifications",
       "description": "Get notified when your favorite YouTubers upload."
     },
-    "logging": {
-      "name": "Logging",
-      "description": "Log server events to a dedicated channel.",
-      "enableDescription": "Track server events automatically.",
-      "channelTitle": "Log channel",
-      "channelDescription": "Select the channel where logs will be sent.",
-      "eventsTitle": "Events to log",
-      "eventsDescription": "{{count}} of {{total}} events selected.",
-      "groups": {
-        "messages": "Messages",
-        "members": "Members",
-        "roles": "Roles",
-        "channels": "Channels",
-        "voice": "Voice"
-      },
-      "events": {
-        "message_delete": "Message deleted",
-        "message_edit": "Message edited",
-        "message_bulk_delete": "Bulk delete",
-        "member_join": "Member joined",
-        "member_leave": "Member left",
-        "member_ban": "Member banned",
-        "member_unban": "Member unbanned",
-        "member_kick": "Member kicked",
-        "member_timeout": "Member timed out",
-        "role_create": "Role created",
-        "role_delete": "Role deleted",
-        "role_update": "Role updated",
-        "channel_create": "Channel created",
-        "channel_delete": "Channel deleted",
-        "channel_update": "Channel updated",
-        "voice_join": "Voice join",
-        "voice_leave": "Voice leave",
-        "voice_move": "Voice move"
-      },
-      "disabledSuccess": "Logging disabled."
-    },
     "adaptive_slowmode": {
       "name": "Adaptive Slowmode",
       "description": "Automatically adjusts the slowmode delay based on channel activity.",

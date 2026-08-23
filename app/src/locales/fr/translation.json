@@ -303,43 +303,6 @@
       "name": "Notifications YouTube",
       "description": "Soyez notifié quand vos YouTubeurs préférés publient une vidéo."
     },
-    "logging": {
-      "name": "Logs",
-      "description": "Enregistre les événements du serveur dans un salon dédié.",
-      "enableDescription": "Suit automatiquement les événements du serveur.",
-      "channelTitle": "Salon de logs",
-      "channelDescription": "Sélectionnez le salon où les logs seront envoyés.",
-      "eventsTitle": "Événements à logger",
-      "eventsDescription": "{{count}} sur {{total}} événements sélectionnés.",
-      "groups": {
-        "messages": "Messages",
-        "members": "Membres",
-        "roles": "Rôles",
-        "channels": "Salons",
-        "voice": "Vocal"
-      },
-      "events": {
-        "message_delete": "Message supprimé",
-        "message_edit": "Message modifié",
-        "message_bulk_delete": "Suppression en masse",
-        "member_join": "Membre arrivé",
-        "member_leave": "Membre parti",
-        "member_ban": "Membre banni",
-        "member_unban": "Membre débanni",
-        "member_kick": "Membre expulsé",
-        "member_timeout": "Membre mis en sourdine",
-        "role_create": "Rôle créé",
-        "role_delete": "Rôle supprimé",
-        "role_update": "Rôle modifié",
-        "channel_create": "Salon créé",
-        "channel_delete": "Salon supprimé",
-        "channel_update": "Salon modifié",
-        "voice_join": "Connexion vocale",
-        "voice_leave": "Déconnexion vocale",
-        "voice_move": "Déplacement vocal"
-      },
-      "disabledSuccess": "Logs désactivés."
-    },
     "adaptive_slowmode": {
       "name": "Slowmode Adaptatif",
       "description": "Ajuste automatiquement le slowmode en fonction de l'activité du salon.",

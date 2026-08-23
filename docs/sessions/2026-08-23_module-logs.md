@@ -7,9 +7,9 @@ Implémenter le module **`logs`** dans le dashboard d'après le guide backend :
 catégorie, filtres et diagnostics. Aucun interrupteur, aucun gating premium, un
 seul document JSON lu et réécrit **en entier**.
 
-⚠️ `logs` **n'est pas** `logging` : le module historique (`GET/PATCH
-/guilds/{id}/logging`, page `LoggingPage.tsx`) reste en place et n'a pas été
-touché. Ce sont deux écrans distincts, c'est explicitement dit dans le guide.
+L'ancien module `logging` (`GET/PATCH /guilds/{id}/logging`, page
+`LoggingPage.tsx`) a été **retiré** dans la foulée : il est obsolète et faisait
+doublon à l'écran. `logs` est désormais le seul écran de logs du dashboard.
 
 ## Fichiers créés
 
@@ -28,7 +28,19 @@ touché. Ce sont deux écrans distincts, c'est explicitement dit dans le guide.
 | `app/src/main.tsx` | Route `servers/:guildId/modules/logs` |
 | `app/src/components/app-sidebar.tsx` | Entrée de sidebar (icône `FileClockIcon`) |
 | `app/src/pages/GuildOverviewPage.tsx` | Carte du module + `isLogsActive()` dans `isModuleEnabled()` |
-| `app/src/locales/{en,fr}/translation.json` | Bloc `modules.logs.*` (93 lignes par langue) |
+| `app/src/locales/{en,fr}/translation.json` | Bloc `modules.logs.*` ajouté, bloc `modules.logging.*` supprimé |
+
+## Retrait de l'ancien module `logging`
+
+Supprimés : `app/src/pages/modules/LoggingPage.tsx`, l'entrée de sidebar, la
+carte de la vue d'ensemble, `'logging'` dans `ModuleId`, `LoggingConfig` (type
+et entrée de `ModuleConfig`), `getLoggingConfig()` / `updateLogging()` dans
+`services/guilds.ts`, et le bloc de traductions `modules.logging.*`.
+
+La route `servers/:guildId/modules/logging` est **conservée en redirection**
+(`<Navigate to="../logs" replace />`) : les liens et favoris existants tombent
+sur le nouveau module au lieu d'une 404. Les endpoints `/guilds/{id}/logging`
+existent peut-être encore côté backend — plus rien ne les appelle ici.
 
 ## Décisions d'implémentation
 

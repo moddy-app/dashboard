@@ -12,7 +12,6 @@ import {
   MailIcon,
   MessageSquareIcon,
   ActivityIcon,
-  ScrollTextIcon,
   FileClockIcon,
   AlertTriangleIcon,
   ServerIcon,
@@ -132,12 +131,6 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/auto_role`,
           icon: UsersIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/auto_role`,
-        },
-        {
-          title: t("modules.logging.name"),
-          url: `/servers/${selectedGuildId}/modules/logging`,
-          icon: ScrollTextIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/logging`,
         },
         {
           title: t("modules.adaptive_slowmode.name"),

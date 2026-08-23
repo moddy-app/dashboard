@@ -19,7 +19,6 @@ import { StarboardPage } from "@/pages/modules/StarboardPage"
 import { WelcomeChannelPage } from "@/pages/modules/WelcomeChannelPage"
 import { WelcomeDmPage } from "@/pages/modules/WelcomeDmPage"
 import { AutoRolePage } from "@/pages/modules/AutoRolePage"
-import { LoggingPage } from "@/pages/modules/LoggingPage"
 import { AdaptiveSlowmodePage } from "@/pages/modules/AdaptiveSlowmodePage"
 import { SocialNotificationsPage } from "@/pages/modules/SocialNotificationsPage"
 import { AutomodAiPage } from "@/pages/modules/AutomodAiPage"
@@ -54,7 +53,8 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/welcome_channel", element: <WelcomeChannelPage /> },
       { path: "servers/:guildId/modules/welcome_dm", element: <WelcomeDmPage /> },
       { path: "servers/:guildId/modules/auto_role", element: <AutoRolePage /> },
-      { path: "servers/:guildId/modules/logging", element: <LoggingPage /> },
+      // Ancien module `logging`, retiré : les liens existants basculent sur `logs`.
+      { path: "servers/:guildId/modules/logging", element: <Navigate to="../logs" replace /> },
       { path: "servers/:guildId/modules/adaptive_slowmode", element: <AdaptiveSlowmodePage /> },
       { path: "servers/:guildId/modules/social_notifications", element: <SocialNotificationsPage /> },
       { path: "servers/:guildId/modules/automod_ai", element: <AutomodAiPage /> },
