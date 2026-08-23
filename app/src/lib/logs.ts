@@ -474,12 +474,19 @@ export function eventTitle(
 }
 
 /**
- * Nom d'une catégorie. Le catalogue ne sert aucune clé pour elles : traduction
- * du dashboard, puis identifiant rendu lisible.
+ * Nom d'une catégorie. Le catalogue ne sert aucune clé pour elles : les
+ * libellés viennent des locales du bot recopiées dans `src/locales/`
+ * (`modules.logs.categories.<id>.name`), repli sur l'identifiant lisible.
  */
 export function categoryLabel(categoryId: string): string {
-  const key = `modules.logs.categories.${categoryId}`
+  const key = `modules.logs.categories.${categoryId}.name`
   return i18n.exists(key) ? i18n.t(key) : humanizeId(categoryId)
+}
+
+/** Phrase décrivant ce que couvre la catégorie. `null` si non traduite. */
+export function categoryDescription(categoryId: string): string | null {
+  const key = `modules.logs.categories.${categoryId}.description`
+  return i18n.exists(key) ? i18n.t(key) : null
 }
 
 // ─── Sélecteurs de salons ─────────────────────────────────────────────────────

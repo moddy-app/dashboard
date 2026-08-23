@@ -58,6 +58,7 @@ import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
 import {
   buildLogsBody,
+  categoryDescription,
   categoryLabel,
   categoryOf,
   diagnosticNotices,
@@ -474,7 +475,6 @@ function LogsForm() {
               catalog={catalog}
               category={categoryOf(draft, categoryId)}
               channels={destinations}
-              channelById={channelById}
               errorMessages={[
                 ...(errors.byPath.get(`categories.${categoryId}.channel_ids`) ?? []),
                 ...(errors.byPath.get(`categories.${categoryId}.disabled_events`) ?? []),
@@ -654,7 +654,6 @@ interface CategoryCardProps {
   catalog: LogsCatalog
   category: LogCategoryConfig
   channels: Channel[]
-  channelById: Map<string, Channel>
   errorMessages: string[]
   hasError: boolean
   flaggedChannels: Set<string>
@@ -672,7 +671,6 @@ function CategoryCard({
   catalog,
   category,
   channels,
-  channelById,
   errorMessages,
   hasError,
   flaggedChannels,
@@ -682,6 +680,7 @@ function CategoryCard({
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
 
+  const description = categoryDescription(categoryId)
   const events = catalog.categories[categoryId].events
   const unimplemented = new Set(catalog.categories[categoryId].unimplemented)
   const disabled = new Set(category.disabled_events)
@@ -721,15 +720,19 @@ function CategoryCard({
           />
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">{categoryLabel(categoryId)}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {category.channel_ids.length > 0
-                ? category.channel_ids
-                    .map((id) => `#${channelById.get(id)?.name ?? id}`)
-                    .join(", ")
-                : t("modules.logs.categoryUnlinked")}
-            </p>
+            {/* Ce que la catégorie couvre, dans les mots du bot. Les salons
+                choisis se lisent juste à droite, et en détail une fois ouvert.
+                Rien à afficher si la description manque — pas de texte de
+                remplissage. */}
+            {description && (
+              <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
+            )}
           </div>
           <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+            {category.channel_ids.length > 0
+              ? t("modules.logs.channelCount", { count: category.channel_ids.length })
+              : t("modules.logs.noChannel")}
+            {" · "}
             {t("modules.logs.eventCount", { active: activeCount, total: events.length })}
           </span>
         </CollapsibleTrigger>
@@ -754,7 +757,7 @@ function CategoryCard({
 
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
-                <label className="text-sm font-medium">{t("modules.logs.events")}</label>
+                <label className="text-sm font-medium">{t("modules.logs.eventsLabel")}</label>
                 <div className="flex items-center gap-2">
                   <Button
                     type="button"
