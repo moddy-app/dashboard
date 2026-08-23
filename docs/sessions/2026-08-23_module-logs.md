@@ -103,18 +103,21 @@ les salons déliés depuis l'état précédent sont listés dans un encart qui d
 supprimer le webhook « Moddy Logs » à la main.
 
 ### Libellés
-Le catalogue ne sert que des identifiants ; les noms lisibles vivent dans les
-locales du **bot**, à résoudre via `locale_keys` (`modules.logs.events.…` /
-`modules.logs.titles.…`). `eventLabel()` teste `i18n.exists()` et retombe sur
-l'identifiant nu — aucun nom n'est réinventé côté dashboard. **Tant que le
-fichier de locales du bot n'est pas recopié dans `src/locales/`, le formulaire
-affiche les identifiants** : c'est le comportement prescrit, et poser ce fichier
-suffira à faire apparaître les libellés sans toucher au code.
+Les locales du **bot** ont été recopiées telles quelles dans
+`app/src/locales/{en,fr}/translation.json` : `modules.logs.categories`
+(18 × `name` + `description`), `modules.logs.events` (163) et
+`modules.logs.titles` (163). C'est exactement l'arborescence que sert
+`locale_keys` du catalogue, donc `/config` sur Discord et le dashboard nomment
+un événement pareil — aucun libellé n'est réinventé côté dashboard.
 
-Les noms de catégories n'ont pas de clé au catalogue : ils passent par
-`modules.logs.categories.<id>` avec repli sur l'identifiant. Seules les trois
-catégories attestées dans le guide (`server`, `messages`, `moderation`) sont
-traduites pour l'instant.
+⚠️ `modules.logs.events` porte désormais **l'arbre des libellés** : le titre de
+la section du formulaire est passé sous `modules.logs.eventsLabel`.
+
+`eventLabel()` résout en cascade : clé du bot → `modules.logs.eventNames.<event>`
+→ `humanizeId()`. Ce dernier découpe l'identifiant et capitalise, si bien qu'un
+événement ajouté au registre du bot avant d'être traduit s'affiche « Role delete »
+plutôt que `role_delete`. Même cascade pour les catégories
+(`categoryLabel()` / `categoryDescription()`).
 
 ### Détails respectés
 - Snowflakes **chaînes** de bout en bout, aucun `Number()` (d'où le non-usage de
@@ -139,9 +142,7 @@ traduites pour l'instant.
 
 ## Prochaines étapes
 
-1. Recopier (ou servir) le fichier de locales du bot pour les 163 événements et
-   leurs titres — le mécanisme est déjà branché.
-2. Compléter `modules.logs.categories.*` avec les 18 identifiants réels une fois
-   le catalogue observé en vrai.
-3. Éventuellement nettoyer les webhooks « Moddy Logs » via l'API Discord si le
+1. Resynchroniser les locales si le registre du bot gagne des événements : les
+   nouveaux s'affichent via `humanizeId()` en attendant, rien ne casse.
+2. Éventuellement nettoyer les webhooks « Moddy Logs » via l'API Discord si le
    dashboard obtient un jeton — aujourd'hui c'est une simple mention.

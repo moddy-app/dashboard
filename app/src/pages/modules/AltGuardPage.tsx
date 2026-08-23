@@ -339,15 +339,6 @@ function AltGuardForm() {
         )}
       </div>
 
-      {/* Module inactif : dire précisément ce qu'il manque. */}
-      {!isActive && (
-        <Notice level="warning" title={t("modules.altguard.incompleteTitle")}>
-          {t("modules.altguard.incompleteDescription", {
-            fields: missing.map((f) => t(`modules.altguard.fields.${f}`)).join(", "),
-          })}
-        </Notice>
-      )}
-
       {/* Dernier accusé du bot */}
       {feedback && <ApplyNotice feedback={feedback} onDismiss={() => setFeedback(null)} />}
 
