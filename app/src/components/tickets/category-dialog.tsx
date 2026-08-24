@@ -1,6 +1,5 @@
-import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { EyeIcon, PencilIcon, PlusIcon, XIcon } from "lucide-react"
+import { PlusIcon, XIcon } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -11,7 +10,6 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { DiscordMarkup } from "@/components/discord-markup"
+import { MessageEditor } from "@/components/message-editor"
 import { ChannelSelect, Field, RoleChips } from "@/components/tickets/fields"
 import { categoryFieldKey, discordCategories } from "@/lib/tickets"
 import { cn } from "@/lib/utils"
@@ -52,6 +50,8 @@ import type {
 interface CategoryDialogProps {
   panel: TicketPanel
   category: TicketCategory
+  /** Serveur courant — l'éditeur de message y charge les émojis personnalisés. */
+  guildId: string
   channels: Channel[]
   roles: Role[]
   /** Erreurs de champ (validation locale + 422 du backend), indexées par clé. */
@@ -68,6 +68,7 @@ interface CategoryDialogProps {
 export function CategoryDialog({
   panel,
   category,
+  guildId,
   channels,
   roles,
   errors,
@@ -306,6 +307,7 @@ export function CategoryDialog({
           {/* ── Messages ────────────────────────────────────────────────── */}
           <TabsContent value="messages" className="flex flex-col gap-5 pt-4">
             <MessageField
+              guildId={guildId}
               label={t("modules.tickets.category.openMessage")}
               description={t("modules.tickets.category.openMessageDescription")}
               value={category.open_message}
@@ -318,6 +320,7 @@ export function CategoryDialog({
               onChange={(v) => onChange({ open_message: v })}
             />
             <MessageField
+              guildId={guildId}
               label={t("modules.tickets.category.closeMessage")}
               description={t("modules.tickets.category.closeMessageDescription")}
               value={category.close_message}
@@ -382,6 +385,7 @@ function MessageField({
   value,
   placeholder,
   error,
+  guildId,
   onChange,
 }: {
   label: string
@@ -389,66 +393,33 @@ function MessageField({
   value: string | null
   placeholder: string
   error?: string
+  guildId: string
   onChange: (value: string | null) => void
 }) {
   const { t } = useTranslation()
-  const [preview, setPreview] = useState(false)
-
-  const insert = (token: string) => onChange(`${value ?? ""}${token}`)
 
   return (
-    <Field
-      label={label}
-      description={description}
-      error={error}
-      hint={`${value?.length ?? 0} / ${TICKET_TEXT_LIMITS.message}`}
-    >
+    <Field label={label} description={description} error={error}>
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
+        {/* `null` = le bot écrit son message traduit par défaut. */}
+        {value === null && (
           <p className="text-xs text-muted-foreground">
-            {value === null ? t("modules.tickets.category.usingDefault") : ""}
+            {t("modules.tickets.category.usingDefault")}
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            onClick={() => setPreview((p) => !p)}
-            className="gap-1.5"
-          >
-            {preview ? <PencilIcon className="size-3.5" /> : <EyeIcon className="size-3.5" />}
-            {preview ? t("modules.tickets.category.edit") : t("modules.tickets.category.preview")}
-          </Button>
-        </div>
-
-        {preview ? (
-          <div className="min-h-32 rounded-lg border bg-muted/30 p-3 text-sm">
-            <DiscordMarkup text={value ?? placeholder} />
-          </div>
-        ) : (
-          <Textarea
-            value={value ?? ""}
-            placeholder={placeholder}
-            maxLength={TICKET_TEXT_LIMITS.message}
-            rows={8}
-            className="font-normal"
-            // Champ vidé → `null`, jamais `""` : `null` doit être round-trippé
-            // tel quel pour que le bot garde son message traduit par défaut.
-            onChange={(e) => onChange(e.target.value === "" ? null : e.target.value)}
-          />
         )}
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {TICKET_PLACEHOLDERS.map((token) => (
-            <button
-              key={token}
-              type="button"
-              onClick={() => insert(token)}
-              className="rounded-md border bg-muted/40 px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground transition-colors hover:bg-muted"
-            >
-              {token}
-            </button>
-          ))}
-        </div>
+        {/* Éditeur de message commun au dashboard : multi-lignes, mise en forme
+            Discord, émojis du serveur, placeholders surlignés et insérables. */}
+        <MessageEditor
+          value={value ?? ""}
+          // Champ vidé → `null`, jamais `""` : `null` doit être round-trippé
+          // tel quel pour que le bot garde son message par défaut.
+          onChange={(v) => onChange(v === "" ? null : v)}
+          variables={[...TICKET_PLACEHOLDERS]}
+          guildId={guildId}
+          maxLength={TICKET_TEXT_LIMITS.message}
+          placeholder={placeholder}
+          minHeight={160}
+        />
         <p className="text-xs text-muted-foreground">
           {t("modules.tickets.category.separatorHint")}
         </p>

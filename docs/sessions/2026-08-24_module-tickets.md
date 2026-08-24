@@ -66,18 +66,26 @@ produire trois JSON différents. L'UI expose donc un interrupteur
 « personnaliser » : éteint → `null`, allumé et tout décoché → `[]`. Le
 réordonnancement n'est pas proposé, l'ordre envoyé étant ignoré par le bot.
 
-### `open_message`
+### `open_message` et les défauts du bot
 
-Champ multi-lignes avec bascule aperçu (`DiscordMarkup`), insertion de
-placeholders, et surtout : champ vidé → `null`, jamais `""`. Le texte par défaut
-n'est affiché qu'en **placeholder**, depuis
-`modules.tickets.channel.default_open_message` / `default_close_message`.
+Les messages passent par `MessageEditor`, l'éditeur de message commun du
+dashboard (multi-lignes, mise en forme Discord, émojis du serveur, placeholders
+surlignés et insérables, compteur). Même chose pour la description du panneau.
+Règle centrale : champ vidé → `null`, jamais `""`.
 
-> ⚠️ Ces deux clés sont une **copie des locales du bot** (même convention que les
-> libellés du module `logs`). Elles ne sont jamais enregistrées, mais leur
-> wording doit être resynchronisé quand celui du bot change ; le dépôt du bot
-> n'était pas accessible pendant cette session, le texte actuel est une reprise
-> du format décrit par la spécification.
+Les quatre textes par défaut du bot sont recopiés dans les locales et servent
+**uniquement de placeholder** :
+
+| Clé | Source côté bot |
+|---|---|
+| `modules.tickets.channel.default_open_message` | `modules/tickets.py::default_open_message` |
+| `modules.tickets.channel.default_close_message` | `modules/tickets.py::default_close_message` |
+| `modules.tickets.panel.default_title` | `modules/configs/tickets_panel_config.py` |
+| `modules.tickets.panel.default_description` | idem |
+
+> ⚠️ Copie, comme les libellés du module `logs` : à resynchroniser quand le
+> wording du bot change. Les valeurs FR viennent des locales du bot ; les
+> équivalents EN sont une traduction à confronter à `locales/en-US.json`.
 
 ### Concurrence : le 409
 
@@ -128,7 +136,8 @@ confirmation chiffrée qui renvoie vers `/ticket move`.
 
 ## Prochaines étapes suggérées
 
-1. Resynchroniser `modules.tickets.channel.*` avec les locales réelles du bot.
+1. Confronter les défauts EN (`modules.tickets.channel.*`, `panel.default_*`) à
+   `locales/en-US.json` du bot — le FR vient déjà de ses locales.
 2. Aperçu du panneau (rendu Components V2) une fois le format exposé côté bot.
 3. Filtre par panneau et par propriétaire dans l'explorateur (l'API les accepte
    déjà : `panel_id`, `owner_id`).

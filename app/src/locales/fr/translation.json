@@ -1340,7 +1340,9 @@
         "addCategory": "Ajouter une catégorie",
         "categoryCapReached": "{{max}} catégories maximum sur ce panneau.",
         "idHint": "id {{id}} — conservé pour toujours, c'est ce qui relie le panneau à son message.",
-        "delete": "Supprimer ce panneau"
+        "delete": "Supprimer ce panneau",
+        "default_title": "Besoin d'aide ?",
+        "default_description": "Choisissez une catégorie ci-dessous pour ouvrir un ticket. Un salon privé sera créé pour vous."
       },
       "category": {
         "untitled": "Catégorie sans nom",
@@ -1390,8 +1392,6 @@
         "closeMessage": "Message de fermeture",
         "closeMessageDescription": "Posté dans le salon quand le ticket est fermé.",
         "usingDefault": "Message par défaut du bot utilisé.",
-        "preview": "Aperçu",
-        "edit": "Éditer",
         "separatorHint": "Une ligne contenant uniquement --- devient un vrai séparateur. Cliquez un placeholder pour l'insérer.",
         "customizeButtons": "Personnaliser les boutons",
         "customizeButtonsDescription": "Désactivé, le bot pose ses boutons par défaut. Activé, vous choisissez exactement lesquels apparaîtront.",
@@ -1518,8 +1518,8 @@
         "pagination": "Page {{page}} sur {{pages}} — {{total}} tickets"
       },
       "channel": {
-        "default_open_message": "Bonjour {user}, merci d'avoir ouvert un ticket dans **{category}**.\n---\nDécrivez votre demande le plus précisément possible — un membre du staff de {server} vous répondra ici sous peu.",
-        "default_close_message": "Ce ticket est maintenant fermé. Rouvrez-le si vous avez encore besoin d'aide."
+        "default_open_message": "### {icon} Ticket #{number}\nMerci d'avoir ouvert un ticket. Décrivez votre demande le plus précisément possible — l'équipe vous répondra ici.\n-# Ouvert par · {user} · `{category}`",
+        "default_close_message": "Merci de nous avoir contactés. Si vous avez besoin d'autre chose, ouvrez un nouveau ticket."
       }
     }
   },
