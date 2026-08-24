@@ -18,6 +18,10 @@
     {
       "source": "/index.html",
       "destination": "/api/homepage-503"
+    },
+    {
+      "source": "/healthz",
+      "destination": "/api/healthz"
     }
   ]
 }
