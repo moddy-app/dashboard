@@ -806,3 +806,270 @@ export interface TallyAnswer {
 export interface TallySubmissionDetail extends TallySubmissionItem {
   answers: TallyAnswer[]
 }
+
+// ─── Tickets ─────────────────────────────────────────────────────────────────
+//
+// Module `tickets` : des **panneaux** (un message posté par le bot dans un
+// salon) portant chacun des **catégories** (un bouton ou une option de menu qui
+// ouvre un ticket). La config est un document unique, réécrit **en entier** à
+// chaque sauvegarde — `PUT` et `PATCH` ont la même sémantique, il n'y a pas de
+// patch partiel.
+
+/** Boutons proposés dans le salon du ticket. */
+export const TICKET_BUTTONS = [
+  'close',
+  'claim',
+  'escalate',
+  'staff_thread',
+  'participants',
+  'close_request',
+] as const
+export type TicketButton = (typeof TICKET_BUTTONS)[number]
+
+/**
+ * Ce que le bot pose quand `buttons` vaut `null`. `close_request` n'en fait
+ * volontairement pas partie (il vit dans `/ticket close-request`), mais reste
+ * cochable.
+ */
+export const TICKET_DEFAULT_BUTTONS: readonly TicketButton[] = [
+  'close',
+  'claim',
+  'escalate',
+  'staff_thread',
+  'participants',
+]
+
+/** Permissions par rôle **et par catégorie**. `admin` implique toutes les autres. */
+export const TICKET_PERMISSIONS = [
+  'view',
+  'close',
+  'claim',
+  'unclaim_others',
+  'staff_thread',
+  'rename',
+  'move',
+  'participants',
+  'admin',
+] as const
+export type TicketPermission = (typeof TICKET_PERMISSIONS)[number]
+
+export const TICKET_LOCALES = ['en-US', 'fr', 'es-ES', 'pt-BR', 'de'] as const
+export type TicketLocale = (typeof TICKET_LOCALES)[number]
+export const TICKET_DEFAULT_LOCALE: TicketLocale = 'en-US'
+
+export const TICKET_BUTTON_STYLES = ['primary', 'secondary', 'success', 'danger'] as const
+export type TicketButtonStyle = (typeof TICKET_BUTTON_STYLES)[number]
+
+export const TICKET_PANEL_STYLES = ['buttons', 'select'] as const
+export type TicketPanelStyle = (typeof TICKET_PANEL_STYLES)[number]
+
+/** Longueurs maximales validées par l'API (rejouées côté formulaire). */
+export const TICKET_TEXT_LIMITS = {
+  name: 60,
+  emoji: 64,
+  categoryDescription: 100,
+  title: 100,
+  description: 2000,
+  placeholder: 150,
+  message: 2000,
+  nameFormat: 90,
+} as const
+
+export const TICKET_DEFAULT_NAME_FORMAT = 'ticket-{number}'
+export const TICKET_OPEN_PER_USER = { min: 1, max: 10 } as const
+export const TICKET_DEFAULT_MAX_OPEN_PER_USER = 1
+
+/**
+ * Plafonds Discord utilisés **en dernier recours** : la vraie source est
+ * `discord_max_categories_per_panel` de `GET /modules/tickets/limits`, qui
+ * bouge avec les plateformes. Ne jamais s'en servir quand `/limits` a répondu.
+ */
+export const TICKET_DISCORD_CATEGORY_CAPS: Record<TicketPanelStyle, number> = {
+  buttons: 15,
+  select: 25,
+}
+
+/** Placeholders substitués par le bot dans `open_message` / `close_message`. */
+export const TICKET_PLACEHOLDERS = [
+  '{user}',
+  '{number}',
+  '{category}',
+  '{server}',
+  '{username}',
+  '{display_name}',
+  '{ticket}',
+] as const
+
+export interface TicketCategory {
+  /** `c_` + 6 hex — généré côté dashboard, **stable** dans le temps. */
+  id: string
+  name: string
+  emoji: string | null
+  /** Description de l'option, visible uniquement en style `select`. */
+  description: string | null
+  button_style: TicketButtonStyle
+  /** Catégorie Discord (type 4) où créer le salon du ticket. */
+  discord_category_id: string | null
+  /** Vide = tout le monde peut ouvrir un ticket (ce n'est pas « personne »). */
+  allowed_role_ids: string[]
+  /** Gagne toujours, y compris sur un administrateur du serveur. */
+  denied_role_ids: string[]
+  ping_role_ids: string[]
+  /** Clé = id de rôle **en chaîne**. Un rôle sans permission est retiré. */
+  permissions: Record<string, TicketPermission[]>
+  ping_staff_roles: boolean
+  claim_enabled: boolean
+  claim_lock: boolean
+  /** `null` ≠ `[]` : `null` = défauts du bot, `[]` = aucun bouton. */
+  buttons: TicketButton[] | null
+  locale: TicketLocale
+  /** Le message d'ouverture **entier** (titre et pied compris) — ou `null`. */
+  open_message: string | null
+  close_message: string | null
+  name_format: string
+  max_open_per_user: number
+  enabled: boolean
+}
+
+export interface TicketPanel {
+  /** `p_` + 6 hex — généré côté dashboard, **stable** dans le temps. */
+  id: string
+  /** Nom interne du panneau (sert de titre par défaut). */
+  name: string
+  /** `null` = brouillon valide : un panneau sans salon s'enregistre. */
+  channel_id: string | null
+  /** Propriété du bot : lu et renvoyé tel quel, jamais inventé. */
+  message_id: string | null
+  title: string | null
+  description: string | null
+  accent_color: number | null
+  style: TicketPanelStyle
+  /** Style `select` uniquement. */
+  placeholder: string | null
+  enabled: boolean
+  categories: TicketCategory[]
+}
+
+export interface TicketsConfig {
+  panels: TicketPanel[]
+  /** Calculé côté serveur : lecture seule, jamais envoyé. */
+  enabled?: boolean
+}
+
+/**
+ * Accusé du **bot** joint à la réponse d'une écriture. Un `200` ne veut pas
+ * dire que Discord a suivi : `panels_failed > 0` = la config est enregistrée
+ * mais le panneau reste invisible dans le salon.
+ */
+export interface TicketsApply {
+  type?: string
+  ok?: boolean
+  action?: string
+  enabled?: boolean
+  panels?: number
+  panels_posted?: number
+  panels_failed?: number
+  panels_deleted?: number
+  error?: string
+  hook_error?: string | boolean | null
+}
+
+export interface TicketsSaveResult {
+  config: TicketsConfig
+  apply: TicketsApply | null
+}
+
+export interface TicketsLimits {
+  guild_id: string
+  /** Tient compte des sanctions globales : un serveur sanctionné n'est plus premium. */
+  premium: boolean
+  enabled: boolean
+  max_panels: number
+  max_categories_per_panel: number
+  discord_max_categories_per_panel: Record<TicketPanelStyle, number>
+  /** Consommation actuelle. */
+  panels: number
+  /** Nombre de catégories par panneau, indexé par id de panneau. */
+  categories: Record<string, number>
+}
+
+export type TicketStatus = 'open' | 'closed'
+
+/** Catégorie résolue jointe à un ticket. `null` = catégorie supprimée (orphelin). */
+export interface TicketCategoryRef {
+  name: string
+  panel_id: string
+  panel_name: string
+}
+
+export interface Ticket {
+  id: number
+  guild_id: string
+  channel_id: string
+  panel_id: string | null
+  category_id: string | null
+  /** Le numéro que citent les humains — à afficher plutôt que le snowflake. */
+  number: number
+  owner_id: string
+  status: TicketStatus
+  escalated: boolean
+  claimed_by: string | null
+  claimed_at: string | null
+  /** Claim mis de côté pendant une escalade — jamais avec `claimed_by`. */
+  pre_escalation_claim: string | null
+  escalation_mute: boolean
+  staff_thread_id: string | null
+  participants: string[]
+  participant_roles: string[]
+  close_requested_by: string | null
+  close_request_reason: string | null
+  opened_at: string
+  closed_at: string | null
+  closed_by: string | null
+  close_reason: string | null
+  category: TicketCategoryRef | null
+}
+
+export interface TicketListResponse {
+  tickets: Ticket[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface TicketListFilters {
+  status?: TicketStatus
+  panel_id?: string
+  category_id?: string
+  owner_id?: string
+  limit?: number
+  offset?: number
+}
+
+export interface TicketStatsCategory {
+  panel_id: string
+  category_id: string
+  total: number
+  category: TicketCategoryRef | null
+}
+
+export interface TicketStats {
+  guild_id: string
+  total: number
+  open: number
+  closed: number
+  escalated: number
+  close_requested: number
+  /** Tickets **ouverts** actuellement pris en charge. */
+  claimed: number
+  /** `null` tant qu'aucun ticket n'a été fermé. */
+  avg_resolution_seconds: number | null
+  window_days: number
+  by_category: TicketStatsCategory[]
+}
+
+export interface TicketOrphansResponse {
+  guild_id: string
+  tickets: Ticket[]
+  count: number
+}

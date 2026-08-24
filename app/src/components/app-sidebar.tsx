@@ -21,6 +21,7 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
   PaletteIcon,
+  TicketIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -155,6 +156,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/altguard`,
           icon: ShieldCheckIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
+        },
+        {
+          title: t("modules.tickets.name"),
+          url: `/servers/${selectedGuildId}/modules/tickets`,
+          icon: TicketIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/modules/tickets`,
         },
         {
           title: t("modules.logs.name"),
