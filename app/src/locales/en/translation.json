@@ -1340,7 +1340,9 @@
         "addCategory": "Add a category",
         "categoryCapReached": "{{max}} categories max on this panel.",
         "idHint": "id {{id}} — kept forever so the bot can match this panel to its message.",
-        "delete": "Delete this panel"
+        "delete": "Delete this panel",
+        "default_title": "Need help?",
+        "default_description": "Pick a category below to open a ticket. A private channel will be created for you."
       },
       "category": {
         "untitled": "Untitled category",
@@ -1390,8 +1392,6 @@
         "closeMessage": "Closing message",
         "closeMessageDescription": "Posted in the channel when the ticket is closed.",
         "usingDefault": "Using the bot's default message.",
-        "preview": "Preview",
-        "edit": "Edit",
         "separatorHint": "A line containing only --- becomes a real separator. Click a placeholder to insert it.",
         "customizeButtons": "Customise the buttons",
         "customizeButtonsDescription": "Off, the bot picks its defaults. On, you choose exactly which buttons appear.",
@@ -1518,8 +1518,8 @@
         "pagination": "Page {{page}} of {{pages}} — {{total}} tickets"
       },
       "channel": {
-        "default_open_message": "Hi {user}, thanks for opening a ticket in **{category}**.\n---\nDescribe your request in as much detail as you can — a staff member of {server} will answer here shortly.",
-        "default_close_message": "This ticket is now closed. Reopen it if you still need help."
+        "default_open_message": "### {icon} Ticket #{number}\nThanks for opening a ticket. Describe your request as precisely as you can — the team will answer you here.\n-# Opened by · {user} · `{category}`",
+        "default_close_message": "Thanks for reaching out. If you need anything else, open a new ticket."
       }
     }
   },

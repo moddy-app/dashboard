@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/collapsible"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -24,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { MessageEditor } from "@/components/message-editor"
 import { ChannelSelect, Field } from "@/components/tickets/fields"
 import {
   accentToHex,
@@ -45,6 +45,8 @@ import type {
 
 interface PanelCardProps {
   panel: TicketPanel
+  /** Serveur courant — l'éditeur de message y charge les émojis personnalisés. */
+  guildId: string
   channels: Channel[]
   limits: TicketsLimits | null
   errors: Record<string, string>
@@ -61,6 +63,7 @@ interface PanelCardProps {
 
 export function PanelCard({
   panel,
+  guildId,
   channels,
   limits,
   errors,
@@ -163,10 +166,12 @@ export function PanelCard({
           error={err("title")}
           hint={`${panel.title?.length ?? 0} / ${TICKET_TEXT_LIMITS.title}`}
         >
+          {/* Le défaut n'est affiché qu'en placeholder : c'est le texte du bot
+              (copie de ses locales), l'écrire en valeur le figerait ici. */}
           <Input
             value={panel.title ?? ""}
             maxLength={TICKET_TEXT_LIMITS.title}
-            placeholder={panel.name}
+            placeholder={t("modules.tickets.panel.default_title")}
             onChange={(e) => onChange({ title: e.target.value || null })}
           />
         </Field>
@@ -175,13 +180,14 @@ export function PanelCard({
           label={t("modules.tickets.panel.description")}
           description={t("modules.tickets.panel.descriptionHint")}
           error={err("description")}
-          hint={`${panel.description?.length ?? 0} / ${TICKET_TEXT_LIMITS.description}`}
         >
-          <Textarea
+          <MessageEditor
             value={panel.description ?? ""}
+            onChange={(v) => onChange({ description: v === "" ? null : v })}
+            guildId={guildId}
             maxLength={TICKET_TEXT_LIMITS.description}
-            rows={4}
-            onChange={(e) => onChange({ description: e.target.value || null })}
+            placeholder={t("modules.tickets.panel.default_description")}
+            minHeight={120}
           />
         </Field>
 

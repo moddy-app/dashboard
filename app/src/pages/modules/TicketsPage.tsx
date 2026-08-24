@@ -490,6 +490,7 @@ function TicketsForm() {
                 <PanelCard
                   key={panel.id}
                   panel={panel}
+                  guildId={guildId}
                   channels={channels}
                   limits={limits}
                   errors={fieldErrors}
@@ -561,6 +562,7 @@ function TicketsForm() {
         <CategoryDialog
           panel={editingPanel}
           category={editingCategory}
+          guildId={guildId}
           channels={channels}
           roles={roles}
           errors={fieldErrors}
