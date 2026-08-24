@@ -23,6 +23,7 @@ import {
   HashIcon,
   LinkIcon,
   PaletteIcon,
+  TicketIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -53,6 +54,7 @@ import type {
   BotCustomizationConfig,
   ModuleConfig,
   WelcomeChannelConfig,
+  TicketsConfig,
   WelcomeDmConfig,
 } from "@/types/api"
 import { isWelcomeActive } from "@/lib/welcome"
@@ -60,6 +62,7 @@ import { isWelcomeDmActive } from "@/lib/welcome-dm"
 import { isBotCustomizationActive } from "@/lib/bot-customization"
 import { isAltGuardActive } from "@/lib/altguard"
 import { isLogsActive } from "@/lib/logs"
+import { isTicketsActive } from "@/lib/tickets"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -95,6 +98,9 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   // logs non plus : il tourne dès qu'une catégorie a un salon (`enabled` est
   // calculé côté serveur, jamais stocké).
   if (id === 'logs') return isLogsActive(config as LogsConfig)
+  // tickets non plus : il tourne dès qu'un panneau activé est rattaché à un
+  // salon (`enabled` est calculé côté serveur, jamais stocké).
+  if (id === 'tickets') return isTicketsActive(config as TicketsConfig)
   return true
 }
 
@@ -280,6 +286,7 @@ export function GuildOverviewPage() {
     { id: 'bot_customization', icon: PaletteIcon },
     { id: 'altguard', icon: ShieldCheckIcon },
     { id: 'logs', icon: FileClockIcon },
+    { id: 'tickets', icon: TicketIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null

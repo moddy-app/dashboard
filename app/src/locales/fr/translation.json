@@ -1243,6 +1243,284 @@
       "channelCount_one": "{{count}} salon",
       "channelCount_other": "{{count}} salons",
       "noChannel": "Aucun salon"
+    },
+    "tickets": {
+      "name": "Tickets",
+      "description": "Les panneaux sur lesquels vos membres cliquent pour ouvrir un salon privé, et les catégories derrière chaque bouton.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "tabs": {
+        "settings": "Panneaux",
+        "tickets": "Tickets"
+      },
+      "panelQuota": "{{count}} panneaux sur {{max}}",
+      "panelQuotaUnknown": "Quotas indisponibles — l'enregistrement reste possible.",
+      "freePlan": "Offre gratuite",
+      "addPanel": "Ajouter un panneau",
+      "panelCapReached": "Votre offre autorise {{max}} panneaux.",
+      "saveDurationHint": "La sauvegarde peut prendre jusqu'à 25 secondes : le bot republie chaque panneau dans Discord avant que le dashboard reçoive une réponse.",
+      "cancel": "Annuler",
+      "confirmDisableTitle": "Désactiver les tickets ?",
+      "confirmDisableDescription": "Tous les messages de panneau sont retirés de Discord et la configuration est supprimée. Les tickets ouverts ne sont PAS fermés et leurs salons sont conservés — seuls les panneaux disparaissent.",
+      "empty": {
+        "title": "Aucun panneau",
+        "description": "Un panneau est un message posté par Moddy. Chacune de ses catégories est un bouton (ou une option de menu) qui ouvre un ticket."
+      },
+      "orphans": {
+        "title_one": "{{count}} ticket orphelin",
+        "title_other": "{{count}} tickets orphelins",
+        "description": "Ces tickets sont encore ouverts mais leur catégorie n'existe plus dans la configuration. Le bot répond « catégorie disparue » à toute action dedans — déplacez-les avec /ticket move."
+      },
+      "conflict": {
+        "title": "Une sauvegarde est déjà en cours",
+        "description": "Une autre sauvegarde est en vol pour ce serveur, peut-être depuis un autre onglet. Attendez quelques secondes avant de réessayer.",
+        "retry": "Réessayer"
+      },
+      "validation": {
+        "title": "Des champs sont à corriger",
+        "blocked_one": "{{count}} champ invalide.",
+        "blocked_other": "{{count}} champs invalides.",
+        "fieldErrors": "L'API a refusé certains champs — voyez les champs signalés.",
+        "tooManyPanels": "Trop de panneaux ({{count}}/{{max}}).",
+        "duplicatePanelId": "Deux panneaux partagent l'id « {{id}} ».",
+        "panelNameRequired": "Un panneau doit avoir un nom.",
+        "categoryNameRequired": "Une catégorie doit avoir un nom.",
+        "duplicateCategoryId": "Deux catégories partagent l'id « {{id}} ».",
+        "tooLong": "{{max}} caractères maximum.",
+        "accentColorRange": "Couleur invalide.",
+        "unknownChannel": "Ce salon n'existe plus sur le serveur.",
+        "notATextChannel": "Choisissez un salon textuel ou d'annonces.",
+        "unknownDiscordCategory": "Cette catégorie Discord n'existe plus.",
+        "notADiscordCategory": "Cette destination n'est pas une catégorie Discord.",
+        "tooManyCategories": "« {{name}} » a trop de catégories ({{count}}/{{max}}).",
+        "maxOpenRange": "Entre {{min}} et {{max}}."
+      },
+      "apply": {
+        "savedOnly": "Configuration enregistrée.",
+        "applied": "Enregistré — panneaux republiés.",
+        "deleted": "Tickets désactivés et panneaux retirés.",
+        "appliedWithProblems": "Enregistré, mais Discord n'a pas tout suivi.",
+        "panelsFailed_one": "Enregistré, mais {{count}} panneau n'a pas pu être publié.",
+        "panelsFailed_other": "Enregistré, mais {{count}} panneaux n'ont pas pu être publiés.",
+        "pending": "Enregistré. Le bot n'a pas répondu — les panneaux seront republiés dès son retour. Ne réenregistrez pas.",
+        "transportUnavailable": "Enregistré mais non appliqué : le transport de tâches est indisponible. Contactez le support.",
+        "notApplied": "Enregistré, mais le bot n'a pas rechargé la configuration ({{error}}).",
+        "hookError": "Le bot a levé une erreur en republiant les panneaux."
+      },
+      "panel": {
+        "untitled": "Panneau sans nom",
+        "defaultName": "Panneau {{index}}",
+        "noChannel": "Aucun salon — brouillon",
+        "noChannelOption": "Aucun salon (brouillon)",
+        "categoryCount_one": "{{count}}/{{max}} catégorie",
+        "categoryCount_other": "{{count}}/{{max}} catégories",
+        "disabled": "Désactivé",
+        "enabledLabel": "Activer ce panneau",
+        "name": "Nom du panneau",
+        "nameDescription": "Nom interne, utilisé aussi comme titre du panneau si vous laissez le titre vide.",
+        "channel": "Salon",
+        "channelDescription": "Là où Moddy publie le panneau. Un panneau sans salon est un brouillon valide.",
+        "title": "Titre",
+        "titleDescription": "Affiché en haut du message de panneau.",
+        "description": "Description",
+        "descriptionHint": "Le corps du message de panneau. Le markdown Discord est supporté.",
+        "style": "Style",
+        "styleDescription": "Les boutons affichent une catégorie chacun ; un menu en contient davantage.",
+        "styles": {
+          "buttons": "Boutons",
+          "select": "Menu déroulant"
+        },
+        "accentColor": "Couleur d'accent",
+        "accentColorDescription": "La barre colorée du panneau. Réinitialisez pour laisser le bot choisir.",
+        "resetColor": "Réinitialiser",
+        "placeholder": "Texte du menu",
+        "placeholderDescription": "Le texte gris affiché avant qu'un membre ouvre le menu.",
+        "categories": "Catégories",
+        "noCategories": "Aucune catégorie — un panneau sans catégorie n'ouvre rien.",
+        "addCategory": "Ajouter une catégorie",
+        "categoryCapReached": "{{max}} catégories maximum sur ce panneau.",
+        "idHint": "id {{id}} — conservé pour toujours, c'est ce qui relie le panneau à son message.",
+        "delete": "Supprimer ce panneau"
+      },
+      "category": {
+        "untitled": "Catégorie sans nom",
+        "defaultName": "Catégorie {{index}}",
+        "dialogDescription": "Tout ce qui concerne les tickets ouverts depuis ce bouton : où ils atterrissent, qui les voit et ce que le bot y écrit.",
+        "tabs": {
+          "general": "Général",
+          "access": "Accès",
+          "messages": "Messages",
+          "buttons": "Boutons"
+        },
+        "name": "Nom",
+        "nameDescription": "Affiché sur le bouton ou l'option de menu.",
+        "emoji": "Émoji",
+        "emojiDescription": "Émoji Unicode ou émoji personnalisé de ce serveur.",
+        "buttonStyle": "Couleur du bouton",
+        "buttonStyleDescription": "Les styles de bouton de Discord.",
+        "description": "Description de l'option",
+        "descriptionHint": "Deuxième ligne de l'option (panneaux en menu déroulant uniquement).",
+        "discordCategory": "Catégorie Discord",
+        "discordCategoryDescription": "Là où les salons de ticket sont créés. La laisser vide reste un brouillon valide.",
+        "selectDiscordCategory": "Choisir une catégorie",
+        "noDiscordCategory": "Aucune catégorie Discord sur ce serveur",
+        "noParent": "Aucune catégorie",
+        "nameFormat": "Nom du salon",
+        "nameFormatDescription": "Format du salon de ticket, par exemple ticket-{number}.",
+        "maxOpenPerUser": "Tickets ouverts par membre",
+        "maxOpenPerUserDescription": "Combien de tickets un membre peut garder ouverts dans cette catégorie.",
+        "locale": "Langue",
+        "localeDescription": "Langue des messages que le bot écrit dans ces tickets.",
+        "claimEnabled": "Autoriser la prise en charge",
+        "claimEnabledDescription": "Le staff peut prendre un ticket en charge, pour que chacun sache qui s'en occupe.",
+        "claimLock": "Verrouiller à la prise en charge",
+        "claimLockDescription": "Une fois pris en charge, seuls le claimeur, les rôles admin, l'auteur et les membres ajoutés à la main écrivent. Les autres continuent de lire.",
+        "allowedRoles": "Rôles autorisés à ouvrir",
+        "allowedRolesDescription": "Vide signifie que tout le monde peut ouvrir un ticket — ce n'est pas « personne ».",
+        "deniedRoles": "Rôles interdits",
+        "deniedRolesDescription": "Gagne toujours, y compris sur un rôle autorisé et sur un administrateur du serveur.",
+        "pingRoles": "Rôles à mentionner",
+        "pingRolesDescription": "Mentionnés à l'ouverture d'un ticket dans cette catégorie.",
+        "addRole": "Ajouter un rôle",
+        "noRole": "Aucun rôle disponible.",
+        "pingStaffRoles": "Mentionner les rôles du staff",
+        "pingStaffRolesDescription": "Mentionner aussi les rôles qui portent les permissions de ticket ci-dessous.",
+        "openMessage": "Message d'ouverture",
+        "openMessageDescription": "Le message entier : le bot n'ajoute plus rien autour — ni titre, ni ligne de métadonnées.",
+        "closeMessage": "Message de fermeture",
+        "closeMessageDescription": "Posté dans le salon quand le ticket est fermé.",
+        "usingDefault": "Message par défaut du bot utilisé.",
+        "preview": "Aperçu",
+        "edit": "Éditer",
+        "separatorHint": "Une ligne contenant uniquement --- devient un vrai séparateur. Cliquez un placeholder pour l'insérer.",
+        "customizeButtons": "Personnaliser les boutons",
+        "customizeButtonsDescription": "Désactivé, le bot pose ses boutons par défaut. Activé, vous choisissez exactement lesquels apparaîtront.",
+        "noButtonsWarning": "Aucun bouton : tout passera par les commandes /ticket.",
+        "buttonsOrderHint": "L'ordre est décidé par le bot — le changer ici ne servirait à rien.",
+        "done": "Terminé",
+        "openTickets_one": "{{count}} ticket ouvert",
+        "openTickets_other": "{{count}} tickets ouverts",
+        "noOpenTickets": "Aucun ticket ouvert",
+        "delete": "Supprimer",
+        "confirmDeleteTitle": "Supprimer « {{name}} » ?",
+        "confirmDeleteDescription": "La catégorie disparaît du panneau à la prochaine sauvegarde.",
+        "confirmDeleteOpen_one": "{{count}} ticket ouvert utilise cette catégorie. Il restera ouvert mais deviendra inutilisable — déplacez-le d'abord avec /ticket move dans son salon.",
+        "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move dans leurs salons."
+      },
+      "buttonStyles": {
+        "primary": "Blurple",
+        "secondary": "Gris",
+        "success": "Vert",
+        "danger": "Rouge"
+      },
+      "locales": {
+        "en-US": "English",
+        "fr": "Français",
+        "es-ES": "Español",
+        "pt-BR": "Português (Brasil)",
+        "de": "Deutsch"
+      },
+      "buttons": {
+        "close": {
+          "label": "Fermer",
+          "description": "Ferme le ticket. Le salon est conservé."
+        },
+        "claim": {
+          "label": "Prendre en charge",
+          "description": "Attribue le ticket à celui qui clique."
+        },
+        "escalate": {
+          "label": "Escalader",
+          "description": "Réserve le ticket aux rôles admin."
+        },
+        "staff_thread": {
+          "label": "Fil du staff",
+          "description": "Ouvre le fil privé du staff."
+        },
+        "participants": {
+          "label": "Participants",
+          "description": "Ajoute ou retire membres et rôles."
+        },
+        "close_request": {
+          "label": "Demander la fermeture",
+          "description": "Pas un bouton par défaut — il vit aussi dans /ticket close-request."
+        }
+      },
+      "permissions": {
+        "title": "Permissions par rôle",
+        "description": "Par rôle et par catégorie. L'auteur du ticket et les membres ajoutés à la main n'obtiennent que « Voir ».",
+        "empty": "Aucun rôle n'a encore de permission sur cette catégorie.",
+        "addRole": "Ajouter un rôle",
+        "items": {
+          "view": {
+            "label": "Voir",
+            "description": "Voir et écrire dans ces tickets."
+          },
+          "close": {
+            "label": "Fermer",
+            "description": "Fermer et rouvrir."
+          },
+          "claim": {
+            "label": "Prendre en charge",
+            "description": "Prendre un ticket, et relâcher le sien."
+          },
+          "unclaim_others": {
+            "label": "Retirer une prise en charge",
+            "description": "Retirer un ticket à l'agent qui l'a pris."
+          },
+          "staff_thread": {
+            "label": "Fil du staff",
+            "description": "Ouvrir et rejoindre le fil privé du staff."
+          },
+          "rename": {
+            "label": "Renommer",
+            "description": "Renommer le salon du ticket."
+          },
+          "move": {
+            "label": "Déplacer",
+            "description": "Déplacer un ticket vers une autre catégorie."
+          },
+          "participants": {
+            "label": "Participants",
+            "description": "Ajouter ou retirer membres et rôles."
+          },
+          "admin": {
+            "label": "Admin",
+            "description": "Tout ce qui précède, et garde l'accès après une escalade."
+          }
+        }
+      },
+      "states": {
+        "open": "Ouvert",
+        "claimed": "Pris en charge",
+        "escalated": "Escaladé",
+        "closed": "Fermé"
+      },
+      "stats": {
+        "total": "Total",
+        "open": "Ouverts",
+        "closed": "Fermés",
+        "claimed": "Pris en charge",
+        "escalated": "Escaladés",
+        "avgResolution": "Résolution moy."
+      },
+      "filters": {
+        "allStatuses": "Tous les statuts",
+        "open": "Ouverts",
+        "closed": "Fermés",
+        "allCategories": "Toutes les catégories",
+        "refresh": "Rafraîchir"
+      },
+      "list": {
+        "empty": "Aucun ticket ne correspond à ces filtres.",
+        "orphan": "Catégorie disparue",
+        "closeRequested": "Fermeture demandée",
+        "pagination": "Page {{page}} sur {{pages}} — {{total}} tickets"
+      },
+      "channel": {
+        "default_open_message": "Bonjour {user}, merci d'avoir ouvert un ticket dans **{category}**.\n---\nDécrivez votre demande le plus précisément possible — un membre du staff de {server} vous répondra ici sous peu.",
+        "default_close_message": "Ce ticket est maintenant fermé. Rouvrez-le si vous avez encore besoin d'aide."
+      }
     }
   },
   "staff": {
