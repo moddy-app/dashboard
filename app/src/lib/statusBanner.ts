@@ -9,7 +9,7 @@
 const STATUS_API_URL = "https://health.moddy.app/v1/status/banner"
 
 /** Identifies this app to the status API so affected-service messages can name it. */
-const SERVICE_ID = "Dashboard"
+const SERVICE_ID = "moddy-dashboard"
 
 export interface StatusBanner {
   level: string
