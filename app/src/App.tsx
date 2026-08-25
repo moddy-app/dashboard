@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { ArrowUpRight, Languages, LifeBuoy, Moon, Sun } from "lucide-react"
 
 import { Logo } from "@/components/Logo"
+import { StatusBanner } from "@/components/StatusBanner"
 import { useTheme } from "@/hooks/useTheme"
 import { useTranslation } from "@/i18n"
 import { cn } from "@/lib/utils"
@@ -35,6 +36,9 @@ export function App() {
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Status banner — always first: it takes priority over any other banner */}
+      <StatusBanner />
+
       {/* Header — logo (left) + theme toggle (right) */}
       <header className="flex shrink-0 items-center justify-between px-6 py-6 sm:px-10 sm:py-8">
         {/* Logo — links to moddy.app, plays an easter egg on hover */}
