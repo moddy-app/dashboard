@@ -1708,19 +1708,9 @@
       "failed": "Moddy n'a pas pu vous envoyer ce message sur Discord.",
       "skipped": "Ce message n'a pas été envoyé sur Discord."
     },
-    "services": {
-      "moddy": "Moddy",
-      "welcome_dm": "Message de bienvenue",
-      "moderation": "Modération",
-      "automod_ai": "Automod IA",
-      "appeals": "Appels",
-      "altguard": "AltGuard",
-      "tickets": "Tickets",
-      "reminder": "Rappels",
-      "interserver": "Inter-serveur",
-      "token_detector": "Détecteur de token",
-      "global_sanctions": "Sanctions globales",
-      "expirations": "Expiration de sanction"
+    "reportBlock": {
+      "moddy_authored": "Ce message est rédigé par Moddy.",
+      "official_guild": "Ce serveur est un serveur officiel Moddy."
     }
   },
   "premium": {

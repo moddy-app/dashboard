@@ -33,9 +33,9 @@ export interface NotificationsState {
 }
 
 /**
- * Boîte de réception du compte connecté. Pagination **keyset** (`before`), pas
- * d'`OFFSET` : l'index `(recipient_id, created_at DESC)` la rend constante à
- * n'importe quelle profondeur.
+ * Boîte de réception du compte connecté. Pagination **keyset** : `next` est un
+ * curseur opaque renvoyé par l'API, repassé tel quel dans `before` — jamais
+ * construit à la main, jamais un `OFFSET` (`next: null` = dernière page).
  *
  * Un échec ne vide jamais la liste déjà affichée — une notification lue reste
  * lisible même quand l'API tombe.

@@ -14,11 +14,7 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
 import { getGuildIconUrl } from "@/lib/auth"
 import type { User } from "@/lib/auth"
-import {
-  degradeDiscordSyntax,
-  guildLink,
-  notificationOrigin,
-} from "@/lib/notifications"
+import { degradeDiscordSyntax, notificationOrigin } from "@/lib/notifications"
 import type { InboxNotification, NotificationsState } from "@/hooks/useNotifications"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -112,25 +108,22 @@ function NotificationOriginLine({
   }
 
   if (origin.type === "service") {
-    // Le registre des services est **ouvert** : un id inconnu se dégrade en
-    // « Moddy », jamais en clé nue ni en erreur.
-    const label =
-      notification.source.service_label ||
-      t(`notifications.services.${origin.serviceId}`, {
-        lng,
-        defaultValue: t("notifications.origin.moddy", { lng }),
-      })
-    return <span className="truncate text-xs font-medium text-muted-foreground">{label}</span>
+    // L'API résout déjà le libellé (`service_label`) — un `service_id` inconnu
+    // d'elle se dégrade côté back-end, on n'a pas de repli à inventer ici.
+    return (
+      <span className="truncate text-xs font-medium text-muted-foreground">
+        {origin.source.service_label || t("notifications.origin.moddy", { lng })}
+      </span>
+    )
   }
 
-  const iconUrl = origin.icon?.startsWith("http")
-    ? origin.icon
-    : getGuildIconUrl(origin.guildId, origin.icon)
-  const name = origin.name ?? origin.guildId
+  const { source } = origin
+  const iconUrl = getGuildIconUrl(source.guild_id as string, source.guild_icon)
+  const name = source.guild_name ?? source.guild_id
 
   return (
     <a
-      href={guildLink(origin.guildId)}
+      href={source.guild_url ?? undefined}
       target="_blank"
       rel="noopener noreferrer"
       className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
@@ -138,11 +131,13 @@ function NotificationOriginLine({
       <Avatar className="size-4 shrink-0 rounded-sm">
         {iconUrl && <AvatarImage src={iconUrl} alt="" />}
         <AvatarFallback className="rounded-sm text-[9px]">
-          {name.slice(0, 1).toUpperCase()}
+          {name?.slice(0, 1).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <span className="truncate">{name}</span>
-      {origin.verified && <VerifiedBadge kind="official" className="[&_svg]:size-3" />}
+      {(source.verified || source.official) && (
+        <VerifiedBadge kind="official" className="[&_svg]:size-3" />
+      )}
     </a>
   )
 }

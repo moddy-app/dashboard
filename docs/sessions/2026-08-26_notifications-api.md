@@ -1,9 +1,34 @@
 # Notifications — branchement sur l'API
 
 **Date** : 2026-08-26
-**Objectif** : rendre fonctionnel le système de notifications du dashboard, jusqu'ici alimenté par un tableau de données factices, en l'alignant sur le guide d'intégration backend du bot (« Notifications — backend implementation guide »).
+**Objectif** : rendre fonctionnel le système de notifications du dashboard, jusqu'ici alimenté par un tableau de données factices, en le branchant sur l'API réelle décrite par le « Guide d'intégration Dashboard — Notifications ».
 
 ---
+
+## 0. Une correction en cours de session
+
+Un premier passage a été fait sur la base d'un document différent — le guide
+d'intégration **backend/bot** (contrat des quatre tables PostgreSQL,
+algorithme de substitution des placeholders, worker de livraison). Ce n'était
+pas le bon document pour ce dépôt : le dashboard ne parle pas à ces tables,
+il parle à l'API HTTP, qui rend déjà tout.
+
+Le bon document (« Guide d'intégration Dashboard — Notifications ») a été
+fourni en cours de session et le travail a été repris dessus. La différence
+change beaucoup de choses :
+
+| | Guide backend (écarté) | Guide dashboard (utilisé) |
+|---|---|---|
+| Contenu | gabarit (`{user}`, `{server}`…), à substituer côté client | déjà résolu par l'API |
+| `icon` | émoji custom `<:nom:id>`, à convertir en URL CDN | `icon_url` déjà une URL CDN |
+| `accent_color` | entier décimal, à convertir en hex | déjà un hex CSS |
+| Pagination | curseur composite `"<created_at>,<uuid>"` construit à la main | curseur opaque `next`, jamais construit — juste repassé |
+| Endpoints | requêtes SQL directes sur les 4 tables | `GET /notifications`, `/notifications/{id}`, `/guilds/{id}/notifications[/inbox]` |
+
+Ce document ne raconte que la version finale, sur le bon guide. Les fichiers
+`lib/notifications.ts` et `services/notifications.ts` ont perdu toute la
+partie substitution (`substitute()`, `renderTemplate()`, `customEmojiUrl()`,
+`accentColorToHex()`) — inutile puisque l'API la fait déjà.
 
 ## 1. Point de départ
 
@@ -13,29 +38,26 @@ Le tiroir de notifications existait mais était une maquette :
 - `app/src/data/notifications.ts` — cinq notifications écrites en dur (« Maintenance programmée », « TrollMaster#9876 »…) ;
 - `DashboardPage` tenait l'état en `useState`, le « lu » ne survivait pas à un rechargement.
 
-Le système réel est **centralisé et partagé avec le bot** : quatre tables PostgreSQL (`notification_contents`, `notifications`, `notification_deliveries`, `notification_reports`) dont le bot est propriétaire. Le dashboard n'y écrit rien — il lit.
-
 ## 2. Tâches accomplies
 
-1. Modèle de données aligné sur le contrat réel (les huit clés du payload uniforme, `kind` / `author` / `platform` / `status`, l'origine, la livraison).
-2. Implémentation de l'algorithme de substitution des placeholders, **au caractère près** comme le bot.
-3. Rendu du contenu : émojis custom → URL CDN, `accent_color` entier → hex, syntaxe Discord dégradée en texte, markdown rendu par `DiscordMarkup`.
-4. Service de lecture avec pagination keyset et normalisation tolérante (contenu résolu **ou** gabarit brut).
-5. État de lecture local (`localStorage`), faute d'accusé de réception côté API.
-6. Réécriture du tiroir : origine, corps, sections, liens, pied, état de livraison Discord, chargement paginé, erreurs, squelettes.
-7. Pastille de non-lues dans le menu utilisateur.
-8. Suppression des données factices et de l'ancien modèle.
-9. i18n complète (en + fr), registre des services inclus.
+1. Modèle de données aligné sur la forme réellement servie par l'API : contenu résolu, origine (`source`, `null` seulement pour `kind = 'official'`), livraison Discord optionnelle.
+2. Rendu du corps : `DiscordMarkup` pour le markdown, `degradeDiscordSyntax()` pour la syntaxe que seul Discord comprend (`<@id>`, `<#id>`, `<t:…:R>`).
+3. Service de lecture (`GET /notifications`, `/notifications/{id}`, `/guilds/{id}/notifications[/inbox]`) avec pagination par curseur opaque.
+4. État de lecture local (`localStorage`), faute d'accusé de réception côté API.
+5. Réécriture du tiroir : origine, corps, sections, liens, pied, état de livraison Discord, chargement paginé, erreurs, squelettes.
+6. Pastille de non-lues dans le menu utilisateur.
+7. Suppression des données factices et de l'ancien modèle.
+8. i18n complète (en + fr).
 
 ## 3. Fichiers créés
 
 | Fichier | Rôle |
 |---|---|
-| `app/src/types/notifications.ts` | Types du système : gabarit, contenu résolu, origine, livraison, page |
-| `app/src/lib/notifications.ts` | Fonctions **pures** de rendu : `substitute`, `stripCustomEmojis`, `customEmojiUrl`, `accentColorToHex`, `isSafeNotificationUrl`, `renderTemplate`, `notificationOrigin`, `degradeDiscordSyntax`, `isReportable` |
+| `app/src/types/notifications.ts` | Types du système : contenu résolu, origine, livraison, page |
+| `app/src/lib/notifications.ts` | `degradeDiscordSyntax`, `notificationOrigin`, `isSafeNotificationUrl`, `reportBlockReasonKey` — fonctions **pures** de présentation, plus de substitution |
 | `app/src/lib/notification-read-state.ts` | Lu/non-lu côté navigateur (`moddy_notifications_read`) |
-| `app/src/services/notifications.ts` | `GET /notifications` + normalisation des deux formes de réponse |
-| `app/src/hooks/useNotifications.ts` | Chargement, pagination, rafraîchissement, marquage |
+| `app/src/services/notifications.ts` | `getNotifications`, `getNotification`, `getGuildNotifications`, `getGuildNotificationsInbox` + normalisation défensive |
+| `app/src/hooks/useNotifications.ts` | Chargement, pagination par curseur, rafraîchissement, marquage |
 
 ## 4. Fichiers modifiés
 
@@ -45,7 +67,7 @@ Le système réel est **centralisé et partagé avec le bot** : quatre tables Po
 | `app/src/pages/DashboardPage.tsx` | `useNotifications()` remplace l'état local et les données d'exemple |
 | `app/src/components/app-sidebar.tsx` | Passe `unreadNotifications` à `NavUser` |
 | `app/src/components/nav-user.tsx` | Pastille de non-lues sur l'entrée « Notifications » |
-| `app/src/locales/{en,fr}/translation.json` | Bloc `notifications` : origine, mentions, livraison, registre des services ; `criticality` retiré |
+| `app/src/locales/{en,fr}/translation.json` | Bloc `notifications` : origine, mentions, livraison ; `criticality` retiré |
 | `CLAUDE.md` | Section « Notifications » + inventaire des fichiers |
 
 ## 5. Fichiers supprimés
@@ -55,158 +77,130 @@ Le système réel est **centralisé et partagé avec le bot** : quatre tables Po
 
 ## 6. Documentation technique
 
-### 6.1 Le contenu stocké est un gabarit
+### 6.1 Le contenu est déjà résolu — pas de substitution côté dashboard
 
-C'est le fait qui explique tout le reste. `notification_contents.payload` porte encore
-`{user}`, `{server}`, `{reason}` : dix mille membres recevant le même message de
-bienvenue partagent **une** ligne de contenu, et chaque `notifications.variables`
-dit ce qui a été substitué pour une personne. Le rendu est à la charge de la
-surface qui affiche.
+C'est la différence structurante avec le bot lui-même : le bot stocke un
+*gabarit* (`{user}`, `{server}`) partagé par tous les destinataires d'un même
+message, mais l'API que le dashboard consomme rend déjà tout avant de
+répondre. `content.title`, `content.body`, chaque section, chaque lien et
+`content.footer` sont du texte final. `icon_url` est une URL CDN (ou `null`),
+`accent_color` un hex CSS (ou `null`).
 
-L'API *devrait* servir du contenu déjà résolu. Si elle laisse passer le `payload`
-brut (c'est ce que renvoie la requête de lecture du guide, §8.2),
-`normalizeContent()` applique l'algorithme lui-même : un écran plein
-d'`{accolades}` n'est jamais acceptable.
+Conséquence directe : `lib/notifications.ts` ne contient **aucune** fonction
+de substitution. Un premier passage de cette session en avait écrit une
+(`substitute()`, `renderTemplate()`, conversion d'entier en hex…) sur la base
+du mauvais document — tout ça a été retiré.
 
-### 6.2 La substitution, règle par règle
+### 6.2 Ce que l'API ne peut pas résoudre : la syntaxe propre à Discord
 
-`substitute()` doit correspondre **au caractère près** à celle du bot — sinon un
-membre du staff comparant le DM Discord et la carte du dashboard trouve deux
-messages différents.
+Le corps reste du **markdown Discord**, et peut porter `<@id>`, `<@&id>`,
+`<#id>`, `<t:1700000000:R>` — des balises que seul le client Discord sait
+afficher. `DiscordMarkup` (déjà utilisé pour les bios du bot) ne les
+comprend pas : sans traitement, elles s'afficheraient brutes.
 
-- Motif `\{([a-zA-Z0-9_]+)\}` : ni tiret, ni espace, ni point.
-- Clé **absente** → le placeholder reste **visible**, accolades comprises. C'est
-  ainsi qu'un gabarit cassé se remarque ; le blanchir cacherait le bug.
-- Valeur `null` → chaîne vide.
-- Sémantique de `str()` en Python (`True`, pas `true`) : `variables` est du JSONB,
-  le jour où un appelant passe un booléen, un `String(v)` naïf diverge en silence.
-- Aucune récursion, et jamais un moteur de template qui jette sur une accolade
-  orpheline — ce texte est arbitraire.
-
-Appliquée à `title`, `body`, chaque section, chaque lien et `footer`. **Jamais** à
-`icon`, `accent_color` ni `template_id`.
-
-Les 29 vecteurs de test du guide (§18 : substitution, émojis, couleur, rendu
-complet) ont été vérifiés un par un contre cette implémentation — tous passent.
-Le projet n'a pas de lanceur de tests (pas de vitest), donc ils n'ont pas été
-committés en suite : ce serait la première chose à ajouter le jour où un runner
-existe, `src/lib/notifications.ts` étant entièrement pur.
-
-### 6.3 Le texte n'est pas de confiance
-
-Le corps d'un message de bienvenue ou d'une raison de sanction a été **tapé par
-un admin de serveur**. Deux conséquences dans le code :
-
-- rendu par `DiscordMarkup` (parseur contrôlé, déjà utilisé pour les bios),
-  jamais par `dangerouslySetInnerHTML` ;
-- les `links[].url` sont écartées si elles ne sont pas `https://` **ou** si elles
-  portent encore un placeholder (`https://…/{guild_id}` d'un gabarit cassé), et
-  rendues avec `rel="noopener noreferrer"`.
-
-### 6.4 La syntaxe propre à Discord dégrade
-
-`<@123>`, `<@&123>`, `<#123>`, `<t:1700000000:R>` ne veulent rien dire hors du
-client Discord. `degradeDiscordSyntax()` les remplace par du texte :
+`degradeDiscordSyntax()` les remplace par du texte lisible **avant** de
+passer par `DiscordMarkup` :
 
 - les horodatages passent par `formatDiscordTimestamps()` (déjà écrit pour
   l'aperçu du module Welcome DM — fonction pure, `now` en paramètre) ;
-- **une seule** mention est résolue : celle du lecteur. C'est la seule identité
-  disponible sans requête, et de très loin la plus fréquente (un message de
-  bienvenue s'adresse à la personne qui le lit). Le reste tombe sur un libellé
-  générique (« @utilisateur », « #salon »), traduit.
+- **une seule** mention est résolue : celle du lecteur (`selfId` = son propre
+  `user_id`). C'est la seule identité disponible sans requête supplémentaire,
+  et de très loin la plus fréquente (un message de bienvenue s'adresse à la
+  personne qui le lit). Le reste tombe sur un libellé générique, traduit
+  (« @utilisateur », « #salon »).
 
-### 6.5 L'origine, comme dans Discord
+### 6.3 Le texte n'est pas de confiance
 
-Trois cas, dans cet ordre (§6.4 du guide) :
+`body`/`sections[].body`/`footer` peuvent contenir du texte tapé par un
+**admin de serveur tiers**. `DiscordMarkup` construit des nœuds React par
+analyse de motifs — jamais de `dangerouslySetInnerHTML` — donc aucune
+injection HTML n'est possible même si le texte est hostile. Les liens sont
+rendus avec `rel="noopener noreferrer"` ; `isSafeNotificationUrl()`
+(vérification `https://` uniquement) n'est qu'une seconde ligne de défense,
+l'API filtrant déjà les liens sur ce critère.
 
-| État de la ligne | Ce qui s'affiche |
+### 6.4 L'origine, comme dans Discord
+
+`source` est `null` **uniquement** quand `kind = 'official'` — Moddy en tant
+qu'institution n'a personne d'autre à nommer. Sinon :
+
+| État de `source` | Ce qui s'affiche |
 |---|---|
-| `source_guild_id` présent | icône + nom du serveur + coche de vérification, lien vers `discord.com/channels/<id>` |
-| pas de serveur, `source_service` présent | le libellé du service |
-| `kind = 'official'` | **rien** — Moddy institution n'a pas de tiers à nommer |
+| `guild_id` présent | icône (via `getGuildIconUrl()` — `guild_icon` est un **hash**, pas une URL) + nom + coche si `verified` ou `official`, lien vers `guild_url` (déjà construite par l'API) |
+| pas de serveur, `service_id` présent | `service_label`, déjà résolu par l'API — pas de repli i18n à écrire côté dashboard |
 
-Le registre des services est **ouvert** : un id inconnu se dégrade en « Moddy »,
-jamais en clé i18n nue ni en erreur. Même règle pour `kind`, `author` et
-`status` — le bot livre de nouveaux expéditeurs sans coordonner un déploiement.
+Une valeur d'énumération inconnue (`kind`, `author`, `report_block`, le
+`status` de livraison) dégrade silencieusement vers une valeur sûre plutôt
+que de casser le rendu : le bot peut livrer de nouveaux expéditeurs sans
+coordonner un déploiement de l'API.
 
-### 6.6 `platforms` est une intention, la livraison est un fait
+### 6.5 La livraison Discord est optionnelle
 
-Le bot écrit une ligne `pending` par plateforme visée puis ne touche plus que
-celle de Discord. Un `discord_status` à `failed` ou `skipped` est **affiché** :
-« Moddy n'a pas pu vous envoyer ce message sur Discord ». C'est exactement ce qui
-justifie une boîte de réception sur le dashboard — un membre qui a fermé ses DM
-lit ici ce qu'il n'a pas reçu là-bas.
+`delivery.discord` n'existe que lorsque le bot a quelque chose à en dire. Un
+`failed` ou `skipped` est **affiché** : « Moddy n'a pas pu vous envoyer ce
+message sur Discord ». C'est précisément ce qui justifie une boîte de
+réception sur le dashboard — un membre qui a fermé ses DM lit ici ce qu'il
+n'a pas reçu là-bas.
 
-### 6.7 Lu / non-lu : local, et assumé comme tel
+### 6.6 Lu / non-lu : local, et assumé comme tel
 
-Le guide interdit d'ajouter une colonne aux quatre tables, et il n'existe aucun
-endpoint d'accusé de lecture. L'état vit donc dans `localStorage`
-(`moddy_notifications_read`) :
+Il n'existe aucun endpoint d'accusé de lecture. L'état vit dans
+`localStorage` (`moddy_notifications_read`) :
 
 ```jsonc
 { "readBefore": "2026-08-26T18:00:00.000Z", "ids": ["uuid", "…"] }
 ```
 
-« Tout marquer comme lu » pose une **borne temporelle** plutôt que d'énumérer les
-ids : les pages pas encore chargées sont couvertes elles aussi. Les ids marqués
-un par un sont plafonnés à 300 (`readBefore` couvre le reste). Toute lecture et
-toute écriture sont enveloppées : en navigation privée ou quota plein, la boîte
-reste lisible, simplement sans état de lecture.
+« Tout marquer comme lu » pose une **borne temporelle** plutôt que d'énumérer
+les ids : les pages pas encore chargées sont couvertes elles aussi. Toute
+lecture et toute écriture sont enveloppées : en navigation privée ou quota
+plein, la boîte reste lisible, simplement sans état de lecture. C'est un
+confort d'affichage, pas une donnée de référence.
 
-C'est un confort d'affichage, pas une donnée de référence — il ne suit pas
-l'utilisateur d'un appareil à l'autre, et c'est acceptable.
+### 6.7 Pagination par curseur opaque
 
-### 6.8 Pagination
+`next` est renvoyé par l'API et repassé **tel quel** dans `?before=` — jamais
+construit à la main, jamais un `OFFSET`. `next: null` signifie « dernière
+page », le hook ne rappelle pas l'API dans ce cas. Le hook déduplique à la
+concaténation (une notification arrivée entre deux pages décale le curseur et
+pourrait se présenter deux fois) et ne garde **qu'une requête en vol**.
 
-Keyset (`?limit=25&before=<created_at>,<uuid>`), jamais d'`OFFSET` :
-l'index `(recipient_id, created_at DESC)` rend la requête constante à n'importe
-quelle profondeur. Le hook déduplique à la concaténation (une notification
-arrivée entre deux pages décale le curseur et pourrait se présenter deux fois) et
-ne garde **qu'une requête en vol** — deux réponses concurrentes ne se marchent
-pas dessus.
+### 6.8 La locale du chrome vient du message
 
-### 6.9 La locale du chrome vient du message
+`notifications.locale` porte la langue dans laquelle le message a été
+**rendu**. L'habillage (note de livraison) se localise depuis cette colonne,
+pas depuis la langue du lecteur. La date relative, elle, reste dans la langue
+de l'interface — repère de lecture, pas partie du message.
 
-`notifications.locale` porte la langue dans laquelle le message a été **rendu**.
-L'habillage (libellé du service, note de livraison) se localise depuis cette
-colonne, pas depuis la langue du lecteur : rendre l'habillage en anglais autour
-d'un corps français est précisément l'erreur que cette colonne existe pour
-éviter. La date relative, elle, reste dans la langue de l'interface — c'est un
-repère de lecture, pas une partie du message.
+### 6.9 Pas de bouton « signaler »
 
-### 6.10 Pas de bouton « signaler »
+`reportable`/`report_block` n'expliquent aujourd'hui que l'**absence** du
+bouton, jamais une action qu'on peut offrir : déposer un signalement doit
+aussi poster un panneau de revue Discord côté bot, cette tâche n'existe pas
+encore. `reportBlockReasonKey()` est prêt pour afficher le motif le jour où
+c'est utile, mais rien dans le tiroir actuel ne rend de bouton.
 
-`reportable` est **gelé à l'envoi** et ne se recalcule ni ne s'élargit. Mais
-déposer un signalement ne se réduit pas à un `INSERT` : ça publie aussi le
-panneau de revue dans Discord et le journalise, deux choses côté bot. Le type de
-tâche correspondant n'existe pas encore. Tant qu'il n'existe pas, `reportable`
-est une information qu'on affiche, pas une action qu'on offre — un bouton mort
-serait pire que pas de bouton.
+### 6.10 Un 404 générique, jamais distingué
 
-## 7. Ce que le back-end doit exposer
+Une notification illisible (elle n'existe pas, ou elle n'est pas à
+l'utilisateur) doit rendre le même écran — sinon l'API deviendrait un moyen
+de sonder si un uuid existe. `getNotification()` est prêt pour une future
+page de détail ; aucune page ne l'utilise encore.
 
-Le dashboard appelle un seul endpoint, dans la forme suggérée par le guide (§12) :
+## 7. Endpoints branchés vs exposés
 
-```
-GET /notifications?limit=25&before=<created_at>,<uuid>
-→ { "items": [ … ], "next": { "before": "<created_at>,<uuid>" } }
-```
+| Endpoint | Statut |
+|---|---|
+| `GET /notifications` | branché (tiroir) |
+| `GET /notifications/{id}` | service écrit, pas encore consommé (pas de page de détail) |
+| `GET /guilds/{id}/notifications[?service=]` | service écrit, pas encore consommé |
+| `GET /guilds/{id}/notifications/inbox` | service écrit, pas encore consommé |
 
-Le service accepte deux formes de réponse, pour ne pas bloquer sur l'ordre
-d'arrivée des deux côtés :
-
-1. **La forme du guide** — `content` déjà résolu, `source` hydraté
-   (`guild_name`, `verified`…), `delivery` indexé par plateforme. C'est celle à
-   viser : seul le back-end peut nommer un serveur dont l'utilisateur n'est pas
-   membre.
-2. **La forme brute** — les colonnes de la requête de lecture (§8.2) :
-   `payload`, `variables`, `source_service`, `source_guild_id`,
-   `discord_status`. Le dashboard rend alors lui-même.
-
-Dans les deux cas : snowflakes en **chaînes** (le parseur de `lib/auth.ts` s'en
-charge déjà à la lecture), timestamps ISO-8601 UTC, et `404` plutôt que `403`
-pour une notification que la session ne peut pas lire — sinon l'endpoint sert à
-savoir si un uuid existe.
+Les deux endpoints serveur correspondent à un futur onglet « Notifications »
+dans les réglages d'un serveur (§4 du guide) : « Envoyés » (les mots du
+serveur) et « Reçus » (ce que Moddy lui a adressé). Écrire le service sans
+la page évite de refaire la normalisation le jour où cet onglet est demandé,
+sans ajouter de surface non demandée aujourd'hui.
 
 ## 8. Technologies utilisées
 
@@ -215,41 +209,41 @@ React 19, TypeScript strict, react-i18next, Tailwind CSS + shadcn/ui
 
 ## 9. Décisions prises
 
-- **Pas de suite de tests committée** : le projet n'a pas de lanceur. Les vecteurs
-  du guide ont été vérifiés hors dépôt (tous verts) ; les fonctions sont pures et
-  prêtes à être testées le jour où un runner est ajouté.
-- **La vue « outbox » d'un serveur n'est pas implémentée.** Elle est légitime
-  (ce sont les mots du serveur, §8.3) mais c'est un écran à part entière, pas le
-  tiroir ; l'écrire aurait ajouté du code sans surface pour l'afficher.
+- **Le premier document reçu était le mauvais guide** (backend/bot au lieu de
+  dashboard) : tout le code de substitution qu'il justifiait a été retiré une
+  fois le bon document fourni, plutôt que gardé « au cas où ».
+- **Pas de vue « outbox »/« inbox » serveur** pour l'instant : les services
+  existent, aucune page ne les appelle — ajouter l'onglet sans qu'il soit
+  demandé aurait été hors scope.
 - **`criticality` disparaît** : le modèle réel n'a pas de niveau de gravité.
-  `accent_color` le remplace — et il vient de la ligne, pas d'un choix du
-  dashboard.
+  `accent_color` (déjà résolu par l'API) le remplace.
 - **`formatDiscordTimestamps` est importée depuis `lib/welcome-dm.ts`** plutôt
-  que recopiée. C'est une fonction pure et générique ; la dupliquer aurait créé
-  deux rendus d'horodatage à maintenir.
+  que recopiée — fonction pure et générique déjà écrite pour un autre module.
 
 ## 10. Problèmes rencontrés
 
-- **`ErrorState` exige un message**, pas un booléen : le hook expose désormais
-  `error: string | null` (non nul seulement quand rien n'a pu être affiché — un
-  échec de page 2 ne doit pas effacer la page 1).
-- **Regex globale et `lastIndex`** : `PLACEHOLDER.test(url)` sur une `RegExp`
-  globale déplace son `lastIndex` et fausse l'appel suivant. Une seconde regex
-  non globale sert aux tests d'existence.
-- **Aucune classe `.discord-markup` n'existe** dans le projet : la mise en forme
-  du markdown se fait par variantes Tailwind, alignées sur celles de l'aperçu
-  Welcome DM pour que les deux écrans rendent pareil.
+- **Mauvais document en entrée** : la première implémentation modélisait un
+  contrat de substitution de gabarits qui n'existe pas côté dashboard. Repris
+  entièrement une fois le bon guide fourni — vérifié en rejouant l'exemple du
+  guide (`normalizeNotification()`) et en confirmant que `kind = 'official'`
+  produit bien `source: null`, qu'un lien non-`https://` est éliminé, et
+  qu'une valeur d'énumération inconnue dégrade sans planter.
+- **`ErrorState` exige un message**, pas un booléen : le hook expose
+  `error: string | null` (non nul seulement quand rien n'a pu être affiché).
+- **Aucune classe `.discord-markup` n'existe** dans le projet : la mise en
+  forme du markdown se fait par variantes Tailwind, alignées sur celles de
+  l'aperçu Welcome DM pour que les deux écrans rendent pareil.
 
 ## 11. Prochaines étapes suggérées
 
-1. **Confirmer la forme de `GET /notifications`** avec le back-end et, une fois
-   figée, retirer la branche de normalisation devenue inutile.
-2. **Vue « outbox » serveur** (`GET /guilds/:id/notifications`, Manage Server) —
-   « ce que Moddy a envoyé en notre nom ».
-3. **Bouton de signalement**, le jour où la tâche `notification_report` existe
-   côté bot.
-4. **Suite de tests** (vitest) sur `src/lib/notifications.ts`, avec les vecteurs
-   du guide §18.
-5. **Surface staff** : hydratation complète d'une notification par uuid,
-   signalements ouverts, état d'une campagne (`batch_id`) — en gardant
-   `actor_id` et les motifs de signalement hors des surfaces non-staff.
+1. **Onglet serveur « Notifications »** (`getGuildNotifications` /
+   `getGuildNotificationsInbox`, déjà écrits) — deux flux, « Envoyés » et
+   « Reçus », filtrables par `service`.
+2. **Page de détail** (`GET /notifications/{id}`, déjà écrit) si un lien
+   direct vers une notification est un jour nécessaire (deep-link depuis un
+   mail, par exemple).
+3. **Bouton de signalement**, le jour où la tâche correspondante existe côté
+   bot.
+4. **Suite de tests** (le projet n'a pas de lanceur) sur
+   `src/lib/notifications.ts` et `src/services/notifications.ts` — les deux
+   sont purs et faciles à tester une fois un runner ajouté.
