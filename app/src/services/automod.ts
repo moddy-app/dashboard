@@ -22,7 +22,6 @@ export function defaultAutomodConfig(): AutomodAiConfig {
     ignore_moderators: true,
     severity: 3,
     max_action: 'ban',
-    langue_serveur: 'auto',
     categories_desactivees: [],
     dry_run: false,
     features: {
@@ -56,9 +55,18 @@ export async function saveAutomodConfig(
   guildId: string | number,
   config: AutomodAiConfig
 ): Promise<AutomodAiConfig> {
+  // `langue_serveur` est mort : la langue est un réglage du **serveur**
+  // (`PUT /guilds/{id}/settings/language`). L'index signature de la config
+  // reconduit tout champ inconnu — sans ce retrait, une valeur héritée d'une
+  // ancienne config repartirait dans le body. Pydantic l'ignorerait en
+  // silence : ça semblerait marcher tout en ne réglant rien.
+  const { langue_serveur: _dead, ...body } = config as AutomodAiConfig & {
+    langue_serveur?: unknown
+  }
+  void _dead
   return (await api(BASE(guildId), {
     method: 'PUT',
-    body: JSON.stringify(config),
+    body: JSON.stringify(body),
   })) as AutomodAiConfig
 }
 

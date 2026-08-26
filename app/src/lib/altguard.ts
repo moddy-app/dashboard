@@ -1,12 +1,7 @@
-import {
-  ALTGUARD_DEFAULT_LOCALE,
-  ALTGUARD_PANEL_LOCALES,
-  CHANNEL_TYPES,
-} from '@/types/api'
+import { CHANNEL_TYPES } from '@/types/api'
 import type {
   AltGuardApply,
   AltGuardConfig,
-  AltGuardPanelLocale,
   Channel,
   Role,
 } from '@/types/api'
@@ -19,12 +14,6 @@ function asSnowflake(value: unknown): string | null {
   return String(value)
 }
 
-function asLocale(value: unknown): AltGuardPanelLocale {
-  return ALTGUARD_PANEL_LOCALES.includes(value as AltGuardPanelLocale)
-    ? (value as AltGuardPanelLocale)
-    : ALTGUARD_DEFAULT_LOCALE
-}
-
 /** Formulaire vierge — état d'un serveur qui n'a jamais configuré le module. */
 export function emptyAltGuardConfig(): AltGuardConfig {
   return {
@@ -32,14 +21,13 @@ export function emptyAltGuardConfig(): AltGuardConfig {
     unverified_role_id: null,
     verified_role_id: null,
     log_channel_id: null,
-    panel_locale: ALTGUARD_DEFAULT_LOCALE,
     enabled: false,
   }
 }
 
 /**
  * Normalise une config reçue de l'API (ou lue depuis `modules`) : ids en
- * chaînes, locale connue, champs absents ramenés à `null`.
+ * chaînes, champs absents ramenés à `null`.
  */
 export function normalizeAltGuardConfig(raw: Record<string, unknown> | null | undefined): AltGuardConfig {
   if (!raw) return emptyAltGuardConfig()
@@ -48,7 +36,6 @@ export function normalizeAltGuardConfig(raw: Record<string, unknown> | null | un
     unverified_role_id: asSnowflake(raw.unverified_role_id),
     verified_role_id: asSnowflake(raw.verified_role_id),
     log_channel_id: asSnowflake(raw.log_channel_id),
-    panel_locale: asLocale(raw.panel_locale),
     message_id: asSnowflake(raw.message_id),
     enabled: raw.enabled === true,
   }
@@ -82,8 +69,7 @@ export function isSameAltGuardConfig(a: AltGuardConfig, b: AltGuardConfig): bool
     a.channel_id === b.channel_id &&
     a.unverified_role_id === b.unverified_role_id &&
     a.verified_role_id === b.verified_role_id &&
-    a.log_channel_id === b.log_channel_id &&
-    a.panel_locale === b.panel_locale
+    a.log_channel_id === b.log_channel_id
   )
 }
 

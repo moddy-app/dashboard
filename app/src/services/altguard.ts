@@ -56,7 +56,6 @@ export async function saveAltGuardConfig(
     unverified_role_id: config.unverified_role_id || null,
     verified_role_id: config.verified_role_id || null,
     log_channel_id: config.log_channel_id || null,
-    panel_locale: config.panel_locale,
   }
   return splitApply(
     await api(BASE(guildId), { method: 'PUT', body: JSON.stringify(body) })

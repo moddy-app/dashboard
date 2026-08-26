@@ -22,6 +22,7 @@ import {
   SparklesIcon,
   PaletteIcon,
   TicketIcon,
+  SettingsIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -174,6 +175,12 @@ export function AppSidebar({
           url: `/servers/${selectedGuildId}/modules/bot_customization`,
           icon: PaletteIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/modules/bot_customization`,
+        },
+        {
+          title: t("guildSettings.title"),
+          url: `/servers/${selectedGuildId}/settings`,
+          icon: SettingsIcon,
+          isActive: location.pathname === `/servers/${selectedGuildId}/settings`,
         },
       ]
     : !isOnStaffPage

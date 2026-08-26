@@ -13,6 +13,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { ServerLanguageNote } from "@/components/server-language-note"
 import i18n from "@/i18n"
 import { handleSaveError } from "@/lib/handle-error"
 import { ApiError } from "@/lib/auth"
@@ -65,10 +66,9 @@ import {
   getAltGuardConfig,
   saveAltGuardConfig,
 } from "@/services/altguard"
-import { ALTGUARD_PANEL_LOCALES, roleColorToHex } from "@/types/api"
+import { roleColorToHex } from "@/types/api"
 import type {
   AltGuardConfig,
-  AltGuardPanelLocale,
   Role,
 } from "@/types/api"
 
@@ -81,14 +81,12 @@ type FieldKey =
   | "unverified_role_id"
   | "verified_role_id"
   | "log_channel_id"
-  | "panel_locale"
 
 const FIELD_KEYS: FieldKey[] = [
   "channel_id",
   "unverified_role_id",
   "verified_role_id",
   "log_channel_id",
-  "panel_locale",
 ]
 
 type FieldErrors = Partial<Record<FieldKey, string>>
@@ -419,28 +417,9 @@ function AltGuardForm() {
             />
           </Field>
 
-          {/* Langue du panneau */}
-          <Field
-            label={t("modules.altguard.panelLocale")}
-            description={t("modules.altguard.panelLocaleDescription")}
-            error={fieldErrors.panel_locale}
-          >
-            <Select
-              value={draft.panel_locale}
-              onValueChange={(v) => patch({ panel_locale: v as AltGuardPanelLocale })}
-            >
-              <SelectTrigger className="w-full sm:w-72">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ALTGUARD_PANEL_LOCALES.map((locale) => (
-                  <SelectItem key={locale} value={locale}>
-                    {t(`modules.altguard.locales.${locale}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Field>
+          {/* Le texte du panneau n'est pas configurable, et sa langue ne l'est
+              plus ici : il n'y a plus qu'un réglage, au niveau du serveur. */}
+          <ServerLanguageNote guildId={selectedGuildId} />
 
           <p className="flex items-start gap-2 text-xs text-muted-foreground">
             <ClockIcon className="size-3.5 mt-0.5 shrink-0" />

@@ -187,6 +187,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
       return items
     }
 
+    // /servers/:guildId/settings — réglages du serveur
+    if (path.match(/^\/servers\/\d+\/settings$/) && guildDetail) {
+      return [
+        { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
+        { label: t('guildSettings.title') },
+      ]
+    }
+
     // /servers/:guildId/modules/:moduleId
     const moduleMatch = path.match(/^\/servers\/\d+\/modules\/(.+)$/)
     if (moduleMatch && guildDetail) {
