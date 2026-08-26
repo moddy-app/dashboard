@@ -1694,11 +1694,33 @@
     "markAsRead": "Mark as read",
     "markAllAsRead": "Mark all as read",
     "close": "Close",
-    "criticality": {
-      "info": "Info",
-      "success": "Success",
-      "warning": "Warning",
-      "critical": "Critical"
+    "loadMore": "Load more",
+    "refresh": "Refresh",
+    "origin": {
+      "moddy": "Moddy"
+    },
+    "mention": {
+      "user": "user",
+      "role": "role",
+      "channel": "channel"
+    },
+    "delivery": {
+      "failed": "Moddy could not send you this message on Discord.",
+      "skipped": "This message was not sent on Discord."
+    },
+    "services": {
+      "moddy": "Moddy",
+      "welcome_dm": "Welcome message",
+      "moderation": "Moderation",
+      "automod_ai": "Automod AI",
+      "appeals": "Appeals",
+      "altguard": "AltGuard",
+      "tickets": "Tickets",
+      "reminder": "Reminders",
+      "interserver": "Inter-server",
+      "token_detector": "Token detector",
+      "global_sanctions": "Global sanctions",
+      "expirations": "Sanction expiry"
     }
   },
   "premium": {

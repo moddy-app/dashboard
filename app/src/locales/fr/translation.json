@@ -1694,11 +1694,33 @@
     "markAsRead": "Marquer comme lu",
     "markAllAsRead": "Tout marquer comme lu",
     "close": "Fermer",
-    "criticality": {
-      "info": "Info",
-      "success": "Succès",
-      "warning": "Avertissement",
-      "critical": "Critique"
+    "loadMore": "Charger plus",
+    "refresh": "Rafraîchir",
+    "origin": {
+      "moddy": "Moddy"
+    },
+    "mention": {
+      "user": "utilisateur",
+      "role": "rôle",
+      "channel": "salon"
+    },
+    "delivery": {
+      "failed": "Moddy n'a pas pu vous envoyer ce message sur Discord.",
+      "skipped": "Ce message n'a pas été envoyé sur Discord."
+    },
+    "services": {
+      "moddy": "Moddy",
+      "welcome_dm": "Message de bienvenue",
+      "moderation": "Modération",
+      "automod_ai": "Automod IA",
+      "appeals": "Appels",
+      "altguard": "AltGuard",
+      "tickets": "Tickets",
+      "reminder": "Rappels",
+      "interserver": "Inter-serveur",
+      "token_detector": "Détecteur de token",
+      "global_sanctions": "Sanctions globales",
+      "expirations": "Expiration de sanction"
     }
   },
   "premium": {
