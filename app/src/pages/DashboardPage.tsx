@@ -32,9 +32,7 @@ import {
 import { logout, refreshGuilds } from "@/lib/auth"
 import { openBillingPortal } from "@/services/guilds"
 import type { User } from "@/lib/auth"
-import { EXAMPLE_NOTIFICATIONS } from "@/data/notifications"
-import { isNotificationExpired } from "@/types/notification"
-import type { Notification } from "@/types/notification"
+import { useNotifications } from "@/hooks/useNotifications"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctions } from "@/contexts/SanctionContext"
 import { DebugModeBadge } from "@/components/debug-error-overlay"
@@ -59,10 +57,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [notificationDrawerOpen, setNotificationDrawerOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
-  const [notifications, setNotifications] = useState<Notification[]>(EXAMPLE_NOTIFICATIONS)
   const [dismissedBannerId, setDismissedBannerId] = useState<number | null>(null)
   const welcomeToastShown = useRef(false)
   const banner = useBanner('show_dashboard')
+  // La boîte de réception est chargée ici plutôt que dans le tiroir : la pastille
+  // du menu utilisateur a besoin du compte de non-lues sans qu'on l'ouvre.
+  const notifications = useNotifications()
   const activeBanner = banner && banner.id !== dismissedBannerId ? banner : null
 
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
@@ -111,16 +111,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
     setSettingsOpen(true)
   }, [])
 
-  const handleMarkRead = useCallback((id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    )
-  }, [])
-
-  const handleMarkAllRead = useCallback(() => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  }, [])
-
   const handleRefreshGuilds = useCallback(async () => {
     await refreshGuilds()
     window.location.reload()
@@ -138,8 +128,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
       toast.error(t('settings.billing.portalError'))
     }
   }, [t])
-
-  const activeNotifications = notifications.filter((n) => !isNotificationExpired(n))
 
   // Détermine le breadcrumb (liste de segments) selon la route courante.
   // Chaque segment : { label, href? }. Le dernier segment est la page courante.
@@ -262,6 +250,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onLogoutRequest={handleLogoutRequest}
         onOpenCommandMenu={handleOpenCommandMenu}
         onOpenNotifications={handleOpenNotifications}
+        unreadNotifications={notifications.unreadCount}
         onRefreshGuilds={handleRefreshGuilds}
       />
       <SidebarInset className="overflow-hidden">
@@ -317,9 +306,8 @@ export function DashboardPage({ user }: DashboardPageProps) {
       <NotificationDrawer
         open={notificationDrawerOpen}
         onOpenChange={setNotificationDrawerOpen}
-        notifications={activeNotifications}
-        onMarkRead={handleMarkRead}
-        onMarkAllRead={handleMarkAllRead}
+        state={notifications}
+        user={user}
       />
 
       <SettingsDialog

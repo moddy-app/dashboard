@@ -50,6 +50,8 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   onLogoutRequest?: () => void
   onOpenCommandMenu?: () => void
   onOpenNotifications?: () => void
+  /** Non-lues, pour la pastille du menu utilisateur. */
+  unreadNotifications?: number
   onRefreshGuilds?: () => void
 }
 
@@ -58,6 +60,7 @@ export function AppSidebar({
   onLogoutRequest,
   onOpenCommandMenu,
   onOpenNotifications,
+  unreadNotifications,
   onRefreshGuilds,
   ...props
 }: AppSidebarProps) {
@@ -308,6 +311,7 @@ export function AppSidebar({
           fullUser={user}
           onLogoutRequest={onLogoutRequest}
           onOpenNotifications={onOpenNotifications}
+          unreadNotifications={unreadNotifications}
           onNavigate={navigate}
         />
       </SidebarFooter>

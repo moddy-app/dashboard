@@ -1694,11 +1694,23 @@
     "markAsRead": "Marquer comme lu",
     "markAllAsRead": "Tout marquer comme lu",
     "close": "Fermer",
-    "criticality": {
-      "info": "Info",
-      "success": "Succès",
-      "warning": "Avertissement",
-      "critical": "Critique"
+    "loadMore": "Charger plus",
+    "refresh": "Rafraîchir",
+    "origin": {
+      "moddy": "Moddy"
+    },
+    "mention": {
+      "user": "utilisateur",
+      "role": "rôle",
+      "channel": "salon"
+    },
+    "delivery": {
+      "failed": "Moddy n'a pas pu vous envoyer ce message sur Discord.",
+      "skipped": "Ce message n'a pas été envoyé sur Discord."
+    },
+    "reportBlock": {
+      "moddy_authored": "Ce message est rédigé par Moddy.",
+      "official_guild": "Ce serveur est un serveur officiel Moddy."
     }
   },
   "premium": {

@@ -1694,11 +1694,23 @@
     "markAsRead": "Mark as read",
     "markAllAsRead": "Mark all as read",
     "close": "Close",
-    "criticality": {
-      "info": "Info",
-      "success": "Success",
-      "warning": "Warning",
-      "critical": "Critical"
+    "loadMore": "Load more",
+    "refresh": "Refresh",
+    "origin": {
+      "moddy": "Moddy"
+    },
+    "mention": {
+      "user": "user",
+      "role": "role",
+      "channel": "channel"
+    },
+    "delivery": {
+      "failed": "Moddy could not send you this message on Discord.",
+      "skipped": "This message was not sent on Discord."
+    },
+    "reportBlock": {
+      "moddy_authored": "This message is written by Moddy.",
+      "official_guild": "This server is an official Moddy server."
     }
   },
   "premium": {

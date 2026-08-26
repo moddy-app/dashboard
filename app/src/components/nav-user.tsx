@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/sidebar"
 import { SettingsDialog } from "@/components/settings-dialog"
 import { useSanctions } from "@/contexts/SanctionContext"
+import { Badge } from "@/components/ui/badge"
 import { LEVEL_TONE } from "@/lib/sanctions"
 import type { User } from "@/lib/auth"
 
@@ -50,10 +51,11 @@ interface NavUserProps {
   fullUser?: User | null
   onLogoutRequest?: () => void
   onOpenNotifications?: () => void
+  unreadNotifications?: number
   onNavigate?: NavigateFunction
 }
 
-export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, onNavigate }: NavUserProps) {
+export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, unreadNotifications = 0, onNavigate }: NavUserProps) {
   const { isMobile } = useSidebar()
   const { t } = useTranslation()
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -145,6 +147,14 @@ export function NavUser({ user, fullUser, onLogoutRequest, onOpenNotifications, 
                 <DropdownMenuItem onClick={onOpenNotifications}>
                   <BellIcon />
                   {t('navUser.notifications')}
+                  {unreadNotifications > 0 && (
+                    <Badge
+                      variant="secondary"
+                      className="ml-auto h-5 px-1.5 text-[11px] font-medium tabular-nums"
+                    >
+                      {unreadNotifications}
+                    </Badge>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onNavigate?.('/cases')}>
                   <ScaleIcon />

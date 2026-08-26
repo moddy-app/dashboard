@@ -5,16 +5,24 @@ import {
   BellIcon,
   CheckCheckIcon,
   CheckIcon,
-  CircleAlertIcon,
-  CircleCheckIcon,
-  InfoIcon,
+  Loader2Icon,
+  MailXIcon,
+  RefreshCwIcon,
 } from "lucide-react"
 
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
-import type { Notification, NotificationCriticality } from "@/types/notification"
+import { getGuildIconUrl } from "@/lib/auth"
+import type { User } from "@/lib/auth"
+import { degradeDiscordSyntax, notificationOrigin } from "@/lib/notifications"
+import type { InboxNotification, NotificationsState } from "@/hooks/useNotifications"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DiscordMarkup } from "@/components/discord-markup"
+import { VerifiedBadge } from "@/components/verified-badge"
+import { ErrorState } from "@/components/error-state"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
   DialogContent,
@@ -30,40 +38,31 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer"
 import { Separator } from "@/components/ui/separator"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
-// ─── Criticality config ──────────────────────────────────────────────────────
+// Boîte de réception du compte connecté. Une carte = une ligne `notifications`
+// dont le contenu a déjà été résolu (§5–6 du guide d'intégration) : ici on ne
+// fait que mettre en forme, jamais substituer.
 
-const criticalityConfig: Record<
-  NotificationCriticality,
-  { Icon: React.ElementType; badgeClassName: string; accentClassName: string }
-> = {
-  info: {
-    Icon: InfoIcon,
-    badgeClassName:
-      "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800",
-    accentClassName: "border-l-blue-400 dark:border-l-blue-500",
-  },
-  success: {
-    Icon: CircleCheckIcon,
-    badgeClassName:
-      "bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800",
-    accentClassName: "border-l-green-400 dark:border-l-green-500",
-  },
-  warning: {
-    Icon: AlertTriangleIcon,
-    badgeClassName:
-      "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800",
-    accentClassName: "border-l-amber-400 dark:border-l-amber-500",
-  },
-  critical: {
-    Icon: CircleAlertIcon,
-    badgeClassName:
-      "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800",
-    accentClassName: "border-l-red-400 dark:border-l-red-500",
-  },
-}
+/** Mise en forme du markdown rendu par `DiscordMarkup` — mêmes variantes que
+ *  l'aperçu des messages de bienvenue, pour un rendu cohérent d'un écran à
+ *  l'autre. */
+const MARKUP_CLASSNAME = cn(
+  "text-xs leading-relaxed text-muted-foreground whitespace-pre-wrap break-words",
+  "[&_h1]:text-sm [&_h1]:font-semibold [&_h1]:text-foreground",
+  "[&_h2]:text-sm [&_h2]:font-semibold [&_h2]:text-foreground",
+  "[&_h3]:text-xs [&_h3]:font-semibold [&_h3]:text-foreground",
+  "[&_small]:text-[11px] [&_small]:text-muted-foreground/70",
+  "[&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-2",
+  "[&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono",
+  "[&_a]:text-primary [&_a]:underline"
+)
 
-// ─── Timestamp ───────────────────────────────────────────────────────────────
+// ─── Horodatage ──────────────────────────────────────────────────────────────
 
 function formatTimestamp(date: Date, locale: string): string {
   const diffMs = Date.now() - date.getTime()
@@ -83,118 +82,261 @@ function formatTimestamp(date: Date, locale: string): string {
   return date.toLocaleDateString(locale, { day: "numeric", month: "short" })
 }
 
-// ─── Notification item ───────────────────────────────────────────────────────
+// ─── Origine ─────────────────────────────────────────────────────────────────
+
+/**
+ * La ligne d'attribution, reproduite depuis Discord (§6.4) : le serveur avec sa
+ * coche quand il y en a un, sinon le service Moddy, et **rien du tout** quand
+ * Moddy parle en tant qu'institution.
+ */
+function NotificationOriginLine({
+  notification,
+  lng,
+}: {
+  notification: InboxNotification
+  lng: string
+}) {
+  const { t } = useTranslation()
+  const origin = notificationOrigin(notification)
+
+  if (origin.type === "none") {
+    return (
+      <span className="truncate text-xs font-medium text-muted-foreground">
+        {t("notifications.origin.moddy", { lng })}
+      </span>
+    )
+  }
+
+  if (origin.type === "service") {
+    // L'API résout déjà le libellé (`service_label`) — un `service_id` inconnu
+    // d'elle se dégrade côté back-end, on n'a pas de repli à inventer ici.
+    return (
+      <span className="truncate text-xs font-medium text-muted-foreground">
+        {origin.source.service_label || t("notifications.origin.moddy", { lng })}
+      </span>
+    )
+  }
+
+  const { source } = origin
+  const iconUrl = getGuildIconUrl(source.guild_id as string, source.guild_icon)
+  const name = source.guild_name ?? source.guild_id
+
+  return (
+    <a
+      href={source.guild_url ?? undefined}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+    >
+      <Avatar className="size-4 shrink-0 rounded-sm">
+        {iconUrl && <AvatarImage src={iconUrl} alt="" />}
+        <AvatarFallback className="rounded-sm text-[9px]">
+          {name?.slice(0, 1).toUpperCase()}
+        </AvatarFallback>
+      </Avatar>
+      <span className="truncate">{name}</span>
+      {(source.verified || source.official) && (
+        <VerifiedBadge kind="official" className="[&_svg]:size-3" />
+      )}
+    </a>
+  )
+}
+
+// ─── État de livraison Discord ───────────────────────────────────────────────
+
+/**
+ * `platforms` est une intention, `notification_deliveries` un fait : un membre
+ * dont les DM sont fermés voit ici pourquoi il n'a rien reçu sur Discord.
+ * C'est précisément ce qui justifie une boîte de réception sur le dashboard.
+ */
+function DiscordDeliveryNote({
+  notification,
+  lng,
+}: {
+  notification: InboxNotification
+  lng: string
+}) {
+  const { t } = useTranslation()
+  const discord = notification.delivery.discord
+  if (!discord || discord.status === "sent" || discord.status === "pending") return null
+
+  const Icon = discord.status === "failed" ? AlertTriangleIcon : MailXIcon
+  return (
+    <p className="flex items-start gap-1.5 text-xs text-muted-foreground/80">
+      <Icon className="mt-0.5 size-3 shrink-0" />
+      <span>{t(`notifications.delivery.${discord.status}`, { lng })}</span>
+    </p>
+  )
+}
+
+// ─── Carte ───────────────────────────────────────────────────────────────────
 
 interface NotificationItemProps {
-  notification: Notification
+  notification: InboxNotification
+  user: User | null
   onMarkRead: (id: string) => void
 }
 
-function NotificationItem({ notification, onMarkRead }: NotificationItemProps) {
+function NotificationCard({ notification, user, onMarkRead }: NotificationItemProps) {
   const { t, i18n } = useTranslation()
-  const config = criticalityConfig[notification.criticality]
-  const { Icon } = config
+  const { content } = notification
+
+  // §17.7 : le chrome se localise depuis la locale **du message**, pas depuis
+  // celle du lecteur — rendre l'habillage en anglais autour d'un corps français
+  // est exactement l'erreur que cette colonne existe pour éviter.
+  const lng = notification.locale || i18n.language
+
+  // Figé au montage : `Date.now()` lu pendant le rendu rendrait le composant
+  // impur (les dates relatives se recalculent à la réouverture du tiroir).
+  const [now] = React.useState(() => Date.now())
+
+  const degrade = React.useCallback(
+    (text: string) =>
+      degradeDiscordSyntax(text, {
+        locale: lng,
+        now,
+        labels: {
+          user: t("notifications.mention.user", { lng }),
+          role: t("notifications.mention.role", { lng }),
+          channel: t("notifications.mention.channel", { lng }),
+        },
+        selfId: user?.user_id,
+        selfName: user?.global_name ?? user?.username,
+      }),
+    [lng, now, t, user]
+  )
 
   return (
-    <div
+    <article
       className={cn(
         "group flex flex-col gap-3 rounded-xl border p-4 transition-all duration-200",
         notification.read
           ? "border-border/30 bg-transparent opacity-55"
-          : cn(
-              "border-l-2 border-border bg-card shadow-sm",
-              config.accentClassName
-            )
+          : "border-l-2 border-border bg-card shadow-sm"
       )}
+      // L'accent est un entier côté base, converti en hex par le service. Pas
+      // de couleur = accent par défaut de la surface, jamais une couleur
+      // inventée.
+      style={
+        !notification.read && content.accent_color
+          ? { borderLeftColor: content.accent_color }
+          : undefined
+      }
     >
-      {/* Méta : badge + expéditeur + timestamp + check */}
-      <div className="flex items-center gap-2 min-w-0">
-        <Badge
-          variant="outline"
-          className={cn("shrink-0 font-medium", config.badgeClassName)}
-        >
-          <Icon data-icon="inline-start" />
-          {t(`notifications.criticality.${notification.criticality}`)}
-        </Badge>
-        <span className="text-xs text-muted-foreground truncate">
-          {notification.sender.name}
-        </span>
-        <span className="ml-auto shrink-0 pl-2 text-xs text-muted-foreground/70 tabular-nums">
-          {formatTimestamp(notification.timestamp, i18n.language)}
+      <div className="flex min-w-0 items-center gap-2">
+        <NotificationOriginLine notification={notification} lng={lng} />
+        <span className="ml-auto shrink-0 pl-2 text-xs tabular-nums text-muted-foreground/70">
+          {formatTimestamp(new Date(notification.created_at), i18n.language)}
         </span>
         {!notification.read && (
-          <button
-            onClick={() => onMarkRead(notification.id)}
-            title={t("notifications.markAsRead")}
-            className="ml-1 flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground/35 transition-colors hover:bg-muted hover:text-muted-foreground"
-          >
-            <CheckIcon className="size-3" />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                onClick={() => onMarkRead(notification.id)}
+                aria-label={t("notifications.markAsRead")}
+                className="ml-1 flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground/35 transition-colors hover:bg-muted hover:text-muted-foreground"
+              >
+                <CheckIcon className="size-3" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{t("notifications.markAsRead")}</TooltipContent>
+          </Tooltip>
         )}
       </div>
 
-      {/* Titre + contenu */}
-      <div className="flex flex-col gap-1.5">
+      {content.title && (
         <p
           className={cn(
-            "text-sm font-medium leading-snug",
+            "flex items-center gap-1.5 text-sm font-medium leading-snug",
             notification.read && "text-muted-foreground"
           )}
         >
-          {notification.title}
-        </p>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          {notification.content}
-        </p>
-      </div>
-
-      {/* Actions */}
-      {notification.actions && notification.actions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {notification.actions.map((action, index) =>
-            action.href ? (
-              <Button
-                key={index}
-                variant={action.variant ?? "outline"}
-                size="sm"
-                asChild
-              >
-                <a href={action.href} target="_blank" rel="noopener noreferrer">
-                  {action.label}
-                </a>
-              </Button>
-            ) : (
-              <Button
-                key={index}
-                variant={action.variant ?? "outline"}
-                size="sm"
-                onClick={action.onClick}
-              >
-                {action.label}
-              </Button>
-            )
+          {content.icon_url && (
+            <img
+              src={content.icon_url}
+              alt=""
+              className="size-4 shrink-0"
+              draggable={false}
+              referrerPolicy="no-referrer"
+            />
           )}
+          <span className="min-w-0">{content.title}</span>
+        </p>
+      )}
+
+      {/* Le corps est du markdown écrit par un admin de serveur : il passe par
+          le rendu contrôlé de DiscordMarkup, jamais par dangerouslySetInnerHTML. */}
+      {content.body && (
+        <div className={MARKUP_CLASSNAME}>
+          <DiscordMarkup text={degrade(content.body)} />
         </div>
       )}
-    </div>
+
+      {content.sections.map((section, index) => (
+        <div key={index} className="flex flex-col gap-1">
+          {section.title && (
+            <p className="text-xs font-semibold text-foreground/90">{section.title}</p>
+          )}
+          {section.body && (
+            <div className={MARKUP_CLASSNAME}>
+              <DiscordMarkup text={degrade(section.body)} />
+            </div>
+          )}
+        </div>
+      ))}
+
+      {content.links.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {content.links.map((link, index) => (
+            <Button key={index} variant="outline" size="sm" asChild>
+              {/* URL fournie par un tiers : `noopener noreferrer` obligatoire,
+                  et le service a déjà écarté tout ce qui n'est pas https. */}
+              <a href={link.url} target="_blank" rel="noopener noreferrer">
+                {link.label || link.url}
+              </a>
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {content.footer && (
+        <p className="text-[11px] leading-relaxed text-muted-foreground/70">{content.footer}</p>
+      )}
+
+      <DiscordDeliveryNote notification={notification} lng={lng} />
+    </article>
   )
 }
 
-// ─── Notification list ───────────────────────────────────────────────────────
-
-interface NotificationListProps {
-  notifications: Notification[]
-  onMarkRead: (id: string) => void
-  onMarkAllRead: () => void
-}
+// ─── Liste ───────────────────────────────────────────────────────────────────
 
 function NotificationList({
-  notifications,
-  onMarkRead,
-  onMarkAllRead,
-}: NotificationListProps) {
+  state,
+  user,
+}: {
+  state: NotificationsState
+  user: User | null
+}) {
   const { t } = useTranslation()
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const { notifications, loading, loadingMore, error, hasMore, unreadCount } = state
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-2.5 py-2">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-28 w-full rounded-xl" />
+        ))}
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="py-6">
+        <ErrorState error={error} onRetry={state.refresh} />
+      </div>
+    )
+  }
 
   if (notifications.length === 0) {
     return (
@@ -207,26 +349,44 @@ function NotificationList({
 
   return (
     <div className="flex flex-col">
-      {unreadCount > 0 && (
-        <div className="flex justify-end pb-3 pt-1">
+      <div className="flex items-center justify-end gap-3 pb-3 pt-1">
+        {unreadCount > 0 && (
           <button
-            onClick={onMarkAllRead}
+            onClick={state.markAllRead}
             className="flex items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
           >
             <CheckCheckIcon className="size-3.5" />
             {t("notifications.markAllAsRead")}
           </button>
-        </div>
-      )}
-      <div className={cn("flex flex-col gap-2.5 pb-2", unreadCount === 0 && "pt-2")}>
+        )}
+        <button
+          onClick={state.refresh}
+          className="flex items-center gap-1.5 text-xs text-muted-foreground/70 transition-colors hover:text-foreground"
+        >
+          <RefreshCwIcon className="size-3.5" />
+          {t("notifications.refresh")}
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-2.5 pb-2">
         {notifications.map((notification) => (
-          <NotificationItem
+          <NotificationCard
             key={notification.id}
             notification={notification}
-            onMarkRead={onMarkRead}
+            user={user}
+            onMarkRead={state.markRead}
           />
         ))}
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center pb-2 pt-1">
+          <Button variant="ghost" size="sm" onClick={state.loadMore} disabled={loadingMore}>
+            {loadingMore && <Loader2Icon className="animate-spin" />}
+            {t("notifications.loadMore")}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
@@ -236,51 +396,44 @@ function NotificationList({
 export interface NotificationDrawerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  notifications: Notification[]
-  onMarkRead: (id: string) => void
-  onMarkAllRead: () => void
+  state: NotificationsState
+  user: User | null
 }
 
 export function NotificationDrawer({
   open,
   onOpenChange,
-  notifications,
-  onMarkRead,
-  onMarkAllRead,
+  state,
+  user,
 }: NotificationDrawerProps) {
   const { t } = useTranslation()
   const isDesktop = useMediaQuery("(min-width: 768px)")
-  const unreadCount = notifications.filter((n) => !n.read).length
 
   const titleNode = (
     <span className="flex items-center gap-2">
       {t("notifications.title")}
-      {unreadCount > 0 && (
+      {state.unreadCount > 0 && (
         <Badge
           variant="secondary"
           className="h-5 px-1.5 text-[11px] font-medium tabular-nums"
         >
-          {unreadCount}
+          {state.unreadCount}
         </Badge>
       )}
     </span>
   )
 
+  const list = <NotificationList state={state} user={user} />
+
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg gap-0 p-0">
-          <DialogHeader className="px-6 pb-4 pt-6 pr-14">
+        <DialogContent className="gap-0 p-0 sm:max-w-lg">
+          <DialogHeader className="px-6 pb-4 pr-14 pt-6">
             <DialogTitle>{titleNode}</DialogTitle>
           </DialogHeader>
           <Separator />
-          <div className="no-scrollbar max-h-[60vh] overflow-y-auto px-6 py-2">
-            <NotificationList
-              notifications={notifications}
-              onMarkRead={onMarkRead}
-              onMarkAllRead={onMarkAllRead}
-            />
-          </div>
+          <div className="no-scrollbar max-h-[60vh] overflow-y-auto px-6 py-2">{list}</div>
         </DialogContent>
       </Dialog>
     )
@@ -292,13 +445,7 @@ export function NotificationDrawer({
         <DrawerHeader>
           <DrawerTitle>{titleNode}</DrawerTitle>
         </DrawerHeader>
-        <div className="no-scrollbar flex-1 overflow-y-auto px-4 pb-2">
-          <NotificationList
-            notifications={notifications}
-            onMarkRead={onMarkRead}
-            onMarkAllRead={onMarkAllRead}
-          />
-        </div>
+        <div className="no-scrollbar flex-1 overflow-y-auto px-4 pb-2">{list}</div>
         <DrawerFooter className="pt-2">
           <DrawerClose asChild>
             <Button variant="outline">{t("notifications.close")}</Button>
