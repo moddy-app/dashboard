@@ -154,6 +154,32 @@
       "comingSoon": "Bientôt disponible"
     }
   },
+  "guildSettings": {
+    "title": "Réglages du serveur",
+    "description": "Les réglages qui valent pour tout le serveur.",
+    "descriptionNamed": "Les réglages qui valent pour tout {{name}}.",
+    "language": {
+      "title": "Langue du serveur",
+      "description": "La langue dans laquelle Moddy s'adresse à tout le monde : messages de bienvenue, panneaux de vérification et de tickets, logs, avis de modération et notifications sociales.",
+      "saved": "Langue du serveur enregistrée",
+      "saveError": "Impossible d'enregistrer la langue du serveur",
+      "effectiveBadge": "Parle {{language}}",
+      "autoCommunity": "Moddy suit la langue de votre serveur Discord : {{language}}.",
+      "autoNotCommunity": "Votre serveur n'est pas un serveur Communauté : Moddy parlera anglais.",
+      "autoNotCommunityLocale": "La langue Discord de votre serveur ({{locale}}) n'est qu'un défaut de compte que personne n'a choisi — activez le mode Communauté, ou choisissez une langue explicitement ci-dessus.",
+      "discordUnreachable": "Impossible de contacter Discord pour déterminer la langue effective.",
+      "scopeHint": "Ce réglage ne change pas votre propre langue : les réponses que Moddy vous envoie en privé suivent votre langue Discord, et ce dashboard suit la préférence de votre compte.",
+      "moduleNote": "Les textes de ce module suivent la langue du serveur →",
+      "choices": {
+        "auto": "Automatique",
+        "en-US": "English",
+        "fr": "Français",
+        "es-ES": "Español",
+        "pt-BR": "Português (Brasil)",
+        "de": "Deutsch"
+      }
+    }
+  },
   "teamSwitcher": {
     "server": "Serveur Discord",
     "selectServer": "Sélectionner un serveur",
@@ -352,11 +378,6 @@
       "dryRun": "Mode simulation",
       "dryRunBadge": "Simulation",
       "dryRunDescription": "Le module décide mais n'applique rien — des cartes SIMULATION sont postées dans le salon d'alertes.",
-      "language": "Langue du serveur",
-      "languageDescription": "Langue des MP, des cartes et des raisons rédigées par l'IA.",
-      "language_auto": "Automatique",
-      "language_fr": "Français",
-      "language_en-US": "Anglais (US)",
       "severityTitle": "Sévérité et sanctions",
       "severityDescription": "Sensibilité de l'IA et limite haute de ce qu'elle peut appliquer.",
       "severity": "Sévérité",
@@ -653,15 +674,6 @@
       "selectRole": "Choisir un rôle",
       "noRoles": "Aucun rôle attribuable",
       "roleAboveBot": "au-dessus de Moddy",
-      "panelLocale": "Langue du panneau",
-      "panelLocaleDescription": "Le texte du panneau n'est pas configurable — seule sa langue l'est.",
-      "locales": {
-        "en-US": "English",
-        "fr": "Français",
-        "es-ES": "Español",
-        "pt-BR": "Português (Brasil)",
-        "de": "Deutsch"
-      },
       "saveDurationHint": "L'enregistrement peut prendre jusqu'à 25 secondes : le bot republie le panneau, reverrouille les salons et resynchronise.",
       "confirmDisableTitle": "Désactiver AltGuard ?",
       "confirmDisableDescription": "La configuration est supprimée et le bot retire le panneau de vérification. Les nouveaux membres ne seront plus retenus.",
@@ -726,16 +738,6 @@
       "attachTranscriptsHint": "Joint les fichiers .txt (transcriptions, contenus débordants). Désactivé, ils sont retirés avant l'envoi.",
       "mergeDuplicates": "Fusionner les doublons",
       "mergeDuplicatesHint": "Regroupe les logs d'une même action en un seul message (léger délai de ~3 s, jusqu'à ~5 s pour une expulsion).",
-      "locale": "Langue des logs",
-      "localeHint": "« Auto » suit la langue du serveur.",
-      "locales": {
-        "auto": "Auto",
-        "fr": "Français",
-        "en-US": "English",
-        "es-ES": "Español",
-        "pt-BR": "Português (Brasil)",
-        "de": "Deutsch"
-      },
       "unlinkAll": "Retirer tous les salons",
       "unlinkAllHint": "Retirer les salons met le module en pause et conserve tes décochages. Réinitialiser efface tout.",
       "reset": "Réinitialiser le module",
@@ -749,8 +751,7 @@
         "tooManyChannels": "{{category}} : {{max}} salons maximum.",
         "unknownEvent": "{{category}} : événement inconnu {{event}}.",
         "tooManyIgnoredChannels": "Salons ignorés : {{max}} maximum.",
-        "tooManyIgnoredRoles": "Rôles ignorés : {{max}} maximum.",
-        "unknownLocale": "Langue non supportée : {{locale}}."
+        "tooManyIgnoredRoles": "Rôles ignorés : {{max}} maximum."
       },
       "diagnostics": {
         "deletedTitle": "Salon supprimé",
@@ -1371,8 +1372,6 @@
         "nameFormatDescription": "Format du salon de ticket, par exemple ticket-{number}.",
         "maxOpenPerUser": "Tickets ouverts par membre",
         "maxOpenPerUserDescription": "Combien de tickets un membre peut garder ouverts dans cette catégorie.",
-        "locale": "Langue",
-        "localeDescription": "Langue des messages que le bot écrit dans ces tickets.",
         "claimEnabled": "Autoriser la prise en charge",
         "claimEnabledDescription": "Le staff peut prendre un ticket en charge, pour que chacun sache qui s'en occupe.",
         "claimLock": "Verrouiller à la prise en charge",
@@ -1412,13 +1411,6 @@
         "secondary": "Gris",
         "success": "Vert",
         "danger": "Rouge"
-      },
-      "locales": {
-        "en-US": "English",
-        "fr": "Français",
-        "es-ES": "Español",
-        "pt-BR": "Português (Brasil)",
-        "de": "Deutsch"
       },
       "buttons": {
         "close": {

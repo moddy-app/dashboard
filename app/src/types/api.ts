@@ -312,7 +312,6 @@ export interface SocialSubscribeResult {
 // ─── Automod AI ────────────────────────────────────────────────────────────────
 
 export type AutomodMaxAction = 'warn' | 'mute' | 'ban'
-export type AutomodLanguage = 'auto' | 'fr' | 'en-US'
 
 /** Un détecteur. `features` est une map ouverte : seul `content` existe
  *  aujourd'hui, mais les suivants auront la même forme → rendu générique. */
@@ -341,7 +340,6 @@ export interface AutomodAiConfig {
   /** 1 (permissif) → 5 (strict) */
   severity: number
   max_action: AutomodMaxAction
-  langue_serveur: AutomodLanguage
   categories_desactivees: string[]
   dry_run: boolean
   features: Record<string, AutomodFeature>
@@ -489,15 +487,51 @@ export interface BotProfile {
   bio: string | null
 }
 
+// ─── Langue du serveur ────────────────────────────────────────────────────────
+
+/**
+ * Repli si l'API ne sert pas `choices` — **la liste servie fait foi**, c'est
+ * elle qu'on itère dans le sélecteur. Ces valeurs ne sont là que pour ne pas
+ * rendre un `<select>` vide.
+ */
+export const GUILD_LANGUAGE_CHOICES = ['auto', 'en-US', 'fr', 'es-ES', 'pt-BR', 'de'] as const
+
+export type GuildLanguage = (typeof GUILD_LANGUAGE_CHOICES)[number]
+
+/**
+ * Réglage de langue du serveur — **un seul pour tout le bot**, stocké hors des
+ * modules dans `guilds.data.settings.language`. Il décide de ce que Moddy dit
+ * *collectivement* (panneaux, logs, bienvenue, tickets…) ; tout ce qui
+ * s'adresse à une personne en privé reste dans la langue Discord de celle-ci,
+ * et le dashboard reste dans la langue de l'utilisateur connecté — ne jamais
+ * choisir la langue de l'UI avec ce réglage.
+ *
+ * Deux valeurs à ne pas confondre :
+ * - `language` — ce qui est **stocké** (le choix de l'admin), peut valoir `auto`
+ * - `effective_language` — ce que le bot **parle**, jamais `auto`
+ */
+export interface GuildLanguageSettings {
+  guild_id: string
+  /**
+   * Déjà normalisée par le backend (`en-GB` → `en-US`, `es-419` → `es-ES`,
+   * `pt-PT` → `pt-BR`, le reste → `auto`) : toujours une valeur de `choices`,
+   * jamais à nettoyer ici.
+   */
+  language: string
+  /**
+   * Langue réellement parlée. **`null` quand Discord est injoignable** — le
+   * backend ne devine pas, le dashboard non plus : on masque le badge.
+   */
+  effective_language: string | null
+  /** `guild.preferred_locale` Discord, pour l'explication seulement. */
+  preferred_locale: string | null
+  /** Feature `COMMUNITY`. `null` si Discord est injoignable. */
+  is_community: boolean | null
+  /** **Source unique** de la liste du sélecteur. */
+  choices: string[]
+}
+
 // ─── AltGuard ─────────────────────────────────────────────────────────────────
-
-/** Langues disponibles pour le panneau de vérification (le texte, lui, est figé). */
-export const ALTGUARD_PANEL_LOCALES = ['en-US', 'fr', 'es-ES', 'pt-BR', 'de'] as const
-
-export type AltGuardPanelLocale = (typeof ALTGUARD_PANEL_LOCALES)[number]
-
-/** Langue appliquée par le bot quand `panel_locale` est absent. */
-export const ALTGUARD_DEFAULT_LOCALE: AltGuardPanelLocale = 'en-US'
 
 /**
  * Config du module AltGuard. Tous les snowflakes sont des **chaînes** : un id de
@@ -513,7 +547,6 @@ export interface AltGuardConfig {
   verified_role_id: string | null
   /** Verdicts et décisions manuelles. Optionnel. */
   log_channel_id: string | null
-  panel_locale: AltGuardPanelLocale
   /**
    * Bookkeeping du bot (id du panneau posté). **Jamais affiché ni envoyé** —
    * présent uniquement parce que le `GET` le renvoie.
@@ -586,8 +619,6 @@ export interface LogsConfig {
   attach_transcripts: boolean
   /** Un log par *acte* plutôt qu'un par événement du registre (délai ~3 s). */
   merge_duplicates: boolean
-  /** Valeurs autorisées lues dans `LogsCatalog.locales`, jamais codées en dur. */
-  locale: string
   /**
    * **Lecture seule** : calculé côté serveur (`any(categories[*].channel_ids)`).
    * Ne jamais l'envoyer — il n'y a pas d'interrupteur d'activation.
@@ -853,9 +884,6 @@ export const TICKET_PERMISSIONS = [
 ] as const
 export type TicketPermission = (typeof TICKET_PERMISSIONS)[number]
 
-export const TICKET_LOCALES = ['en-US', 'fr', 'es-ES', 'pt-BR', 'de'] as const
-export type TicketLocale = (typeof TICKET_LOCALES)[number]
-export const TICKET_DEFAULT_LOCALE: TicketLocale = 'en-US'
 
 export const TICKET_BUTTON_STYLES = ['primary', 'secondary', 'success', 'danger'] as const
 export type TicketButtonStyle = (typeof TICKET_BUTTON_STYLES)[number]
@@ -922,7 +950,6 @@ export interface TicketCategory {
   claim_lock: boolean
   /** `null` ≠ `[]` : `null` = défauts du bot, `[]` = aucun bouton. */
   buttons: TicketButton[] | null
-  locale: TicketLocale
   /** Le message d'ouverture **entier** (titre et pied compris) — ou `null`. */
   open_message: string | null
   close_message: string | null

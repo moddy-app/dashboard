@@ -9,9 +9,6 @@ import type {
   LogsDiagnostics,
 } from '@/types/api'
 
-/** Langue appliquée quand `locale` est absent — seule valeur en dur, c'est le défaut documenté. */
-export const LOGS_DEFAULT_LOCALE = 'auto'
-
 /**
  * Limites de repli, utilisées **uniquement** si `/catalog` ne les sert pas.
  * Les vraies valeurs viennent du catalogue : ce sont des valeurs de travail
@@ -69,7 +66,6 @@ export function emptyLogsConfig(): LogsConfig {
     ignore_bots: false,
     attach_transcripts: true,
     merge_duplicates: true,
-    locale: LOGS_DEFAULT_LOCALE,
     enabled: false,
   }
 }
@@ -97,7 +93,6 @@ export function normalizeLogsConfig(raw: Record<string, unknown> | null | undefi
     ignore_bots: asBool(raw.ignore_bots, base.ignore_bots),
     attach_transcripts: asBool(raw.attach_transcripts, base.attach_transcripts),
     merge_duplicates: asBool(raw.merge_duplicates, base.merge_duplicates),
-    locale: typeof raw.locale === 'string' && raw.locale ? raw.locale : base.locale,
     enabled: raw.enabled === true,
   }
 }
@@ -135,7 +130,7 @@ export function normalizeLogsCatalog(raw: Record<string, unknown> | null | undef
       typeof source.event_count === 'number'
         ? source.event_count
         : Object.values(categories).reduce((n, c) => n + c.events.length, 0),
-    locales: locales.length > 0 ? locales : [LOGS_DEFAULT_LOCALE],
+    locales: locales.length > 0 ? locales : ['en-US'],
     locale_keys: {
       event: typeof rawKeys.event === 'string' ? rawKeys.event : FALLBACK_LOCALE_KEYS.event,
       title: typeof rawKeys.title === 'string' ? rawKeys.title : FALLBACK_LOCALE_KEYS.title,
@@ -234,7 +229,6 @@ export function buildLogsBody(draft: LogsConfig, catalog: LogsCatalog): Omit<Log
     ignore_bots: draft.ignore_bots,
     attach_transcripts: draft.attach_transcripts,
     merge_duplicates: draft.merge_duplicates,
-    locale: draft.locale,
   }
 }
 
@@ -288,10 +282,6 @@ export function validateLogsBody(
   if (body.ignored_role_ids.length > limits.ignored_roles) {
     issues.push({ key: `${P}tooManyIgnoredRoles`, params: { max: limits.ignored_roles } })
   }
-  if (!catalog.locales.includes(body.locale)) {
-    issues.push({ key: `${P}unknownLocale`, params: { locale: body.locale } })
-  }
-
   return issues
 }
 

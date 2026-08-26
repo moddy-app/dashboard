@@ -12,6 +12,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { ServerLanguageNote } from "@/components/server-language-note"
 import { ErrorPage } from "@/components/error-state"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -65,14 +66,12 @@ import type {
   AutomodAiConfig,
   AutomodAiStatus,
   AutomodFeature,
-  AutomodLanguage,
   AutomodMaxAction,
 } from "@/types/api"
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
 const MAX_ACTIONS: AutomodMaxAction[] = ["warn", "mute", "ban"]
-const LANGUAGES: AutomodLanguage[] = ["auto", "fr", "en-US"]
 /** Valeur sentinelle du Select : Radix interdit un SelectItem de valeur vide. */
 const NO_CHANNEL = "__none__"
 /** Délai avant de soumettre les indications au contrôle anti-injection. */
@@ -87,7 +86,7 @@ type CheckState =
   | { kind: "unavailable" }
 
 /** Champs de formulaire susceptibles de porter une erreur renvoyée par le PUT. */
-type FieldErrors = Partial<Record<"notify_channel_id" | "indications" | "severity" | "max_action" | "langue_serveur" | "features", string>>
+type FieldErrors = Partial<Record<"notify_channel_id" | "indications" | "severity" | "max_action" | "features", string>>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,7 +106,6 @@ function mapValidationErrors(error: ApiError): FieldErrors {
     "indications",
     "severity",
     "max_action",
-    "langue_serveur",
     "features",
   ]
   for (const issue of error.validationIssues) {
@@ -515,32 +513,9 @@ function AutomodAiForm() {
             <Switch checked={draft.dry_run} onCheckedChange={(v) => patch({ dry_run: v })} />
           </div>
 
-          {/* Langue */}
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">{t("modules.automod_ai.language")}</label>
-            <Select
-              value={draft.langue_serveur}
-              onValueChange={(v) => patch({ langue_serveur: v as AutomodLanguage })}
-            >
-              <SelectTrigger className={cn("w-full sm:w-64", fieldErrors.langue_serveur && "border-destructive")}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LANGUAGES.map((lang) => (
-                  <SelectItem key={lang} value={lang}>
-                    {t(`modules.automod_ai.language_${lang}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {fieldErrors.langue_serveur ? (
-              <p className="text-xs text-destructive">{fieldErrors.langue_serveur}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                {t("modules.automod_ai.languageDescription")}
-              </p>
-            )}
-          </div>
+          {/* La langue des DM et cartes de sanction suit celle du serveur — il
+              n'y a plus de sélecteur par module. */}
+          <ServerLanguageNote guildId={selectedGuildId} />
         </CardContent>
       </Card>
 

@@ -13,6 +13,7 @@ import {
   XIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { ServerLanguageNote } from "@/components/server-language-note"
 import { ErrorPage } from "@/components/error-state"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
@@ -258,7 +259,6 @@ function LogsForm() {
 
     logger.event("module:logs", "Save", {
       categories: Object.keys(body.categories).length,
-      locale: body.locale,
     })
     setIsSaving(true)
     setClientIssues([])
@@ -566,27 +566,9 @@ function LogsForm() {
             onChange={(merge_duplicates) => patch({ merge_duplicates })}
           />
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">{t("modules.logs.locale")}</label>
-            <Select value={draft.locale} onValueChange={(locale) => patch({ locale })}>
-              <SelectTrigger className="w-full sm:w-72">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {/* Liste servie par `/catalog` — jamais codée en dur. */}
-                {catalog.locales.map((code) => (
-                  <SelectItem key={code} value={code}>
-                    {t(`modules.logs.locales.${code}`, { defaultValue: code })}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.byPath.get("locale") ? (
-              <p className="text-xs text-destructive">{errors.byPath.get("locale")?.join(" ")}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">{t("modules.logs.localeHint")}</p>
-            )}
-          </div>
+          {/* La langue des logs suit celle du serveur — un seul réglage, plus
+              de sélecteur par module. */}
+          <ServerLanguageNote guildId={selectedGuildId} />
         </CardContent>
       </Card>
 

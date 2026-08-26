@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MessageEditor } from "@/components/message-editor"
+import { ServerLanguageNote } from "@/components/server-language-note"
 import { ChannelSelect, Field, RoleChips } from "@/components/tickets/fields"
 import { categoryFieldKey, discordCategories } from "@/lib/tickets"
 import { cn } from "@/lib/utils"
@@ -29,7 +30,6 @@ import {
   TICKET_BUTTONS,
   TICKET_BUTTON_STYLES,
   TICKET_DEFAULT_BUTTONS,
-  TICKET_LOCALES,
   TICKET_OPEN_PER_USER,
   TICKET_PERMISSIONS,
   TICKET_PLACEHOLDERS,
@@ -42,7 +42,6 @@ import type {
   TicketButton,
   TicketButtonStyle,
   TicketCategory,
-  TicketLocale,
   TicketPanel,
   TicketPermission,
 } from "@/types/api"
@@ -207,27 +206,9 @@ export function CategoryDialog({
               </Field>
             </div>
 
-            <Field
-              label={t("modules.tickets.category.locale")}
-              description={t("modules.tickets.category.localeDescription")}
-              error={err("locale")}
-            >
-              <Select
-                value={category.locale}
-                onValueChange={(v) => onChange({ locale: v as TicketLocale })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {TICKET_LOCALES.map((locale) => (
-                    <SelectItem key={locale} value={locale}>
-                      {t(`modules.tickets.locales.${locale}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            {/* La langue des panneaux et des salons de ticket suit celle du
+                serveur — il n'y a plus de réglage par catégorie. */}
+            <ServerLanguageNote guildId={guildId} />
 
             <ToggleRow
               label={t("modules.tickets.category.claimEnabled")}

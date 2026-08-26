@@ -154,6 +154,32 @@
       "comingSoon": "Coming soon"
     }
   },
+  "guildSettings": {
+    "title": "Server settings",
+    "description": "Settings that apply to the whole server.",
+    "descriptionNamed": "Settings that apply to all of {{name}}.",
+    "language": {
+      "title": "Server language",
+      "description": "The language Moddy speaks to everyone in: welcome messages, verification and ticket panels, logs, moderation notices and social notifications.",
+      "saved": "Server language saved",
+      "saveError": "Couldn't save the server language",
+      "effectiveBadge": "Speaking {{language}}",
+      "autoCommunity": "Moddy follows your Discord server language: {{language}}.",
+      "autoNotCommunity": "Your server isn't a Community server, so Moddy will speak English.",
+      "autoNotCommunityLocale": "Your server's Discord language ({{locale}}) is an account default nobody picked — enable Community mode, or pick a language explicitly above.",
+      "discordUnreachable": "Couldn't reach Discord to determine the effective language.",
+      "scopeHint": "This doesn't change your own language: replies Moddy sends you privately follow your Discord language, and this dashboard follows your account preference.",
+      "moduleNote": "This module's text follows the server language →",
+      "choices": {
+        "auto": "Automatic",
+        "en-US": "English",
+        "fr": "Français",
+        "es-ES": "Español",
+        "pt-BR": "Português (Brasil)",
+        "de": "Deutsch"
+      }
+    }
+  },
   "teamSwitcher": {
     "server": "Discord Server",
     "selectServer": "Select a server",
@@ -352,11 +378,6 @@
       "dryRun": "Simulation mode",
       "dryRunBadge": "Simulation",
       "dryRunDescription": "The module still decides but applies nothing — SIMULATION cards are posted in the alert channel.",
-      "language": "Server language",
-      "languageDescription": "Language of DMs, cards and AI-written reasons.",
-      "language_auto": "Automatic",
-      "language_fr": "French",
-      "language_en-US": "English (US)",
       "severityTitle": "Severity & sanctions",
       "severityDescription": "How sensitive the AI is, and how far it may go.",
       "severity": "Severity",
@@ -653,15 +674,6 @@
       "selectRole": "Select a role",
       "noRoles": "No assignable role found",
       "roleAboveBot": "above Moddy",
-      "panelLocale": "Panel language",
-      "panelLocaleDescription": "The panel text itself isn't configurable — only the language it's written in.",
-      "locales": {
-        "en-US": "English",
-        "fr": "Français",
-        "es-ES": "Español",
-        "pt-BR": "Português (Brasil)",
-        "de": "Deutsch"
-      },
       "saveDurationHint": "Saving can take up to 25 seconds: the bot reposts the panel, re-locks every channel and resynchronises.",
       "confirmDisableTitle": "Disable AltGuard?",
       "confirmDisableDescription": "The settings are deleted and the bot removes the verification panel. New members will no longer be held back.",
@@ -726,16 +738,6 @@
       "attachTranscriptsHint": "Attach the .txt files (transcripts, overflowing content). Turn it off to strip them before sending.",
       "mergeDuplicates": "Merge duplicates",
       "mergeDuplicatesHint": "Group the logs of a single action into one message (adds a ~3 s delay, up to ~5 s for a kick).",
-      "locale": "Log language",
-      "localeHint": "“Auto” follows the server language.",
-      "locales": {
-        "auto": "Auto",
-        "fr": "Français",
-        "en-US": "English",
-        "es-ES": "Español",
-        "pt-BR": "Português (Brasil)",
-        "de": "Deutsch"
-      },
       "unlinkAll": "Unlink every channel",
       "unlinkAllHint": "Unlinking pauses the module and keeps your unchecked events. Resetting deletes everything.",
       "reset": "Reset the module",
@@ -749,8 +751,7 @@
         "tooManyChannels": "{{category}}: {{max}} channels max.",
         "unknownEvent": "{{category}}: unknown event {{event}}.",
         "tooManyIgnoredChannels": "Ignored channels: {{max}} max.",
-        "tooManyIgnoredRoles": "Ignored roles: {{max}} max.",
-        "unknownLocale": "Unsupported language: {{locale}}."
+        "tooManyIgnoredRoles": "Ignored roles: {{max}} max."
       },
       "diagnostics": {
         "deletedTitle": "Channel deleted",
@@ -1371,8 +1372,6 @@
         "nameFormatDescription": "Format of the ticket channel, e.g. ticket-{number}.",
         "maxOpenPerUser": "Open tickets per member",
         "maxOpenPerUserDescription": "How many tickets one member may keep open in this category.",
-        "locale": "Language",
-        "localeDescription": "Language of the messages the bot writes in these tickets.",
         "claimEnabled": "Allow claiming",
         "claimEnabledDescription": "Staff can take a ticket in charge, so everyone knows who handles it.",
         "claimLock": "Lock on claim",
@@ -1412,13 +1411,6 @@
         "secondary": "Grey",
         "success": "Green",
         "danger": "Red"
-      },
-      "locales": {
-        "en-US": "English",
-        "fr": "Français",
-        "es-ES": "Español",
-        "pt-BR": "Português (Brasil)",
-        "de": "Deutsch"
       },
       "buttons": {
         "close": {
