@@ -1,0 +1,369 @@
+/* ==========================================================================
+   Discord Name Styles — reproduction fidèle
+   Extrait de l'app web Discord (build août 2026), classes renommées en `dns-`.
+
+   ⚠️ Fichier repris tel quel du kit d'intégration. Trois seules adaptations
+   Moddy, à conserver si le kit est remis à jour :
+     1. familles namespacées `DNS <x>` ("Modern"/"Tempo" sont trop génériques
+        pour l'espace de noms global des font-family) ;
+     2. `src: url()` pointant sur `/fonts/name-styles/` (dossier `public/`) ;
+     3. `gg sans` (propriétaire Discord, non redistribuable) jamais référencé :
+        la police par défaut est celle de l'UI, via `--dns-ui-font`.
+   Le reste — effets, keyframes, marges négatives — ne doit pas être « nettoyé » :
+   chaque valeur vient du CSS réel de Discord.
+   Correspondance avec les classes Discord d'origine :
+     .dns-name        -> .container_dfb989
+     .dns-text        -> .innerContainer_dfb989
+     .dns-on          -> .showEffect_dfb989
+     .dns-animated    -> .animated_dfb989
+     .dns-loop        -> .loop_dfb989
+     .dns-block       -> .inProfile_dfb989
+     .dns--solid/gradient/neon/toon/pop -> solid_/gradient_/neon_/toon_/pop_
+   Variables Discord d'origine : --custom-display-name-styles-*
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. POLICES
+   Les .woff2 sont ceux servis par Discord (sous-ensembles latins uniquement,
+   ~170-400 glyphes, U+0020–U+0237). Aucune couverture cyrillique / grec / CJK :
+   d'où la pile de repli obligatoire.
+   Poids d'origine respectés : Tempo est livré en 600, Modern en 500,
+   les autres en 400 — le navigateur synthétise le gras au-delà, exactement
+   comme chez Discord.
+   -------------------------------------------------------------------------- */
+
+@font-face { font-family: "DNS Sakura";    font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/name-styles/Sakura-normal-400.woff2") format("woff2"); }
+@font-face { font-family: "DNS Jellybean"; font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/name-styles/Jellybean-normal-400.woff2") format("woff2"); }
+@font-face { font-family: "DNS Medieval";  font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/name-styles/Medieval-normal-400.woff2") format("woff2"); }
+@font-face { font-family: "DNS Modern";    font-style: normal; font-weight: 500; font-display: swap; src: url("/fonts/name-styles/Modern-normal-500.woff2") format("woff2"); }
+@font-face { font-family: "DNS 8Bit";      font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/name-styles/8Bit-normal-400.woff2") format("woff2"); }
+@font-face { font-family: "DNS Vampyre";   font-style: normal; font-weight: 400; font-display: swap; src: url("/fonts/name-styles/Vampyre-normal-400.woff2") format("woff2"); }
+@font-face { font-family: "DNS Tempo";     font-style: normal; font-weight: 600; font-display: swap; src: url("/fonts/name-styles/Tempo-normal-600.woff2") format("woff2"); }
+
+/* Police d'UI des name styles : `gg sans`, comme chez Discord.
+   Les `@font-face` de `gg sans` sont déclarés dans `discord-profile.css`.
+   C'est la police par défaut du sélecteur Discord (`dns-font-default`) *et* le
+   repli des 7 autres, dont la couverture s'arrête à U+0237 : rendre un pseudo
+   en Google Sans ne ressemble à rien de ce que Discord affiche.
+   Google Sans reste en repli, le temps que le woff2 arrive.
+
+   `gg sans` est passée open source, elle n'est donc plus cantonnée pour des
+   raisons de licence. Elle reste malgré tout réservée aux surfaces qui *imitent*
+   Discord — les classes `.dns-*` et `.dpp-scope` — pour une raison de design :
+   le châssis du dashboard est en Google Sans, et doit le rester. */
+:root {
+  --dns-ui-font: "gg sans", var(--font-sans, ui-sans-serif, system-ui, sans-serif);
+}
+
+/* Piles + letter-spacing repris à l'identique de Discord. */
+.dns-font-default   { font-family: var(--dns-ui-font); }
+.dns-font-tempo     { font-family: "DNS Tempo",     var(--dns-ui-font); letter-spacing: .03em; }
+.dns-font-sakura    { font-family: "DNS Sakura",    var(--dns-ui-font); letter-spacing: .04em; }
+.dns-font-jellybean { font-family: "DNS Jellybean", var(--dns-ui-font); }
+.dns-font-modern    { font-family: "DNS Modern",    var(--dns-ui-font); letter-spacing: .01em; }
+.dns-font-medieval  { font-family: "DNS Medieval",  var(--dns-ui-font); letter-spacing: .02em; }
+.dns-font-8bit      { font-family: "DNS 8Bit",      var(--dns-ui-font); letter-spacing: .02em; }
+.dns-font-vampyre   { font-family: "DNS Vampyre",   var(--dns-ui-font); letter-spacing: .01em; }
+
+/* --------------------------------------------------------------------------
+   2. CONTENEUR
+   -------------------------------------------------------------------------- */
+
+.dns-name {
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  opacity: var(--dns-font-opacity, 1);
+  perspective: 1px;              /* force une couche 3D : évite le clignotement */
+  position: relative;
+  text-indent: 0;
+  z-index: 0;
+}
+
+.dns-name.dns-block { display: flex; }   /* variante profil (inProfile) */
+
+.dns-text {
+  flex: 1 1 0%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: var(--dns-wrap, nowrap);
+}
+
+.dns-name.dns-on { opacity: 1; }
+
+.dns-underline-hover:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--dns-main);
+}
+
+/* --------------------------------------------------------------------------
+   3. EFFETS
+   -------------------------------------------------------------------------- */
+
+/* --- Uni (solid) --- */
+.dns-on .dns--solid { color: var(--dns-main); }
+
+/* --- Dégradé (gradient) ---
+   Ne consomme PAS la palette dérivée : Discord passe deux arrêts explicites
+   via --dns-gradient-stops (ex: "#2aaea6 10%,#ffc490 90%"). */
+.dns-on .dns--gradient {
+  background: linear-gradient(to bottom right, var(--dns-gradient-stops));
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-size: 100% auto;
+  -webkit-text-fill-color: transparent;
+  position: relative;
+  z-index: 0;
+}
+
+/* --- Néon --- */
+.dns-on .dns--neon {
+  --dns-neon-radius: calc(4px + 0.12em);
+  paint-order: stroke fill;
+  -webkit-text-stroke-width: calc(1px + .04em);
+  -webkit-text-stroke-color: var(--dns-neon-stroke);
+  color: #fff;
+  margin: calc(var(--dns-neon-radius) * -1);
+  padding: var(--dns-neon-radius);
+  position: relative;
+  text-shadow: 0 0 var(--dns-neon-radius) var(--dns-main);
+  z-index: 0;
+}
+
+/* --- Cartoon (toon) ---
+   Contour épais + dégradé vertical animé sur un ::before qui duplique le texte. */
+.dns-on .dns--toon {
+  --dns-toon-stroke: calc(1.6px + 0.04em);
+  --dns-toon-margin: calc(var(--dns-toon-stroke) * -1);
+  paint-order: stroke fill;
+  position: relative;
+  -webkit-text-stroke-width: var(--dns-toon-stroke);
+  -webkit-text-stroke-color: var(--dns-toon-stroke-color);
+  color: var(--dns-toon-stroke-color);
+  margin-inline-start: var(--dns-toon-margin);
+  margin-inline-end: var(--dns-toon-margin);
+  margin-bottom: var(--dns-toon-margin);
+  padding-inline: var(--dns-toon-stroke);
+  padding-bottom: var(--dns-toon-stroke);
+  transition: color 266ms cubic-bezier(.43, .21, .27, .78);
+}
+
+.dns-on .dns--toon::before {
+  content: attr(data-dns-text);
+  background: linear-gradient(
+    180deg,
+    #fff 0%,
+    var(--dns-light-2) 8%,
+    var(--dns-light-1) 15%,
+    var(--dns-main) 25%,
+    var(--dns-light-2) 45%,
+    var(--dns-main) 55%,
+    #fff 75%,
+    var(--dns-light-2) 83%,
+    var(--dns-light-1) 90%,
+    var(--dns-main) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-size: 100% 400%;
+  inset: 0;
+  padding-inline: var(--dns-toon-stroke);
+  padding-bottom: var(--dns-toon-margin);
+  position: absolute;
+  -webkit-text-fill-color: transparent;
+  -webkit-text-stroke-width: 0;
+  -webkit-text-stroke-color: transparent;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 266ms cubic-bezier(.43, .21, .27, .78);
+  white-space: var(--dns-wrap, nowrap);
+}
+
+/* --- Pop ---
+   Texte blanc contouré, doublé d'une "ombre" colorée décalée vers le bas
+   qui rebondit indépendamment. */
+.dns-on .dns--pop {
+  --dns-pop-stroke: calc(1.2px + 0.04em);
+  --dns-pop-offset: 0.08em;
+  color: #fff;
+  display: inline-block;
+  paint-order: stroke fill;
+  position: relative;
+  vertical-align: top;
+  -webkit-text-stroke-width: var(--dns-pop-stroke);
+  -webkit-text-stroke-color: var(--dns-dark-2);
+  margin-bottom: calc(var(--dns-pop-stroke) * -1 - var(--dns-pop-offset));
+  margin-inline-start: calc(var(--dns-pop-stroke) * -1);
+  padding-bottom: calc(var(--dns-pop-stroke) + var(--dns-pop-offset));
+  padding-inline-start: var(--dns-pop-stroke);
+}
+
+.dns-on .dns--pop::before {
+  content: attr(data-dns-text);
+  bottom: calc(var(--dns-pop-offset) * -1 - var(--dns-pop-stroke));
+  color: var(--dns-main);
+  margin-inline-start: calc(var(--dns-pop-stroke) * -1);
+  padding-inline-start: var(--dns-pop-stroke);
+  position: absolute;
+  top: 0;
+  width: calc(100% - var(--dns-pop-stroke));
+  z-index: -1;
+  -webkit-text-stroke-width: var(--dns-pop-stroke);
+  -webkit-text-stroke-color: transparent;
+  background: linear-gradient(
+    to bottom left,
+    var(--dns-light-1) 0%,
+    var(--dns-light-1) 6%,
+    var(--dns-main) 20%,
+    var(--dns-main) 50%,
+    var(--dns-light-1) 56%,
+    var(--dns-main) 70%,
+    var(--dns-main) 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  background-position: 100% 0;
+  background-size: 200% 200%;
+  transform: translate3d(0, var(--dns-pop-offset), 0);
+  -webkit-text-fill-color: transparent;
+  overflow: hidden;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: var(--dns-wrap, nowrap);
+}
+
+/* Soulignement au survol : sur pop/gummy il doit viser le pseudo-élément,
+   sinon le trait passe sous l'ombre décalée. */
+.dns-on .dns--pop.dns-underline-hover:hover { text-decoration: none; }
+.dns-on .dns--pop.dns-underline-hover:hover::before {
+  text-decoration: underline;
+  text-decoration-color: var(--dns-main);
+  text-underline-offset: var(--dns-pop-offset);
+}
+
+/* --------------------------------------------------------------------------
+   4. ANIMATIONS
+   `.dns-animated` = joue une fois ; + `.dns-loop` = boucle (aperçus, sélecteurs).
+   Discord ne l'active que si `full-motion` et la fenêtre a le focus.
+   -------------------------------------------------------------------------- */
+
+.dns-animated.dns-loop > *,
+.dns-animated.dns-loop > *::before { animation-iteration-count: infinite; }
+
+.dns-animated .dns--neon {
+  animation: dns-neon-flicker 4s cubic-bezier(.24, .31, .36, .93) normal forwards;
+}
+.dns-animated .dns--toon::before {
+  animation: dns-toon-scroll 4s cubic-bezier(.44, .29, .48, 1) normal forwards;
+}
+.dns-animated .dns--pop {
+  animation: dns-pop-main 4s cubic-bezier(.44, .29, .48, 1) normal forwards;
+}
+.dns-animated .dns--pop::before {
+  animation: dns-pop-shadow 4s cubic-bezier(.44, .29, .48, 1) normal forwards;
+}
+
+.dns-name:not(.dns-animated),
+.dns-name:not(.dns-animated)::before {
+  animation-play-state: paused !important;
+  transition: none !important;
+}
+
+@keyframes dns-pop-main {
+  0%        { transform: translateZ(0); }
+  18%       { perspective: 1px; transform: translate3d(0, -.05em, 0); }
+  35%       { perspective: 1px; transform: translate3d(0,  .08em, 0); }
+  50%, 100% { perspective: 1px; transform: translateZ(0); }
+}
+
+@keyframes dns-pop-shadow {
+  0%        { background-position: 100% 0; perspective: 1px; transform: translate3d(0, .08em, 0); }
+  18%       { perspective: 1px; transform: translate3d(0, .13em, 0); }
+  35%       { perspective: 1px; transform: translateZ(0); }
+  50%, 100% { background-position: 0 100%; perspective: 1px; transform: translate3d(0, .08em, 0); }
+}
+
+@keyframes dns-toon-scroll {
+  0%, 5%     { background-position: 50% 0; }
+  55%, 100%  { background-position: 50% 100%; }
+}
+
+/* Le flicker néon utilise la syntaxe de couleur relative (Chrome 119+ / Safari 16.4+).
+   Repli : voir @supports plus bas. */
+@keyframes dns-neon-flicker {
+  0%, 15%, 18%, 20%, 23%, 25%, 50% { color: #fff; }
+  16%, 22%, 28% { color: hsl(from var(--dns-main) h calc(min(1, s) * ((s * 1.1) + 10)) 85); }
+  51%, 100% { color: #fff; }
+}
+
+@supports not (color: hsl(from red h s l)) {
+  @keyframes dns-neon-flicker {
+    0%, 15%, 18%, 20%, 23%, 25%, 50% { color: #fff; }
+    16%, 22%, 28% { color: var(--dns-light-2); }
+    51%, 100% { color: #fff; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dns-animated .dns--neon,
+  .dns-animated .dns--toon::before,
+  .dns-animated .dns--pop,
+  .dns-animated .dns--pop::before { animation: none; }
+}
+
+/* --------------------------------------------------------------------------
+   5. ADDITION MODDY — les 2 px manquants de `pop`
+   Tout ce qui précède est du Discord brut ; cette règle est à nous.
+
+   `pop` peint sa copie colorée dans un `::before` que Discord dimensionne à
+   `width: calc(100% - var(--dns-pop-stroke))` — 2 px de moins que le texte, pour
+   compenser le décalage horizontal du contour.
+
+   Chez Discord ce `::before` vit dans un popout de 300 px où le pseudo a de la
+   marge : les 2 px ne se voient pas. Partout où on pose ce composant, la boîte
+   est au contraire **ajustée au texte** — ligne de pseudo en flex, option de
+   `Select` — donc large *exactement* comme le mot. Les 2 px manquants font alors
+   déborder la copie colorée, et `overflow: hidden` la rogne :
+
+     - en `wrap` (aperçu du profil), la dernière lettre part sur une deuxième
+       ligne aussitôt coupée : la copie rendait « Modd » au lieu de « Moddy », et
+       l'effet semblait absent du jambage du « y » ;
+     - en `nowrap` (menus déroulants police / effet), c'est l'ellipse qui
+       s'active et ampute la dernière lettre du libellé.
+
+   On rend les 2 px en padding et on les reprend en marge négative : la boîte
+   peinte s'élargit, la mise en page ne bouge pas, et le `::before` retrouve la
+   largeur du texte — les deux calques se coupent donc au même endroit sur un
+   pseudo réellement trop long.
+   -------------------------------------------------------------------------- */
+
+.dns-on .dns--pop {
+  margin-inline-end: calc(var(--dns-pop-stroke) * -1);
+  padding-inline-end: var(--dns-pop-stroke);
+}
+
+/* --------------------------------------------------------------------------
+   6. ADDITION MODDY — `.dns-loop` ne bouclait pas
+
+   Section 4, `.dns-animated.dns-loop > *` pose `animation-iteration-count:
+   infinite`. Le sélecteur ne pèse que **deux classes** — `*` n'ajoute rien à la
+   spécificité — soit exactement le poids de `.dns-animated .dns--pop` qui suit,
+   et dont la propriété raccourcie `animation` remet le compteur à 1. À
+   spécificité égale, c'est l'ordre du fichier qui tranche : la règle de boucle
+   étant écrite avant, elle perdait. Les effets ne jouaient donc qu'une fois.
+
+   On la réaffirme ici, après les quatre règles d'animation, plutôt que de
+   réordonner le CSS d'origine : le fichier reste diffable contre le kit.
+
+   La pause entre deux passages est déjà dans les keyframes de Discord — chaque
+   effet est joué sur la première moitié du cycle puis tenu immobile (`50%, 100%`
+   pour pop, `55%, 100%` pour cartoon, `51%, 100%` pour néon), soit ~2 s de repos
+   sur les 4 s. Pas de `animation-delay` à ajouter : il ne s'appliquerait qu'au
+   premier passage, pas entre les itérations.
+   -------------------------------------------------------------------------- */
+
+.dns-animated.dns-loop > *,
+.dns-animated.dns-loop > *::before {
+  animation-iteration-count: infinite;
+}

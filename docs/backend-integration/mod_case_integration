@@ -1,0 +1,405 @@
+# Guide d'intégration Dashboard — Cases & Profils
+
+> Doc **destinée au front** (dashboard `moddy.app`). Décrit les contrats HTTP des
+> endpoints de modération (cases) et des infos publiques utilisateur/serveur.
+> Complète `docs/API_ENDPOINTS.md` (référence exhaustive) et `docs/MODERATION_CASES.md`
+> (modèle métier + règles backend).
+
+## 0. Conventions générales
+
+| Sujet | Détail |
+|---|---|
+| **Base URL** | `https://api.moddy.app` |
+| **Auth** | Cookie `session_token` (auto) **ou** header `Authorization: Bearer <token>`. Requêtes **avec credentials** (cookies cross-site). |
+| **CORS** | Seules les origines `*.moddy.app` sont acceptées. |
+| **Content-Type** | `application/json` en écriture. |
+| **Référence** | Insensible à la casse en entrée, renvoyée en MAJUSCULES. |
+
+**Types de valeurs :**
+- **UUID** (string) : `id` de case/sanction/event/appel, `group_id`.
+- **`reference`** : 6 caractères majuscules, alphabet `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (jamais O/0/I/1). Ex. `A7F2K9`.
+- **IDs Discord dans les cases** (`subject_id`, `scope_id`, `issuer_id`, `author_id`, `channel_id`, `message_id`…) : **strings** (TEXT), même les snowflakes.
+- **Timestamps** : strings **ISO 8601 UTC** ou `null`.
+
+**Pagination** : `limit` + `offset` (offset-based, pas de total renvoyé). Fin = page avec moins d'items que `limit`.
+
+**Format d'erreur** : `{ "error": "<message>" }`. Validation de body : `{ "error": "Validation error", "detail": [...] }`.
+
+| Code | Signification |
+|---|---|
+| 400 | Requête mal formée (ex. `PATCH` sans aucun champ) |
+| 401 | Non authentifié / session expirée |
+| 403 | Droits insuffisants (staff / modérateur requis, ou écriture hors périmètre) |
+| 404 | Introuvable **OU** hors de ton périmètre de visibilité (volontairement indistinct) |
+| 422 | Validation (enum invalide, champ manquant, combinaison action×type refusée) |
+| 429 | Rate limit Discord (endpoints profils) |
+| 502 / 503 | Erreur / indisponibilité API Discord (endpoints profils) |
+
+---
+
+## 1. Modèle de données
+
+### 1.1 Objet `case`
+| Champ | Type | Null | Sens |
+|---|---|---|---|
+| `id` | UUID | non | Identifiant interne |
+| `reference` | string(6) | non | Code public à afficher/chercher |
+| `type` | enum case_type | non | Voir §2 |
+| `subject_type` | enum subject_type | non | Nature de la cible |
+| `subject_id` | string | non | ID de la cible |
+| `issuer_type` | enum issuer_type | non | Nature de l'auteur |
+| `issuer_id` | string | oui | ID de l'auteur |
+| `scope_type` | enum scope_type | non | Portée |
+| `scope_id` | string | oui | ID de la portée (ex. guild_id) |
+| `reason` | string | non | Raison |
+| `status` | `open`/`closed` | non | État courant |
+| `status_locked` | bool | non | Statut figé manuellement (plus de recalcul auto) |
+| `group_id` | UUID | oui | Regroupe plusieurs cases d'une même affaire |
+| `created_at` / `updated_at` | ISO | non | |
+
+**En liste (`GET /cases`) uniquement**, deux champs agrégés en plus :
+| Champ | Type | Sens |
+|---|---|---|
+| `actions` | string[] | Actions distinctes des sanctions du case (ex. `["ban","warn"]`) |
+| `has_active` | bool | Au moins une sanction `active` |
+
+> ⚠️ Ces deux champs **n'existent pas** dans le détail `GET /cases/{id}` (qui renvoie à la place `sanctions`/`events`/`appeals`).
+
+### 1.2 Objet `sanction` (dans `case.sanctions`)
+| Champ | Type | Null | Sens |
+|---|---|---|---|
+| `id` | UUID | non | |
+| `case_id` | UUID | non | |
+| `action` | enum action | non | Voir §2 |
+| `expires_at` | ISO | oui | `null` = permanent |
+| `status` | `active`/`expired`/`revoked` | non | |
+| `issued_by_type` | enum issuer_type | non | |
+| `issued_by_id` | string | oui | |
+| `note` | string | oui | Note libre affichée sous la sanction (≠ timeline) |
+| `created_at` | ISO | non | |
+| `revoked_at` | ISO | oui | |
+| `revoked_by_type` | enum issuer_type | oui | |
+| `revoked_by_id` | string | oui | |
+
+### 1.3 Objet `event` (dans `case.events`)
+| Champ | Type | Null | Sens |
+|---|---|---|---|
+| `id` | UUID | non | |
+| `case_id` | UUID | non | |
+| `type` | enum event_type | non | Voir §2 et §7 |
+| `author_type` | enum author_type | oui | |
+| `author_id` | string | oui | |
+| `content` | string | oui | Texte lisible (selon le type) |
+| `payload` | objet JSON | oui | **Structure variable selon `type`** (§7) |
+| `created_at` | ISO | non | |
+
+### 1.4 Objet `appeal` (dans `case.appeals`) — détail complet en §8.
+
+---
+
+## 2. Dictionnaire des enums
+
+**`case_type`** — nature de la case
+| Valeur | Sens |
+|---|---|
+| `global` | Sanction globale réseau Moddy (un `ban` = blacklist) |
+| `network` | Sanction inter-serveurs |
+| `guild` | Sanction propre à un serveur (bot uniquement) |
+| `platform` | Niveau plateforme (système) |
+| `external` | Source externe |
+
+**`subject_type`** : `discord_user` (utilisateur), `discord_guild` (serveur), `moddy_user` (compte Moddy), `external`.
+
+**`issuer_type`** : `discord_user`, `moddy_staff` (**posé par le dashboard**), `automod`, `system`, `external`.
+
+**`scope_type`** : `discord_guild`, `network`, `platform`, `external_service`.
+
+**`action`** (sanction)
+| Valeur | Sens | Temporisable |
+|---|---|---|
+| `warn` | Avertissement | non |
+| `mute` | Silence/timeout | oui |
+| `ban` | Bannissement (global = blacklist) | oui |
+| `kick` | Expulsion ponctuelle | non |
+| `restrict` | Restriction partielle | oui |
+| `revoke_access` | Révocation d'un accès | non |
+
+**`sanction status`** : `active` (défaut), `expired` (posé par le bot à l'échéance), `revoked` (révocation manuelle).
+
+**`case status`** : `open`, `closed`.
+
+**`event_type`** : `comment`, `evidence`, `note`, `sanction_added`, `sanction_revoked`, `sanction_expired`, `status_change`.
+
+**`author_type`** (event) : `discord_user`, `moddy_staff`, `system`.
+
+**`appeal route`** : `server` (modérateurs du serveur), `team` (équipe Moddy).
+**`appeal status`** : `pending`, `accepted`, `refused`, `transformed`, `cancelled`.
+
+---
+
+## 3. Actions autorisées par type de case
+
+Aligné sur le bot. **L'API rejette (422)** toute combinaison hors liste **et** tout `expires_at` sur une action non temporisable. À récupérer dynamiquement via `GET /cases/meta`.
+
+| `case_type` | Actions autorisées | Créable/modifiable dashboard |
+|---|---|---|
+| `global` | `warn`, `restrict`, `ban` | ✅ |
+| `network` | `warn`, `mute`, `ban` | ✅ |
+| `platform` | `warn`, `restrict`, `ban` | ❌ |
+| `guild` | `warn`, `mute`, `kick`, `ban` | ❌ (bot) |
+| `external` | toutes | ❌ |
+
+**Temporisables** (`expires_at` accepté) : `mute`, `ban`, `restrict`.
+
+---
+
+## 4. Permissions
+
+| Endpoint | Connecté | Staff | Staff modérateur* |
+|---|---|---|---|
+| `GET /cases/meta` | ✅ | ✅ | ✅ |
+| `GET /cases` | ✅ (périmètre auto) | ✅ tout | ✅ |
+| `GET /cases/{id}` | ✅ (ses cases / ses serveurs) | ✅ | ✅ |
+| `POST /cases` | ❌ | ❌ | ✅ |
+| `PATCH /cases/{id}` | ❌ | ❌ | ✅ |
+| `POST /cases/{id}/sanctions` | ❌ | ❌ | ✅ |
+| `POST …/sanctions/{sid}/revoke` | ❌ | ❌ | ✅ |
+| `POST /cases/{id}/notes` | ❌ | ❌ | ✅ |
+| `GET /staff/blacklist` | ❌ | ✅ | ✅ |
+| `GET /users/{id}/profile` | ✅ | ✅ | ✅ |
+| `GET /guilds/{id}/profile` | ✅ | ✅ | ✅ |
+
+\* **staff modérateur** = staff avec rôle `Dev`, `Manager`, `Supervisor_Mod` ou `Moderator` (`Dev` = bypass total), et `mod.cases` **absent** de ses `denied_commands`.
+
+**Périmètre de visibilité (utilisateur non-staff)** — s'applique à `GET /cases` et `GET /cases/{id}` :
+- cases où il est **le sujet** (`subject_type=discord_user` + `subject_id`=son ID),
+- **et** cases scopées sur un **serveur qu'il administre** (serveurs de sa session = admin + bot présent).
+
+**Masquage des commentaires** (règle « sauf les commentaires ») :
+- Accès **staff** ou **modérateur du serveur scopé** → vue **complète** (events `comment`/`note` inclus, appels complets).
+- Accès **uniquement en tant que sujet** → events `comment` et `note` **retirés**, champs internes des appels **caviardés** (§8).
+- Aucun accès → `GET /cases/{id}` renvoie **404** (jamais 403 : ne révèle pas l'existence).
+
+**Restriction d'écriture par type** : toute écriture n'est permise que sur les cases `global`/`network`. Sur une case `guild`/`platform`/`external` → **403**.
+
+---
+
+## 5. Endpoints — Cases
+
+### 5.1 `GET /cases/meta`
+**Auth** : connecté. Source de vérité des formulaires (aligne bot/backend/front) :
+| Champ | Contenu |
+|---|---|
+| `case_type_actions` | map `{ case_type: [actions] }` |
+| `temporary_actions` | `["ban","mute","restrict"]` |
+| `writable_case_types` | `["global","network"]` |
+| `enums` | `case_type`, `subject_type`, `scope_type`, `sanction_action`, `sanction_status`, `case_status`, `event_type`, `appeal_route`, `appeal_status` |
+
+→ Bâtir les pickers à partir d'ici. **Ne rien coder en dur.**
+
+### 5.2 `GET /cases`
+**Auth** : connecté (périmètre auto pour non-staff).
+**Query params** (tous optionnels) :
+| Param | Type | Note |
+|---|---|---|
+| `subject_type` | enum | |
+| `subject_id` | string | |
+| `scope_type` | enum | |
+| `scope_id` | string | |
+| `type` | enum case_type | (nom du param = `type`) |
+| `status` | `open`/`closed` | |
+| `action` | enum | cases avec ≥1 sanction de cette action |
+| `issuer_type` | string | |
+| `issuer_id` | string | |
+| `group_id` | UUID | |
+| `since` | ISO | borne basse `created_at` |
+| `until` | ISO | borne haute `created_at` |
+| `q` | string 1–200 | recherche texte libre, insensible à la casse : match exact sur `reference` (ex. `A7F2K9`) OU sous-texte de `reason` |
+| `limit` | int 1–100 | défaut 50 |
+| `offset` | int ≥0 | défaut 0 |
+
+**Réponse** : `array` d'objets `case` **+ `actions` + `has_active`** (§1.1). Filtres appliqués **à l'intérieur** du périmètre pour les non-staff. `q` se combine avec tous les autres filtres (ET logique) — ex. barre de recherche du dashboard : `?q=<texte tapé>` seul, ou couplé à `&scope_type=discord_guild&scope_id=123` pour chercher dans un serveur donné.
+
+### 5.3 `GET /cases/{identifier}`
+**Auth** : connecté (permissions §4). `identifier` = référence (6 car.) ou UUID.
+**Réponse** : objet `case` **+** `sanctions[]` (§1.2) **+** `events[]` (§1.3, ordre chronologique) **+** `appeals[]` (§8).
+- Vue « sujet » → `events` sans `comment`/`note`, appels caviardés.
+- Introuvable ou hors périmètre → **404**.
+
+### 5.3bis `GET /cases/{identifier}/evidence`
+**Auth** : même visibilité que §5.3. Projection des preuves **affichables** d'un case
+(pas besoin de parser toute la timeline `events[]` pour construire une galerie de
+preuves côté dashboard).
+
+Inclut les events `evidence` qui ont soit `payload.url`, soit
+`payload.kind == "message_link"`. Le reste (contexte automod interne) est exclu de
+cette projection (mais reste lisible via `events[]` de §5.3 si besoin).
+
+**Réponse** : array, **deux formes** distinguées par `kind` — toujours tester
+`kind === "message_link"` en premier côté front :
+
+```json
+[
+  {
+    "event_id": "…", "created_at": "2026-07-01T10:00:00+00:00",
+    "author_type": "discord_user", "author_id": "111",
+    "url": "https://cdn.discordapp.com/attachments/.../file.png",
+    "kind": "image", "media": true
+  },
+  {
+    "event_id": "…", "created_at": "2026-07-01T10:05:00+00:00",
+    "author_type": "discord_user", "author_id": "111",
+    "kind": "message_link",
+    "jump_url": "https://discord.com/channels/222/333/444",
+    "channel_id": "333", "message_id": "444",
+    "content": "message litigieux cité",
+    "message_author_id": "555", "message_author_name": "pseudo#0",
+    "attachments": ["https://cdn.discordapp.com/attachments/.../evidence.png"],
+    "message_created_at": 1735689600
+  }
+]
+```
+
+- `kind: "image"|"video"|"evidence"` → pièce jointe classique : afficher `url` en
+  galerie si `media=true`, sinon lien cliquable préfixé par `kind`.
+- `kind: "message_link"` → carte "message cité" : afficher `content` +
+  `message_author_name` + les `attachments` en pièces jointes, avec `jump_url` en
+  lien "voir sur Discord" (peut 404 si le message a depuis été supprimé — normal,
+  c'est un snapshot figé, ne pas essayer de le rafraîchir). `author_id`/`author_type`
+  ici désignent le **modérateur** qui a ajouté la preuve, pas l'auteur du message
+  cité (`message_author_id`/`message_author_name`).
+
+### 5.4 `POST /cases` → `201`
+**Auth** : staff modérateur.
+**Body** :
+| Champ | Requis | Type / contrainte |
+|---|---|---|
+| `case_type` | ✅ | `global` \| `network` |
+| `subject_type` | ✅ | enum subject_type |
+| `subject_id` | ✅ | string, 1–64 |
+| `scope_type` | ✅ | enum scope_type |
+| `scope_id` | ❌ | string \| null |
+| `reason` | ✅ | string, 1–2000 |
+| `action` | ✅ | doit ∈ `case_type_actions[case_type]` (sinon 422) |
+| `expires_at` | ❌ | ISO ; **seulement** si action ∈ temporisables (sinon 422) ; `null` = permanent |
+| `note` | ❌ | string ≤2000 → crée un event `comment` |
+| `group_id` | ❌ | UUID |
+
+`issuer` déduit de la session (`moddy_staff` + ton user_id) — **ne pas l'envoyer**.
+**Réponse** : le `case` complet (comme §5.3).
+
+### 5.5 `PATCH /cases/{identifier}` → `200`
+**Auth** : staff modérateur. Cases `global`/`network` seulement.
+**Body** : `reason?` (1–2000) et/ou `status?` (`open`/`closed`). **Au moins un** (sinon 400).
+- Fournir `status` **verrouille** la case (`status_locked=true`, plus de recalcul auto) + event `status_change` (`trigger=manual`).
+**Réponse** : le `case` complet.
+
+### 5.6 `POST /cases/{identifier}/sanctions` → `201`
+**Auth** : staff modérateur. **Body** : `action` (✅, validée selon le `type` de la case), `expires_at?`, `note?`.
+Une sanction active **rouvre** la case (sauf verrouillage). **Réponse** : le `case` complet.
+
+### 5.7 `POST /cases/{identifier}/sanctions/{sanction_id}/revoke` → `200`
+**Auth** : staff modérateur. **Body** : `note?`.
+Révoque **une** sanction `active` (par UUID). Statut recalculé (referme si plus rien d'actif, sauf verrouillage). **404** si aucune sanction active avec cet id. **Réponse** : le `case` complet.
+
+### 5.8 `POST /cases/{identifier}/notes` → `201`
+**Auth** : staff modérateur. **Body** : `content` (✅, 1–2000). Ajoute un event `comment`. **Réponse** : le `case` complet.
+
+---
+
+## 6. Endpoints — Blacklist & Profils
+
+### 6.1 `GET /staff/blacklist`
+**Auth** : staff. **Query** : `limit` (≤200), `offset`.
+Projection **lecture seule** des entités blacklistées (ban global actif).
+**Réponse** : array aplati : `id`, `reference`, `type`, `subject_type`, `subject_id`, `issuer_type`, `issuer_id`, `reason`, `status`, `created_at`, `sanction_id`, `action`, `expires_at`, `sanctioned_at`, `issued_by_type`, `issued_by_id`.
+
+> **Blacklister** = `POST /cases` (`case_type=global`, `scope_type=platform`, `action=ban`, `subject_type=discord_user|discord_guild`).
+> **Dé-blacklister** = `POST /cases/{ref}/sanctions/{sid}/revoke`.
+
+### 6.2 `GET /users/{user_id}/profile`
+**Auth** : connecté. Identité Discord + statut Moddy d'un autre utilisateur.
+**Réponse** : `user_id`, `username`, `global_name`, `discriminator`, `avatar`, `avatar_url`, `banner`, `banner_url`, `accent_color`, `avatar_decoration_data`, `public_flags`, `badges` (string[]), `bot`, **`display_name`** (= `global_name` ou `username`), **`is_premium`**, **`is_beta`**, **`is_staff`**, **`staff_roles`** (string[]), **`in_database`**.
+Aucune donnée sensible (ni email, ni Stripe, ni `BLACKLISTED`). Cache Redis 5 min sur la partie Discord. Erreurs : 404/429/502/503.
+
+### 6.3 `GET /guilds/{guild_id}/profile`
+**Auth** : connecté (pas besoin d'être membre/admin). Infos publiques d'un serveur.
+**Réponse** : `guild_id`, `name`, `icon`, `banner`, `splash`, `description`, `member_count`, `presence_count`, `features` (string[]), `vanity_url_code`, `is_premium`, `is_beta`, `in_database`. **404** si serveur inconnu (bot absent ET pas en DB).
+
+> `GET /users/{id}` (sans `/profile`) reste **public** et ne renvoie que l'identité Discord (pas premium/staff). Utiliser `/profile` dès qu'on veut les flags Moddy.
+
+---
+
+## 7. Payloads d'events (`event.payload`)
+
+**Ne jamais supposer un schéma fixe** — dépend de `type`. Formes produites :
+
+- **`comment`** — `content` = texte ; `payload` = `null` en général, sauf pour un appel :
+  - ouverture → `{ "kind": "appeal_opened", "appeal_id": "<uuid>", "route": "server"|"team" }`
+  - décision → `{ "kind": "appeal_decision", "appeal_id": "<uuid>", "status": "accepted"|"refused"|"transformed", "new_action": "<action>"|null }`
+- **`note`** — note interne staff. `payload = null`. **Jamais visible** hors panneau staff (retirée aussi en vue « sujet »).
+- **`evidence`** — distinguer par `payload.kind` :
+  - **automod**, 2 formes (`author_type='system'`) :
+    - preuve message — `payload` : `source` (`"automod"`), `message_id`, `channel_id`, `jump_url`, `extrait`, `author_name`, `ts`, `context_text`, `raison`, `explication`, `signal_source`, `categorie`, `gravite`, `score_detecteur` (float), `confiance` (`low`/`medium`/`high`), `actions` (string[]).
+    - lien log serveur — `{ "kind": "automod_log", "channel_id", "message_id" }`.
+    - **Filtre canonique d'une preuve automod** : `payload.source == "automod"` (ne pas se fier à `content`).
+  - **`/ban`, `/mute`, `/warn`** (pièce jointe au modal) — `payload = { "url": "...", "kind": "image"|"video"|"evidence" }`.
+  - **lien de message** (`/cases` → "Ajouter une preuve", `author_type='discord_user'` = le modérateur) — snapshot figé, jamais réécrit : `payload = { "kind": "message_link", "jump_url", "channel_id", "message_id", "content", "author_id", "author_name", "attachments": string[], "ts" }`. `content` peut être `""`. `ts` = création du message d'origine (epoch s), ≠ `created_at` de l'event.
+  - **Projection dashboard prête à l'emploi** : `GET /cases/{id}/evidence` (§5.3bis) filtre déjà `payload.url` / `payload.kind == "message_link"` — préférer cet endpoint à un filtrage manuel de `events[]`.
+- **`sanction_added`** — `{ "sanction_id": "<uuid>", "action": "ban" }`
+- **`sanction_revoked`** — `{ "sanction_id": "<uuid>", "by_type": "discord_user", "by_id": "..." }`
+- **`sanction_expired`** — `{ "sanction_id": "<uuid>", "action": "ban" }` (`author_type='system'`)
+- **`status_change`** — `{ "from": "open", "to": "closed", "trigger": "manual"|"expiration"|"revocation"|"system" }`
+
+---
+
+## 8. Appels (`case.appeals`)
+
+| Champ | Valeurs / sens | Visible en vue « sujet » |
+|---|---|---|
+| `id`, `case_id`, `sanction_id` | UUID | ✅ |
+| `subject_id`, `guild_id` | string | ✅ |
+| `action` | action au moment de l'appel | ✅ |
+| `route` | `server` \| `team` | ✅ |
+| `status` | `pending`/`accepted`/`refused`/`transformed`/`cancelled` | ✅ |
+| `reason` | texte de l'utilisateur | ✅ |
+| `new_action` | rempli si `transformed` | ✅ |
+| `created_at`, `decided_at` | ISO | ✅ |
+| `decided_by_type`, `decided_by_id` | reviewer | ❌ caviardé |
+| `decision_note` | note reviewer | ❌ caviardé |
+| `claimed_by_id`, `claimed_at` | prise en charge | ❌ caviardé |
+| `dm_channel_id`, `dm_message_id`, `review_channel_id`, `review_message_id` | messages Discord internes | ❌ caviardé |
+
+**Effets d'une décision** (exécutés par le bot) :
+- `accept` → sanction `revoked` + action Discord annulée (unban / lève timeout).
+- `transform` → ancienne sanction révoquée + nouvelle sanction (`sanction_added`) + nouvelle action Discord ; nouvelle raison éventuelle **remplace** `case.reason`.
+- `refuse` → `status='refused'`, sanctions inchangées.
+
+`case_appeals` = état machine ; `case_events` (`comment` + `payload.kind='appeal_*'`) = trace chronologique. Deux angles, même histoire.
+
+---
+
+## 9. Règles de comportement (à respecter côté UI)
+
+1. **Expiration = job du bot (~2 min), pas le backend.** Montrer « expiré » seulement quand `sanction.status === 'expired'` en base ; ne pas calculer l'expiration côté front.
+2. **Cycle de vie du statut** : `open` tant qu'une sanction est `active` ; se ferme sur révocation/expiration de la dernière ; se rouvre à l'ajout d'une sanction.
+3. **`status_locked`** : après un `PATCH status`, la case est figée (plus de recalcul auto). Afficher un cadenas ; pas d'endpoint de « déverrouillage ».
+4. **Création = 1 sanction obligatoire.** Pour en ajouter, `POST …/sanctions`.
+5. **Pas de déduplication** : chaque `POST /cases` ouvre une nouvelle case.
+6. **Aucune suppression** (pas de soft-delete) : une case se ferme, ne se supprime pas.
+7. **Aucun temps réel** : pas de WebSocket/SSE/pubsub côté cases → **polling**.
+8. **`payload` défensif** : afficher sans supposer de schéma fixe.
+9. **Validation type×action** : construire les pickers depuis `GET /cases/meta` pour éviter les 422.
+
+---
+
+## 10. Parcours dashboard recommandés
+
+| Écran | Appels |
+|---|---|
+| **Mes sanctions** (`/mycases`) | `GET /cases?subject_type=discord_user&subject_id=<moi>` → clic `GET /cases/{ref}`. Pas de zone commentaires (vide pour le sujet). |
+| **Modération d'un serveur** | `GET /cases?scope_type=discord_guild&scope_id=<gid>` (auto-autorisé si admin du serveur) → détail avec commentaires. |
+| **Panel staff — recherche** | `GET /cases` + filtres libres. Création via `POST /cases`. |
+| **Blacklist (staff)** | `GET /staff/blacklist` ; ajout via `POST /cases` (global+ban) ; retrait via revoke. |
+| **Formulaire de sanction** | `GET /cases/meta` au montage pour peupler les selects (types, actions par type, temporisables). |
+| **Hovercards / profils** | `GET /users/{id}/profile`, `GET /guilds/{id}/profile`. |

@@ -4,50 +4,12 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="The Moddy Dashboard is under construction. Join our support server for help in the meantime."
-    />
-    <meta name="theme-color" content="#0046f8" />
-    <title>Moddy — Under construction</title>
-
-    <!-- Google Sans is self-hosted (see @font-face in src/index.css). Only the
-         two weights used above the fold get preloaded — 400 for body copy and
-         600 for our default bold; 500 and 700 load on demand. -->
-    <link
-      rel="preload"
-      href="/fonts/google-sans-400.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
-    />
-    <link
-      rel="preload"
-      href="/fonts/google-sans-600.woff2"
-      as="font"
-      type="font/woff2"
-      crossorigin="anonymous"
-    />
-
-    <!-- Resolve the theme before paint to avoid a flash: an explicit saved
-         choice wins, otherwise follow the system preference. -->
-    <script>
-      (function () {
-        try {
-          var stored = localStorage.getItem("moddy-theme")
-          var query = window.matchMedia("(prefers-color-scheme: dark)")
-          var apply = function (isDark) {
-            document.documentElement.classList.toggle("dark", isDark)
-          }
-          apply(stored ? stored === "dark" : query.matches)
-          query.addEventListener("change", function (event) {
-            if (!localStorage.getItem("moddy-theme")) apply(event.matches)
-          })
-        } catch (error) {
-          /* no-op: fall back to the default light theme */
-        }
-      })()
-    </script>
+    <title>Moddy Dashboard</title>
+    <!-- Google Sans : on ne précharge que le latin en 400 (texte courant) et 600
+         (gras par défaut du projet). Les autres graisses et plages Unicode sont
+         chargées à la demande via les unicode-range de src/fonts.css. -->
+    <link rel="preload" href="/fonts/google-sans-400-latin.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
+    <link rel="preload" href="/fonts/google-sans-600-latin.woff2" as="font" type="font/woff2" crossorigin="anonymous" />
   </head>
   <body>
     <div id="root"></div>

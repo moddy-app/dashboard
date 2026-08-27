@@ -64,24 +64,128 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
-### 2026-07-29 - Google Sans auto-hébergée
-**Fichier** : [2026-07-29_google-sans-auto-hebergee.md](./2026-07-29_google-sans-auto-hebergee.md)
+### 2026-08-24 - Health check endpoint
+**Fichier** : [2026-08-24_health-check-endpoint.md](./2026-08-24_health-check-endpoint.md)
 
-**Résumé** : Remplacement du chargement de Google Sans par CDN par une intégration auto-hébergée. Les TTF fournis ont été convertis en WOFF2 sous-ensemblés `latin + latin-ext` (~1,9 Mo → ~35 Ko par face), déclarés en `@font-face` manuels avec `font-display: swap`, et branchés sur les tokens `--font-sans` / `--font-mono` du thème shadcn — aucun composant modifié.
+**Résumé** : Ajout de `/healthz`, un endpoint de health check serverless pour un monitor HTTP externe, indépendant du backend Moddy.
 
 **Fichiers créés** :
-- `app/public/fonts/google-sans-{400,500,600,700}[-italic].woff2` (8 faces)
+- `api/healthz.ts` - Endpoint de health check
 
 **Fichiers modifiés** :
-- `app/src/index.css` - `@font-face`, tokens de typographie, convention `b`/`strong` en 600
-- `app/index.html` - CDN retiré, preload local du 400 et du 600
-- `app/package.json` - `@fontsource-variable/geist` retirée (inutilisée)
-- `vercel.json` - cache long pour `/fonts/*.woff2`
+- `vercel.json` - Rewrite `/healthz` → `/api/healthz`
 
-**Fichiers supprimés** :
-- `google-sans/` - dossier de dépôt temporaire des TTF
+**Impact** : ✅ **Mineur** - Monitoring externe de la disponibilité du déploiement
 
-**Impact** : ✅ **Majeur** - Zéro requête tierce vers Google Fonts, typographie maîtrisée
+---
+
+### 2026-07-29 - Google Sans auto-hébergée (page d'attente)
+**Fichier** : [2026-07-29_google-sans-auto-hebergee.md](./2026-07-29_google-sans-auto-hebergee.md)
+
+**Résumé** : Remplacement du chargement de Google Sans par CDN par une intégration auto-hébergée sur la page "en construction" servie par `main` le temps que le dashboard ne soit pas public.
+
+**Impact** : ✅ **Majeur** - Zéro requête tierce vers Google Fonts sur la page d'attente
+
+---
+
+### 2026-07-03 - Page en travaux i18n
+**Fichier** : [2026-07-03_page-en-travaux-i18n.md](./2026-07-03_page-en-travaux-i18n.md)
+
+**Résumé** : Internationalisation de la page "en construction" affichée publiquement tant que le dashboard n'est pas sorti.
+
+**Impact** : ✅ **Mineur** - Page d'attente disponible en plusieurs langues
+
+---
+
+### 2026-02-22 - Dashboard Layout avec Sidebar et Command Menu
+**Fichier** : [2026-02-22_dashboard-sidebar-layout.md](./2026-02-22_dashboard-sidebar-layout.md)
+
+**Résumé** : Implémentation du layout principal du dashboard avec sidebar collapsible (team switcher, navigation, profil utilisateur), breadcrumb, et palette de commandes (⌘K). Installation de 8 nouveaux composants shadcn/ui. Création de 7 nouveaux fichiers composants.
+
+**Fichiers créés** :
+- `app/src/components/app-sidebar.tsx` - Sidebar principale
+- `app/src/components/team-switcher.tsx` - Sélecteur de serveur
+- `app/src/components/nav-main.tsx` - Navigation principale
+- `app/src/components/nav-projects.tsx` - Navigation projets
+- `app/src/components/nav-user.tsx` - Profil utilisateur sidebar
+- `app/src/components/command-menu.tsx` - Palette de commandes
+- `app/src/pages/DashboardPage.tsx` - Page dashboard
+
+**Fichiers modifiés** :
+- `app/src/pages/HomePage.tsx` - Affiche DashboardPage quand authentifié
+- `app/src/main.tsx` - Ajout TooltipProvider
+- `app/src/locales/*/translation.json` - Clés dashboard
+
+**Impact** : ✅ **Majeur** - Layout dashboard complet avec sidebar et command menu
+
+---
+
+### 2026-02-12 (Suite 5) - Internationalisation (i18n) avec react-i18next
+**Fichier** : [2026-02-12_i18n-react-i18next.md](./2026-02-12_i18n-react-i18next.md)
+
+**Résumé** : Implémentation complète de l'internationalisation avec `react-i18next` et `i18next`. Traductions EN/FR pour HomePage et DebugPage (~100 clés). Détection automatique de la langue navigateur, cookie `moddy_preferences` extensible, sélecteur Auto/EN/FR dans la DebugPage.
+
+**Fichiers créés** :
+- `app/src/i18n.ts` - Configuration react-i18next
+- `app/src/locales/en/translation.json` - Traductions anglaises
+- `app/src/locales/fr/translation.json` - Traductions françaises
+- `app/src/lib/preferences.ts` - Utilitaires cookie préférences
+
+**Fichiers modifiés** :
+- `app/src/main.tsx` - Import i18n
+- `app/src/pages/HomePage.tsx` - useTranslation
+- `app/src/pages/DebugPage.tsx` - useTranslation + sélecteur langue
+- `docs/CLAUDE.md` - Documentation i18n complète
+
+**Impact** : ✅ **Majeur** - Site entièrement internationalisé EN/FR
+
+---
+
+### 2026-02-12 (Suite 4) - Intégration Sentry Error Tracking
+**Fichier** : [2026-02-12_sentry-error-tracking.md](./2026-02-12_sentry-error-tracking.md)
+
+**Résumé** : Intégration de `@sentry/react` pour le suivi des erreurs en production. Initialisation dans `main.tsx`, ajout d'une section de test dans la DebugPage avec boutons pour tester la capture d'erreurs et l'envoi de messages.
+
+**Fichiers modifiés** :
+- `app/src/main.tsx` - Initialisation Sentry
+- `app/src/pages/DebugPage.tsx` - Section Sentry Error Tracking
+- `app/package.json` - Dépendance @sentry/react
+- `docs/CLAUDE.md` - Documentation mise à jour
+
+**Impact** : ✅ **Majeur** - Monitoring des erreurs en production activé
+
+---
+
+### 2026-02-12 (Suite 3) - Routing SPA, Auth Guard et Page Debug
+**Fichier** : [2026-02-12_routing-spa-auth-guard.md](./2026-02-12_routing-spa-auth-guard.md)
+
+**Résumé** : Mise en place du routing avec `react-router-dom`, création d'une page d'accueil avec auth guard (redirect vers `moddy.app/sign-in` si non connecté), déplacement et enrichissement de la page debug sur `/debug`, et configuration de Vercel pour le SPA routing.
+
+**Fichiers créés** :
+- `app/src/pages/HomePage.tsx` - Page d'accueil avec auth guard
+- `app/src/pages/DebugPage.tsx` - Page debug enrichie (10 sections)
+- `vercel.json` / `app/vercel.json` - SPA rewrites
+
+**Fichiers modifiés** :
+- `app/src/App.tsx` - Routeur avec 2 routes
+- `app/src/main.tsx` - BrowserRouter
+- `app/package.json` - react-router-dom
+
+**Impact** : ✅ **Majeur** - Architecture SPA en place, auth guard fonctionnel
+
+---
+
+### 2026-02-12 (Suite 2) - Affichage du nom d'utilisateur et débogage
+**Fichier** : [2026-02-12_affichage-username-debug.md](./2026-02-12_affichage-username-debug.md)
+
+**Résumé** : Ajout de l'affichage du nom d'utilisateur Discord sur la page d'accueil avec `getUserInfo()`. Création d'un système de logs en temps réel sur la page et d'une section de débogage des cookies. Résolution d'un problème critique de CORS avec `preview.moddy.app`.
+
+**Fichiers modifiés** :
+- `app/src/hooks/useAuth.ts` - Ajout de getUserInfo()
+- `app/src/App.tsx` - Affichage username + sections de débogage
+- `app/src/lib/auth.ts` - Logs détaillés
+
+**Impact** : ✅ **Majeur** - UX améliorée + système de débogage complet
 
 ---
 

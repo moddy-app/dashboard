@@ -1,0 +1,2293 @@
+{
+  "home": {
+    "checkingSession": "Vérification de la session...",
+    "redirecting": "Redirection...",
+    "loggedIn": "Vous êtes connecté"
+  },
+  "debug": {
+    "title": "Panneau de debug",
+    "auth": {
+      "title": "Authentification",
+      "checkingSession": "Vérification de la session...",
+      "authenticated": "Authentifié",
+      "avatar": "Avatar",
+      "id": "ID : {{id}}",
+      "userInfoRaw": "Infos utilisateur (brut)",
+      "sessionData": "Données de session",
+      "discordId": "ID Discord",
+      "email": "E-mail",
+      "notProvided": "Non fourni",
+      "logout": "Se déconnecter",
+      "notLoggedIn": "Non connecté",
+      "signInDiscord": "Se connecter avec Discord"
+    },
+    "api": {
+      "title": "Connectivité API",
+      "pingDirect": "Ping API directe",
+      "pingProxy": "Ping Proxy Vercel",
+      "directApi": "API directe :",
+      "vercelProxy": "Proxy Vercel :"
+    },
+    "environment": {
+      "title": "Environnement"
+    },
+    "router": {
+      "title": "Routeur",
+      "pathname": "Chemin",
+      "search": "Recherche",
+      "hash": "Hash",
+      "origin": "Origine",
+      "fullUrl": "URL complète"
+    },
+    "browser": {
+      "title": "Navigateur",
+      "userAgent": "User Agent",
+      "language": "Langue",
+      "languages": "Langues",
+      "online": "En ligne",
+      "cookiesEnabled": "Cookies activés",
+      "cpuCores": "Cœurs CPU",
+      "platform": "Plateforme",
+      "screen": "Écran",
+      "window": "Fenêtre",
+      "timezone": "Fuseau horaire"
+    },
+    "performance": {
+      "title": "Performance",
+      "domContentLoaded": "DOM Content Loaded",
+      "pageLoad": "Chargement de la page",
+      "dnsLookup": "Résolution DNS",
+      "tcpConnect": "Connexion TCP",
+      "ttfb": "TTFB",
+      "domInteractive": "DOM Interactif",
+      "transferSize": "Taille du transfert",
+      "type": "Type",
+      "notAvailable": "Données de performance non disponibles",
+      "memory": "Mémoire",
+      "notSupported": "Non supporté"
+    },
+    "cookies": {
+      "title": "Cookies",
+      "httpOnlyNote": "Le cookie <code>moddy_session</code> est HttpOnly et n'apparaîtra pas ici.",
+      "noCookies": "Aucun cookie visible (les cookies HttpOnly ne sont pas accessibles via JavaScript)."
+    },
+    "storage": {
+      "title": "Stockage",
+      "localStorage": "LocalStorage ({{count}} entrées)",
+      "sessionStorage": "SessionStorage ({{count}} entrées)",
+      "empty": "Vide"
+    },
+    "logs": {
+      "title": "Logs en direct ({{count}})",
+      "noLogs": "Aucun log pour l'instant..."
+    },
+    "sentry": {
+      "title": "Suivi d'erreurs Sentry",
+      "dsn": "DSN",
+      "notConfigured": "Non configuré",
+      "status": "Statut",
+      "initialized": "Initialisé",
+      "notInitialized": "Non initialisé",
+      "throwTestError": "Lancer une erreur test",
+      "sendTestMessage": "Envoyer un message test",
+      "description": "« Lancer une erreur test » va crasher cette section (capturé par Sentry). « Envoyer un message test » envoie un événement non-erreur à Sentry."
+    },
+    "components": {
+      "title": "Composants UI (Showcase)"
+    },
+    "languageSwitcher": "Langue",
+    "languageAuto": "Auto",
+    "themeSwitcher": "Thème",
+    "themeAuto": "Auto",
+    "themeLight": "Clair",
+    "themeDark": "Sombre"
+  },
+  "dashboard": {
+    "breadcrumb": {
+      "app": "Tableau de bord",
+      "overview": "Vue d'ensemble"
+    },
+    "noServer": {
+      "title": "Aucun serveur sélectionné",
+      "description": "Sélectionnez un serveur dans la barre latérale ou ajoutez Moddy à l'un de vos serveurs Discord pour commencer.",
+      "addModdy": "Ajouter Moddy",
+      "browseServers": "Parcourir les serveurs",
+      "learnMore": "En savoir plus"
+    },
+    "toast": {
+      "connected": "Connecté en tant que {{username}}",
+      "welcome": "Bienvenue sur le dashboard Moddy"
+    }
+  },
+  "guildSelection": {
+    "title": "Mes serveurs",
+    "description": "Sélectionnez un serveur pour gérer sa configuration.",
+    "manage": "Gérer le serveur",
+    "addDescription": "Ajouter Moddy à un nouveau serveur"
+  },
+  "guildOverview": {
+    "refresh": "Actualiser",
+    "blacklisted": "Blacklisté",
+    "error": {
+      "title": "Impossible de charger le serveur",
+      "retry": "Réessayer"
+    },
+    "stats": {
+      "members": "Membres",
+      "online": "En ligne",
+      "cases": "Sanctions (ouvertes/total)",
+      "totalCases": "Sanctions totales",
+      "activeModules": "Modules actifs"
+    },
+    "premium": {
+      "title": "Débloquer les fonctionnalités Max",
+      "description": "Accédez à des modules avancés, des limites augmentées et un support prioritaire.",
+      "cta": "Passer à Max",
+      "checkoutError": "Impossible d'ouvrir le paiement, veuillez réessayer."
+    },
+    "modules": {
+      "title": "Modules",
+      "description": "Configurez les fonctionnalités du bot pour ce serveur.",
+      "enabled": "Activé",
+      "disabled": "Désactivé",
+      "configure": "Configurer",
+      "comingSoon": "Bientôt disponible"
+    }
+  },
+  "guildSettings": {
+    "title": "Réglages du serveur",
+    "description": "Les réglages qui valent pour tout le serveur.",
+    "descriptionNamed": "Les réglages qui valent pour tout {{name}}.",
+    "language": {
+      "title": "Langue du serveur",
+      "description": "La langue dans laquelle Moddy s'adresse à tout le monde : messages de bienvenue, panneaux de vérification et de tickets, logs, avis de modération et notifications sociales.",
+      "saved": "Langue du serveur enregistrée",
+      "saveError": "Impossible d'enregistrer la langue du serveur",
+      "effectiveBadge": "Parle {{language}}",
+      "autoCommunity": "Moddy suit la langue de votre serveur Discord : {{language}}.",
+      "autoNotCommunity": "Votre serveur n'est pas un serveur Communauté : Moddy parlera anglais.",
+      "autoNotCommunityLocale": "La langue Discord de votre serveur ({{locale}}) n'est qu'un défaut de compte que personne n'a choisi — activez le mode Communauté, ou choisissez une langue explicitement ci-dessus.",
+      "discordUnreachable": "Impossible de contacter Discord pour déterminer la langue effective.",
+      "scopeHint": "Ce réglage ne change pas votre propre langue : les réponses que Moddy vous envoie en privé suivent votre langue Discord, et ce dashboard suit la préférence de votre compte.",
+      "moduleNote": "Les textes de ce module suivent la langue du serveur →",
+      "choices": {
+        "auto": "Automatique",
+        "en-US": "English",
+        "fr": "Français",
+        "es-ES": "Español",
+        "pt-BR": "Português (Brasil)",
+        "de": "Deutsch"
+      }
+    }
+  },
+  "teamSwitcher": {
+    "server": "Serveur Discord",
+    "selectServer": "Sélectionner un serveur",
+    "myServers": "Mes serveurs",
+    "noServers": "Aucun serveur trouvé",
+    "addServer": "Ajouter un serveur",
+    "refreshServers": "Actualiser la liste",
+    "staffPanel": "Moddy Staff",
+    "noServerSelected": "Aucun serveur sélectionné"
+  },
+  "modules": {
+    "save": "Enregistrer",
+    "saved": "Paramètres enregistrés avec succès.",
+    "saveError": "Impossible d'enregistrer les paramètres.",
+    "disable": "Désactiver le module",
+    "enableModule": "Activer le module",
+    "selectChannel": "Sélectionner un salon",
+    "noChannels": "Aucun salon trouvé",
+    "starboard": {
+      "name": "Starboard",
+      "description": "Épingle les messages populaires dans un salon dédié via des réactions.",
+      "enableDescription": "Épingle automatiquement les messages qui reçoivent assez de réactions.",
+      "configTitle": "Configuration du Starboard",
+      "configDescription": "Configurez le salon et le seuil de réactions.",
+      "channel": "Salon Starboard",
+      "channelDescription": "Salon où les messages étoilés seront publiés.",
+      "emoji": "Emoji de réaction",
+      "emojiDescription": "Emoji qui déclenche le starboard.",
+      "emojiCustomNotAllowed": "Les emojis personnalisés du serveur ne sont pas pris en charge ici — choisissez un emoji Unicode standard.",
+      "emojiInvalid": "Veuillez saisir un emoji Unicode valide.",
+      "reactionCount": "Réactions requises",
+      "reactionCountDescription": "Nombre de réactions nécessaires pour épingler un message.",
+      "disabledSuccess": "Starboard désactivé."
+    },
+    "welcome_channel": {
+      "name": "Messages de bienvenue",
+      "description": "Accueillez les nouveaux membres avec jusqu'à 5 messages, un par salon.",
+      "enableDescription": "Envoyer un message automatique quand quelqu'un rejoint.",
+      "messagesTitle": "Messages de bienvenue",
+      "messagesDescription": "{{used}} message(s) sur {{max}} configuré(s) — un par salon.",
+      "addMessage": "Ajouter un message",
+      "addFirst": "Ajouter un message",
+      "empty": "Aucun message de bienvenue",
+      "emptyDescription": "Ajoutez-en un pour accueillir les nouveaux membres.",
+      "limitReached": "Vous avez atteint la limite de {{max}} messages de bienvenue.",
+      "addTitle": "Nouveau message de bienvenue",
+      "editTitle": "Modifier le message de bienvenue",
+      "dialogDescription": "Choisissez un salon, rédigez le message et sa couleur d'accent.",
+      "channel": "Salon",
+      "duplicateChannelHint": "Un autre message de bienvenue vise déjà ce salon — les deux seront envoyés.",
+      "message": "Message",
+      "messagePlaceholder": "Bienvenue {user} sur {server} !",
+      "placeholdersHint": "Les placeholders sont remplacés à l'envoi. Utilisez <t:{timestamp}:R> pour afficher l'heure d'arrivée en date relative.",
+      "defaultMessage": "Bienvenue à {user} sur **{server}** !\n-# Il/elle est le **{member_count}**ᵉ membre",
+      "accentColor": "Couleur d'accent",
+      "colorDefault": "Par défaut",
+      "colorCustom": "Personnalisée",
+      "colorPick": "Choisir une couleur",
+      "active": "Actif",
+      "activeHint": "Mettez en pause pour suspendre l'envoi sans supprimer le message.",
+      "paused": "En pause",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "add": "Ajouter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "confirmDeleteTitle": "Supprimer ce message de bienvenue ?",
+      "confirmDeleteDescription": "Il ne sera plus envoyé à l'arrivée d'un membre. Cette action est irréversible.",
+      "addedSuccess": "Message de bienvenue ajouté.",
+      "removedSuccess": "Message de bienvenue supprimé.",
+      "pausedSuccess": "Message de bienvenue mis en pause.",
+      "resumedSuccess": "Message de bienvenue réactivé.",
+      "errorChannelRequired": "Choisissez un salon.",
+      "errorMessageRequired": "Le message ne peut pas être vide.",
+      "errorMessageTooLong": "Le message ne peut pas dépasser {{max}} caractères.",
+      "errorColorInvalid": "Couleur invalide — utilisez le format #RRGGBB.",
+      "errorLimit": "Vous ne pouvez pas configurer plus de {{max}} messages de bienvenue.",
+      "disabledSuccess": "Messages de bienvenue désactivés."
+    },
+    "welcome_dm": {
+      "name": "Message privé de bienvenue",
+      "description": "Accueille les nouveaux membres avec jusqu'à 3 messages privés.",
+      "enableDescription": "Envoie un message privé automatique quand quelqu'un rejoint.",
+      "messagesTitle": "Messages privés de bienvenue",
+      "messagesDescription": "{{used}} message(s) sur {{max}} configuré(s) — ils sont envoyés dans l'ordre.",
+      "addMessage": "Ajouter un message",
+      "addFirst": "Ajouter un message",
+      "empty": "Aucun message privé de bienvenue",
+      "emptyDescription": "Ajoutez-en un pour accueillir les nouveaux membres en privé.",
+      "limitReached": "Vous avez atteint la limite de {{max}} messages privés de bienvenue.",
+      "addTitle": "Nouveau message privé de bienvenue",
+      "editTitle": "Modifier le message privé de bienvenue",
+      "dialogDescription": "Rédigez le message et choisissez sa couleur d'accent. Il est envoyé en privé au nouveau membre.",
+      "messageNumber": "Message {{index}}",
+      "message": "Message",
+      "messagePlaceholder": "Bienvenue sur {server}, {display_name} !",
+      "placeholdersHint": "Les variables sont remplacées à l'envoi du message. Utilisez <t:{timestamp}:R> pour afficher l'heure d'arrivée en date relative.",
+      "defaultMessage": "Bienvenue sur **{server}**, {display_name} !\n-# Tu es le **{member_count}**ᵉ membre à nous rejoindre.",
+      "preview": "Aperçu",
+      "previewEmpty": "Votre message s'affichera ici.",
+      "previewServer": "Votre serveur",
+      "accentColor": "Couleur d'accent",
+      "colorDefault": "Par défaut",
+      "colorCustom": "Personnalisée",
+      "colorPick": "Choisir une couleur",
+      "active": "Actif",
+      "activeHint": "Mettez en pause pour arrêter l'envoi sans supprimer le message.",
+      "paused": "En pause",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "add": "Ajouter",
+      "save": "Enregistrer",
+      "cancel": "Annuler",
+      "delete": "Supprimer",
+      "confirmDeleteTitle": "Supprimer ce message privé de bienvenue ?",
+      "confirmDeleteDescription": "Il ne sera plus envoyé quand un membre rejoint. Cette action est irréversible.",
+      "addedSuccess": "Message privé de bienvenue ajouté.",
+      "removedSuccess": "Message privé de bienvenue supprimé.",
+      "pausedSuccess": "Message privé de bienvenue mis en pause.",
+      "resumedSuccess": "Message privé de bienvenue réactivé.",
+      "errorMessageRequired": "Le message ne peut pas être vide.",
+      "errorMessageTooLong": "Le message ne peut pas dépasser {{max}} caractères.",
+      "errorColorInvalid": "Couleur invalide — utilisez le format #RRGGBB.",
+      "errorLimit": "Vous ne pouvez pas configurer plus de {{max}} messages privés de bienvenue.",
+      "disabledSuccess": "Message privé de bienvenue désactivé."
+    },
+    "auto_role": {
+      "name": "Rôle automatique",
+      "description": "Attribue automatiquement des rôles aux membres qui rejoignent.",
+      "enableDescription": "Attribue des rôles automatiquement quand un membre rejoint.",
+      "configTitle": "Configuration des rôles",
+      "configDescription": "Sélectionnez les rôles à attribuer aux nouveaux membres.",
+      "addRole": "Ajouter un rôle...",
+      "noRoles": "Aucun rôle sélectionné. Ajoutez des rôles à attribuer à l'arrivée.",
+      "disabledSuccess": "Rôle automatique désactivé."
+    },
+    "auto_restore_roles": {
+      "name": "Restauration des rôles",
+      "description": "Restaure les rôles quand un membre revient après être parti."
+    },
+    "interserver": {
+      "name": "Interserveur",
+      "description": "Connectez votre serveur au réseau de chat inter-serveurs."
+    },
+    "youtube_notifications": {
+      "name": "Notifications YouTube",
+      "description": "Soyez notifié quand vos YouTubeurs préférés publient une vidéo."
+    },
+    "adaptive_slowmode": {
+      "name": "Slowmode Adaptatif",
+      "description": "Ajuste automatiquement le slowmode en fonction de l'activité du salon.",
+      "enableDescription": "Gère dynamiquement le slowmode pour contrôler le débit de messages.",
+      "configTitle": "Salons configurés",
+      "configDescription": "Configurez le slowmode adaptatif pour chaque salon.",
+      "addChannel": "Ajouter un salon",
+      "addChannelTitle": "Ajouter un salon",
+      "addFirstChannel": "Ajouter le premier salon",
+      "editChannel": "Modifier le salon",
+      "dialogDescription": "Configurez les paramètres du slowmode pour ce salon.",
+      "channel": "Salon",
+      "channelLocked": "Le salon ne peut pas être modifié lors d'une édition.",
+      "delayRange": "Plage de délais",
+      "delayRangeDescription": "Le bot ajustera automatiquement le slowmode entre ces deux valeurs.",
+      "delayOff": "Désactivé",
+      "sensitivity": "Réactivité",
+      "sensitivity_low": "Faible",
+      "sensitivity_low_desc": "Réagit lentement aux pics d'activité",
+      "sensitivity_medium": "Moyenne",
+      "sensitivity_medium_desc": "Comportement équilibré",
+      "sensitivity_high": "Élevée",
+      "sensitivity_high_desc": "Réagit immédiatement aux pics",
+      "empty": "Aucun salon configuré",
+      "emptyDescription": "Ajoutez un salon pour activer le slowmode adaptatif.",
+      "channelRemoved": "Salon supprimé.",
+      "disabledSuccess": "Slowmode Adaptatif désactivé.",
+      "errorMaxMin": "Le délai maximum doit être supérieur au délai minimum.",
+      "confirmDeleteTitle": "Supprimer le salon ?",
+      "confirmDeleteDescription": "La configuration du slowmode pour #{{channel}} sera supprimée. Le bot ne gérera plus ce salon.",
+      "cancel": "Annuler",
+      "save": "Enregistrer",
+      "delete": "Supprimer"
+    },
+    "automod_ai": {
+      "name": "Modération IA",
+      "description": "Laisse l'IA lire les messages et sanctionner les écarts.",
+      "generalTitle": "Général",
+      "generalDescription": "Interrupteur principal, salon d'alertes et comportement du module.",
+      "enabled": "Activer la modération IA",
+      "enabledDescription": "Le module ne tourne qu'avec un salon d'alertes et au moins un détecteur activé.",
+      "notifyChannel": "Salon d'alertes",
+      "notifyChannelDescription": "Salon texte ou d'annonces où sont postées les décisions et les alertes. Obligatoire.",
+      "noNotifyChannel": "Aucun salon (module à l'arrêt)",
+      "ignoreModerators": "Ignorer les modérateurs",
+      "ignoreModeratorsDescription": "Les membres pouvant gérer les messages ne sont jamais modérés.",
+      "dryRun": "Mode simulation",
+      "dryRunBadge": "Simulation",
+      "dryRunDescription": "Le module décide mais n'applique rien — des cartes SIMULATION sont postées dans le salon d'alertes.",
+      "severityTitle": "Sévérité et sanctions",
+      "severityDescription": "Sensibilité de l'IA et limite haute de ce qu'elle peut appliquer.",
+      "severity": "Sévérité",
+      "severityLow": "Permissif",
+      "severityHigh": "Strict",
+      "severity_1": "1 — Très permissif",
+      "severity_2": "2 — Permissif",
+      "severity_3": "3 — Équilibré",
+      "severity_4": "4 — Strict",
+      "severity_5": "5 — Très strict",
+      "maxAction": "Sanction maximale",
+      "maxActionDescription": "Plafond dur du barème — l'IA ne va jamais au-delà.",
+      "maxAction_warn": "Avertissement",
+      "maxAction_warn_desc": "Suppression et avertissement uniquement.",
+      "maxAction_mute": "Mute",
+      "maxAction_mute_desc": "Jusqu'à un mute temporaire.",
+      "maxAction_ban": "Bannissement",
+      "maxAction_ban_desc": "Jusqu'au bannissement dans les cas les plus graves.",
+      "indicationsTitle": "Indications du serveur",
+      "indicationsDescription": "Consignes supplémentaires données à l'IA, en plus des règles intégrées.",
+      "indicationsPlaceholder": "ex. Pas d'insultes, même pour rire. L'autopromo est tolérée dans #promo uniquement.",
+      "indicationsSafetyHint": "Ce texte est injecté tel quel dans le prompt de l'IA : chaque modification passe par un contrôle de sécurité avant d'être enregistrée.",
+      "indicationsTooLong": "Les indications ne doivent pas dépasser {{max}} caractères.",
+      "indicationsRejectedFallback": "Ce texte a été refusé par le contrôle de sécurité.",
+      "checking": "Contrôle du texte en cours…",
+      "checkOk": "Texte accepté par le contrôle de sécurité.",
+      "checkUnavailable": "Contrôle de sécurité indisponible pour le moment — tu peux tout de même tenter la sauvegarde.",
+      "checkUnavailableTitle": "Contrôle de sécurité indisponible",
+      "checkUnavailableSaveDescription": "Rien n'a été enregistré. Réessaie dans un instant.",
+      "retry": "Réessayer",
+      "featuresTitle": "Détecteurs",
+      "featuresDescription": "Ce que l'IA surveille, et qui y échappe.",
+      "noFeatures": "Aucun détecteur disponible.",
+      "features": {
+        "genericDescription": "Détecteur pris en charge par la modération IA.",
+        "content": {
+          "name": "Contenu des messages",
+          "description": "Analyse les messages et sanctionne insultes, menaces, harcèlement, arnaques et compagnie."
+        }
+      },
+      "exemptRoles": "Rôles exemptés",
+      "exemptRolesHint": "Les membres ayant l'un de ces rôles ne sont jamais modérés par ce détecteur.",
+      "exemptChannels": "Salons exemptés",
+      "exemptChannelsHint": "Ces salons sont ignorés, ainsi que les fils qu'ils contiennent.",
+      "exemptLimitReached": "Limite de {{max}} entrées atteinte.",
+      "addRole": "Ajouter un rôle",
+      "addChannel": "Ajouter un salon",
+      "statusRunning": "Actif",
+      "statusStopped": "À l'arrêt",
+      "warnings": {
+        "missing_notify_channel": "Aucun salon d'alertes : le module ne tourne pas.",
+        "no_feature_enabled": "Aucun détecteur activé.",
+        "dry_run": "Mode simulation : aucune sanction n'est appliquée.",
+        "unknown": "Avertissement de configuration : {{code}}"
+      },
+      "reset": "Réinitialiser le module",
+      "resetSuccess": "Configuration de la modération IA réinitialisée.",
+      "confirmResetTitle": "Réinitialiser la modération IA ?",
+      "confirmResetDescription": "Toute la configuration du module est supprimée, y compris les indications et les exemptions. Cette action est irréversible.",
+      "cancel": "Annuler"
+    },
+    "social_notifications": {
+      "name": "Notifications sociales",
+      "description": "Publie une notification Discord dès qu'un compte suivi publie du nouveau contenu.",
+      "enableTitle": "Activer le module",
+      "enableDescription": "Active les notifications sociales sur ce serveur. Les abonnements sont conservés une fois désactivé.",
+      "enabledSuccess": "Notifications sociales activées.",
+      "disabledSuccess": "Notifications sociales désactivées.",
+      "subscriptionsTitle": "Abonnements",
+      "subscriptionsDescription": "Comptes suivis ({{limit}} par plateforme).",
+      "addSubscription": "Ajouter un abonnement",
+      "addFirst": "Ajouter un premier abonnement",
+      "empty": "Aucun abonnement",
+      "emptyDescription": "Suivez un compte YouTube, Twitch, Bluesky ou RSS pour être notifié.",
+      "paused": "En pause",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "pausedSuccess": "Abonnement mis en pause.",
+      "resumedSuccess": "Abonnement repris.",
+      "removedSuccess": "Abonnement supprimé.",
+      "addedSuccess": "Vous suivez désormais {{name}}.",
+      "rolesCount_one": "{{count}} rôle",
+      "rolesCount_other": "{{count}} rôles",
+      "quotaUpsell": "Vous avez atteint la limite gratuite d'1 compte par plateforme. Passez à Moddy Max pour en suivre jusqu'à 5.",
+      "addTitle": "Ajouter un abonnement",
+      "editTitle": "Modifier l'abonnement",
+      "addDialogDescription": "Suivez un compte social et choisissez où publier les notifications.",
+      "editDialogDescription": "Modifiez où et comment les notifications de ce compte sont publiées.",
+      "platform": "Plateforme",
+      "reserved": "Réservé",
+      "full": "Limite atteinte",
+      "identifier": "Compte",
+      "channel": "Salon",
+      "mentionRoles": "Rôles à mentionner",
+      "addRole": "Ajouter un rôle",
+      "mentionRolesHint": "Ces rôles seront mentionnés à chaque nouvelle notification.",
+      "mentionRolesCount": "{{count}} rôle mentionné",
+      "message": "Message personnalisé",
+      "messagePlaceholder": "Écrivez votre message de notification…",
+      "messageHint": "Titre Markdown inclus. Vide = modèle par défaut.",
+      "insertPlaceholder": "Insérer le placeholder",
+      "embedColor": "Couleur de l'embed",
+      "useBrandColor": "Utiliser la couleur de la plateforme",
+      "useBrandColorHint": "Couleur par défaut de la plateforme sélectionnée.",
+      "showAvatar": "Afficher l'avatar",
+      "showMedia": "Afficher le média",
+      "active": "Actif",
+      "activeHint": "Désactivez pour mettre en pause sans vous désabonner.",
+      "learnMore": "Formats acceptés & placeholders",
+      "cancel": "Annuler",
+      "add": "Ajouter",
+      "save": "Enregistrer",
+      "delete": "Supprimer",
+      "confirmDeleteTitle": "Supprimer l'abonnement ?",
+      "confirmDeleteDescription": "{{name}} ne déclenchera plus de notifications sur ce serveur.",
+      "errorIdentifierRequired": "Veuillez saisir un compte à suivre.",
+      "errorChannelRequired": "Veuillez sélectionner un salon.",
+      "errorLimit": "Limite atteinte : {{limit}} compte(s) par plateforme.",
+      "errorLimitUpsell": "Passez à Moddy Max pour suivre jusqu'à 5 comptes par plateforme.",
+      "errorGeneric": "Impossible d'enregistrer l'abonnement.",
+      "platforms": {
+        "youtube": "YouTube",
+        "twitch": "Twitch",
+        "bluesky": "Bluesky",
+        "rss": "RSS",
+        "instagram": "Instagram"
+      },
+      "identifierPlaceholder": {
+        "youtube": "@handle, URL de chaîne ou ID UC…",
+        "twitch": "nom d'utilisateur ou URL de chaîne",
+        "bluesky": "@handle.bsky.social ou URL de profil",
+        "rss": "https://exemple.com/feed.xml",
+        "instagram": "Réservé"
+      },
+      "identifierHint": {
+        "youtube": "Accepte un @handle, une URL de chaîne, une URL de vidéo ou un ID de chaîne UC….",
+        "twitch": "Accepte un nom d'utilisateur ou une URL de chaîne.",
+        "bluesky": "Accepte un @handle.bsky.social, une URL de post ou de profil.",
+        "rss": "Accepte une URL de flux RSS/Atom.",
+        "instagram": "Instagram n'est pas encore disponible."
+      },
+      "errors": {
+        "handle_not_found": "Compte introuvable. Vérifiez le handle ou l'URL.",
+        "channel_not_found": "Salon introuvable.",
+        "user_not_found": "Utilisateur introuvable.",
+        "unsafe_url": "Cette URL a été refusée pour des raisons de sécurité.",
+        "platform_disabled": "Cette plateforme n'est pas disponible.",
+        "unknown_platform": "Plateforme inconnue.",
+        "no_entries": "Aucun contenu trouvé pour ce flux.",
+        "missing_identifier": "Identifiant de compte manquant.",
+        "not_supported": "Ceci n'est pas pris en charge.",
+        "twitch_not_configured": "L'intégration Twitch n'est pas configurée. Réessayez plus tard.",
+        "fetch_failed": "Impossible de joindre le service. Réessayez plus tard.",
+        "bot_timeout": "Le bot n'a pas répondu à temps. Réessayez."
+      },
+      "optionsTitle": "Options",
+      "colorBrand": "Couleur plateforme",
+      "colorCustom": "Personnalisée",
+      "colorPick": "Choisir une couleur",
+      "showAvatarHint": "Affiche l'avatar du compte dans la notification.",
+      "showMediaHint": "Affiche la miniature ou l'aperçu média de la publication.",
+      "errorLimitFree": "Limite atteinte (1 compte par plateforme). Passez à Moddy Max pour en suivre jusqu'à 5.",
+      "errorLimitPremium": "Limite atteinte (5 comptes par plateforme).",
+      "upgrade": "Passer à Max",
+      "noEmojis": "Aucun émoji personnalisé sur ce serveur.",
+      "format": {
+        "heading": "Titre",
+        "bold": "Gras",
+        "italic": "Italique",
+        "strike": "Barré"
+      }
+    },
+    "bot_customization": {
+      "name": "Personnalisation du bot",
+      "description": "Donnez à Moddy son propre pseudo, sa bio, son avatar, sa bannière et son style de pseudo sur ce serveur.",
+      "previewTitle": "Aperçu",
+      "previewDescription": "Le vrai popout de profil Discord, rendu en direct. Les champs vides reprennent le profil global de Moddy.",
+      "identityTitle": "Identité",
+      "identityDescription": "Pseudo, bio, avatar et bannière de Moddy sur ce serveur.",
+      "premiumBadge": "Moddy Max",
+      "premiumLockDescription": "Le pseudo, la bio, l'avatar et la bannière nécessitent Moddy Max sur ce serveur. Effacer une valeur déjà appliquée reste possible.",
+      "premiumCta": "Passer à Moddy Max",
+      "nickname": "Pseudo",
+      "nicknamePlaceholder": "Moddy",
+      "nicknameHint": "Affiché à la place de « Moddy » sur ce serveur. Laissez vide pour réinitialiser.",
+      "nicknameTooLong": "Le pseudo ne doit pas dépasser {{max}} caractères.",
+      "bio": "Bio",
+      "bioPlaceholder": "Le bot de modération de notre serveur",
+      "bioTooLong": "La bio ne doit pas dépasser {{max}} caractères.",
+      "attributionHint": "Moddy ajoute cette ligne à la fin de la bio — elle ne compte pas dans vos caractères.",
+      "avatar": "Avatar",
+      "avatarHint": "Image carrée, affichée en rond sur Discord.",
+      "banner": "Bannière",
+      "bannerHint": "Image large affichée en haut du profil.",
+      "chooseImage": "Choisir une image",
+      "replaceImage": "Remplacer",
+      "removeImage": "Retirer",
+      "cancelImage": "Annuler",
+      "undoRemove": "Annuler le retrait",
+      "imageRules": "{{types}} · {{size}} max",
+      "pendingUpload": "{{name}} sera envoyée à l'enregistrement.",
+      "pendingRemoval": "Sera retirée à l'enregistrement.",
+      "styleTitle": "Style du pseudo",
+      "styleDescription": "Police, effet et couleurs du pseudo. Disponible sur tous les serveurs, sans Moddy Max.",
+      "font": "Police",
+      "fontDefault": "Police par défaut",
+      "fontGeneric": "Police n° {{id}}",
+      "effect": "Effet",
+      "effectNone": "Aucun effet",
+      "effectGradient": "Dégradé",
+      "effectGeneric": "Effet n° {{id}}",
+      "colors": "Couleurs",
+      "colorsGradientHint": "Le dégradé demande exactement deux couleurs.",
+      "colorsSingleHint": "Cet effet demande exactement une couleur.",
+      "colorsOptionalHint": "Sans effet, une couleur unique est facultative.",
+      "colorFrom": "Départ",
+      "colorTo": "Arrivée",
+      "addColor": "Ajouter une couleur",
+      "removeColor": "Retirer cette couleur",
+      "colorInvalid": "Utilisez une couleur hexadécimale, par exemple #FF0000.",
+      "resetField": "Effacer",
+      "reset": "Tout réinitialiser",
+      "resetTitle": "Réinitialiser la personnalisation ?",
+      "resetDescription": "Le pseudo, la bio, l'avatar, la bannière et le style du pseudo reviendront tous aux valeurs par défaut de Moddy sur ce serveur.",
+      "resetConfirm": "Réinitialiser",
+      "resetSuccess": "Personnalisation réinitialisée.",
+      "cancel": "Annuler",
+      "savingHint": "Application en cours… Moddy communique avec Discord, cela peut prendre quelques secondes.",
+      "lastUpdate": "Dernier changement le {{date}}",
+      "lastUpdateBy": "par {{name}}",
+      "unknownUser": "utilisateur inconnu",
+      "errors": {
+        "premium_required": "Ce champ nécessite Moddy Max sur ce serveur.",
+        "missing_permissions": "Vous n'avez pas la permission de personnaliser Moddy sur ce serveur.",
+        "guild_not_found": "Ce serveur est introuvable.",
+        "rate_limited": "Discord limite fortement la fréquence de changement du pseudo et de l'avatar d'un bot. Réessayez plus tard.",
+        "empty_update": "Il n'y a rien à enregistrer.",
+        "nickname_too_long": "Le pseudo est trop long.",
+        "bio_too_long": "La bio est trop longue.",
+        "invalid_color": "Une des couleurs est invalide.",
+        "invalid_font": "Cette police n'est pas disponible.",
+        "invalid_effect": "Cet effet n'est pas disponible.",
+        "gradient_needs_two_colors": "Le dégradé demande exactement deux couleurs.",
+        "effect_needs_color": "Cet effet demande exactement une couleur.",
+        "invalid_image_type": "Format d'image non pris en charge.",
+        "image_too_large": "Cette image est trop lourde.",
+        "invalid_config": "Cette personnalisation est invalide.",
+        "image_download_failed": "Moddy n'a pas pu télécharger l'image. Réessayez de l'envoyer.",
+        "rejected_by_discord": "Discord a refusé ce changement.",
+        "discord_error": "Discord a renvoyé une erreur. Réessayez dans quelques instants.",
+        "save_failed": "Le changement n'a pas pu être enregistré.",
+        "internal_error": "Une erreur interne s'est produite. Réessayez dans quelques instants.",
+        "bot_timeout": "Moddy n'a pas répondu à temps. Le changement sera appliqué dès son retour — rechargez la page dans un moment."
+      },
+      "fonts": {
+        "3": "Sakura",
+        "4": "Jellybean",
+        "6": "Moderne",
+        "7": "Médiéval",
+        "8": "8 bits",
+        "10": "Vampyre",
+        "12": "Tempo"
+      },
+      "effects": {
+        "3": "Néon",
+        "4": "Cartoon",
+        "5": "Pop"
+      },
+      "preview": {
+        "verifiedApp": "Application vérifiée",
+        "supportsCommands": "Prend en charge les commandes",
+        "mutualServers_one": "{{count}} serveur en commun",
+        "mutualServers_other": "{{count}} serveurs en commun",
+        "badges": "Badges d'utilisateur"
+      }
+    },
+    "altguard": {
+      "name": "AltGuard",
+      "description": "Retient chaque nouveau membre derrière une vérification anti multi-comptes avant l'accès au serveur.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "configTitle": "Vérification à l'entrée",
+      "configDescription": "Choisissez le salon où arrivent les nouveaux et les deux rôles qu'AltGuard échange une fois la vérification passée.",
+      "channel": "Salon de vérification",
+      "channelDescription": "Seul salon visible par les membres non vérifiés — le bot y poste son panneau.",
+      "unverifiedRole": "Rôle non vérifié",
+      "unverifiedRoleDescription": "Donné au join. Il doit bloquer l'accès à tous les autres salons.",
+      "verifiedRole": "Rôle vérifié",
+      "verifiedRoleDescription": "Donné quand la vérification passe.",
+      "logChannel": "Salon de logs",
+      "logChannelDescription": "Les verdicts et les décisions manuelles y sont publiés.",
+      "noLogChannel": "Aucun salon de logs",
+      "optional": "facultatif",
+      "selectRole": "Choisir un rôle",
+      "noRoles": "Aucun rôle attribuable",
+      "roleAboveBot": "au-dessus de Moddy",
+      "saveDurationHint": "L'enregistrement peut prendre jusqu'à 25 secondes : le bot republie le panneau, reverrouille les salons et resynchronise.",
+      "confirmDisableTitle": "Désactiver AltGuard ?",
+      "confirmDisableDescription": "La configuration est supprimée et le bot retire le panneau de vérification. Les nouveaux membres ne seront plus retenus.",
+      "cancel": "Annuler",
+      "apply": {
+        "savedOnly": "Configuration enregistrée.",
+        "applied": "Configuration enregistrée et appliquée.",
+        "deleted": "AltGuard désactivé et panneau retiré.",
+        "appliedWithProblems": "Configuration enregistrée, mais Discord n'a pas suivi.",
+        "pending": "Configuration enregistrée. Application dans Discord en cours…",
+        "transportUnavailable": "Configuration enregistrée, mais le bot n'a pas pu être contacté. Contactez le support.",
+        "notApplied": "Configuration enregistrée, mais le bot n'a pas pu l'appliquer.",
+        "panelFailed": "Le bot n'a pas pu poster le panneau dans le salon de vérification (permission « Envoyer des messages » manquante).",
+        "permissionsFailed": "{{count}} salon(s) n'ont pas pu être verrouillés (permission « Gérer les rôles » manquante).",
+        "hookError": "Une erreur est survenue côté Discord. La configuration est enregistrée.",
+        "notCleaned": "Le bot n'a pas retrouvé le panneau à supprimer — retirez le message manuellement dans Discord."
+      }
+    },
+    "logs": {
+      "name": "Logs du serveur",
+      "description": "Envoie les événements Discord vers tes salons de logs, catégorie par catégorie.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "savedButInactive": "Enregistré, mais aucune catégorie n'a de salon — rien ne sera logué.",
+      "errorsTitle": "Configuration refusée",
+      "categoriesTitle": "Catégories",
+      "categoriesDescription": "{{categories}} catégories, {{events}} événements. Les cases sont cochées par défaut : seul ce que tu décoches est enregistré, donc les événements ajoutés plus tard démarrent activés.",
+      "duplicateChannelHint": "Un même acte peut appartenir à deux catégories (un bannissement est un événement serveur et un événement de modération). Si les deux pointent le même salon, un seul message part.",
+      "requiredPermissions": "Moddy a besoin de {{permissions}} dans chaque salon de logs.",
+      "permissions": {
+        "view_channel": "Voir le salon",
+        "send_messages": "Envoyer des messages",
+        "send_messages_in_threads": "Envoyer des messages dans les fils",
+        "embed_links": "Intégrer des liens",
+        "manage_webhooks": "Gérer les webhooks"
+      },
+      "eventCount": "{{active}}/{{total}} événements",
+      "categoryChannels": "Salons de logs",
+      "categoryChannelsHint": "Le routage se fait par catégorie, jamais par événement. Les fils fonctionnent tant qu'ils restent actifs — un fil archivé est traité comme introuvable.",
+      "addChannel": "Ajouter un salon",
+      "channelLimitReached": "{{max}} salons maximum par catégorie.",
+      "checkAll": "Tout cocher",
+      "uncheckAll": "Tout décocher",
+      "eventsHint": "Seuls les événements décochés sont enregistrés. Ce que Moddy ajoutera plus tard à cette catégorie démarrera logué.",
+      "soon": "bientôt",
+      "soonHint": "Déclaré mais encore émis par aucune source. Laisse-le coché : il s'allumera tout seul le jour où la fonctionnalité arrivera.",
+      "partial": "partiel",
+      "partialHint": "Ne se déclenche aujourd'hui que pour les sanctions restrict et revoke_access ; les autres mises à jour restent muettes.",
+      "filtersTitle": "Filtres",
+      "filtersDescription": "Ce qui n'est jamais logué, quelle que soit la catégorie.",
+      "ignoredChannels": "Salons ignorés",
+      "ignoredChannelsHint": "Tous les types de salons sont acceptés ici — c'est une liste d'exclusion, pas une destination.",
+      "ignoredRoles": "Rôles ignorés",
+      "ignoredRolesHint": "Les membres portant l'un de ces rôles ne produisent aucun log.",
+      "addRole": "Ajouter un rôle",
+      "limitReached": "{{max}} entrées maximum.",
+      "ignoreBots": "Ignorer les bots",
+      "ignoreBotsHint": "Ne logue rien de ce que font les comptes de bots.",
+      "outputTitle": "Rendu des logs",
+      "outputDescription": "La façon dont les messages sont envoyés.",
+      "attachTranscripts": "Joindre les transcriptions",
+      "attachTranscriptsHint": "Joint les fichiers .txt (transcriptions, contenus débordants). Désactivé, ils sont retirés avant l'envoi.",
+      "mergeDuplicates": "Fusionner les doublons",
+      "mergeDuplicatesHint": "Regroupe les logs d'une même action en un seul message (léger délai de ~3 s, jusqu'à ~5 s pour une expulsion).",
+      "unlinkAll": "Retirer tous les salons",
+      "unlinkAllHint": "Retirer les salons met le module en pause et conserve tes décochages. Réinitialiser efface tout.",
+      "reset": "Réinitialiser le module",
+      "confirmResetTitle": "Réinitialiser les logs ?",
+      "confirmResetDescription": "Les salons, les événements décochés et les listes d'ignorés sont supprimés. Pour simplement mettre les logs en pause, retire plutôt les salons : les exclusions sont conservées.",
+      "resetDone": "Logs réinitialisés.",
+      "orphanWebhookTitle": "Webhook laissé derrière",
+      "orphanWebhookDescription": "Le webhook « Moddy Logs » reste dans {{channels}}. Il n'est jamais réutilisé, mais tu peux le supprimer dans Paramètres du salon → Intégrations.",
+      "validation": {
+        "unknownCategory": "Catégorie inconnue : {{category}}.",
+        "tooManyChannels": "{{category}} : {{max}} salons maximum.",
+        "unknownEvent": "{{category}} : événement inconnu {{event}}.",
+        "tooManyIgnoredChannels": "Salons ignorés : {{max}} maximum.",
+        "tooManyIgnoredRoles": "Rôles ignorés : {{max}} maximum."
+      },
+      "diagnostics": {
+        "deletedTitle": "Salon supprimé",
+        "deleted": "{{channel}} n'existe plus. Choisis un autre salon, ses logs ne vont nulle part.",
+        "unsupportedTypeTitle": "Type de salon incompatible",
+        "unsupportedType": "{{channel}} n'est ni un salon texte, ni un salon d'annonces, ni un fil — rien ne peut y être logué.",
+        "missingPermissionsTitle": "Moddy ne peut pas écrire ici",
+        "missingPermissions": "Manque dans {{channel}} : {{permissions}}. Rien n'y sera logué tant que ce n'est pas accordé.",
+        "manageWebhooksTitle": "Permission « Gérer les webhooks » manquante",
+        "manageWebhooks": "Moddy n'a pas la permission Gérer les webhooks dans {{channel}}. Les logs seront quand même envoyés, mais plus lentement pendant les pics d'activité (raid, purge de messages) — le bot perd l'envoi groupé et son quota d'envoi dédié.",
+        "affectedCategories": "Catégories routées vers ce salon : {{categories}}."
+      },
+      "categories": {
+        "server": {
+          "name": "Serveur",
+          "description": "Arrivées, départs, sanctions et réglages du serveur."
+        },
+        "messages": {
+          "name": "Messages",
+          "description": "Suppressions, modifications et publications de messages."
+        },
+        "users": {
+          "name": "Utilisateurs",
+          "description": "Pseudos, avatars, rôles et exclusions temporaires."
+        },
+        "moderation": {
+          "name": "Modération",
+          "description": "Sanctions Moddy et actions de modération."
+        },
+        "channels": {
+          "name": "Salons",
+          "description": "Création, suppression et réglages des salons."
+        },
+        "roles": {
+          "name": "Rôles",
+          "description": "Création, suppression et réglages des rôles."
+        },
+        "threads": {
+          "name": "Fils",
+          "description": "Création, archivage et verrouillage des fils."
+        },
+        "voice": {
+          "name": "Vocal",
+          "description": "Connexions, déplacements et déconnexions en vocal."
+        },
+        "invites": {
+          "name": "Invitations",
+          "description": "Invitations créées, supprimées ou partagées."
+        },
+        "automod": {
+          "name": "AutoMod Discord",
+          "description": "Règles d'AutoMod natives de Discord."
+        },
+        "emojis": {
+          "name": "Émojis",
+          "description": "Émojis ajoutés, supprimés ou renommés."
+        },
+        "stickers": {
+          "name": "Stickers",
+          "description": "Stickers ajoutés, supprimés ou modifiés."
+        },
+        "soundboard": {
+          "name": "Soundboard",
+          "description": "Sons ajoutés, modifiés ou supprimés."
+        },
+        "events": {
+          "name": "Événements",
+          "description": "Événements programmés du serveur."
+        },
+        "stage": {
+          "name": "Conférences",
+          "description": "Conférences (salons de scène) démarrées ou terminées."
+        },
+        "polls": {
+          "name": "Sondages",
+          "description": "Sondages créés, terminés et votes."
+        },
+        "webhooks": {
+          "name": "Webhooks",
+          "description": "Webhooks créés, modifiés ou supprimés."
+        },
+        "applications": {
+          "name": "Applications",
+          "description": "Bots et applications ajoutés ou retirés."
+        }
+      },
+      "eventsLabel": "Événements",
+      "events": {
+        "server": {
+          "ban_add": "Bannissement",
+          "ban_remove": "Débannissement",
+          "user_join": "Arrivée d'un membre",
+          "user_leave": "Départ d'un membre",
+          "user_kick": "Expulsion",
+          "member_prune": "Purge de membres inactifs",
+          "afk_channel_update": "Salon AFK",
+          "afk_timeout_update": "Délai AFK",
+          "server_banner_update": "Bannière du serveur",
+          "message_notifications_update": "Notifications par défaut",
+          "server_discovery_splash_update": "Image de découverte",
+          "server_content_filter_update": "Filtre de contenu",
+          "server_features_update": "Fonctionnalités du serveur",
+          "server_icon_update": "Icône du serveur",
+          "mfa_level_update": "Niveau A2F",
+          "server_name_update": "Nom du serveur",
+          "server_description_update": "Description du serveur",
+          "server_owner_update": "Propriétaire du serveur",
+          "partnered_update": "Statut partenaire",
+          "server_boost_level_update": "Niveau de boost",
+          "boost_progress_bar_toggle": "Barre de progression des boosts",
+          "public_updates_channel_update": "Salon des annonces Discord",
+          "server_rules_channel_update": "Salon des règles",
+          "server_splash_update": "Image d'invitation",
+          "system_channel_update": "Salon système",
+          "server_vanity_update": "Invitation personnalisée",
+          "verification_level_update": "Niveau de vérification",
+          "verified_update": "Statut vérifié",
+          "server_widget_update": "Widget du serveur",
+          "server_preferred_locale_update": "Langue du serveur",
+          "onboarding_toggle": "Intégration activée",
+          "onboarding_channels_update": "Salons d'intégration",
+          "onboarding_question_add": "Question d'intégration ajoutée",
+          "onboarding_question_remove": "Question d'intégration retirée",
+          "onboarding_question_update": "Question d'intégration modifiée"
+        },
+        "messages": {
+          "message_delete": "Message supprimé",
+          "message_bulk_delete": "Suppression en masse",
+          "message_edit": "Message modifié",
+          "message_publish": "Message publié",
+          "message_command_used": "Commande utilisée"
+        },
+        "users": {
+          "user_name_update": "Changement de pseudo",
+          "user_roles_update": "Rôles modifiés",
+          "user_roles_add": "Rôle ajouté",
+          "user_roles_remove": "Rôle retiré",
+          "user_avatar_update": "Changement d'avatar",
+          "user_timed_out": "Exclusion temporaire",
+          "user_timeout_removed": "Fin d'exclusion temporaire"
+        },
+        "moderation": {
+          "auto_moderation": "AutoMod Discord",
+          "ban_add": "Bannissement",
+          "ban_remove": "Débannissement",
+          "case_delete": "Dossier supprimé",
+          "mass_case_delete": "Suppression de dossiers en masse",
+          "case_update": "Dossier modifié",
+          "kick_add": "Expulsion",
+          "kick_remove": "Expulsion annulée",
+          "mute_add": "Mise en sourdine",
+          "mute_remove": "Fin de sourdine",
+          "warn_add": "Avertissement",
+          "warn_remove": "Avertissement retiré",
+          "report_create": "Signalement créé",
+          "reports_ignore": "Signalement ignoré",
+          "reports_accept": "Signalement accepté",
+          "user_note_add": "Note ajoutée",
+          "user_note_remove": "Note retirée"
+        },
+        "channels": {
+          "channel_create": "Salon créé",
+          "channel_delete": "Salon supprimé",
+          "channel_pins_update": "Épinglages modifiés",
+          "channel_name_update": "Nom du salon",
+          "channel_topic_update": "Sujet du salon",
+          "channel_nsfw_update": "NSFW du salon",
+          "channel_parent_update": "Catégorie du salon",
+          "channel_permissions_update": "Permissions du salon",
+          "channel_type_update": "Type du salon",
+          "channel_bitrate_update": "Débit du salon",
+          "channel_user_limit_update": "Limite d'utilisateurs",
+          "channel_slowmode_update": "Mode lent",
+          "channel_rtc_region_update": "Région vocale",
+          "channel_video_quality_update": "Qualité vidéo",
+          "channel_default_archive_duration_update": "Archivage par défaut",
+          "channel_default_thread_slowmode_update": "Mode lent des fils",
+          "channel_default_reaction_emoji_update": "Réaction par défaut",
+          "channel_default_sort_order_update": "Tri par défaut",
+          "channel_forum_tags_update": "Tags du forum",
+          "channel_forum_layout_update": "Affichage du forum",
+          "channel_voice_status_update": "Statut du salon vocal"
+        },
+        "roles": {
+          "role_create": "Rôle créé",
+          "role_delete": "Rôle supprimé",
+          "role_color_update": "Couleur du rôle",
+          "role_hoist_update": "Affichage séparé",
+          "role_mentionable_update": "Rôle mentionnable",
+          "role_name_update": "Nom du rôle",
+          "role_permissions_update": "Permissions du rôle",
+          "role_icon_update": "Icône du rôle"
+        },
+        "threads": {
+          "thread_create": "Fil créé",
+          "thread_delete": "Fil supprimé",
+          "thread_name_update": "Nom du fil",
+          "thread_slowmode_update": "Mode lent du fil",
+          "thread_archive_duration_update": "Durée d'archivage",
+          "thread_archive": "Fil archivé",
+          "thread_unarchive": "Fil désarchivé",
+          "thread_lock": "Fil verrouillé",
+          "thread_unlock": "Fil déverrouillé"
+        },
+        "voice": {
+          "voice_channel_full": "Salon vocal plein",
+          "voice_user_join": "Connexion vocale",
+          "voice_user_switch": "Changement de salon vocal",
+          "voice_user_leave": "Déconnexion vocale",
+          "voice_user_move": "Déplacement forcé",
+          "voice_user_kick": "Déconnexion forcée"
+        },
+        "invites": {
+          "invite_create": "Invitation créée",
+          "invite_delete": "Invitation supprimée",
+          "invite_post": "Invitation partagée"
+        },
+        "automod": {
+          "automod_rule_create": "Règle créée",
+          "automod_rule_delete": "Règle supprimée",
+          "automod_rule_toggle": "Règle activée/désactivée",
+          "automod_rule_name_update": "Nom de la règle",
+          "automod_rule_actions_update": "Actions de la règle",
+          "automod_rule_content_update": "Contenu filtré",
+          "automod_rule_roles_update": "Rôles exemptés",
+          "automod_rule_channels_update": "Salons exemptés",
+          "automod_rule_whitelist_update": "Liste blanche"
+        },
+        "emojis": {
+          "emoji_create": "Émoji ajouté",
+          "emoji_delete": "Émoji supprimé",
+          "emoji_name_update": "Nom de l'émoji",
+          "emoji_roles_update": "Rôles de l'émoji"
+        },
+        "stickers": {
+          "sticker_create": "Sticker ajouté",
+          "sticker_delete": "Sticker supprimé",
+          "sticker_name_update": "Nom du sticker",
+          "sticker_description_update": "Description du sticker",
+          "sticker_related_emoji_update": "Émoji du sticker"
+        },
+        "soundboard": {
+          "sound_upload": "Son ajouté",
+          "sound_name_update": "Nom du son",
+          "sound_volume_update": "Volume du son",
+          "sound_emoji_update": "Émoji du son",
+          "sound_delete": "Son supprimé"
+        },
+        "events": {
+          "event_create": "Événement créé",
+          "event_delete": "Événement supprimé",
+          "event_name_update": "Nom de l'événement",
+          "event_description_update": "Description de l'événement",
+          "event_location_update": "Lieu de l'événement",
+          "event_privacy_level_update": "Confidentialité de l'événement",
+          "event_start_time_update": "Début de l'événement",
+          "event_end_time_update": "Fin de l'événement",
+          "event_status_update": "Statut de l'événement",
+          "event_image_update": "Image de l'événement",
+          "event_user_subscribe": "Inscription à un événement",
+          "event_user_unsubscribe": "Désinscription d'un événement"
+        },
+        "stage": {
+          "stage_start": "Conférence démarrée",
+          "stage_end": "Conférence terminée",
+          "stage_topic_update": "Sujet de la conférence",
+          "stage_privacy_update": "Confidentialité de la conférence"
+        },
+        "polls": {
+          "poll_create": "Sondage créé",
+          "poll_delete": "Sondage supprimé",
+          "poll_finalize": "Sondage terminé",
+          "poll_votes_add": "Vote ajouté",
+          "poll_votes_remove": "Vote retiré"
+        },
+        "webhooks": {
+          "webhook_create": "Webhook créé",
+          "webhook_name_update": "Nom du webhook",
+          "webhook_avatar_update": "Avatar du webhook",
+          "webhook_channel_update": "Salon du webhook",
+          "webhook_delete": "Webhook supprimé"
+        },
+        "applications": {
+          "app_add": "Application ajoutée",
+          "app_remove": "Application retirée",
+          "app_command_permission_update": "Permissions de commande"
+        }
+      },
+      "titles": {
+        "server": {
+          "ban_add": "Un(e) utilisateur(trice) a été banni(e)",
+          "ban_remove": "Un(e) utilisateur(trice) a été débanni(e)",
+          "user_join": "Un(e) utilisateur(trice) a rejoint le serveur",
+          "user_leave": "Un(e) utilisateur(trice) a quitté le serveur",
+          "user_kick": "Un(e) utilisateur(trice) a été expulsé(e)",
+          "member_prune": "Des membres inactifs ont été purgés",
+          "afk_channel_update": "Modification du salon AFK",
+          "afk_timeout_update": "Modification du délai AFK",
+          "server_banner_update": "Modification de la bannière du serveur",
+          "message_notifications_update": "Modification des notifications par défaut",
+          "server_discovery_splash_update": "Modification de l'image de découverte",
+          "server_content_filter_update": "Modification du filtre de contenu explicite",
+          "server_features_update": "Modification des fonctionnalités du serveur",
+          "server_icon_update": "Modification de l'icône du serveur",
+          "mfa_level_update": "Modification du niveau d'authentification à deux facteurs",
+          "server_name_update": "Modification du nom du serveur",
+          "server_description_update": "Modification de la description du serveur",
+          "server_owner_update": "Changement de propriétaire du serveur",
+          "partnered_update": "Modification du statut de partenariat",
+          "server_boost_level_update": "Modification du niveau de boost",
+          "boost_progress_bar_toggle": "Modification de la barre de progression des boosts",
+          "public_updates_channel_update": "Modification du salon des annonces Discord",
+          "server_rules_channel_update": "Modification du salon des règles",
+          "server_splash_update": "Modification de l'image d'invitation",
+          "system_channel_update": "Modification du salon système",
+          "server_vanity_update": "Modification de l'invitation personnalisée",
+          "verification_level_update": "Modification du niveau de vérification",
+          "verified_update": "Modification du statut vérifié",
+          "server_widget_update": "Modification du widget du serveur",
+          "server_preferred_locale_update": "Modification de la langue du serveur",
+          "onboarding_toggle": "Modification de l'activation de l'intégration",
+          "onboarding_channels_update": "Modification des salons par défaut de l'intégration",
+          "onboarding_question_add": "Ajout d'une question d'intégration",
+          "onboarding_question_remove": "Suppression d'une question d'intégration",
+          "onboarding_question_update": "Modification d'une question d'intégration"
+        },
+        "messages": {
+          "message_delete": "Message supprimé",
+          "message_bulk_delete": "Suppression de messages en masse",
+          "message_edit": "Message modifié",
+          "message_publish": "Message publié dans les serveurs abonnés",
+          "message_command_used": "Une commande a été utilisée"
+        },
+        "users": {
+          "user_name_update": "Modification du pseudo d'un(e) utilisateur(trice)",
+          "user_roles_update": "Modification des rôles d'un(e) utilisateur(trice)",
+          "user_roles_add": "Rôle(s) ajouté(s) à un(e) utilisateur(trice)",
+          "user_roles_remove": "Rôle(s) retiré(s) à un(e) utilisateur(trice)",
+          "user_avatar_update": "Modification de l'avatar d'un(e) utilisateur(trice)",
+          "user_timed_out": "Un(e) utilisateur(trice) a été exclu(e) temporairement",
+          "user_timeout_removed": "L'exclusion temporaire d'un(e) utilisateur(trice) a été levée"
+        },
+        "moderation": {
+          "auto_moderation": "L'AutoMod de Discord est intervenu",
+          "ban_add": "Un(e) utilisateur(trice) a été banni(e)",
+          "ban_remove": "Un(e) utilisateur(trice) a été débanni(e)",
+          "case_delete": "Un dossier de modération a été supprimé",
+          "mass_case_delete": "Plusieurs dossiers de modération ont été supprimés",
+          "case_update": "Un dossier de modération a été modifié",
+          "kick_add": "Un(e) utilisateur(trice) a été expulsé(e)",
+          "kick_remove": "Une expulsion a été annulée",
+          "mute_add": "Un(e) utilisateur(trice) a été réduit(e) au silence",
+          "mute_remove": "Un(e) utilisateur(trice) n'est plus réduit(e) au silence",
+          "warn_add": "Un(e) utilisateur(trice) a reçu un avertissement",
+          "warn_remove": "Un avertissement a été retiré",
+          "report_create": "Un signalement a été créé",
+          "reports_ignore": "Un signalement a été ignoré",
+          "reports_accept": "Un signalement a été accepté",
+          "user_note_add": "Une note a été ajoutée à un(e) utilisateur(trice)",
+          "user_note_remove": "Une note a été retirée d'un(e) utilisateur(trice)"
+        },
+        "channels": {
+          "channel_create": "Salon créé",
+          "channel_delete": "Salon supprimé",
+          "channel_pins_update": "Modification des messages épinglés d'un salon",
+          "channel_name_update": "Modification du nom d'un salon",
+          "channel_topic_update": "Modification du sujet d'un salon",
+          "channel_nsfw_update": "Modification du réglage NSFW d'un salon",
+          "channel_parent_update": "Modification de la catégorie d'un salon",
+          "channel_permissions_update": "Modification des permissions d'un salon",
+          "channel_type_update": "Modification du type d'un salon",
+          "channel_bitrate_update": "Modification du débit d'un salon vocal",
+          "channel_user_limit_update": "Modification de la limite d'utilisateurs d'un salon vocal",
+          "channel_slowmode_update": "Modification du mode lent d'un salon",
+          "channel_rtc_region_update": "Modification de la région vocale d'un salon",
+          "channel_video_quality_update": "Modification de la qualité vidéo d'un salon",
+          "channel_default_archive_duration_update": "Modification de la durée d'archivage par défaut",
+          "channel_default_thread_slowmode_update": "Modification du mode lent par défaut des fils",
+          "channel_default_reaction_emoji_update": "Modification de l'émoji de réaction par défaut",
+          "channel_default_sort_order_update": "Modification du tri par défaut d'un forum",
+          "channel_forum_tags_update": "Modification des tags d'un forum",
+          "channel_forum_layout_update": "Modification de l'affichage d'un forum",
+          "channel_voice_status_update": "Modification du statut d'un salon vocal"
+        },
+        "roles": {
+          "role_create": "Rôle créé",
+          "role_delete": "Rôle supprimé",
+          "role_color_update": "Modification de la couleur d'un rôle",
+          "role_hoist_update": "Modification de l'affichage séparé d'un rôle",
+          "role_mentionable_update": "Modification de la mentionnabilité d'un rôle",
+          "role_name_update": "Modification du nom d'un rôle",
+          "role_permissions_update": "Modification des permissions d'un rôle",
+          "role_icon_update": "Modification de l'icône d'un rôle"
+        },
+        "threads": {
+          "thread_create": "Fil créé",
+          "thread_delete": "Fil supprimé",
+          "thread_name_update": "Modification du nom d'un fil",
+          "thread_slowmode_update": "Modification du mode lent d'un fil",
+          "thread_archive_duration_update": "Modification de la durée d'archivage d'un fil",
+          "thread_archive": "Fil archivé",
+          "thread_unarchive": "Fil désarchivé",
+          "thread_lock": "Fil verrouillé",
+          "thread_unlock": "Fil déverrouillé"
+        },
+        "voice": {
+          "voice_channel_full": "Un salon vocal est plein",
+          "voice_user_join": "Un(e) utilisateur(trice) a rejoint un salon vocal",
+          "voice_user_switch": "Un(e) utilisateur(trice) a changé de salon vocal",
+          "voice_user_leave": "Un(e) utilisateur(trice) a quitté un salon vocal",
+          "voice_user_move": "Un(e) utilisateur(trice) a été déplacé(e) en vocal",
+          "voice_user_kick": "Un(e) utilisateur(trice) a été déconnecté(e) du vocal"
+        },
+        "invites": {
+          "invite_create": "Invitation créée",
+          "invite_delete": "Invitation supprimée",
+          "invite_post": "Une invitation a été partagée dans un salon"
+        },
+        "automod": {
+          "automod_rule_create": "Règle d'AutoMod créée",
+          "automod_rule_delete": "Règle d'AutoMod supprimée",
+          "automod_rule_toggle": "Une règle d'AutoMod a été activée ou désactivée",
+          "automod_rule_name_update": "Modification du nom d'une règle d'AutoMod",
+          "automod_rule_actions_update": "Modification des actions d'une règle d'AutoMod",
+          "automod_rule_content_update": "Modification du contenu filtré par une règle d'AutoMod",
+          "automod_rule_roles_update": "Modification des rôles exemptés d'une règle d'AutoMod",
+          "automod_rule_channels_update": "Modification des salons exemptés d'une règle d'AutoMod",
+          "automod_rule_whitelist_update": "Modification de la liste blanche d'une règle d'AutoMod"
+        },
+        "emojis": {
+          "emoji_create": "Émoji ajouté",
+          "emoji_delete": "Émoji supprimé",
+          "emoji_name_update": "Modification du nom d'un émoji",
+          "emoji_roles_update": "Modification des rôles autorisés d'un émoji"
+        },
+        "stickers": {
+          "sticker_create": "Sticker ajouté",
+          "sticker_delete": "Sticker supprimé",
+          "sticker_name_update": "Modification du nom d'un sticker",
+          "sticker_description_update": "Modification de la description d'un sticker",
+          "sticker_related_emoji_update": "Modification de l'émoji associé à un sticker"
+        },
+        "soundboard": {
+          "sound_upload": "Son ajouté à la soundboard",
+          "sound_name_update": "Modification du nom d'un son",
+          "sound_volume_update": "Modification du volume d'un son",
+          "sound_emoji_update": "Modification de l'émoji d'un son",
+          "sound_delete": "Son supprimé de la soundboard"
+        },
+        "events": {
+          "event_create": "Événement créé",
+          "event_delete": "Événement supprimé",
+          "event_name_update": "Modification du nom d'un événement",
+          "event_description_update": "Modification de la description d'un événement",
+          "event_location_update": "Modification du lieu d'un événement",
+          "event_privacy_level_update": "Modification de la confidentialité d'un événement",
+          "event_start_time_update": "Modification de l'heure de début d'un événement",
+          "event_end_time_update": "Modification de l'heure de fin d'un événement",
+          "event_status_update": "Modification du statut d'un événement",
+          "event_image_update": "Modification de l'image d'un événement",
+          "event_user_subscribe": "Un(e) utilisateur(trice) s'est inscrit(e) à un événement",
+          "event_user_unsubscribe": "Un(e) utilisateur(trice) s'est désinscrit(e) d'un événement"
+        },
+        "stage": {
+          "stage_start": "Une conférence a démarré",
+          "stage_end": "Une conférence s'est terminée",
+          "stage_topic_update": "Modification du sujet d'une conférence",
+          "stage_privacy_update": "Modification de la confidentialité d'une conférence"
+        },
+        "polls": {
+          "poll_create": "Sondage créé",
+          "poll_delete": "Sondage supprimé",
+          "poll_finalize": "Un sondage s'est terminé",
+          "poll_votes_add": "Un vote a été ajouté à un sondage",
+          "poll_votes_remove": "Un vote a été retiré d'un sondage"
+        },
+        "webhooks": {
+          "webhook_create": "Webhook créé",
+          "webhook_name_update": "Modification du nom d'un webhook",
+          "webhook_avatar_update": "Modification de l'avatar d'un webhook",
+          "webhook_channel_update": "Modification du salon d'un webhook",
+          "webhook_delete": "Webhook supprimé"
+        },
+        "applications": {
+          "app_add": "Une application a été ajoutée au serveur",
+          "app_remove": "Une application a été retirée du serveur",
+          "app_command_permission_update": "Modification des permissions d'une commande"
+        }
+      },
+      "channelCount_one": "{{count}} salon",
+      "channelCount_other": "{{count}} salons",
+      "noChannel": "Aucun salon"
+    },
+    "tickets": {
+      "name": "Tickets",
+      "description": "Les panneaux sur lesquels vos membres cliquent pour ouvrir un salon privé, et les catégories derrière chaque bouton.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "tabs": {
+        "settings": "Panneaux",
+        "tickets": "Tickets"
+      },
+      "panelQuota": "{{count}} panneaux sur {{max}}",
+      "panelQuotaUnknown": "Quotas indisponibles — l'enregistrement reste possible.",
+      "freePlan": "Offre gratuite",
+      "addPanel": "Ajouter un panneau",
+      "panelCapReached": "Votre offre autorise {{max}} panneaux.",
+      "saveDurationHint": "La sauvegarde peut prendre jusqu'à 25 secondes : le bot republie chaque panneau dans Discord avant que le dashboard reçoive une réponse.",
+      "cancel": "Annuler",
+      "confirmDisableTitle": "Désactiver les tickets ?",
+      "confirmDisableDescription": "Tous les messages de panneau sont retirés de Discord et la configuration est supprimée. Les tickets ouverts ne sont PAS fermés et leurs salons sont conservés — seuls les panneaux disparaissent.",
+      "empty": {
+        "title": "Aucun panneau",
+        "description": "Un panneau est un message posté par Moddy. Chacune de ses catégories est un bouton (ou une option de menu) qui ouvre un ticket."
+      },
+      "orphans": {
+        "title_one": "{{count}} ticket orphelin",
+        "title_other": "{{count}} tickets orphelins",
+        "description": "Ces tickets sont encore ouverts mais leur catégorie n'existe plus dans la configuration. Le bot répond « catégorie disparue » à toute action dedans — déplacez-les avec /ticket move."
+      },
+      "conflict": {
+        "title": "Une sauvegarde est déjà en cours",
+        "description": "Une autre sauvegarde est en vol pour ce serveur, peut-être depuis un autre onglet. Attendez quelques secondes avant de réessayer.",
+        "retry": "Réessayer"
+      },
+      "validation": {
+        "title": "Des champs sont à corriger",
+        "blocked_one": "{{count}} champ invalide.",
+        "blocked_other": "{{count}} champs invalides.",
+        "fieldErrors": "L'API a refusé certains champs — voyez les champs signalés.",
+        "tooManyPanels": "Trop de panneaux ({{count}}/{{max}}).",
+        "duplicatePanelId": "Deux panneaux partagent l'id « {{id}} ».",
+        "panelNameRequired": "Un panneau doit avoir un nom.",
+        "categoryNameRequired": "Une catégorie doit avoir un nom.",
+        "duplicateCategoryId": "Deux catégories partagent l'id « {{id}} ».",
+        "tooLong": "{{max}} caractères maximum.",
+        "accentColorRange": "Couleur invalide.",
+        "unknownChannel": "Ce salon n'existe plus sur le serveur.",
+        "notATextChannel": "Choisissez un salon textuel ou d'annonces.",
+        "unknownDiscordCategory": "Cette catégorie Discord n'existe plus.",
+        "notADiscordCategory": "Cette destination n'est pas une catégorie Discord.",
+        "tooManyCategories": "« {{name}} » a trop de catégories ({{count}}/{{max}}).",
+        "maxOpenRange": "Entre {{min}} et {{max}}."
+      },
+      "apply": {
+        "savedOnly": "Configuration enregistrée.",
+        "applied": "Enregistré — panneaux republiés.",
+        "deleted": "Tickets désactivés et panneaux retirés.",
+        "appliedWithProblems": "Enregistré, mais Discord n'a pas tout suivi.",
+        "panelsFailed_one": "Enregistré, mais {{count}} panneau n'a pas pu être publié.",
+        "panelsFailed_other": "Enregistré, mais {{count}} panneaux n'ont pas pu être publiés.",
+        "pending": "Enregistré. Le bot n'a pas répondu — les panneaux seront republiés dès son retour. Ne réenregistrez pas.",
+        "transportUnavailable": "Enregistré mais non appliqué : le transport de tâches est indisponible. Contactez le support.",
+        "notApplied": "Enregistré, mais le bot n'a pas rechargé la configuration ({{error}}).",
+        "hookError": "Le bot a levé une erreur en republiant les panneaux."
+      },
+      "panel": {
+        "untitled": "Panneau sans nom",
+        "defaultName": "Panneau {{index}}",
+        "noChannel": "Aucun salon — brouillon",
+        "noChannelOption": "Aucun salon (brouillon)",
+        "categoryCount_one": "{{count}}/{{max}} catégorie",
+        "categoryCount_other": "{{count}}/{{max}} catégories",
+        "disabled": "Désactivé",
+        "enabledLabel": "Activer ce panneau",
+        "name": "Nom du panneau",
+        "nameDescription": "Nom interne, utilisé aussi comme titre du panneau si vous laissez le titre vide.",
+        "channel": "Salon",
+        "channelDescription": "Là où Moddy publie le panneau. Un panneau sans salon est un brouillon valide.",
+        "title": "Titre",
+        "titleDescription": "Affiché en haut du message de panneau.",
+        "description": "Description",
+        "descriptionHint": "Le corps du message de panneau. Le markdown Discord est supporté.",
+        "style": "Style",
+        "styleDescription": "Les boutons affichent une catégorie chacun ; un menu en contient davantage.",
+        "styles": {
+          "buttons": "Boutons",
+          "select": "Menu déroulant"
+        },
+        "accentColor": "Couleur d'accent",
+        "accentColorDescription": "La barre colorée du panneau. Réinitialisez pour laisser le bot choisir.",
+        "resetColor": "Réinitialiser",
+        "placeholder": "Texte du menu",
+        "placeholderDescription": "Le texte gris affiché avant qu'un membre ouvre le menu.",
+        "categories": "Catégories",
+        "noCategories": "Aucune catégorie — un panneau sans catégorie n'ouvre rien.",
+        "addCategory": "Ajouter une catégorie",
+        "categoryCapReached": "{{max}} catégories maximum sur ce panneau.",
+        "idHint": "id {{id}} — conservé pour toujours, c'est ce qui relie le panneau à son message.",
+        "delete": "Supprimer ce panneau",
+        "default_title": "Besoin d'aide ?",
+        "default_description": "Choisissez une catégorie ci-dessous pour ouvrir un ticket. Un salon privé sera créé pour vous."
+      },
+      "category": {
+        "untitled": "Catégorie sans nom",
+        "defaultName": "Catégorie {{index}}",
+        "dialogDescription": "Tout ce qui concerne les tickets ouverts depuis ce bouton : où ils atterrissent, qui les voit et ce que le bot y écrit.",
+        "tabs": {
+          "general": "Général",
+          "access": "Accès",
+          "messages": "Messages",
+          "buttons": "Boutons"
+        },
+        "name": "Nom",
+        "nameDescription": "Affiché sur le bouton ou l'option de menu.",
+        "emoji": "Émoji",
+        "emojiDescription": "Émoji Unicode ou émoji personnalisé de ce serveur.",
+        "buttonStyle": "Couleur du bouton",
+        "buttonStyleDescription": "Les styles de bouton de Discord.",
+        "description": "Description de l'option",
+        "descriptionHint": "Deuxième ligne de l'option (panneaux en menu déroulant uniquement).",
+        "discordCategory": "Catégorie Discord",
+        "discordCategoryDescription": "Là où les salons de ticket sont créés. La laisser vide reste un brouillon valide.",
+        "selectDiscordCategory": "Choisir une catégorie",
+        "noDiscordCategory": "Aucune catégorie Discord sur ce serveur",
+        "noParent": "Aucune catégorie",
+        "nameFormat": "Nom du salon",
+        "nameFormatDescription": "Format du salon de ticket, par exemple ticket-{number}.",
+        "maxOpenPerUser": "Tickets ouverts par membre",
+        "maxOpenPerUserDescription": "Combien de tickets un membre peut garder ouverts dans cette catégorie.",
+        "claimEnabled": "Autoriser la prise en charge",
+        "claimEnabledDescription": "Le staff peut prendre un ticket en charge, pour que chacun sache qui s'en occupe.",
+        "claimLock": "Verrouiller à la prise en charge",
+        "claimLockDescription": "Une fois pris en charge, seuls le claimeur, les rôles admin, l'auteur et les membres ajoutés à la main écrivent. Les autres continuent de lire.",
+        "allowedRoles": "Rôles autorisés à ouvrir",
+        "allowedRolesDescription": "Vide signifie que tout le monde peut ouvrir un ticket — ce n'est pas « personne ».",
+        "deniedRoles": "Rôles interdits",
+        "deniedRolesDescription": "Gagne toujours, y compris sur un rôle autorisé et sur un administrateur du serveur.",
+        "pingRoles": "Rôles à mentionner",
+        "pingRolesDescription": "Mentionnés à l'ouverture d'un ticket dans cette catégorie.",
+        "addRole": "Ajouter un rôle",
+        "noRole": "Aucun rôle disponible.",
+        "pingStaffRoles": "Mentionner les rôles du staff",
+        "pingStaffRolesDescription": "Mentionner aussi les rôles qui portent les permissions de ticket ci-dessous.",
+        "openMessage": "Message d'ouverture",
+        "openMessageDescription": "Le message entier : le bot n'ajoute plus rien autour — ni titre, ni ligne de métadonnées.",
+        "closeMessage": "Message de fermeture",
+        "closeMessageDescription": "Posté dans le salon quand le ticket est fermé.",
+        "usingDefault": "Message par défaut du bot utilisé.",
+        "separatorHint": "Une ligne contenant uniquement --- devient un vrai séparateur. Cliquez un placeholder pour l'insérer.",
+        "customizeButtons": "Personnaliser les boutons",
+        "customizeButtonsDescription": "Désactivé, le bot pose ses boutons par défaut. Activé, vous choisissez exactement lesquels apparaîtront.",
+        "noButtonsWarning": "Aucun bouton : tout passera par les commandes /ticket.",
+        "buttonsOrderHint": "L'ordre est décidé par le bot — le changer ici ne servirait à rien.",
+        "done": "Terminé",
+        "openTickets_one": "{{count}} ticket ouvert",
+        "openTickets_other": "{{count}} tickets ouverts",
+        "noOpenTickets": "Aucun ticket ouvert",
+        "delete": "Supprimer",
+        "confirmDeleteTitle": "Supprimer « {{name}} » ?",
+        "confirmDeleteDescription": "La catégorie disparaît du panneau à la prochaine sauvegarde.",
+        "confirmDeleteOpen_one": "{{count}} ticket ouvert utilise cette catégorie. Il restera ouvert mais deviendra inutilisable — déplacez-le d'abord avec /ticket move dans son salon.",
+        "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move dans leurs salons."
+      },
+      "buttonStyles": {
+        "primary": "Blurple",
+        "secondary": "Gris",
+        "success": "Vert",
+        "danger": "Rouge"
+      },
+      "buttons": {
+        "close": {
+          "label": "Fermer",
+          "description": "Ferme le ticket. Le salon est conservé."
+        },
+        "claim": {
+          "label": "Prendre en charge",
+          "description": "Attribue le ticket à celui qui clique."
+        },
+        "escalate": {
+          "label": "Escalader",
+          "description": "Réserve le ticket aux rôles admin."
+        },
+        "staff_thread": {
+          "label": "Fil du staff",
+          "description": "Ouvre le fil privé du staff."
+        },
+        "participants": {
+          "label": "Participants",
+          "description": "Ajoute ou retire membres et rôles."
+        },
+        "close_request": {
+          "label": "Demander la fermeture",
+          "description": "Pas un bouton par défaut — il vit aussi dans /ticket close-request."
+        }
+      },
+      "permissions": {
+        "title": "Permissions par rôle",
+        "description": "Par rôle et par catégorie. L'auteur du ticket et les membres ajoutés à la main n'obtiennent que « Voir ».",
+        "empty": "Aucun rôle n'a encore de permission sur cette catégorie.",
+        "addRole": "Ajouter un rôle",
+        "items": {
+          "view": {
+            "label": "Voir",
+            "description": "Voir et écrire dans ces tickets."
+          },
+          "close": {
+            "label": "Fermer",
+            "description": "Fermer et rouvrir."
+          },
+          "claim": {
+            "label": "Prendre en charge",
+            "description": "Prendre un ticket, et relâcher le sien."
+          },
+          "unclaim_others": {
+            "label": "Retirer une prise en charge",
+            "description": "Retirer un ticket à l'agent qui l'a pris."
+          },
+          "staff_thread": {
+            "label": "Fil du staff",
+            "description": "Ouvrir et rejoindre le fil privé du staff."
+          },
+          "rename": {
+            "label": "Renommer",
+            "description": "Renommer le salon du ticket."
+          },
+          "move": {
+            "label": "Déplacer",
+            "description": "Déplacer un ticket vers une autre catégorie."
+          },
+          "participants": {
+            "label": "Participants",
+            "description": "Ajouter ou retirer membres et rôles."
+          },
+          "admin": {
+            "label": "Admin",
+            "description": "Tout ce qui précède, et garde l'accès après une escalade."
+          }
+        }
+      },
+      "states": {
+        "open": "Ouvert",
+        "claimed": "Pris en charge",
+        "escalated": "Escaladé",
+        "closed": "Fermé"
+      },
+      "stats": {
+        "total": "Total",
+        "open": "Ouverts",
+        "closed": "Fermés",
+        "claimed": "Pris en charge",
+        "escalated": "Escaladés",
+        "avgResolution": "Résolution moy."
+      },
+      "filters": {
+        "allStatuses": "Tous les statuts",
+        "open": "Ouverts",
+        "closed": "Fermés",
+        "allCategories": "Toutes les catégories",
+        "refresh": "Rafraîchir"
+      },
+      "list": {
+        "empty": "Aucun ticket ne correspond à ces filtres.",
+        "orphan": "Catégorie disparue",
+        "closeRequested": "Fermeture demandée",
+        "pagination": "Page {{page}} sur {{pages}} — {{total}} tickets"
+      },
+      "channel": {
+        "default_open_message": "### {icon} Ticket #{number}\nMerci d'avoir ouvert un ticket. Décrivez votre demande le plus précisément possible — l'équipe vous répondra ici.\n-# Ouvert par · {user} · `{category}`",
+        "default_close_message": "Merci de nous avoir contactés. Si vous avez besoin d'autre chose, ouvrez un nouveau ticket."
+      }
+    }
+  },
+  "staff": {
+    "title": "Panel Staff",
+    "accessDenied": {
+      "title": "Accès refusé",
+      "description": "Vous devez avoir des permissions staff pour accéder à cette page."
+    },
+    "tabs": {
+      "stats": "Statistiques",
+      "users": "Utilisateurs",
+      "guilds": "Serveurs",
+      "cases": "Sanctions",
+      "forms": "Applications",
+      "automodBudget": "Budget IA"
+    },
+    "stats": {
+      "totalUsers": "Utilisateurs totaux",
+      "premiumUsers": "Utilisateurs Premium",
+      "totalGuilds": "Serveurs totaux",
+      "openCases": "Sanctions ouvertes"
+    },
+    "bot": {
+      "title": "Statut du bot",
+      "shards": "Shards",
+      "latency": "Latence",
+      "uptime": "Uptime",
+      "memory": "Mémoire"
+    },
+    "users": {
+      "searchPlaceholder": "Rechercher par pseudo ou ID...",
+      "id": "ID Utilisateur",
+      "email": "E-mail",
+      "roles": "Rôles Staff",
+      "cases": "Sanctions (ouvertes/total)",
+      "attributes": "Attributs"
+    },
+    "guilds": {
+      "searchPlaceholder": "Rechercher par nom ou ID...",
+      "id": "ID Serveur",
+      "name": "Nom",
+      "attributes": "Attributs"
+    },
+    "cases": {
+      "id": "ID Sanction",
+      "type": "Type",
+      "entity": "Entité",
+      "status": "Statut",
+      "reason": "Raison",
+      "date": "Date",
+      "empty": "Aucune sanction trouvée."
+    },
+    "automodBudget": {
+      "title": "Budget IA — Automod",
+      "description": "Plafond souple quotidien d'appels IA pour un serveur, en unités (un appel mini en coûte 4). Au-delà du plafond, le bot dégrade le funnel au lieu de s'arrêter.",
+      "guildIdPlaceholder": "ID du serveur",
+      "load": "Charger",
+      "loadError": "Impossible de charger le budget.",
+      "saved": "Plafond mis à jour.",
+      "saveError": "Impossible de mettre à jour le plafond.",
+      "save": "Enregistrer le plafond",
+      "restoreDefault": "Restaurer le défaut",
+      "overridden": "Plafond personnalisé",
+      "usingDefault": "Plafond par défaut",
+      "usedToday": "Consommé aujourd'hui",
+      "day": "Journée {{day}}",
+      "degradeHint": "Plafond par défaut : {{default}} unités/jour. Au-delà, l'IA est réservée aux cas flagrants."
+    },
+    "forms": {
+      "empty": "No forms found.",
+      "emptyTitle": "No forms yet",
+      "emptyDescription": "Register a Tally form to start receiving applications.",
+      "createForm": "New form",
+      "createSuccess": "Form registered.",
+      "createDialog": {
+        "title": "Register a form",
+        "description": "Link a Tally form to the staff panel.",
+        "formId": "Form ID",
+        "formIdDescription": "Tally form ID found in the form URL.",
+        "formTitle": "Title",
+        "signingSecret": "Signing secret",
+        "signingSecretDescription": "Found in Tally's webhook settings for this form.",
+        "cancel": "Cancel",
+        "confirm": "Register"
+      },
+      "formTitle": "Title",
+      "formId": "Form ID",
+      "createdAt": "Created",
+      "submissions": "Submissions",
+      "noSubmissions": "No submissions yet.",
+      "backToForms": "Back to forms",
+      "submissionId": "Submission ID",
+      "discordId": "Discord ID",
+      "date": "Date",
+      "status": "Status",
+      "note": "Note",
+      "pagination": "Page {{current}}/{{total}} — {{count}} total",
+      "generalInfo": "General information",
+      "answers": "Answers",
+      "action": "Action",
+      "notePlaceholder": "Add a note...",
+      "noteDescription": "Internal note visible only to staff.",
+      "save": "Save",
+      "saved": "Changes saved.",
+      "statusLabel": {
+        "pending": "Pending",
+        "done": "Accepted",
+        "rejected": "Rejected"
+      }
+    }
+  },
+  "navUser": {
+    "upgradeToMax": "Passer à Max",
+    "settings": "Paramètres",
+    "billing": "Facturation",
+    "notifications": "Notifications",
+    "myPunishments": "Mes sanctions",
+    "logOut": "Se déconnecter",
+    "discordAccount": "Compte Discord",
+    "staffPanel": "Panel Staff",
+    "logoutDialog": {
+      "title": "Se déconnecter",
+      "description": "Êtes-vous sûr de vouloir vous déconnecter de votre compte Moddy ?",
+      "cancel": "Annuler",
+      "confirm": "Se déconnecter"
+    }
+  },
+  "commandMenu": {
+    "placeholder": "Rechercher une action ou une page...",
+    "noResults": "Aucun résultat trouvé.",
+    "noServers": "Aucun serveur connecté pour l'instant",
+    "groups": {
+      "myServers": "Mes serveurs",
+      "usefulLinks": "Liens utiles",
+      "myAccount": "Mon compte"
+    },
+    "items": {
+      "addModdyToServer": "Ajouter Moddy à un serveur",
+      "addModdy": "Ajouter Moddy",
+      "openTicket": "Ouvrir un ticket",
+      "documentation": "Documentation",
+      "subscriptions": "Abonnements",
+      "servicesStatus": "Statut des services",
+      "myPunishments": "Mes sanctions",
+      "notifications": "Notifications",
+      "billing": "Facturation",
+      "settings": "Paramètres",
+      "logOut": "Se déconnecter"
+    }
+  },
+  "notFound": {
+    "title": "404 — Page introuvable",
+    "description": "La page que vous cherchez n'existe pas ou a été déplacée.",
+    "searchPlaceholder": "Rechercher une page...",
+    "contactSupport": "Contacter le support",
+    "backToDashboard": "Retour au tableau de bord"
+  },
+  "sidebar": {
+    "getHelp": "Obtenir de l'aide",
+    "commands": "Commandes",
+    "documentation": "Documentation",
+    "search": "Rechercher",
+    "notifications": "Notifications",
+    "general": "Général",
+    "staffLabel": "Staff",
+    "guild": {
+      "label": "Serveur",
+      "overview": "Vue d'ensemble",
+      "modules": "Modules",
+      "stats": "Statistiques",
+      "premium": "Premium"
+    },
+    "manageSubscription": "Gérer mon abonnement"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "Vous n'avez aucune notification",
+    "unreadCount": "{{count}} non lue(s)",
+    "markAsRead": "Marquer comme lu",
+    "markAllAsRead": "Tout marquer comme lu",
+    "close": "Fermer",
+    "loadMore": "Charger plus",
+    "refresh": "Rafraîchir",
+    "origin": {
+      "moddy": "Moddy"
+    },
+    "mention": {
+      "user": "utilisateur",
+      "role": "rôle",
+      "channel": "salon"
+    },
+    "delivery": {
+      "failed": "Moddy n'a pas pu vous envoyer ce message sur Discord.",
+      "skipped": "Ce message n'a pas été envoyé sur Discord."
+    },
+    "reportBlock": {
+      "moddy_authored": "Ce message est rédigé par Moddy.",
+      "official_guild": "Ce serveur est un serveur officiel Moddy."
+    }
+  },
+  "premium": {
+    "toast": {
+      "successTitle": "Abonnement activé !",
+      "successDescription": "Bienvenue sur Moddy Max. Profitez de vos fonctionnalités premium.",
+      "cancelTitle": "Paiement annulé",
+      "cancelDescription": "Votre abonnement n'a pas été activé. Vous pouvez réessayer à tout moment.",
+      "checkoutError": "Impossible d'ouvrir le paiement. Veuillez réessayer."
+    },
+    "title": "Choisissez votre offre",
+    "subtitle": "Exploitez toute la puissance de Moddy pour vos serveurs Discord.",
+    "billing": {
+      "monthly": "Mensuel",
+      "yearly": "Annuel",
+      "yearlyDiscount": "Économisez 20 %"
+    },
+    "plans": {
+      "free": {
+        "name": "Free",
+        "description": "Pour débuter avec Moddy.",
+        "cta": "Offre actuelle",
+        "badge": "Votre offre"
+      },
+      "max": {
+        "name": "Max",
+        "description": "Exploitez toute la puissance de Moddy.",
+        "cta": "Passer à Max",
+        "ctaLoading": "Ouverture du paiement...",
+        "manageCta": "Gérer l'abonnement",
+        "manageCtaLoading": "Ouverture du portail...",
+        "badge": "Recommandé"
+      }
+    },
+    "features": {
+      "botCustomization": "Personnalisez l'avatar, le nom et la description du bot",
+      "multiServer": "Fonctionnalités premium sur jusqu'à 5 serveurs Discord",
+      "personalApp": "Options premium en app personnelle",
+      "aiLimits": "Limites d'utilisation des outils IA fortement augmentées",
+      "earlyAccess": "Accès anticipé aux nouvelles fonctionnalités",
+      "premiumRole": "Rôle premium exclusif sur le serveur Discord",
+      "prioritySupport": "Support prioritaire avec temps d'attente réduit"
+    },
+    "freeFeatures": {
+      "basicModules": "Accès à tous les modules standard",
+      "standardAi": "Limites standard des outils IA",
+      "communitySupport": "Support communautaire"
+    },
+    "serverUpgrade": {
+      "title": "Mettre à niveau un serveur",
+      "description": "Sélectionnez le serveur Discord que vous souhaitez passer en Max.",
+      "selectPlaceholder": "Sélectionner un serveur",
+      "alreadyPremium": "Déjà sur Max",
+      "checkoutError": "Impossible d'ouvrir le paiement. Veuillez réessayer.",
+      "portalTitle": "Gérer votre abonnement",
+      "portalDescription": "Accédez au portail de facturation Stripe pour modifier votre moyen de paiement, consulter vos factures ou annuler votre abonnement.",
+      "portalCta": "Gérer l'abonnement",
+      "portalCtaLoading": "Ouverture du portail...",
+      "portalError": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer."
+    }
+  },
+  "pageTitle": {
+    "dashboard": "Tableau de bord",
+    "debug": "Debug",
+    "premium": "Moddy Max",
+    "notFound": "404 — Introuvable",
+    "cases": "Sanctions"
+  },
+  "errors": {
+    "retry": "Réessayer",
+    "refreshServers": "Rafraîchir mes serveurs",
+    "notFound": {
+      "title": "Ressource introuvable",
+      "description": "Ce serveur n'est peut-être pas encore configuré. Ajoutez Moddy et configurez-le d'abord."
+    },
+    "forbidden": {
+      "title": "Accès refusé",
+      "description": "Vous n'avez pas la permission de gérer ce serveur. Vous devez être administrateur."
+    },
+    "network": {
+      "title": "Erreur de connexion",
+      "description": "Impossible de contacter le serveur. Vérifiez votre connexion internet et réessayez."
+    },
+    "server": {
+      "title": "Erreur serveur",
+      "description": "L'API Moddy a rencontré une erreur. Veuillez réessayer dans quelques instants."
+    },
+    "generic": {
+      "title": "Une erreur est survenue",
+      "description": "Une erreur inattendue s'est produite. Veuillez réessayer."
+    },
+    "boundary": {
+      "title": "Une erreur est survenue",
+      "description": "Une erreur inattendue s'est produite lors de l'affichage de cette page.",
+      "reload": "Recharger la page",
+      "home": "Retour à l'accueil",
+      "details": "Détails de l'erreur"
+    }
+  },
+  "unsavedBar": {
+    "message": "Modifications non enregistrées",
+    "discard": "Annuler",
+    "save": "Enregistrer"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "tabs": {
+      "account": "Compte",
+      "appearance": "Apparence",
+      "billing": "Facturation"
+    },
+    "account": {
+      "connectedWith": "Connecté avec",
+      "connected": "Connecté",
+      "staffBadge": "Rôles staff",
+      "discordBadges": "Badges Discord"
+    },
+    "billing": {
+      "title": "Abonnement & Facturation",
+      "description": "Gérez votre abonnement Moddy Max.",
+      "manageButton": "Gérer l'abonnement",
+      "portalError": "Impossible d'ouvrir le portail de facturation. Veuillez réessayer.",
+      "note": "Vous serez redirigé vers Stripe pour gérer votre abonnement.",
+      "activeTitle": "Moddy Max — Actif",
+      "renewsAt": "Renouvellement le {{date}}",
+      "tier": {
+        "monthly": "Mensuel",
+        "yearly": "Annuel",
+        "free_trial": "Essai gratuit"
+      },
+      "servers": {
+        "title": "Serveurs premium",
+        "usage": "{{count}}/{{max}} serveurs utilisés",
+        "empty": "Aucun serveur lié pour l'instant. Ajoutez-en un ci-dessous.",
+        "addPlaceholder": "Sélectionner un serveur à ajouter...",
+        "noAvailable": "Tous vos serveurs sont déjà liés.",
+        "addError": "Impossible d'ajouter ce serveur. Veuillez réessayer.",
+        "removeError": "Impossible de retirer ce serveur. Veuillez réessayer.",
+        "alreadyLinked": "Ce serveur est déjà lié à votre abonnement.",
+        "addForbidden": "Vous devez être administrateur et Moddy doit être présent sur ce serveur."
+      }
+    }
+  },
+  "common": {
+    "yes": "Oui",
+    "no": "Non",
+    "empty": "(vide)",
+    "clear": "Effacer"
+  },
+  "verified": {
+    "official": "Serveur officiel de Moddy",
+    "verified_org": "Serveur d'une organisation vérifiée par Moddy",
+    "discord": "Vérifié par Discord"
+  },
+  "messageEditor": {
+    "heading": "Titre",
+    "bold": "Gras",
+    "italic": "Italique",
+    "strike": "Barré",
+    "emojis": "Émojis du serveur",
+    "noEmojis": "Aucun émoji personnalisé sur ce serveur.",
+    "variables": "Variables :",
+    "insertVariable": "Insérer la variable",
+    "link": "Lien"
+  },
+  "cases": {
+    "status": {
+      "open": "Ouvert",
+      "closed": "Fermé"
+    },
+    "type": {
+      "global": "Global",
+      "network": "Réseau",
+      "guild": "Serveur",
+      "platform": "Plateforme",
+      "external": "Externe"
+    },
+    "action": {
+      "warn": "Avertir",
+      "mute": "Silence",
+      "ban": "Bannir",
+      "kick": "Expulser",
+      "restrict": "Restreindre",
+      "revoke_access": "Révoquer l'accès"
+    },
+    "sanctionStatus": {
+      "active": "Active",
+      "expired": "Expirée",
+      "revoked": "Révoquée"
+    },
+    "subjectType": {
+      "discord_user": "Utilisateur Discord",
+      "discord_guild": "Serveur Discord",
+      "moddy_user": "Compte Moddy",
+      "external": "Externe"
+    },
+    "scopeType": {
+      "discord_guild": "Serveur",
+      "network": "Réseau",
+      "platform": "Plateforme",
+      "external_service": "Service externe"
+    },
+    "appealRoute": {
+      "server": "Modérateurs du serveur",
+      "team": "Équipe Moddy"
+    },
+    "appealStatus": {
+      "pending": "En attente",
+      "accepted": "Acceptée",
+      "refused": "Refusée",
+      "transformed": "Transformée",
+      "cancelled": "Annulée"
+    },
+    "trigger": {
+      "manual": "manuellement",
+      "expiration": "à l'échéance",
+      "revocation": "après révocation",
+      "system": "par le système"
+    },
+    "actor": {
+      "moddy_staff": "Staff Moddy",
+      "automod": "AutoMod",
+      "system": "Système",
+      "external": "Externe"
+    },
+    "cancel": "Annuler",
+    "my": {
+      "navTitle": "Mes sanctions",
+      "title": "Mes sanctions",
+      "description": "Tous les cas de modération vous concernant, tous serveurs confondus.",
+      "emptyTitle": "Aucun cas",
+      "emptyDescription": "Vous n'avez aucun cas de modération. Tout est en règle !"
+    },
+    "guild": {
+      "navTitle": "Modération",
+      "title": "Modération",
+      "description": "Cas de modération liés à {{guild}}.",
+      "emptyTitle": "Aucun cas",
+      "emptyDescription": "Aucun cas de modération n'a encore été ouvert pour ce serveur."
+    },
+    "list": {
+      "searchPlaceholder": "Rechercher par référence, raison ou ID…",
+      "statusAll": "Tous les statuts",
+      "actionAll": "Toutes les actions",
+      "emptyTitle": "Aucun cas",
+      "emptyDescription": "Aucun cas ne correspond aux filtres actuels.",
+      "loadMore": "Charger plus"
+    },
+    "detail": {
+      "back": "Retour",
+      "openedOn": "Ouvert le {{date}}",
+      "addSanction": "Ajouter une sanction",
+      "editReason": "Modifier la raison",
+      "close": "Fermer le cas",
+      "reopen": "Rouvrir le cas",
+      "activity": "Activité",
+      "subject": "Sujet",
+      "scope": "Portée",
+      "issuer": "Émis par",
+      "group": "Groupe",
+      "dates": "Dates",
+      "created": "Créé le {{date}}",
+      "updated": "Modifié le {{date}}",
+      "sanctions": "Sanctions",
+      "appeals": "Appels",
+      "save": "Enregistrer",
+      "closedSuccess": "Cas fermé.",
+      "reopenedSuccess": "Cas rouvert.",
+      "statusError": "Impossible de changer le statut du cas.",
+      "reasonSaved": "Raison mise à jour.",
+      "reasonError": "Impossible de mettre à jour la raison.",
+      "details": "Détails",
+      "copy": "Copier",
+      "copyReference": "Copier la référence",
+      "copyId": "Copier l’ID",
+      "copied": "Copié !"
+    },
+    "timeline": {
+      "empty": "Aucune activité pour le moment.",
+      "you": "Vous",
+      "internalNote": "Note interne",
+      "evidenceAutomod": "Preuve AutoMod",
+      "severity": "Gravité",
+      "confidence": "Confiance",
+      "viewMessage": "Voir le message",
+      "appealOpened": "Appel ouvert · {{route}}",
+      "appealDecision": "Décision d'appel · {{status}}",
+      "sanctionAdded": "Sanction {{action}} ajoutée",
+      "aSanction": "Sanction",
+      "sanctionRevoked": "Sanction révoquée",
+      "sanctionExpired": "Sanction {{action}} expirée",
+      "status_open": "Cas rouvert {{trigger}}",
+      "status_closed": "Cas fermé {{trigger}}",
+      "statusChanged": "Statut modifié",
+      "evidenceLog": "Log serveur AutoMod"
+    },
+    "composer": {
+      "placeholder": "Écrire un commentaire… (⌘+Entrée pour envoyer)",
+      "notePlaceholder": "Écrire une note interne…",
+      "comment": "Commentaire",
+      "note": "Note",
+      "send": "Commenter",
+      "addNote": "Ajouter une note",
+      "error": "Impossible de publier votre commentaire."
+    },
+    "sanctions": {
+      "empty": "Aucune sanction sur ce cas.",
+      "until": "Jusqu'au {{date}}",
+      "permanent": "Permanente",
+      "by": "Par",
+      "revoke": "Révoquer",
+      "revokeTitle": "Révoquer cette sanction ?",
+      "revokeDescription": "La sanction passe en « révoquée » et l'action Discord correspondante est annulée par le bot.",
+      "revokeNotePlaceholder": "Raison de la révocation (facultatif)…",
+      "revokeSuccess": "Sanction révoquée.",
+      "revokeError": "Impossible de révoquer la sanction."
+    },
+    "appeals": {
+      "empty": "Aucun appel.",
+      "decision": "Décision"
+    },
+    "addSanction": {
+      "title": "Ajouter une sanction",
+      "description": "Ajoute une sanction à ce cas. Une sanction active rouvre le cas.",
+      "confirm": "Ajouter la sanction",
+      "success": "Sanction ajoutée.",
+      "error": "Impossible d'ajouter la sanction."
+    },
+    "form": {
+      "caseType": "Type de cas",
+      "subjectType": "Type de sujet",
+      "subjectId": "ID du sujet",
+      "subjectIdPlaceholder": "ID Discord…",
+      "scopeType": "Portée",
+      "scopeId": "ID de portée",
+      "scopeIdPlaceholder": "ex. ID de serveur…",
+      "reason": "Raison",
+      "reasonPlaceholder": "Décrivez la raison de ce cas…",
+      "action": "Action",
+      "duration": "Durée",
+      "note": "Note",
+      "sanctionNotePlaceholder": "Note attachée à la sanction…",
+      "initialComment": "Commentaire initial",
+      "initialCommentPlaceholder": "Premier commentaire facultatif sur le cas…",
+      "optional": "facultatif",
+      "notTemporary": "Cette action est permanente et ne peut pas être temporisée.",
+      "permanent": "Permanente",
+      "temporary": "Temporaire",
+      "subject": "Sujet",
+      "scope": "Portée",
+      "scopeIdOptional": "ID de portée (facultatif)"
+    },
+    "create": {
+      "new": "Nouveau cas",
+      "title": "Créer un cas",
+      "description": "Ouvre un nouveau cas de modération avec une sanction initiale.",
+      "confirm": "Créer le cas",
+      "success": "Cas {{reference}} créé.",
+      "error": "Impossible de créer le cas.",
+      "errorSubject": "Un ID de sujet est requis.",
+      "errorReason": "Une raison est requise.",
+      "errorAction": "Une action est requise.",
+      "descriptionGlobal": "Ouvre un cas global (réseau Moddy). Un bannissement global blackliste le sujet."
+    },
+    "toolbar": {
+      "refresh": "Rafraîchir",
+      "filter": "Filtres",
+      "massAction": "Sélection multiple"
+    },
+    "filters": {
+      "subject": "Utilisateur",
+      "issuer": "Auteur",
+      "status": "Statut",
+      "action": "Sanction",
+      "date": "Date",
+      "dateFrom": "Du",
+      "dateTo": "Au",
+      "idPlaceholder": "ID Discord…",
+      "remove": "Retirer le filtre",
+      "add": "Filtrer",
+      "allUsed": "Tous les filtres sont utilisés",
+      "custom": "Plage personnalisée",
+      "datePreset": {
+        "today": "Aujourd'hui",
+        "yesterday": "Hier",
+        "thisWeek": "Cette semaine",
+        "last7": "7 derniers jours",
+        "last30": "30 derniers jours",
+        "thisMonth": "Ce mois-ci"
+      }
+    },
+    "mass": {
+      "selectOne": "Sélectionner la case",
+      "selectedCount": "{{count}} sélectionnée(s)",
+      "reopen": "Rouvrir",
+      "close": "Fermer",
+      "clear": "Effacer",
+      "done": "{{count}} case(s) mise(s) à jour.",
+      "partialError": "{{count}} n’ont pas pu être mises à jour.",
+      "confirmCloseTitle": "Fermer les cases sélectionnées ?",
+      "confirmCloseDescription": "{{count}} case(s) seront fermées et verrouillées. Réversible en les rouvrant."
+    },
+    "row": {
+      "openCase": "Ouvrir la case",
+      "copyReference": "Copier la référence",
+      "copySubjectId": "Copier l’ID du sujet",
+      "copied": "Copié dans le presse-papiers."
+    },
+    "evidence": {
+      "title": "Preuves",
+      "citedMessage": "Message cité",
+      "noContent": "Aucun contenu textuel.",
+      "viewOnDiscord": "Voir sur Discord",
+      "addedBy": "Ajoutée par",
+      "reason": "Raison",
+      "explanation": "Explication",
+      "signalSource": "Source du signal",
+      "detectorScore": "Score de détection",
+      "viewContext": "Voir le contexte de la conversation",
+      "contextTitle": "Contexte de la conversation",
+      "contextDescription": "Les messages précédant celui signalé par l'AutoMod.",
+      "flagged": "Signalé",
+      "image": "Image",
+      "video": "Vidéo",
+      "openOriginal": "Ouvrir l'original",
+      "imagePreview": "Aperçu de l'image"
+    }
+  },
+  "violations": {
+    "title": "Infractions",
+    "description": "Moddy sanctionne les manquements à ses règles d'utilisation. Cette page liste ce qui a été reproché à votre compte ou à vos serveurs, ce que ça change concrètement, et comment contester. Les règles sont détaillées dans",
+    "termsLink": "nos Conditions d'utilisation",
+    "scaleTitle": "État de votre compte",
+    "refresh": "Actualiser",
+    "appeal": "Contester la décision",
+    "locked": "Indisponible",
+    "viewOnly": "Consultation seule",
+    "guildSuspendedShort": "Serveur suspendu",
+    "premiumBlockedTitle": "Moddy Max indisponible",
+    "premiumBlocked": "Vous ne pouvez pas souscrire tant qu'une sanction pèse sur votre compte. Un abonnement déjà payé reste gérable et résiliable.",
+    "premiumGuildBlocked": "Ce serveur est sanctionné : il ne peut pas être rattaché à un abonnement.",
+    "premiumSuspendedTitle": "Abonnement suspendu par une sanction",
+    "premiumSuspendedDescription": "Votre abonnement existe toujours et reste payé, mais la sanction le rend inopérant : les fonctionnalités Max ne s'appliquent plus. Il sera résilié, sans remboursement, si la sanction n'est pas levée à temps.",
+    "level": {
+      "none": "Aucune sanction",
+      "warn": "Avertissement",
+      "limited": "Limité",
+      "suspended": "Suspendu"
+    },
+    "ladder": {
+      "none": "Tout va bien",
+      "warn": "Avertissement",
+      "limited": "Limité",
+      "suspended": "Suspendu"
+    },
+    "action": {
+      "warn": "Avertissement",
+      "restrict": "Limitation",
+      "ban": "Suspension"
+    },
+    "sanctionStatus": {
+      "active": "En vigueur",
+      "expired": "Expirée",
+      "revoked": "Levée"
+    },
+    "scope": {
+      "all": "Toutes",
+      "active": "En cours",
+      "user": "Mon compte",
+      "guilds": "Mes serveurs"
+    },
+    "status": {
+      "none": {
+        "title": "Aucune sanction active",
+        "description": "Rien ne vous est reproché : vous avez accès à tout Moddy."
+      },
+      "warn": {
+        "title": "Vous avez reçu un avertissement",
+        "description": "Un manquement à nos règles a été relevé et noté. Rien n'est bloqué pour l'instant : votre accès à Moddy est exactement le même qu'avant. Un nouveau manquement, en revanche, mènera à une limitation."
+      },
+      "limited": {
+        "title": "Votre accès est limité",
+        "description": "Moddy continue de fonctionner sur vos serveurs et vous pouvez toujours régler ce qui est déjà en place. Deux choses vous sont fermées : souscrire à Moddy Max, et mettre en service un module que vous n'aviez encore jamais configuré."
+      },
+      "suspended": {
+        "title": "Votre accès est suspendu",
+        "description": "Vous n'avez plus accès au dashboard ni à Moddy. Il vous reste cette page, pour comprendre pourquoi et contester."
+      }
+    },
+    "list": {
+      "activeTitle": "En cours",
+      "resolved": "Terminée",
+      "emptyTitle": "Aucune infraction",
+      "emptyDescription": "Rien n'a été reproché à votre compte ni à vos serveurs.",
+      "affects": "Vise",
+      "moreServers": "+{{count}} serveurs"
+    },
+    "detail": {
+      "back": "Retour",
+      "breadcrumb": "Infraction",
+      "openedOn": "Constatée le {{date}}",
+      "created": "Constatée {{date}}",
+      "details": "Détails",
+      "subjects": "Qui est visé",
+      "measures": "Mesures prises",
+      "dates": "Date",
+      "applies": "Ce qui s'applique",
+      "until": "Jusqu'au {{date}}",
+      "permanent": "Définitive",
+      "notFoundTitle": "Infraction introuvable",
+      "notFoundDescription": "Cette infraction n'existe pas, ou elle ne vous concerne pas.",
+      "appealTitle": "Vous pensez que c'est une erreur ?",
+      "appealDescription": "Les contestations se font sur le serveur de support Moddy, où un membre de l'équipe reprend le dossier. Contester ne suspend pas la sanction : elle reste en vigueur pendant l'examen.",
+      "issuedBy": "Prononcée par {{issuer}}",
+      "issuedByModdy": "l'équipe Moddy"
+    },
+    "enforcement": {
+      "title": {
+        "pending": "Ce qui va se passer",
+        "halted": "Contestation en cours d'examen",
+        "executed": "Mesures appliquées",
+        "cancelled": "Annulé"
+      },
+      "pendingDescription": "Sans contestation retenue d'ici le {{date}}, les mesures ci-dessous seront appliquées.",
+      "haltedDescription": "L'équipe a mis le décompte en pause le temps d'examiner votre contestation. La sanction, elle, reste en vigueur.",
+      "executedDescription": "Les mesures ont été appliquées le {{date}}.",
+      "inDays": "Encore {{days}} j {{hours}} h",
+      "inHours": "Encore {{hours}} h {{minutes}} min",
+      "inMinutes": "Encore {{minutes}} min",
+      "premiumWarning": "Votre abonnement payant sera résilié à l'échéance, sans remboursement."
+    },
+    "banner": {
+      "seeDetails": "Voir le détail",
+      "until": "Jusqu'au {{date}}",
+      "userLimitedTitle": "Votre accès à Moddy est limité",
+      "userLimitedDescription": "Vous pouvez toujours régler les modules déjà en place. Souscrire à Moddy Max et mettre en service un nouveau module vous sont fermés.",
+      "guildLimitedTitle": "Ce serveur est limité",
+      "guildLimitedDescription": "Moddy continue de tourner sur {{guild}}, mais la modération par IA y est coupée et aucun nouveau module ne peut y être mis en service.",
+      "guildSuspendedTitle": "Ce serveur est suspendu",
+      "guildSuspendedDescription": "Moddy a quitté {{guild}}. Sa configuration n'est plus accessible.",
+      "newModuleBlockedTitle": "Ce module ne peut pas être mis en service",
+      "newModuleBlockedDescription": "Une sanction interdit d'activer un module encore jamais configuré. Ceux déjà en place restent entièrement modifiables.",
+      "automodBlockedTitle": "La modération par IA est coupée ici",
+      "automodBlockedDescription": "Une sanction visant ce serveur a coupé la modération par IA : sa configuration est figée tant que la sanction n'est pas levée."
+    },
+    "errors": {
+      "default": "Action refusée par une sanction",
+      "user_suspended": "Votre compte est suspendu",
+      "guild_suspended": "Ce serveur est suspendu",
+      "premium_blocked_user": "Souscription fermée tant que votre compte est sanctionné",
+      "premium_blocked_guild": "Ce serveur ne peut pas être rattaché à un abonnement",
+      "new_module_blocked": "Vous ne pouvez pas mettre en service un nouveau module",
+      "automod_ai_blocked": "La modération par IA est coupée sur ce serveur"
+    },
+    "errorSubject": {
+      "discord_user": "Une sanction pèse sur votre compte.",
+      "discord_guild": "Une sanction pèse sur ce serveur."
+    },
+    "errorReferences": "{{refs}}",
+    "suspended": {
+      "title": "Votre accès à Moddy est suspendu",
+      "headlinePrefix": "Votre accès à Moddy est",
+      "description": "Un manquement à nos règles a mis fin à votre accès. Cette page reste disponible pour comprendre ce qui vous est reproché et contester. Les règles sont détaillées dans",
+      "recheck": "Vérifier à nouveau",
+      "pastRecord": "Infractions passées",
+      "billingTitle": "Facturation",
+      "billingDescription": "Une sanction ne touche pas à votre argent : vos factures restent consultables et votre abonnement résiliable à tout moment.",
+      "billingAction": "Gérer la facturation",
+      "billingError": "Impossible d'ouvrir le portail de facturation. Réessayez dans un instant.",
+      "backToSummary": "Retour au résumé",
+      "emptyTitle": "Détail indisponible",
+      "emptyDescription": "Le détail de la sanction n'a pas pu être chargé. Contactez le support avec l'identifiant de votre compte.",
+      "activeRecord": "Infractions en cours"
+    },
+    "subject": {
+      "you": "votre compte",
+      "guild": "ce serveur"
+    }
+  }
+}

@@ -1,70 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "./fonts.css";
+@import "./styles/discord-name-styles.css";
+@import "./styles/discord-profile.css";
 
 @custom-variant dark (&:is(.dark *));
-
-/* Google Sans — self-hosted, no CDN and no runtime call to fonts.googleapis.com.
-   One face per real weight rather than a single weight faked into bold: Google
-   Sans renders noticeably better with its own drawn weights. The files are
-   subset to latin + latin-ext, which covers every locale we ship (en/fr/es/de),
-   and `font-display: swap` keeps text visible while they load. */
-@font-face {
-    font-family: "Google Sans";
-    font-style: normal;
-    font-weight: 400;
-    font-display: swap;
-    src: url("/fonts/google-sans-400.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: italic;
-    font-weight: 400;
-    font-display: swap;
-    src: url("/fonts/google-sans-400-italic.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: normal;
-    font-weight: 500;
-    font-display: swap;
-    src: url("/fonts/google-sans-500.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: italic;
-    font-weight: 500;
-    font-display: swap;
-    src: url("/fonts/google-sans-500-italic.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: normal;
-    font-weight: 600;
-    font-display: swap;
-    src: url("/fonts/google-sans-600.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: italic;
-    font-weight: 600;
-    font-display: swap;
-    src: url("/fonts/google-sans-600-italic.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: normal;
-    font-weight: 700;
-    font-display: swap;
-    src: url("/fonts/google-sans-700.woff2") format("woff2");
-}
-@font-face {
-    font-family: "Google Sans";
-    font-style: italic;
-    font-weight: 700;
-    font-display: swap;
-    src: url("/fonts/google-sans-700-italic.woff2") format("woff2");
-}
 
 :root {
     --background: oklch(1 0 0);
@@ -75,14 +16,13 @@
     --popover-foreground: oklch(0.145 0 0);
     --primary: oklch(0.488 0.243 264.376);
     --primary-foreground: oklch(0.97 0.014 254.604);
-    --brand: #0046f8;
     --secondary: oklch(0.967 0.001 286.375);
     --secondary-foreground: oklch(0.21 0.006 285.885);
     --muted: oklch(0.97 0 0);
     --muted-foreground: oklch(0.556 0 0);
     --accent: oklch(0.97 0 0);
     --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.58 0.22 27);
+    --destructive: oklch(0.577 0.245 27.325);
     --border: oklch(0.922 0 0);
     --input: oklch(0.922 0 0);
     --ring: oklch(0.708 0 0);
@@ -91,7 +31,7 @@
     --chart-3: oklch(0.546 0.245 262.881);
     --chart-4: oklch(0.488 0.243 264.376);
     --chart-5: oklch(0.424 0.199 265.638);
-    --radius: 0.625rem;
+    --radius: 0.875rem;
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.546 0.245 262.881);
@@ -109,14 +49,13 @@
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.42 0.18 266);
+    --primary: oklch(0.424 0.199 265.638);
     --primary-foreground: oklch(0.97 0.014 254.604);
-    --brand: #6e90ff;
     --secondary: oklch(0.274 0.006 286.033);
     --secondary-foreground: oklch(0.985 0 0);
     --muted: oklch(0.269 0 0);
     --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.371 0 0);
+    --accent: oklch(0.269 0 0);
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --border: oklch(1 0 0 / 10%);
@@ -138,14 +77,9 @@
 }
 
 @theme inline {
-    /* Every shadcn component inherits its typeface from these two tokens, so
-       pointing them at our families is all it takes — no per-component edits.
-       The fallbacks are system faces, used only until the woff2 lands. */
     --font-sans: "Google Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
         Roboto, Helvetica, Arial, sans-serif;
-    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-    --font-heading: var(--font-sans);
-    --color-brand: var(--brand);
+    --font-mono: ui-monospace, "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -184,6 +118,7 @@
     --radius-2xl: calc(var(--radius) + 8px);
     --radius-3xl: calc(var(--radius) + 12px);
     --radius-4xl: calc(var(--radius) + 16px);
+    --font-heading: var(--font-sans);
 }
 
 @layer base {
@@ -195,16 +130,65 @@
     }
   html {
     @apply font-sans;
-    }
-  /* Google Sans' true 700 reads as too heavy inline, so demibold is our
-     default bold. Reach for `font-bold` explicitly when 700 is wanted. */
-  b, strong {
-    @apply font-semibold;
+    /* Google Sans a un visuel plus petit que Geist à taille égale (x-height/cap-height
+       plus réduits). On compense en augmentant légèrement la taille de base : comme
+       tous les textes Tailwind (text-sm, text-base, etc.) sont en rem, ça remonte
+       uniformément toute la hiérarchie typographique sans toucher aux composants. */
+    font-size: 106.25%;
     }
 }
 
-/* Pivot the logo mark around its own centre for the click easter egg */
-.moddy-logo-mark {
-  transform-box: fill-box;
-  transform-origin: center;
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@keyframes page-shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+#root.page-shake {
+  animation: page-shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Le sidebar shadcn utilise fixed + h-svh par défaut. On le passe en absolute + h-full
+   pour qu'il reste à l'intérieur du conteneur flex du dashboard (bannière au-dessus). */
+[data-slot="sidebar-wrapper"] {
+  min-height: 0 !important;
+  height: 100% !important;
+  position: relative;
+}
+[data-slot="sidebar-container"] {
+  position: absolute !important;
+  height: 100% !important;
+}
+
+/* Color picker : la pastille remplit tout l'encadré (au lieu d'un petit carré
+   dans un ovale). Utilisé par <input type="color" class="color-field">. */
+input[type="color"].color-field {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+input[type="color"].color-field::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+input[type="color"].color-field::-webkit-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
+}
+input[type="color"].color-field::-moz-color-swatch {
+  border: none;
+  border-radius: calc(var(--radius) - 2px);
 }

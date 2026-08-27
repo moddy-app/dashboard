@@ -1,150 +1,247 @@
-const API_URL = import.meta.env.VITE_API_URL || ''
-const DISCORD_CLIENT_ID = import.meta.env.VITE_DISCORD_CLIENT_ID || ''
-const REDIRECT_URI = `${API_URL}/auth/discord/callback`
+import { logger } from '@/lib/logger'
+import type { SubjectSanctionStatus } from '@/types/violations'
+
+const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
+
+/** Une entrée du tableau `error` renvoyé sur un 422 de validation de schéma. */
+export interface ApiValidationIssue {
+  loc: (string | number)[]
+  msg: string
+  type?: string
+}
+
+export class ApiError extends Error {
+  status: number
+  /**
+   * Payload brut du champ `error` : le backend renvoie soit une chaîne
+   * (`{"error": "Salon d'alertes invalide"}`), soit un tableau d'erreurs de
+   * validation (`{"error": [{"loc": ["severity"], "msg": "..."}]}`).
+   * `message` en est la version aplatie ; `detail` garde la forme d'origine
+   * pour pouvoir rattacher chaque erreur à son champ de formulaire.
+   */
+  detail: unknown
+  constructor(status: number, message: string, detail?: unknown) {
+    super(message)
+    this.status = status
+    this.detail = detail ?? message
+  }
+  get isUnauthorized() { return this.status === 401 }
+  get isForbidden() { return this.status === 403 }
+  get isNotFound() { return this.status === 404 }
+  get isServerError() { return this.status >= 500 }
+  get isNetworkError() { return this.status === 0 }
+  get isUnavailable() { return this.status === 503 }
+
+  /** Erreurs de validation par champ (vide si `error` était une chaîne). */
+  get validationIssues(): ApiValidationIssue[] {
+    if (!Array.isArray(this.detail)) return []
+    return this.detail.filter(
+      (i): i is ApiValidationIssue =>
+        typeof i === 'object' && i !== null && typeof (i as ApiValidationIssue).msg === 'string'
+    )
+  }
+}
 
 /**
- * Appelle le proxy Vercel pour signer les requêtes de manière sécurisée
- * La clé API n'est jamais exposée au client
+ * Aplatit le champ `error` en un message lisible. Sans ça un tableau de
+ * validation finirait en `[object Object]` dans le toast d'erreur.
  */
-async function callBackendProxy(endpoint: string, body: any = {}) {
-  const response = await fetch('/api/backend-proxy', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      endpoint,
-      body,
-    }),
-  })
+function formatApiError(raw: unknown, status: number): string {
+  if (typeof raw === 'string' && raw) return raw
+  if (Array.isArray(raw)) {
+    const parts = raw
+      .map((issue) => {
+        if (typeof issue !== 'object' || issue === null) return String(issue)
+        const { loc, msg } = issue as ApiValidationIssue
+        // `body` / `config` sont du bruit d'enveloppe Pydantic, pas des champs.
+        const field = Array.isArray(loc)
+          ? loc.filter((p) => p !== 'body' && p !== 'config').join('.')
+          : ''
+        return field ? `${field}: ${msg}` : String(msg ?? '')
+      })
+      .filter(Boolean)
+    if (parts.length > 0) return parts.join(' · ')
+  }
+  return `HTTP ${status}`
+}
 
-  if (!response.ok) {
-    throw new Error(`Proxy request failed: ${response.status}`)
+export async function api(path: string, options: RequestInit = {}): Promise<unknown> {
+  const method = (options.method ?? 'GET').toUpperCase()
+  const url = `${API_BASE}${path}`
+  const start = performance.now()
+  // `FormData` (upload multipart) : le navigateur doit poser lui-même le
+  // Content-Type avec le `boundary` — forcer application/json casserait l'upload.
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  logger.api(
+    'api',
+    `→ ${method} ${path}`,
+    options.body ? { body: isFormData ? '[FormData]' : options.body } : ''
+  )
+
+  let response: Response
+
+  try {
+    response = await fetch(url, {
+      ...options,
+      credentials: 'include',
+      headers: isFormData
+        ? { ...options.headers }
+        : { 'Content-Type': 'application/json', ...options.headers },
+    })
+  } catch (e) {
+    logger.error('api', `✗ ${method} ${path} — network error`, e)
+    throw new ApiError(0, 'Network error — check your connection')
   }
 
-  return response.json()
+  const duration = Math.round(performance.now() - start)
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      logger.warn('api', `← ${method} ${path} 401 ${duration}ms — redirecting to /auth/login`)
+      const redirect = encodeURIComponent(window.location.href)
+      window.location.href = `${API_BASE}/auth/login?redirect=${redirect}`
+      throw new ApiError(401, 'Unauthorized')
+    }
+    const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+    const detail = (error as { error?: unknown }).error
+    const message = formatApiError(detail, response.status)
+    logger.error('api', `← ${method} ${path} ${response.status} ${duration}ms`, detail ?? message)
+    throw new ApiError(response.status, message, detail)
+  }
+
+  const text = await response.text()
+  // Snowflakes Discord sont des entiers 64-bit (> 2^53) — JSON.parse les arrondirait.
+  // La regex alterne : soit elle consomme un string literal entier (→ inchangé),
+  // soit elle wrappe un grand entier nu (après :, [, ou ,) dans des quotes.
+  const safe = text ? text.replace(
+    /"(?:[^"\\]|\\.)*"|((?::|,|\[)\s*)(-?\d{15,})/g,
+    (match, prefix, digits) => prefix !== undefined ? `${prefix}"${digits}"` : match
+  ) : text
+  const parsed = safe ? JSON.parse(safe) : null
+  logger.success('api', `← ${method} ${path} ${response.status} ${duration}ms`, parsed)
+  return parsed
 }
 
+// ─── Types basés sur la vraie réponse de /auth/me ─────────────────────────────
+
+/** Serveur Discord (depuis /auth/me et /auth/refresh-guilds) */
+export interface Guild {
+  id: number | string  // Snowflake Discord — peut être number ou string selon l'endpoint
+  name: string
+  icon: string | null
+}
+
+/** Profil complet de l'utilisateur connecté (GET /auth/me) */
 export interface User {
-  discord_id: number
-  email: string | null
-}
-
-export interface VerifyResponse {
-  valid: boolean
-  discord_id?: number
-  email?: string | null
-}
-
-export interface UserInfo {
-  id: string
-  username: string
-  discriminator: string
-  avatar: string | null
+  // Identité Discord
+  user_id: string            // Snowflake string
+  username: string           // Nom unique Discord
+  global_name: string | null // Nom d'affichage (peut différer du username)
+  discriminator?: string     // "0" sur les nouveaux comptes
+  avatar: string | null      // Hash avatar
+  avatar_url: string | null  // URL CDN complète pré-construite par le backend
+  banner: string | null      // Hash bannière
+  banner_url: string | null  // URL CDN bannière
+  accent_color: number | null
+  avatar_decoration_data?: { asset: string; sku_id: string } | null
+  // Compte
   email: string | null
   verified: boolean | null
   locale: string | null
   mfa_enabled: boolean | null
-  premium_type: number | null
+  premium_type: number | null  // 0=Aucun, 1=Classic, 2=Nitro, 3=Basic
   public_flags: number | null
-  avatar_url: string | null
+  flags: number | null
+  discord_badges: string[]     // Noms lisibles des flags actifs
+  // Moddy
+  guilds: Guild[]
+  is_staff: boolean
+  staff_roles: string[]
+  /**
+   * Statut de sanction globale du compte — même objet que `user` dans
+   * `GET /violations/status`. Présent depuis l'ajout des sanctions globales :
+   * `undefined` (back-end plus ancien) ≠ `level: 'none'`, le premier déclenche
+   * un appel de vérification, le second non.
+   */
+  sanction?: SubjectSanctionStatus
 }
 
-/**
- * Vérifie si l'utilisateur est connecté
- */
-export async function verifySession(): Promise<VerifyResponse> {
-  try {
-    const response = await fetch(`${API_URL}/auth/verify`, {
-      credentials: 'include', // Important: envoie les cookies
-    })
+// ─── Helpers URL ──────────────────────────────────────────────────────────────
 
-    if (!response.ok) {
-      console.error('Failed to verify session:', response.status)
-      return { valid: false }
+export function getAvatarUrl(userId: string, avatarHash: string | null, avatarUrl?: string | null): string {
+  // Utilise l'URL pré-construite par le backend si disponible
+  if (avatarUrl) return avatarUrl
+  if (!avatarHash) {
+    const defaultIndex = (BigInt(userId) >> 22n) % 6n
+    return `https://cdn.discordapp.com/embed/avatars/${defaultIndex}.png`
+  }
+  const ext = avatarHash.startsWith('a_') ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/avatars/${userId}/${avatarHash}.${ext}?size=128`
+}
+
+export function getGuildIconUrl(guildId: number | string, iconHash: string | null): string | null {
+  if (!iconHash) return null
+  const ext = iconHash.startsWith('a_') ? 'gif' : 'png'
+  return `https://cdn.discordapp.com/icons/${guildId}/${iconHash}.${ext}?size=128`
+}
+
+/** Nom d'affichage — préfère global_name, sinon username */
+export function getDisplayName(user: User): string {
+  return user.global_name ?? user.username
+}
+
+/** Description du niveau Nitro */
+export function getNitroLabel(premiumType: number | null | undefined): string | null {
+  switch (premiumType) {
+    case 1: return 'Nitro Classic'
+    case 2: return 'Nitro'
+    case 3: return 'Nitro Basic'
+    default: return null
+  }
+}
+
+// ─── Appels API auth ──────────────────────────────────────────────────────────
+
+export async function getMe(): Promise<User | null> {
+  try {
+    const user = await api('/auth/me') as User
+    logger.success('auth', `Logged in as @${user.username} (${user.user_id})`, { guilds: user.guilds.length, is_staff: user.is_staff })
+    return user
+  } catch (e) {
+    if (e instanceof ApiError && e.isUnauthorized) {
+      logger.warn('auth', 'No active session')
+      return null
     }
-
-    const data: VerifyResponse = await response.json()
-    return data
-  } catch (error) {
-    console.error('Error verifying session:', error)
-    return { valid: false }
+    throw e
   }
 }
 
-/**
- * Démarre le flow d'authentification Discord
- * Utilise le proxy Vercel pour signer les requêtes de manière sécurisée
- */
-export async function signInWithDiscord() {
-  try {
-    // 1. Initialiser l'auth via le proxy (signature côté serveur)
-    const { state } = await callBackendProxy('/api/website/auth/init', {
-      current_page: window.location.href,
-    })
-
-    // 2. Construire l'URL Discord OAuth
-    const discordUrl = new URL('https://discord.com/api/oauth2/authorize')
-    discordUrl.searchParams.set('client_id', DISCORD_CLIENT_ID)
-    discordUrl.searchParams.set('redirect_uri', REDIRECT_URI)
-    discordUrl.searchParams.set('response_type', 'code')
-    discordUrl.searchParams.set('scope', 'identify email')
-    discordUrl.searchParams.set('state', state)
-
-    // 3. Rediriger vers Discord
-    window.location.href = discordUrl.toString()
-  } catch (error) {
-    console.error('Error signing in with Discord:', error)
-    throw error
-  }
+export function login(redirectUrl?: string) {
+  const target = redirectUrl ?? window.location.href
+  logger.event('auth', 'Redirecting to Discord login', { redirect: target })
+  const redirect = encodeURIComponent(target)
+  window.location.href = `${API_BASE}/auth/login?redirect=${redirect}`
 }
 
-/**
- * Déconnecte l'utilisateur
- */
 export async function logout(): Promise<boolean> {
+  logger.event('auth', 'Logout requested')
   try {
-    const response = await fetch(`${API_URL}/auth/logout`, {
-      credentials: 'include', // Important: envoie les cookies
-    })
-
-    if (!response.ok) {
-      console.error('Failed to logout:', response.status)
-      return false
-    }
-
-    const data = await response.json()
-    return data.success === true
-  } catch (error) {
-    console.error('Error logging out:', error)
+    await api('/auth/logout', { method: 'POST' })
+    logger.success('auth', 'Logged out')
+    return true
+  } catch (e) {
+    logger.error('auth', 'Logout failed', e)
     return false
   }
 }
 
-/**
- * Récupère les informations complètes de l'utilisateur depuis Discord
- */
-export async function getUserInfo(): Promise<UserInfo | null> {
-  try {
-    const response = await fetch(`${API_URL}/auth/user-info`, {
-      credentials: 'include',
-    })
+export async function refreshSession(): Promise<void> {
+  await api('/auth/refresh', { method: 'POST' })
+}
 
-    if (response.status === 401) {
-      // Session invalide ou refresh token révoqué
-      console.log('Session expired or invalid')
-      return null
-    }
-
-    if (!response.ok) {
-      console.error('Failed to get user info:', response.status)
-      return null
-    }
-
-    const userInfo: UserInfo = await response.json()
-    return userInfo
-  } catch (error) {
-    console.error('Error getting user info:', error)
-    return null
-  }
+export async function refreshGuilds(): Promise<Guild[]> {
+  logger.event('auth', 'Refreshing guild list from Discord')
+  const data = await api('/auth/refresh-guilds', { method: 'POST' }) as { guilds: Guild[] }
+  logger.success('auth', `Refreshed ${data.guilds.length} guilds`)
+  return data.guilds
 }
