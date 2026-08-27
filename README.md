@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
 > [!CAUTION]
-> The Moddy Dashboard is currently under active development. Expect frequent updates and changes.
+> The Moddy Dashboard is currently under active development. Expect frequent updates and changes. 
 
 **Moddy Dashboard** is the official web interface for the Moddy Discord bot.  
 It provides a modern, responsive, and intuitive environment to manage and configure Moddy without relying solely on Discord commands.

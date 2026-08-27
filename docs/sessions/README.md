@@ -64,6 +64,39 @@ Ces résumés servent à :
 
 <!-- Les sessions seront listées ici automatiquement -->
 
+### 2026-08-24 - Health check endpoint
+**Fichier** : [2026-08-24_health-check-endpoint.md](./2026-08-24_health-check-endpoint.md)
+
+**Résumé** : Ajout de `/healthz`, un endpoint de health check serverless pour un monitor HTTP externe, indépendant du backend Moddy.
+
+**Fichiers créés** :
+- `api/healthz.ts` - Endpoint de health check
+
+**Fichiers modifiés** :
+- `vercel.json` - Rewrite `/healthz` → `/api/healthz`
+
+**Impact** : ✅ **Mineur** - Monitoring externe de la disponibilité du déploiement
+
+---
+
+### 2026-07-29 - Google Sans auto-hébergée (page d'attente)
+**Fichier** : [2026-07-29_google-sans-auto-hebergee.md](./2026-07-29_google-sans-auto-hebergee.md)
+
+**Résumé** : Remplacement du chargement de Google Sans par CDN par une intégration auto-hébergée sur la page "en construction" servie par `main` le temps que le dashboard ne soit pas public.
+
+**Impact** : ✅ **Majeur** - Zéro requête tierce vers Google Fonts sur la page d'attente
+
+---
+
+### 2026-07-03 - Page en travaux i18n
+**Fichier** : [2026-07-03_page-en-travaux-i18n.md](./2026-07-03_page-en-travaux-i18n.md)
+
+**Résumé** : Internationalisation de la page "en construction" affichée publiquement tant que le dashboard n'est pas sorti.
+
+**Impact** : ✅ **Mineur** - Page d'attente disponible en plusieurs langues
+
+---
+
 ### 2026-02-22 - Dashboard Layout avec Sidebar et Command Menu
 **Fichier** : [2026-02-22_dashboard-sidebar-layout.md](./2026-02-22_dashboard-sidebar-layout.md)
 
