@@ -2323,7 +2323,8 @@
       "awaitingDecision": "Waiting for your decision on the action above",
       "send": "Send",
       "disclaimer": "Brocoli can make mistakes. Every change is shown to you before it is applied.",
-      "mentionsLabel": "Channel and role suggestions"
+      "mentionsLabel": "Channel and role suggestions",
+      "awaitingAnswer": "Waiting for your answer to the form above"
     },
     "mode": {
       "label": "Mode",
@@ -2355,7 +2356,10 @@
       "search_documentation": "Searching the documentation",
       "read_documentation_page": "Reading the documentation",
       "read_internal_guide": "Reading its guide",
-      "get_guild_overview": "Looking at the server"
+      "get_guild_overview": "Looking at the server",
+      "ask_user": "Asking you something",
+      "describe_module_config": "Reading the configuration back in plain words",
+      "list_module_catalogue": "Going through what it can configure"
     },
     "risk": {
       "low": {
@@ -2445,6 +2449,35 @@
       "transport": "The connection to Brocoli failed.",
       "retryIn": "Try again in {{minutes}} min.",
       "reload": "Refresh"
+    },
+    "question": {
+      "panelLabel": "Question from Brocoli awaiting your answer",
+      "title": "Brocoli needs one detail",
+      "footerHint": "Brocoli can't go on without this information.",
+      "submit": "Send",
+      "sending": "Sending your answer…",
+      "skip": "Skip",
+      "recommended": "Recommended",
+      "none": "Leave blank",
+      "textPlaceholder": "Your answer…",
+      "expired": "Question expired — ask Brocoli again",
+      "expiresTitle": "Time left to answer",
+      "andMore_one": "and {{count}} more question",
+      "andMore_other": "and {{count}} more questions",
+      "pick": {
+        "channel": "Pick a channel",
+        "role": "Pick a role"
+      },
+      "add": {
+        "channel": "Add a channel",
+        "role": "Add a role"
+      },
+      "status": {
+        "pending": "Awaiting your answer",
+        "answered": "You answered",
+        "cancelled": "Question skipped",
+        "expired": "Question expired"
+      }
     }
   }
 }

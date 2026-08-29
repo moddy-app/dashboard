@@ -40,11 +40,12 @@ import { ErrorPage } from '@/components/error-state'
 import { BrocoliComposer } from '@/components/brocoli/brocoli-composer'
 import { BrocoliHistory } from '@/components/brocoli/brocoli-history'
 import { BrocoliActionPanel } from '@/components/brocoli/brocoli-action'
+import { BrocoliQuestionPanel } from '@/components/brocoli/brocoli-question'
 import { BrocoliTranscript, READING_COLUMN } from '@/components/brocoli/brocoli-transcript'
 import { useMentionSource } from '@/lib/brocoli-mentions'
 import { useAiStatus } from '@/hooks/useAiStatus'
 import { useBrocoli, type BrocoliError } from '@/hooks/useBrocoli'
-import { isActionDecidable } from '@/lib/brocoli'
+import { isActionDecidable, isQuestionOpen } from '@/lib/brocoli'
 import { useGuildContext } from '@/contexts/GuildContext'
 import { usePageTitle } from '@/hooks/usePageTitle'
 import { cn } from '@/lib/utils'
@@ -155,7 +156,8 @@ function StarterState({
 export function BrocoliPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const { selectedGuildId, guildDetail, isGuildReady, guildError, user } = useGuildContext()
+  const { selectedGuildId, guildDetail, isGuildReady, guildError, user, channels, roles } =
+    useGuildContext()
   const { status, loading: statusLoading, enabled, refresh: refreshStatus } = useAiStatus()
 
   usePageTitle(t('brocoli.title'))
@@ -261,6 +263,22 @@ export function BrocoliPage() {
     )
   const pendingAction = pending?.kind === 'action' ? pending : null
 
+  /**
+   * La question en attente, remontée du fil au même endroit et pour la même
+   * raison. Elle s'affiche **dans les trois modes**, `auto` compris : le mode
+   * ne change rien aux questions, et masquer le formulaire laisserait la
+   * conversation bloquée sans rien afficher — le tour est fini, aucun texte
+   * n'est arrivé.
+   *
+   * Une confirmation et une question ne coexistent pas : un tour s'arrête sur
+   * l'une **ou** l'autre. Si les deux traînaient, la plus récente l'emporte,
+   * comme pour deux actions.
+   */
+  const openQuestion = [...brocoli.items]
+    .reverse()
+    .find((item) => item.kind === 'question' && isQuestionOpen(item.request) && !item.submitted)
+  const pendingQuestion = openQuestion?.kind === 'question' ? openQuestion : null
+
   return (
     // `h-full min-h-0` : le conteneur du dashboard défile déjà ; sans cette
     // borne, le fil pousserait la page au lieu de défiler lui-même, et la
@@ -319,14 +337,34 @@ export function BrocoliPage() {
         }
       />
 
-      {/* ── Pied : erreurs, renvoi, saisie ── */}
+      {/* ── Pied : formulaire, confirmation, erreurs, saisie ── */}
       {/* Écart franc avec le fil : sans lui, la saisie touche le dernier
           message de Brocoli et les deux blocs se lisent comme un seul. */}
       <div className="shrink-0 bg-background pt-8 pb-4">
         <div className={cn('flex flex-col gap-2', READING_COLUMN)}>
           {/* Épinglé juste au-dessus de la saisie : à l'endroit exact où
               l'utilisateur allait taper, et donc impossible à manquer. */}
-          {pendingAction && (
+          {pendingQuestion && (
+            <BrocoliQuestionPanel
+              // `key` sur le `question_id` : un nouveau formulaire est un
+              // nouveau montage, donc de nouvelles valeurs présélectionnées.
+              // Sans lui, React réutiliserait l'état du formulaire précédent.
+              key={pendingQuestion.request.question_id}
+              request={pendingQuestion.request}
+              channels={channels}
+              roles={roles}
+              submitted={pendingQuestion.submitted}
+              busy={brocoli.answering}
+              onSubmit={(body) =>
+                void brocoli.answer(pendingQuestion.request.question_id, body)
+              }
+              onExpire={() =>
+                brocoli.markQuestionExpired(pendingQuestion.request.question_id)
+              }
+            />
+          )}
+
+          {!pendingQuestion && pendingAction && (
             <BrocoliActionPanel
               action={pendingAction.action}
               mentions={mentions}

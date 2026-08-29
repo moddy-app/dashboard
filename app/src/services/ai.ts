@@ -8,6 +8,7 @@ import { api } from '@/lib/auth'
 import { streamPost } from '@/lib/ai-stream'
 import { isAiMode } from '@/types/ai'
 import type {
+  AiAnswerBody,
   AiConversation,
   AiConversationDetail,
   AiDecision,
@@ -95,7 +96,11 @@ function normalizeConversation(raw: unknown): AiConversation {
 function normalizeMessage(raw: unknown): AiTranscriptMessage | null {
   const m = asRecord(raw)
   const role = m.role
-  if (role !== 'user' && role !== 'assistant' && role !== 'action') return null
+  // `question` depuis la session du 29/08 : sans lui, un rechargement de page
+  // perdait le formulaire en attente et la conversation restait muette.
+  if (role !== 'user' && role !== 'assistant' && role !== 'action' && role !== 'question') {
+    return null
+  }
   return {
     id: Number(m.id ?? 0),
     seq: Number(m.seq ?? 0),
@@ -222,6 +227,31 @@ export function decideAction(
   return streamPost(
     `${BASE}/conversations/${conversationId}/actions/${actionId}/decision`,
     { decision },
+    onEvent,
+    { signal }
+  )
+}
+
+/**
+ * Répond à une question (ou la ferme, avec `cancelled`). La réponse est **un
+ * nouveau flux SSE**, à consommer exactement comme celui d'un message : même
+ * parseur, même gestionnaire d'événements. Il peut d'ailleurs se terminer sur
+ * une `permission_request` — c'est le cas attendu : Brocoli demande ce qui lui
+ * manque, puis propose la configuration.
+ *
+ * ⚠️ Pas de rejeu automatique, comme pour un message : le serveur est
+ * idempotent, mais un second envoi ouvrirait un flux qui recevrait `409`.
+ */
+export function answerQuestion(
+  conversationId: string,
+  questionId: string,
+  body: AiAnswerBody,
+  onEvent: (event: RawSseEvent) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  return streamPost(
+    `${BASE}/conversations/${conversationId}/questions/${questionId}/answer`,
+    body,
     onEvent,
     { signal }
   )

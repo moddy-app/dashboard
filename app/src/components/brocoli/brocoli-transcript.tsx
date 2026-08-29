@@ -38,6 +38,7 @@ import { streamErrorKey } from '@/lib/brocoli'
 import { getAvatarUrl, type User } from '@/lib/auth'
 import { BrocoliActionRecord } from './brocoli-action'
 import { BrocoliMarkdown } from './brocoli-markdown'
+import { BrocoliQuestionRecord } from './brocoli-question'
 import { BrocoliToolStep } from './brocoli-tool-step'
 import { renderMentionText, type MentionSource } from '@/lib/brocoli-mentions'
 import type { BrocoliItem, BrocoliRunState } from '@/types/ai'
@@ -263,6 +264,9 @@ export function BrocoliTranscript({
     if (item.kind === 'action') {
       return total + 1 + item.action.status.length + (item.submitted ? 1 : 0)
     }
+    if (item.kind === 'question') {
+      return total + 1 + item.request.status.length + (item.submitted ? 1 : 0)
+    }
     return total + 1
   }, 0)
 
@@ -339,6 +343,17 @@ export function BrocoliTranscript({
                     <MessageScrollerItem key={item.id} messageId={item.id}>
                       <div className={ASSISTANT_INDENT}>
                         <BrocoliActionRecord action={item.action} submitted={item.submitted} />
+                      </div>
+                    </MessageScrollerItem>
+                  )
+
+                case 'question':
+                  return (
+                    // Trace seule, comme pour une action : le formulaire vit
+                    // au-dessus de la saisie, là où l'on allait taper.
+                    <MessageScrollerItem key={item.id} messageId={item.id}>
+                      <div className={ASSISTANT_INDENT}>
+                        <BrocoliQuestionRecord request={item.request} submitted={item.submitted} />
                       </div>
                     </MessageScrollerItem>
                   )

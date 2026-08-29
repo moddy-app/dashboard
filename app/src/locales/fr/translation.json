@@ -2323,7 +2323,8 @@
       "awaitingDecision": "En attente de votre décision sur l'action ci-dessus",
       "send": "Envoyer",
       "disclaimer": "Brocoli peut se tromper. Chaque modification vous est montrée avant d'être appliquée.",
-      "mentionsLabel": "Suggestions de salons et de rôles"
+      "mentionsLabel": "Suggestions de salons et de rôles",
+      "awaitingAnswer": "En attente de votre réponse au formulaire ci-dessus"
     },
     "mode": {
       "label": "Mode",
@@ -2355,7 +2356,10 @@
       "search_documentation": "Cherche dans la documentation",
       "read_documentation_page": "Lit la documentation",
       "read_internal_guide": "Consulte son guide",
-      "get_guild_overview": "Regarde le serveur"
+      "get_guild_overview": "Regarde le serveur",
+      "ask_user": "Vous demande quelque chose",
+      "describe_module_config": "Relit la configuration en clair",
+      "list_module_catalogue": "Fait le tour de ce qu'il sait configurer"
     },
     "risk": {
       "low": {
@@ -2445,6 +2449,35 @@
       "transport": "La connexion à Brocoli a échoué.",
       "retryIn": "Réessayez dans {{minutes}} min.",
       "reload": "Rafraîchir"
+    },
+    "question": {
+      "panelLabel": "Question de Brocoli en attente de votre réponse",
+      "title": "Brocoli a besoin d'une précision",
+      "footerHint": "Brocoli ne peut pas continuer sans cette information.",
+      "submit": "Envoyer",
+      "sending": "Envoi de votre réponse…",
+      "skip": "Ignorer",
+      "recommended": "Recommandé",
+      "none": "Ne pas répondre",
+      "textPlaceholder": "Votre réponse…",
+      "expired": "Question expirée — redemandez à Brocoli",
+      "expiresTitle": "Temps restant pour répondre",
+      "andMore_one": "et {{count}} autre question",
+      "andMore_other": "et {{count}} autres questions",
+      "pick": {
+        "channel": "Choisir un salon",
+        "role": "Choisir un rôle"
+      },
+      "add": {
+        "channel": "Ajouter un salon",
+        "role": "Ajouter un rôle"
+      },
+      "status": {
+        "pending": "En attente de votre réponse",
+        "answered": "Vous avez répondu",
+        "cancelled": "Question ignorée",
+        "expired": "Question expirée"
+      }
     }
   }
 }
