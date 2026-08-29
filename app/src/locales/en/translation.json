@@ -2395,7 +2395,11 @@
         "failed": "Failed"
       },
       "panelLabel": "Action awaiting your decision",
-      "footerHint": "Nothing is applied until you approve."
+      "footerHint": "Nothing is applied until you approve.",
+      "sending": {
+        "approve": "Applying…",
+        "deny": "Rejecting…"
+      }
     },
     "diff": {
       "title_one": "{{count}} change",

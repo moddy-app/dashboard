@@ -15,7 +15,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowUpIcon, AtSignIcon, HashIcon, Loader2Icon } from 'lucide-react'
+import { ArrowUpIcon, AtSignIcon, HashIcon, LoaderIcon } from 'lucide-react'
 import {
   InputGroup,
   InputGroupAddon,
@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 import { BrocoliModeSelect } from './brocoli-mode-select'
 import {
   findMentionQuery,
+  scanMentions,
   suggestMentions,
   type MentionSource,
   type MentionTarget,
@@ -34,6 +35,61 @@ import type { AiMode, BrocoliRunState } from '@/types/ai'
 
 /** Le backend refuse au-delà (`422`) : on borne ici plutôt que d'aller le voir. */
 const MAX_LENGTH = 8000
+
+/**
+ * Métriques partagées par la saisie et son calque de surlignage. Les deux
+ * doivent produire **exactement** la même mise en page : la moindre différence
+ * de police, de rembourrage ou d'interlignage décale le surlignage du texte.
+ */
+const EDITOR_METRICS =
+  'px-3 py-2 text-base md:text-sm leading-normal whitespace-pre-wrap wrap-break-word'
+
+/**
+ * Surlignage des mentions **dans la saisie**.
+ *
+ * Un `<textarea>` ne sait pas afficher de contenu riche. On peint donc le texte
+ * une seconde fois dans un calque placé dessous, et on rend le texte de la
+ * zone de saisie transparent — seul son curseur reste visible.
+ *
+ * ⚠️ Le surlignage doit être **neutre pour la mise en page** : uniquement une
+ * couleur et un fond, jamais de rembourrage, de bordure ni d'icône. Une
+ * pastille comme celle du fil élargirait le mot et décalerait tout le texte qui
+ * suit par rapport aux vraies lettres de la zone de saisie.
+ */
+function MentionHighlightLayer({
+  value,
+  mentions,
+  ref,
+}: {
+  value: string
+  mentions: MentionSource | null
+  ref: React.Ref<HTMLDivElement>
+}) {
+  return (
+    <div
+      ref={ref}
+      aria-hidden
+      className={cn(
+        'pointer-events-none absolute inset-x-0 top-0 overflow-hidden text-foreground',
+        EDITOR_METRICS
+      )}
+    >
+      {scanMentions(value, mentions).map((segment, index) =>
+        segment.target ? (
+          <span key={index} className="rounded-[3px] bg-primary/15 text-primary">
+            {segment.text}
+          </span>
+        ) : (
+          <span key={index}>{segment.text}</span>
+        )
+      )}
+      {/* Une ligne vide finale n'a pas de hauteur : sans ce caractère, le calque
+          est plus court que la zone de saisie quand le texte finit par un saut
+          de ligne, et le surlignage remonte d'une ligne. */}
+      {value.endsWith('\n') && '\u200b'}
+    </div>
+  )
+}
 
 interface BrocoliComposerProps {
   runState: BrocoliRunState
@@ -69,6 +125,7 @@ export function BrocoliComposer({
   /** Fermée à la main (Échap) tant que le jeton courant n'a pas changé. */
   const [dismissed, setDismissed] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const mirrorRef = useRef<HTMLDivElement>(null)
 
   const locked = runState !== 'idle' || disabled
   const canSend = value.trim().length > 0 && !locked
@@ -129,7 +186,11 @@ export function BrocoliComposer({
     const node = textareaRef.current
     if (!node) return
     node.style.height = 'auto'
-    node.style.height = `${Math.min(node.scrollHeight, 200)}px`
+    const height = Math.min(node.scrollHeight, 200)
+    node.style.height = `${height}px`
+    // Le calque suit la même hauteur : au-delà de la borne, les deux défilent
+    // et leurs `scrollTop` sont synchronisés à la main (voir `onScroll`).
+    if (mirrorRef.current) mirrorRef.current.style.height = `${height}px`
   }, [value])
 
   // Le focus revient dès que la main est rendue — après un tour ou une
@@ -193,6 +254,7 @@ export function BrocoliComposer({
       )}
 
       <InputGroup>
+        <MentionHighlightLayer value={value} mentions={mentions} ref={mirrorRef} />
         <InputGroupTextarea
           ref={textareaRef}
           value={value}
@@ -203,7 +265,17 @@ export function BrocoliComposer({
           aria-label={t('brocoli.composer.label')}
           aria-expanded={open}
           aria-autocomplete="list"
-          className="max-h-[200px] min-h-[2.75rem]"
+          className={cn(
+            'relative max-h-[200px] min-h-[2.75rem] bg-transparent caret-foreground',
+            // Le texte est peint par le calque : ici il ne sert qu'à porter la
+            // sélection et le curseur. `text-transparent` garde la sélection
+            // visible (le navigateur la peint par-dessus).
+            'text-transparent placeholder:text-muted-foreground',
+            EDITOR_METRICS
+          )}
+          onScroll={(e) => {
+            if (mirrorRef.current) mirrorRef.current.scrollTop = e.currentTarget.scrollTop
+          }}
           onChange={(e) => {
             setValue(e.target.value)
             setCaret(e.target.selectionStart ?? 0)
@@ -279,7 +351,7 @@ export function BrocoliComposer({
               onClick={submit}
             >
               {runState === 'streaming' ? (
-                <Loader2Icon className="animate-spin" />
+                <LoaderIcon className="animate-spin" />
               ) : (
                 <ArrowUpIcon />
               )}

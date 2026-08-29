@@ -93,35 +93,40 @@ export function useMentionSource(): MentionSource {
 
 // ─── Rendu du texte ───────────────────────────────────────────────────────────
 
+/** Un morceau de texte, mention reconnue ou non. */
+export interface MentionSegment {
+  text: string
+  /** `null` quand le morceau est du texte ordinaire. */
+  target: MentionTarget | null
+}
+
 /**
- * Remplace les mentions **connues** par des pastilles.
+ * Découpe un texte en morceaux, en isolant les mentions **connues**.
  *
  * Correspondance par **nom le plus long d'abord** plutôt que par expression
  * régulière : un rôle peut contenir des espaces (« Équipe support »), et un
- * motif `\w+` couperait au premier blanc — donnant une pastille « Équipe »
+ * motif `\w+` couperait au premier blanc — donnant une mention « Équipe »
  * suivie d'un « support » orphelin. On tente donc les noms connus, du plus long
  * au plus court, à la position du préfixe.
+ *
+ * Partagé par les deux rendus : la pastille du fil et le surlignage de la
+ * saisie. Les faire diverger ferait mentir l'aperçu de ce qu'on est en train
+ * d'écrire.
  */
-export function renderMentionText(
-  text: string,
-  source: MentionSource | null,
-  keyPrefix: string,
-  /** `true` sur une surface remplie en `primary` (bulle de l'utilisateur). */
-  onAccent = false
-): ReactNode[] {
-  if (!source || source.targets.length === 0) return [text]
+export function scanMentions(text: string, source: MentionSource | null): MentionSegment[] {
+  if (!source || source.targets.length === 0) return [{ text, target: null }]
 
   // Trié une fois par appel : la liste est petite (quelques dizaines d'entrées)
   // et l'ordre décroissant est ce qui garantit la correspondance la plus longue.
   const sorted = [...source.targets].sort((a, b) => b.name.length - a.name.length)
 
-  const nodes: ReactNode[] = []
+  const segments: MentionSegment[] = []
   let buffer = ''
   let i = 0
 
   const flush = () => {
     if (buffer) {
-      nodes.push(buffer)
+      segments.push({ text: buffer, target: null })
       buffer = ''
     }
   }
@@ -147,8 +152,7 @@ export function renderMentionText(
 
       if (match) {
         flush()
-        // `createElement` : ce module est un `.ts`, il ne porte pas de JSX.
-        nodes.push(createElement(MentionChip, { key: `${keyPrefix}-m${i}`, target: match, onAccent }))
+        segments.push({ text: text.slice(i, i + 1 + match.name.length), target: match })
         i += 1 + match.name.length
         continue
       }
@@ -159,7 +163,27 @@ export function renderMentionText(
   }
 
   flush()
-  return nodes
+  return segments
+}
+
+/** Remplace les mentions connues par des pastilles, pour l'affichage d'un message. */
+export function renderMentionText(
+  text: string,
+  source: MentionSource | null,
+  keyPrefix: string,
+  /** `true` sur une surface remplie en `primary` (bulle de l'utilisateur). */
+  onAccent = false
+): ReactNode[] {
+  return scanMentions(text, source).map((segment, index) =>
+    segment.target
+      ? // `createElement` : ce module est un `.ts`, il ne porte pas de JSX.
+        createElement(MentionChip, {
+          key: `${keyPrefix}-m${index}`,
+          target: segment.target,
+          onAccent,
+        })
+      : segment.text
+  )
 }
 
 // ─── Détection du jeton en cours de saisie ────────────────────────────────────
