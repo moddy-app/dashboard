@@ -192,3 +192,72 @@ input[type="color"].color-field::-moz-color-swatch {
   border: none;
   border-radius: calc(var(--radius) - 2px);
 }
+
+/* ─── Utilitaires du transcript de conversation (MessageScroller) ──────────────
+   `message-scroller.tsx` vient du registre shadcn et référence quatre classes
+   que le préréglage Tailwind du projet ne définit pas. Une classe inconnue est
+   ignorée *silencieusement* par Tailwind : sans ces définitions le viewport
+   garde une barre de défilement pleine largeur et perd son dégradé de bas,
+   sans qu'aucune erreur ne le signale. */
+
+/* Le dégradé ne s'applique que s'il reste du contenu en dessous : appliqué en
+   permanence, il estomperait la dernière ligne d'une conversation lue jusqu'au
+   bout. `data-scrollable` vaut « start », « end » ou « start end » — d'où le
+   sélecteur par mot (`~=`) plutôt qu'une égalité. */
+@utility scroll-fade-b {
+  &[data-scrollable~="end"] {
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent 100%);
+  }
+}
+
+@utility scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+@utility scrollbar-gutter-stable {
+  /* Réserve la gouttière en permanence : sans ça, l'apparition de la barre
+     pendant le stream décale le texte de quelques pixels à chaque fragment. */
+  scrollbar-gutter: stable;
+}
+
+@utility scrollbar-thumb-transparent {
+  scrollbar-color: transparent transparent;
+}
+
+@utility scrollbar-track-transparent {
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Texte « en cours » (Brocoli réfléchit, un outil tourne). Le dégradé est
+   découpé sur le texte lui-même : la couleur de repli reste lisible si
+   `background-clip: text` n'est pas supporté. */
+@utility shimmer {
+  color: var(--muted-foreground);
+  background: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--muted-foreground) 40%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 60%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer-sweep 2.4s linear infinite;
+}
+
+@keyframes shimmer-sweep {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    animation: none;
+  }
+}

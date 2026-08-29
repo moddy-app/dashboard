@@ -21,8 +21,10 @@ import {
   ShieldCheckIcon,
   SparklesIcon,
   PaletteIcon,
+  PuzzleIcon,
   TicketIcon,
   SettingsIcon,
+  SparkleIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -39,11 +41,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { getAvatarUrl, getDisplayName, type User } from "@/lib/auth"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useSanctions } from "@/contexts/SanctionContext"
+import { useAiStatus } from "@/hooks/useAiStatus"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User | null
@@ -70,6 +74,9 @@ export function AppSidebar({
   const { selectedGuildId, refreshGuildData } = useGuildContext()
   const subscription = useSubscription()
   const { user: sanction, isExempt } = useSanctions()
+  // `enabled: false` → l'entrée Brocoli est **masquée**, pas grisée : un
+  // bouton qui répond 503 est pire que pas de bouton.
+  const { enabled: isBrocoliEnabled } = useAiStatus()
   // Une sanction globale ferme la souscription : on **retire** l'entrée plutôt
   // que de la laisser mener à un refus. Un abonnement déjà payé garde la
   // sienne, même rendu inopérant par la sanction (`is_active` retombe alors à
@@ -77,6 +84,17 @@ export function AppSidebar({
   // possible.
   const hasBilling = Boolean(subscription?.tier || subscription?.stripe_customer_id)
   const hidePremiumEntry = !isExempt && !hasBilling && sanction.restricted
+
+  const { isMobile, setOpenMobile } = useSidebar()
+
+  // Sur mobile, la sidebar est un panneau **superposé** à la page. Naviguer
+  // sans la refermer laisse la nouvelle page derrière elle : l'utilisateur voit
+  // la sidebar inchangée et croit que son clic n'a rien fait. On ferme donc au
+  // changement de route plutôt qu'au clic — ça couvre aussi la palette de
+  // commandes et le fil d'Ariane, pas seulement les entrées de la sidebar.
+  React.useEffect(() => {
+    if (isMobile) setOpenMobile(false)
+  }, [location.pathname, isMobile, setOpenMobile])
 
   const [isRefreshing, setIsRefreshing] = React.useState(false)
 
@@ -113,71 +131,93 @@ export function AppSidebar({
           icon: ShieldAlertIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/cases`,
         },
+        ...(isBrocoliEnabled
+          ? [
+              {
+                title: t("brocoli.title"),
+                url: `/servers/${selectedGuildId}/brocoli`,
+                icon: SparkleIcon,
+                isActive: location.pathname === `/servers/${selectedGuildId}/brocoli`,
+              },
+            ]
+          : []),
         {
-          title: t("modules.starboard.name"),
-          url: `/servers/${selectedGuildId}/modules/starboard`,
-          icon: StarIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/starboard`,
-        },
-        {
-          title: t("modules.welcome_channel.name"),
-          url: `/servers/${selectedGuildId}/modules/welcome_channel`,
-          icon: MessageSquareIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_channel`,
-        },
-        {
-          title: t("modules.welcome_dm.name"),
-          url: `/servers/${selectedGuildId}/modules/welcome_dm`,
-          icon: MailIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_dm`,
-        },
-        {
-          title: t("modules.auto_role.name"),
-          url: `/servers/${selectedGuildId}/modules/auto_role`,
-          icon: UsersIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/auto_role`,
-        },
-        {
-          title: t("modules.adaptive_slowmode.name"),
-          url: `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
-          icon: GaugeIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
-        },
-        {
-          title: t("modules.automod_ai.name"),
-          url: `/servers/${selectedGuildId}/modules/automod_ai`,
-          icon: SparklesIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/automod_ai`,
-        },
-        {
-          title: t("modules.social_notifications.name"),
-          url: `/servers/${selectedGuildId}/modules/social_notifications`,
-          icon: BellRingIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/social_notifications`,
-        },
-        {
-          title: t("modules.altguard.name"),
-          url: `/servers/${selectedGuildId}/modules/altguard`,
-          icon: ShieldCheckIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
-        },
-        {
-          title: t("modules.tickets.name"),
-          url: `/servers/${selectedGuildId}/modules/tickets`,
-          icon: TicketIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/tickets`,
-        },
-        {
-          title: t("modules.logs.name"),
-          url: `/servers/${selectedGuildId}/modules/logs`,
-          icon: FileClockIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/logs`,
-        },
-        {
-          title: t("modules.bot_customization.name"),
-          url: `/servers/${selectedGuildId}/modules/bot_customization`,
-          icon: PaletteIcon,
-          isActive: location.pathname === `/servers/${selectedGuildId}/modules/bot_customization`,
+          // Les modules sont regroupés sous une seule entrée repliable : à
+          // quatorze lignes à plat, la sidebar débordait et noyait les entrées
+          // qui ne sont pas des modules (vue d'ensemble, modération, réglages).
+          // `NavMain` ouvre d'office la section qui contient la page courante,
+          // donc on ne perd pas le repère de « où je suis ».
+          title: t("sidebar.guild.modules"),
+          url: "#",
+          icon: PuzzleIcon,
+          items: [
+          {
+            title: t("modules.starboard.name"),
+            url: `/servers/${selectedGuildId}/modules/starboard`,
+            icon: StarIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/starboard`,
+          },
+          {
+            title: t("modules.welcome_channel.name"),
+            url: `/servers/${selectedGuildId}/modules/welcome_channel`,
+            icon: MessageSquareIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_channel`,
+          },
+          {
+            title: t("modules.welcome_dm.name"),
+            url: `/servers/${selectedGuildId}/modules/welcome_dm`,
+            icon: MailIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_dm`,
+          },
+          {
+            title: t("modules.auto_role.name"),
+            url: `/servers/${selectedGuildId}/modules/auto_role`,
+            icon: UsersIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/auto_role`,
+          },
+          {
+            title: t("modules.adaptive_slowmode.name"),
+            url: `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
+            icon: GaugeIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
+          },
+          {
+            title: t("modules.automod_ai.name"),
+            url: `/servers/${selectedGuildId}/modules/automod_ai`,
+            icon: SparklesIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/automod_ai`,
+          },
+          {
+            title: t("modules.social_notifications.name"),
+            url: `/servers/${selectedGuildId}/modules/social_notifications`,
+            icon: BellRingIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/social_notifications`,
+          },
+          {
+            title: t("modules.altguard.name"),
+            url: `/servers/${selectedGuildId}/modules/altguard`,
+            icon: ShieldCheckIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
+          },
+          {
+            title: t("modules.tickets.name"),
+            url: `/servers/${selectedGuildId}/modules/tickets`,
+            icon: TicketIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/tickets`,
+          },
+          {
+            title: t("modules.logs.name"),
+            url: `/servers/${selectedGuildId}/modules/logs`,
+            icon: FileClockIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/logs`,
+          },
+          {
+            title: t("modules.bot_customization.name"),
+            url: `/servers/${selectedGuildId}/modules/bot_customization`,
+            icon: PaletteIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/bot_customization`,
+          },
+          ],
         },
         {
           title: t("guildSettings.title"),
