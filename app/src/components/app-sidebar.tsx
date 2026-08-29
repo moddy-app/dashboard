@@ -23,6 +23,7 @@ import {
   PaletteIcon,
   TicketIcon,
   SettingsIcon,
+  SparkleIcon,
 } from "lucide-react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
@@ -44,6 +45,7 @@ import { getAvatarUrl, getDisplayName, type User } from "@/lib/auth"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useSanctions } from "@/contexts/SanctionContext"
+import { useAiStatus } from "@/hooks/useAiStatus"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User | null
@@ -70,6 +72,9 @@ export function AppSidebar({
   const { selectedGuildId, refreshGuildData } = useGuildContext()
   const subscription = useSubscription()
   const { user: sanction, isExempt } = useSanctions()
+  // `enabled: false` → l'entrée Brocoli est **masquée**, pas grisée : un
+  // bouton qui répond 503 est pire que pas de bouton.
+  const { enabled: isBrocoliEnabled } = useAiStatus()
   // Une sanction globale ferme la souscription : on **retire** l'entrée plutôt
   // que de la laisser mener à un refus. Un abonnement déjà payé garde la
   // sienne, même rendu inopérant par la sanction (`is_active` retombe alors à
@@ -113,6 +118,16 @@ export function AppSidebar({
           icon: ShieldAlertIcon,
           isActive: location.pathname === `/servers/${selectedGuildId}/cases`,
         },
+        ...(isBrocoliEnabled
+          ? [
+              {
+                title: t("brocoli.title"),
+                url: `/servers/${selectedGuildId}/brocoli`,
+                icon: SparkleIcon,
+                isActive: location.pathname === `/servers/${selectedGuildId}/brocoli`,
+              },
+            ]
+          : []),
         {
           title: t("modules.starboard.name"),
           url: `/servers/${selectedGuildId}/modules/starboard`,
