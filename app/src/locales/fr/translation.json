@@ -2395,7 +2395,11 @@
         "failed": "Échouée"
       },
       "panelLabel": "Action en attente de votre décision",
-      "footerHint": "Rien n'est appliqué tant que vous n'avez pas approuvé."
+      "footerHint": "Rien n'est appliqué tant que vous n'avez pas approuvé.",
+      "sending": {
+        "approve": "Application en cours…",
+        "deny": "Refus en cours…"
+      }
     },
     "diff": {
       "title_one": "{{count}} modification",

@@ -16,18 +16,16 @@
  *   passagère à réessayer.
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArchiveIcon,
   ArrowUpRightIcon,
+  MessageSquarePlusIcon,
   RefreshCwIcon,
-  RotateCcwIcon,
   SparklesIcon,
   TriangleAlertIcon,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
@@ -206,15 +204,6 @@ export function BrocoliPage() {
     [brocoli]
   )
 
-  const quotaLabel = useMemo(() => {
-    const quota = status?.quota
-    if (!quota || quota.messages_limit === null || quota.messages_used_today === null) return null
-    return t('brocoli.quota', {
-      used: quota.messages_used_today,
-      limit: quota.messages_limit,
-    })
-  }, [status, t])
-
   // ── Gardes ────────────────────────────────────────────────────────────────
 
   if (guildError) return <ErrorPage error={guildError} />
@@ -259,25 +248,18 @@ export function BrocoliPage() {
    * continue à écrire. La dernière l'emporte — un tour peut en enchaîner
    * plusieurs, seule celle encore réclamable a un sens.
    *
-   * Le verrou visuel survit à l'envoi de la décision (`submitted`) : le panneau
-   * reste affiché, boutons figés, tant que le flux de reprise n'a pas répondu.
+   * Le panneau **disparaît dès le clic** : la décision est prise, le garder
+   * affiché avec une roue laisserait croire qu'il reste quelque chose à faire.
+   * La suite se raconte dans le fil, où la trace passe en « application en
+   * cours » puis au verdict — et la saisie reste verrouillée pendant ce temps.
    */
   const pending = [...brocoli.items]
     .reverse()
     .find(
       (item) =>
-        item.kind === 'action' && (isActionDecidable(item.action) || item.submitted !== null)
+        item.kind === 'action' && isActionDecidable(item.action) && item.submitted === null
     )
   const pendingAction = pending?.kind === 'action' ? pending : null
-
-  /** Un tour terminé en erreur laisse une note dans le fil : c'est ce qui
-   *  justifie de proposer un renvoi explicite. `max_iterations` n'est pas une
-   *  erreur — Brocoli invite à reformuler, pas à réenvoyer le même texte. */
-  const turnFailed =
-    !error &&
-    brocoli.runState === 'idle' &&
-    brocoli.lastMessage !== null &&
-    brocoli.items.some((item) => item.kind === 'notice' && item.code !== 'max_iterations')
 
   return (
     // `h-full min-h-0` : le conteneur du dashboard défile déjà ; sans cette
@@ -287,78 +269,39 @@ export function BrocoliPage() {
     // tient bord à bord, son propre rembourrage étant porté par la colonne de
     // lecture.
     <div className="-m-6 flex h-[calc(100%+3rem)] min-h-0 flex-1 flex-col">
-      {/* ── En-tête ── */}
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b px-6 py-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span
-            aria-hidden
-            className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"
+      {/* Historique en haut à gauche, hors bandeau : un simple bouton posé
+          au-dessus du fil. Le titre et le nom du serveur vivent déjà dans le
+          fil d'Ariane du dashboard, les répéter volait une bande de hauteur au
+          seul contenu qui compte ici. */}
+      <div className="flex shrink-0 items-center gap-1 px-4 pt-2">
+        {/* Repartir de zéro est l'action la plus fréquente une fois dans un
+            fil : elle mérite son bouton, pas deux clics dans un menu. Elle
+            n'apparaît que là — sur une conversation neuve, elle ne ferait
+            rien. */}
+        {brocoli.conversation && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 px-2 text-muted-foreground hover:text-foreground"
+            disabled={streaming}
+            onClick={startNew}
           >
-            <SparklesIcon className="size-4" />
-          </span>
-          <div className="flex min-w-0 flex-col">
-            <h1 className="truncate text-sm font-semibold leading-tight">
-              {t('brocoli.title')}
-            </h1>
-            <p className="truncate text-xs leading-tight text-muted-foreground">
-              {/* Le titre de la conversation quand il y en a un — sinon le nom
-                  du serveur, qui dit ce que Brocoli a sous la main. */}
-              {brocoli.conversation?.title?.trim() || guildDetail?.name || ''}
-            </p>
-          </div>
-          {status?.model && (
-            <Badge variant="secondary" className="hidden font-mono text-[0.7rem] sm:inline-flex">
-              {status.model}
-            </Badge>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1">
-          {quotaLabel && (
-            <span
-              className={cn(
-                'mr-1 hidden text-xs tabular-nums text-muted-foreground sm:inline',
-                quotaExhausted && 'font-medium text-destructive'
-              )}
-            >
-              {quotaLabel}
-            </span>
-          )}
-
-          {brocoli.conversation && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => void reload()}
-                aria-label={t('brocoli.reload')}
-                title={t('brocoli.reload')}
-                disabled={streaming}
-              >
-                <RefreshCwIcon />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => void brocoli.archive()}
-                aria-label={t('brocoli.archive')}
-                title={t('brocoli.archive')}
-                disabled={streaming}
-              >
-                <ArchiveIcon />
-              </Button>
-            </>
-          )}
-
-          <BrocoliHistory
-            conversations={brocoli.conversations}
-            currentId={brocoli.conversation?.id ?? null}
-            loading={brocoli.loadingHistory}
-            onOpen={(id) => void brocoli.open(id)}
-            onNew={startNew}
-          />
-        </div>
-      </header>
+            <MessageSquarePlusIcon data-icon="inline-start" />
+            {t('brocoli.history.new')}
+          </Button>
+        )}
+        <BrocoliHistory
+          conversations={brocoli.conversations}
+          currentId={brocoli.conversation?.id ?? null}
+          loading={brocoli.loadingHistory}
+          status={status}
+          busy={streaming}
+          onOpen={(id) => void brocoli.open(id)}
+          onNew={startNew}
+          onReload={() => void reload()}
+          onArchive={() => void brocoli.archive()}
+        />
+      </div>
 
       {/* ── Fil ── */}
       <BrocoliTranscript
@@ -398,23 +341,7 @@ export function BrocoliPage() {
             <ErrorNotice error={error} onDismiss={dismissError} onReload={() => void reload()} />
           )}
 
-          {/* Renvoi **explicite** après un tour terminé en erreur. Jamais
-              automatique : le message a peut-être été enregistré et le tour
-              lancé — c'est un nouveau tour que l'utilisateur demande. */}
-          {turnFailed && (
-            <div className="flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSend(brocoli.lastMessage as string)}
-              >
-                <RotateCcwIcon data-icon="inline-start" />
-                {t('brocoli.retry')}
-              </Button>
-            </div>
-          )}
-
-          <BrocoliComposer
+            <BrocoliComposer
             runState={brocoli.runState}
             mode={brocoli.mode}
             availableModes={status?.modes ?? ['read_only', 'ask', 'auto']}
