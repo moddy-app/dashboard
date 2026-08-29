@@ -10,7 +10,7 @@
 
 import { createElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, ChevronRightIcon, Loader2Icon, TriangleAlertIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, LoaderIcon, TriangleAlertIcon } from 'lucide-react'
 import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 import { cn } from '@/lib/utils'
 import { toolIcon, toolLabelKey } from '@/lib/brocoli'
@@ -46,7 +46,7 @@ export function BrocoliToolStep({ item }: { item: ToolItem }) {
       >
         <MarkerIcon>
           {running ? (
-            <Loader2Icon className="animate-spin" />
+            <LoaderIcon className="animate-spin" />
           ) : item.state === 'failed' ? (
             <TriangleAlertIcon className="text-amber-600 dark:text-amber-400" />
           ) : (

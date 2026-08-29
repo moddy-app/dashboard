@@ -259,7 +259,7 @@ export function BrocoliTranscript({
                     // entière par action rendrait un long fil illisible.
                     <MessageScrollerItem key={item.id} messageId={item.id}>
                       <div className={ASSISTANT_INDENT}>
-                        <BrocoliActionRecord action={item.action} />
+                        <BrocoliActionRecord action={item.action} submitted={item.submitted} />
                       </div>
                     </MessageScrollerItem>
                   )

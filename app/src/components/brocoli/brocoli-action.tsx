@@ -38,7 +38,7 @@ import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
   ClockIcon,
-  Loader2Icon,
+  LoaderIcon,
   ShieldQuestionIcon,
   TimerOffIcon,
   XIcon,
@@ -317,7 +317,7 @@ export function BrocoliActionPanel({
             <span className="flex items-center gap-2">
               <Button size="sm" variant="ghost" disabled={locked} onClick={() => request('deny')}>
                 {submitted === 'deny' ? (
-                  <Loader2Icon data-icon="inline-start" className="animate-spin" />
+                  <LoaderIcon data-icon="inline-start" className="animate-spin" />
                 ) : (
                   <XIcon data-icon="inline-start" />
                 )}
@@ -332,7 +332,7 @@ export function BrocoliActionPanel({
                 variant={critical ? 'outline' : 'default'}
               >
                 {submitted === 'approve' ? (
-                  <Loader2Icon data-icon="inline-start" className="animate-spin" />
+                  <LoaderIcon data-icon="inline-start" className="animate-spin" />
                 ) : (
                   <CheckIcon data-icon="inline-start" />
                 )}
@@ -375,29 +375,46 @@ const RECORD_ICON = {
  * Une action encore `pending` apparaît quand même : sans elle, l'endroit du fil
  * où la conversation s'est arrêtée serait invisible.
  */
-export function BrocoliActionRecord({ action }: { action: AiPermissionRequest }) {
+export function BrocoliActionRecord({
+  action,
+  submitted,
+}: {
+  action: AiPermissionRequest
+  /** Décision envoyée, réponse pas encore arrivée. */
+  submitted?: AiDecision | null
+}) {
   const { t } = useTranslation()
   const tone = riskTone(action.risk)
-  const Icon = RECORD_ICON[action.status] ?? CheckIcon
   const summary = action.preview.summary.trim() || t('brocoli.action.noSummary')
   const settled = action.status !== 'pending'
 
+  // Une décision en vol l'emporte sur le statut : en base l'action est encore
+  // `pending`, mais afficher « en attente de votre décision » alors qu'elle
+  // vient d'être prise serait faux.
+  const pendingSend = !settled && submitted
+
+  const Icon = pendingSend ? LoaderIcon : (RECORD_ICON[action.status] ?? CheckIcon)
+
   return (
-    <Marker className="gap-2">
+    <Marker {...(pendingSend ? { role: 'status' as const } : {})} className="gap-2">
       <MarkerIcon>
         <Icon
           className={cn(
-            action.status === 'approved' || action.status === 'executed'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : action.status === 'pending'
-                ? tone.text
-                : 'text-muted-foreground'
+            pendingSend
+              ? 'animate-spin text-muted-foreground'
+              : action.status === 'approved' || action.status === 'executed'
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : action.status === 'pending'
+                  ? tone.text
+                  : 'text-muted-foreground'
           )}
         />
       </MarkerIcon>
       <MarkerContent className="flex flex-1 flex-wrap items-baseline gap-x-1.5">
         <span className={cn('font-medium', !settled && 'text-foreground')}>
-          {t(`brocoli.action.status.${action.status}`)}
+          {pendingSend
+            ? t(`brocoli.action.sending.${submitted}`)
+            : t(`brocoli.action.status.${action.status}`)}
         </span>
         <span className="min-w-0 wrap-break-word text-muted-foreground">— {summary}</span>
       </MarkerContent>
