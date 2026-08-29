@@ -16,6 +16,7 @@
  *   que le nouveau tour ne semble pas commencer sur une page blanche.
  */
 
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InfoIcon, SparklesIcon, TriangleAlertIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -110,6 +111,16 @@ function AssistantRow({
 }) {
   const { t } = useTranslation()
 
+  // L'apparition mot à mot vaut pour **toute la vie du message**, pas seulement
+  // pendant le flux : la couper à `run_end` remplacerait les spans par du texte
+  // nu et ferait claquer les derniers mots encore en cours d'animation. Un
+  // message relu depuis le transcript n'a jamais été « en flux » : il ne
+  // s'anime pas, ce qui serait absurde au chargement d'une page.
+  // Ajustement d'état **pendant le rendu** : lire une ref au rendu est
+  // interdit, et un effet arriverait une frame trop tard.
+  const [everStreamed, setEverStreamed] = useState(streaming)
+  if (streaming && !everStreamed) setEverStreamed(true)
+
   return (
     <Message>
       {/* TEMPORAIRE — avatar de Brocoli désactivé, à remettre plus tard :
@@ -124,7 +135,7 @@ function AssistantRow({
         <Bubble variant="ghost">
           <BubbleContent>
             {text ? (
-              <BrocoliMarkdown text={text} mentions={mentions} />
+              <BrocoliMarkdown text={text} mentions={mentions} animate={everStreamed} />
             ) : (
               <Marker role="status" className="w-auto">
                 <MarkerContent className="shimmer">{t('brocoli.thinking')}</MarkerContent>

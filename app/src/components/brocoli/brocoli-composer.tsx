@@ -42,7 +42,7 @@ const MAX_LENGTH = 8000
  * de police, de rembourrage ou d'interlignage décale le surlignage du texte.
  */
 const EDITOR_METRICS =
-  'px-3 py-2 text-base md:text-sm leading-normal whitespace-pre-wrap wrap-break-word'
+  'px-3 pt-3.5 pb-2 text-base md:text-sm leading-normal whitespace-pre-wrap wrap-break-word'
 
 /**
  * Surlignage des mentions **dans la saisie**.
