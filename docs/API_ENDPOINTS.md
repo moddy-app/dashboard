@@ -2339,11 +2339,11 @@ Règles communes à tous les endpoints ci-dessous :
   un autre compte répond **403** ;
 - snowflakes en **chaînes**, dates en ISO-8601 UTC ;
 - assistant non configuré (`OPENAI_API_KEY` absente) ou coupe-circuit armé
-  (`AI_ASSISTANT_ENABLED=false`) → **503** sur les trois endpoints d'écriture
-  (`POST /ai/conversations`, `POST …/messages`, `POST …/decision`). `GET /ai/status`
-  répond toujours ;
-- les deux endpoints de tour rendent un flux **`text/event-stream`**, pas du JSON
-  (7 types d'événements, §SSE plus bas).
+  (`AI_ASSISTANT_ENABLED=false`) → **503** sur les quatre endpoints d'écriture
+  (`POST /ai/conversations`, `POST …/messages`, `POST …/decision`,
+  `POST …/answer`). `GET /ai/status` répond toujours ;
+- les trois endpoints de tour rendent un flux **`text/event-stream`**, pas du
+  JSON (8 types d'événements, §SSE plus bas).
 
 ### `GET /ai/status`
 
@@ -2398,6 +2398,9 @@ Ouvre une conversation.
 | `kind` | string | `guild_config` | `guild_config`, `support_user`, `support_staff` |
 | `mode` | string | `ask` | `read_only`, `ask`, `auto` |
 | `guild_id` | string (optionnel) | `null` | **requis** pour `guild_config` |
+| `subject_user_id` | string (optionnel) | `null` | `support_staff` ; forcé à l'appelant en `support_user` |
+| `subject_guild_id` | string (optionnel) | `null` | `support_staff` |
+| `title` | string (optionnel) | `null` | tronqué à 120. Laissé vide, **généré automatiquement** après le premier message |
 | `subject_user_id` | string (optionnel) | `null` | `support_staff` ; forcé à l'appelant en `support_user` |
 | `subject_guild_id` | string (optionnel) | `null` | `support_staff` |
 | `title` | string (optionnel) | `null` | nettoyé, tronqué à 120 caractères |
@@ -2573,7 +2576,48 @@ redemande à Brocoli de la reformuler » · `409` un tour est déjà en cours ·
 
 ---
 
-### Flux SSE — 7 événements
+### `POST /ai/conversations/{conversation_id}/questions/{question_id}/answer`
+
+Répond à une question posée par Brocoli (outil `ask_user`) et **reprend le
+tour**, en SSE. Brocoli ne pose jamais de question en texte : une question qui
+attend une réponse passe toujours par cet endpoint.
+
+**Auth :** propriétaire de la conversation
+
+**Body :**
+
+```json
+{
+  "answers": [
+    {"question_id": "q1", "value": "987654321098765432", "label": "#général"},
+    {"question_id": "q2", "values": ["bug", "facturation"]}
+  ]
+}
+```
+
+| Champ | Type | Note |
+|---|---|---|
+| `answers[].question_id` | string | `q1`, `q2`… tel que rendu par `user_question` |
+| `answers[].value` | string | réponse unique. Pour `channel` / `role` : l'**identifiant** |
+| `answers[].values` | string[] | réponses multiples (`multi_select`) ; prioritaire sur `value` |
+| `answers[].label` / `labels` | string / string[] | nom lisible (`#général`), repris par Brocoli dans sa réponse |
+| `answers[].skipped` | bool | question laissée sans réponse |
+| `cancelled` | bool | ferme la question sans y répondre |
+
+Une entrée dont le `question_id` n'a pas été posé est **ignorée**. Une question
+absente de `answers` est rendue au modèle comme explicitement non répondue. Même
+`UPDATE … WHERE status = 'pending'` que pour une décision : deux envois
+simultanés ne relancent pas deux tours.
+
+**Réponse :** `200`, flux SSE (même contrat que ci-dessus)
+
+**Erreurs :** `422` `answers` mal formé · `404` question inexistante ou rattachée
+à une autre conversation · `409` « Question déjà répondue » ou « Question
+expirée » · `409` un tour est déjà en cours · `503` · `403`
+
+---
+
+### Flux SSE — 8 événements
 
 Noms du backend, pas ceux d'OpenAI. `data` est du JSON compact ; les entiers
 dépassant 2^53-1 sont convertis en chaînes comme sur les autres réponses.
@@ -2585,7 +2629,8 @@ dépassant 2^53-1 sont convertis en chaînes comme sur les autres réponses.
 | `tool_call` | `{"call_id": "call_1", "name": "get_module_config", "arguments": "{\"module_id\":\"tickets\"}"}` — `arguments` est une **chaîne JSON** |
 | `tool_result` | `{"call_id": "call_1", "name": "get_module_config", "ok": true}` — jamais le contenu du résultat |
 | `permission_request` | `{"action_id", "kind", "risk", "status", "preview", "expires_at", "requires_confirmation": true}` |
-| `run_end` | `{"status": "completed" \| "awaiting_confirmation" \| "max_iterations" \| "error", "usage": {…}}` |
+| `user_question` | `{"question_id", "questions": [{"id", "header", "question", "answer_type", "multi_select", "options", "recommended", "recommended_label", "recommendation_reason"}], "status", "expires_at"}` — `header` peut être `""` (pas de puce à afficher) ; tous les textes sont dans la langue de la conversation |
+| `run_end` | `{"status": "completed" \| "awaiting_confirmation" \| "awaiting_answer" \| "max_iterations" \| "error", "usage": {…}}` |
 | `error` | `{"code", "message"}` — codes : `timeout`, `network`, `rate_limited`, `upstream`, `bad_request`, `stream_error`, `ai_unavailable`, `internal` |
 
 `usage` (`{"input_tokens", "output_tokens", "total_tokens"}`) n'accompagne que
