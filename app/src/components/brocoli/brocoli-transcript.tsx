@@ -142,14 +142,9 @@ function AssistantRow({
                 <MarkerContent className="shimmer">{t('brocoli.thinking')}</MarkerContent>
               </Marker>
             )}
-            {/* Curseur de frappe : le seul signal, dans une longue réponse, que
-                le texte continue d'arriver. */}
-            {streaming && text && (
-              <span
-                aria-hidden
-                className="ml-0.5 inline-block h-4 w-0.5 translate-y-0.5 animate-pulse bg-foreground/60 align-baseline"
-              />
-            )}
+            {/* Pas de curseur de frappe : l'apparition mot à mot dit déjà que
+                le texte continue d'arriver, et deux signaux pour la même chose
+                se gênent. */}
           </BubbleContent>
         </Bubble>
       </MessageContent>
