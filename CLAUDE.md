@@ -9,6 +9,8 @@
 - **Statut** : En développement actif
 - **Branche principale** : `main`
 
+> **Pour Claude** : au démarrage de toute session sur ce dépôt, lire systématiquement le skill `app/.agents/skills/shadcn/SKILL.md` (composants shadcn/ui) avant de travailler sur l'UI. Le skill `app/.agents/skills/migrate-radix-to-base/SKILL.md` est également disponible pour toute migration de composants Radix UI vers Base UI.
+
 ## Architecture du projet
 
 ### Structure des dossiers
