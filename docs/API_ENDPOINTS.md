@@ -421,6 +421,73 @@ Modifie la config du serveur (merge dans le champ JSONB `data`).
 {"guild_id": 123456789, "status": "updated"}
 ```
 
+> Si le body contient une cle `settings`, un `settings_updated` est publie **en
+> plus** de `config_updated` : le cache de langue du bot n'expire pas et
+> `config_updated` ne vide que le cache des modules. Ecrire la langue par ici
+> reste deconseille — utiliser `PUT /guilds/{id}/settings/language`.
+
+---
+
+### `GET /guilds/{guild_id}/settings/language`
+
+Langue que Moddy parle **collectivement** sur le serveur (`guilds.data.settings.language`).
+
+**Auth :** guild_read (lecture seule : un utilisateur suspendu voit encore ses serveurs)
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "language": "auto",
+  "effective_language": "en-US",
+  "preferred_locale": "fr",
+  "is_community": false,
+  "choices": ["auto", "en-US", "fr", "es-ES", "pt-BR", "de"]
+}
+```
+
+| Champ | Type | Description |
+|---|---|---|
+| `language` | str | Valeur **stockee**, normalisee comme le bot la lira (`en-GB` -> `en-US`, `es-419` -> `es-ES`, `pt-PT` -> `pt-BR`, tout le reste -> `auto`) |
+| `effective_language` | str\|null | Langue reellement parlee. `null` si Discord est injoignable — on ne devine pas |
+| `preferred_locale` | str\|null | `guild.preferred_locale` cote Discord, pour l'affichage |
+| `is_community` | bool\|null | Feature `COMMUNITY` : sans elle, `auto` ne suit **pas** `preferred_locale` |
+| `choices` | str[] | Les 6 valeurs canoniques a proposer dans le formulaire |
+
+> Le bot ne publie **rien** quand un admin change la langue depuis `/config` :
+> si le dashboard cache la valeur, il doit relire cet endpoint.
+
+---
+
+### `PUT /guilds/{guild_id}/settings/language`
+
+**Auth :** guild_access
+**Body :** `{"language": "fr"}` — une des 6 valeurs canoniques (`auto` + les 5 locales livrees)
+
+**Actions declenchees :**
+1. `jsonb_set(data, '{settings,language}', ...)` (upsert de la ligne guilde ; les autres cles de `settings` sont preservees)
+2. Invalide le cache : `DEL guild:{id}:config`
+3. Notifie le bot : `PUBLISH moddy:bot {"type": "settings_updated", "guild_id": "123456789012345678"}`
+
+**Reponse :** identique a `GET`.
+
+**Erreurs :** `422` valeur hors des 6 canoniques (le bot lirait `it` comme `auto`
+sans rien dire — mieux vaut le refuser ici).
+
+> `settings_updated` est **obligatoire** : le bot cache le reglage en memoire,
+> une lecture par guilde, **sans expiration**. En le recevant il invalide ce
+> cache puis re-poste les messages deja ecrits dans l'ancienne langue (panneau
+> de verification AltGuard, panneaux de tickets). `config_updated` ne suffit
+> pas — il ne touche ni le cache de langue ni les panneaux.
+
+**Ce qui suit la langue du serveur :** bienvenue (salon et DM), panneau AltGuard
+et ses cartes, panneaux et salons de tickets, logs serveur, DM et cartes de
+sanction automod, notifications sociales, cartes de transcription vocale,
+starboard, DM d'expiration de sanction, suggestions de raison IA.
+
+**Ce qui ne suit pas :** tout ce qui s'adresse a une personne en prive (reponses
+ephemeres, ecrans `/config`, erreurs) reste dans la langue Discord de cette
+personne.
+
 ---
 
 ## Modules
@@ -445,6 +512,12 @@ Retourne `{}` si aucun module configure.
 ---
 
 ### `GET /guilds/{guild_id}/modules/{module_id}`
+
+> **Modules retirés :** un module supprimé du backend (aujourd'hui `logging`,
+> remplacé par `logs`) renvoie `404 {"error": "Module 'logging' supprimé — utiliser 'logs'"}`
+> sur **toutes** les routes de modules, et n'apparaît plus dans
+> `GET /guilds/{id}/modules` même si des données subsistent en base.
+
 
 Config d'un module specifique.
 
@@ -975,7 +1048,6 @@ Le module `automod_ai` est la modération IA de contenu. Sa config est pilotée 
   "ignore_moderators": true,
   "severity": 3,
   "max_action": "ban",
-  "langue_serveur": "auto",
   "categories_desactivees": [],
   "dry_run": false,
   "features": {
@@ -992,7 +1064,6 @@ Le module `automod_ai` est la modération IA de contenu. Sa config est pilotée 
 | `ignore_moderators` | bool | `true` | Ignore les membres avec `manage_messages`. |
 | `severity` | int 1–5 | `3` | Sensibilité (seuil embedding + décalage de cran du barème). |
 | `max_action` | `warn`\|`mute`\|`ban` | `ban` | Plafond dur du barème. |
-| `langue_serveur` | `auto`\|`fr`\|`en-US` | `auto` | Langue des DM/cartes et des raisons IA. |
 | `categories_desactivees` | string[] | `[]` | Catégories jamais sanctionnées (décision ramenée à la suppression seule). Valeurs : `insulte`, `menace`, `harcelement`, `harcelement_sexuel`, `haine_discrimination`, `incitation_automutilation`, `doxxing`, `arnaque_scam`, `violation_indications`. Champ ops (pas de sélecteur UI). |
 | `dry_run` | bool | `false` | Shadow mode : le funnel décide, **rien n'est appliqué** ; une carte SIMULATION est postée. |
 | `features.<id>.enabled` | bool | `false` | Feature de détection. Seul id connu aujourd'hui : `content`. |
@@ -1001,7 +1072,7 @@ Le module `automod_ai` est la modération IA de contenu. Sa config est pilotée 
 
 > **IDs Discord : chaînes en JSON, entiers en base.** Un snowflake de 19 chiffres dépasse `Number.MAX_SAFE_INTEGER` — renvoyé en nombre JSON il serait silencieusement arrondi par un client JS, qui réécrirait ensuite un ID faux. L'API renvoie donc `notify_channel_id`, `exempt_roles` et `exempt_channels` en **chaînes** (`"1234567890123456789"`), et accepte en écriture aussi bien la chaîne que le nombre. Le stockage JSONB, lui, reste en entiers (c'est ce que lit le bot) : l'aller-retour `GET` → `PUT` est sans perte.
 
-`features` est une map ouverte indexée par feature id ; une clé inconnue est **rejetée** (`422 Fonctionnalité inconnue : <id>`). Le bloc `features.situation` (supprimé en 2026-08) est retiré automatiquement à la lecture et à la prochaine écriture, comme les clés legacy `rules` → `indications` et `log_channel_id` → `notify_channel_id`.
+`features` est une map ouverte indexée par feature id ; une clé inconnue est **rejetée** (`422 Fonctionnalité inconnue : <id>`). Le bloc `features.situation` (supprimé en 2026-08) est retiré automatiquement à la lecture et à la prochaine écriture, comme les clés legacy `rules` → `indications` et `log_channel_id` → `notify_channel_id`. **`langue_serveur` a été supprimée en 2026-08** : la langue des DM, cartes et raisons IA est celle du serveur (`GET/PUT /guilds/{id}/settings/language`). La clé est retirée à la lecture comme avant écriture, n'est plus validée, et l'erreur « Langue invalide » n'existe plus.
 
 **État réel du module.** `enabled` seul ne suffit pas :
 
@@ -1015,13 +1086,13 @@ running = enabled ET au moins une features[*].enabled ET notify_channel_id != nu
 |---|---|
 | `notify_channel_id` est un salon texte/annonces du serveur | `422 Salon d'alertes invalide` (non bloquant si Discord est injoignable) |
 | `len(indications) <= 3000` | `422` |
-| `severity` ∈ 1..5, `max_action` ∈ warn/mute/ban, `langue_serveur` ∈ auto/fr/en-US | `422` |
+| `severity` ∈ 1..5, `max_action` ∈ warn/mute/ban | `422` |
 | chaque clé de `features` est un feature id connu | `422 Fonctionnalité inconnue : <id>` |
 | `indications` (si modifiées) passent le contrôle anti-injection du bot | `422` avec la raison, ou `503` si le bot est injoignable |
 
 > **Contrôle anti-injection.** `indications` étant injecté verbatim dans le system prompt, tout texte **modifié** est envoyé au bot (`POST {BOT_INTERNAL_URL}/automod/rules_check`, call type `automod_rules_check`) avant d'être persisté — le même contrôle que le panel du bot. On échoue **fermé** : si le contrôle ne peut pas tourner, la sauvegarde est refusée (`503`) plutôt que d'écrire du texte non vérifié. Le contrôle n'est rejoué que si le texte a changé (activer une feature ne relance pas d'appel IA).
 >
-> Appel : `Authorization: Bearer {INTERNAL_API_SECRET}` (secret partagé avec le bot ; **sans lui le bot répond 401** et toute écriture des `indications` échoue en `503`), corps `{guild_id, indications, locale}` — `locale` est dérivée de `langue_serveur` (`fr` → `fr`, `en-US` → `en`, `auto` → défaut du bot) pour que la raison du refus soit affichable telle quelle.
+> Appel : `Authorization: Bearer {INTERNAL_API_SECRET}` (secret partagé avec le bot ; **sans lui le bot répond 401** et toute écriture des `indications` échoue en `503`), corps `{guild_id, indications, locale}` — `locale` est dérivée de la **langue du serveur** (`guilds.data.settings.language` : `fr` → `fr`, `en-US` → `en`, tout le reste → défaut du bot) pour que la raison du refus soit affichable telle quelle. Ce `locale`-là est la langue de la *réponse du contrôle*, pas un réglage du module.
 >
 > Interprétation de la réponse du bot :
 >
@@ -1074,7 +1145,7 @@ donc forcés à `false` quelle que soit la config stockée, et toute écriture s
 Passe un texte au contrôle anti-injection **sans rien sauvegarder** (retour immédiat dans le formulaire). Le même contrôle est rejoué à la sauvegarde : ce endpoint ne dispense de rien.
 
 **Auth :** guild_access
-**Body :** `{"indications": "pas d'insultes, même pour rire", "langue_serveur": "fr"}` (`langue_serveur` optionnel, défaut `auto` — choisit la langue de `reason`)
+**Body :** `{"indications": "pas d'insultes, même pour rire"}` — la langue de `reason` est celle du serveur (`GET /guilds/{id}/settings/language`), plus un champ du body. Un `langue_serveur` résiduel est ignoré.
 
 **Reponse :** `{"ok": true}` ou `{"ok": false, "reason": "..."}`
 **Erreur :** `503` contrôle indisponible (bot injoignable, non authentifié, ou gateway du bot en panne)
@@ -1354,7 +1425,6 @@ de routeur dédié. Détails complets : `docs/ALTGUARD.md`.
   "unverified_role_id": 222222222222222222,
   "verified_role_id": 333333333333333333,
   "log_channel_id": 444444444444444444,
-  "panel_locale": "fr",
   "message_id": 1416000000000000000
 }
 ```
@@ -1365,12 +1435,13 @@ de routeur dédié. Détails complets : `docs/ALTGUARD.md`.
 | `unverified_role_id` | int | ✅ | Donné au join, bloque l'accès |
 | `verified_role_id` | int | ✅ | Donné quand la vérification passe |
 | `log_channel_id` | int | — | Verdicts + décisions manuelles |
-| `panel_locale` | str | — | `fr`, `en-US`, `es-ES`, `pt-BR`, `de` (défaut `en-US`) |
 | `message_id` | int | — | Bookkeeping du bot (id du panneau posté). **Jamais géré à la main** |
 
 `enabled` n'est **pas stocké** : il est calculé (`channel_id` + les deux rôles) et
-ajouté en lecture seule dans les réponses `GET`/`PUT`. Le texte du panneau n'est pas
-configurable, seule sa langue l'est.
+ajouté en lecture seule dans les réponses `GET`/`PUT`. Ni le texte du panneau ni sa
+langue ne sont configurables ici.
+
+> **Langue.** Ce module n'a plus de langue à lui depuis 2026-08 : les textes suivent la langue du **serveur** (`GET/PUT /guilds/{id}/settings/language`). `panel_locale` a été supprimée : elle est retirée à la lecture comme avant écriture, et une écriture qui la porte encore n'est pas rejetée — elle est sans effet.
 
 **Snowflakes en chaînes :** en lecture, `channel_id`, `unverified_role_id`,
 `verified_role_id`, `log_channel_id` et `message_id` sont renvoyés en **string**
@@ -1379,7 +1450,7 @@ acceptées.
 
 ### `PUT` / `PATCH /guilds/{guild_id}/modules/altguard`
 
-**Validation (422) :** `panel_locale` supportée, les deux rôles différents ; et,
+**Validation (422) :** les deux rôles différents ; et,
 quand Discord répond : salons = salons texte/annonces du serveur, rôles
 existants, ni `@everyone` ni gérés par une intégration, **sous** le rôle le plus
 haut du bot, et bot disposant de « Gérer les rôles ». Si Discord est injoignable,
@@ -1396,7 +1467,6 @@ elle désactive simplement le gate et fait retirer le panneau par le bot.
   "unverified_role_id": "222222222222222222",
   "verified_role_id": "333333333333333333",
   "log_channel_id": "444444444444444444",
-  "panel_locale": "fr",
   "message_id": "1416000000000000000",
   "enabled": true,
   "_apply": {
@@ -1427,6 +1497,428 @@ Réponse standard + `_apply`. Le bot ne réécrit **rien** en base sur une suppr
 > (redémarrage entre les deux) ne peut rien nettoyer — la config est déjà vide,
 > le bot ne sait plus quel `message_id` chercher. L'accusé renvoie
 > `cleaned: false` et le panneau reste orphelin dans Discord.
+
+---
+
+## Module — Logs (logs serveur)
+
+`logs` journalise les événements du serveur : **18 catégories, 163 événements**,
+routés vers un ou plusieurs salons. Config stockée dans `guilds.data.modules.logs`,
+lue/écrite par le endpoint **générique** `GET/PUT/PATCH /guilds/{id}/modules/logs`.
+Trois routes s'y ajoutent (`app/routers/logs.py`) : `/catalog`, `/diagnostics` et
+un `DELETE` qui écrit `{}`. Détails complets : `docs/LOGS.md`.
+
+> Remplace l'ancien module `logging` (`GET`/`PATCH /guilds/{id}/logging`, clé
+> `data.modules.logging`), **supprimé** du backend en 2026-08. Ces deux routes
+> n'existent plus ; `data.modules.logging` n'est plus ni lu ni écrit ici.
+
+**Structure stockée en DB** (`guilds.data.modules.logs`) :
+
+```json
+{
+  "categories": {
+    "server":   { "channel_ids": ["123456789012345678"], "disabled_events": ["user_kick"] },
+    "messages": { "channel_ids": ["456789012345678901"], "disabled_events": [] }
+  },
+  "ignored_channel_ids": ["789012345678901234"],
+  "ignored_role_ids": [],
+  "ignore_bots": false,
+  "attach_transcripts": true,
+  "merge_duplicates": true
+}
+```
+
+| Champ | Type | Défaut | Contrainte |
+|---|---|---|---|
+| `categories` | object | `{}` | Clés = ids du catalogue. Clé inconnue → 422 |
+| `categories.<id>.channel_ids` | array de string | `[]` | **3 max**, dédupliqués (ordre conservé) |
+| `categories.<id>.disabled_events` | array de string | `[]` | **Exclusions uniquement**. Nom hors catégorie → 422 |
+| `ignored_channel_ids` | array de string | `[]` | **25 max** |
+| `ignored_role_ids` | array de string | `[]` | **25 max** |
+| `ignore_bots` | bool | `false` | |
+| `attach_transcripts` | bool | `true` | `false` → les `.txt` sont retirés avant envoi |
+| `merge_duplicates` | bool | `true` | Un log par *acte* au lieu d'un par événement |
+
+**Snowflakes en chaînes** en base comme en réponse (les entiers envoyés sont
+acceptés et convertis). `enabled` n'est **pas stocké** : il est calculé
+(`any(cat.channel_ids)`) et ajouté en lecture seule aux réponses ; envoyé par un
+client, il est ignoré.
+
+**Trois règles qui ne se devinent pas :** seules les **exclusions** sont
+persistées (un événement ajouté plus tard au registre démarre *activé*) ; une
+catégorie sans salon est retirée à l'écriture *sauf* si elle porte des
+`disabled_events` ; la **catégorie est l'unité de routage** (deux événements d'une
+même catégorie ne peuvent pas viser deux salons différents).
+
+Pas de gating premium sur ce module.
+
+> **Langue.** Ce module n'a plus de langue à lui depuis 2026-08 : les textes suivent la langue du **serveur** (`GET/PUT /guilds/{id}/settings/language`). `locale` a été supprimée : elle est retirée à la lecture comme avant écriture, n'est plus validée, et une écriture qui la porte est sans effet.
+
+### `PUT` / `PATCH /guilds/{guild_id}/modules/logs`
+
+⚠️ **Remplacement complet de l'objet**, pour les deux verbes. Un corps
+`{"ignore_bots": true}` efface les catégories : lire, muter, réécrire en entier.
+
+**Validation (422) :** catégories et événements du catalogue, limites de listes,
+et, quand Discord répond, pour chaque salon de destination —
+il existe dans la guilde (**les fils sont acceptés**), c'est un salon
+texte/annonces ou un fil, et le bot y a `view_channel`, `send_messages` (ou
+`send_messages_in_threads` pour un fil) **et** `embed_links`. Si Discord est
+injoignable, la sauvegarde passe (le bot reste juge final).
+
+`manage_webhooks` n'est **pas** exigée : sans elle le bot dégrade sur
+`channel.send` (perte du bucket de rate-limit dédié et du batching de 10 embeds).
+Elle remonte comme avertissement sur `/diagnostics`.
+
+**Réponse :** config stockée + `enabled`.
+
+```json
+{
+  "categories": {"server": {"channel_ids": ["123456789012345678"], "disabled_events": ["user_kick"]}},
+  "ignored_channel_ids": [], "ignored_role_ids": [],
+  "ignore_bots": false, "attach_transcripts": true, "merge_duplicates": true,
+  "enabled": true
+}
+```
+
+**Actions :** écrit `data.modules.logs`, invalide `guild:{id}:config`, publie
+`module_updated` (avec `module_id: "logs"`) sur `moddy:bot`. Pub/Sub best-effort :
+si le bot est down le message est perdu, mais la config est en base et sera relue
+à la prochaine lecture de la guilde — **ne pas réécrire**.
+
+### `GET /guilds/{guild_id}/modules/logs/catalog`
+
+Catalogue complet + limites + locales. **Source unique du dashboard** : il ne doit
+pas en garder sa propre copie, sinon il dérive à chaque ajout d'événement.
+
+```json
+{
+  "categories": {
+    "server": {"events": ["ban_add", "ban_remove", "…"], "unimplemented": []},
+    "moderation": {"events": ["…"], "unimplemented": ["case_delete", "…"]}
+  },
+  "category_count": 18,
+  "event_count": 163,
+  "locales": ["en-US", "fr", "es-ES", "pt-BR", "de"],
+  "locale_keys": {
+    "event": "modules.logs.events.{category}.{event}",
+    "title": "modules.logs.titles.{category}.{event}"
+  },
+  "limits": {"channels_per_category": 3, "ignored_channels": 25, "ignored_roles": 25},
+  "required_channel_permissions": ["view_channel", "send_messages", "embed_links"],
+  "recommended_channel_permissions": ["manage_webhooks"]
+}
+```
+
+Les **libellés** ne sont pas renvoyés : ils viennent des locales du bot, à
+résoudre avec `locale_keys`. `unimplemented` liste les événements déclarés dont
+aucune source n'émet aujourd'hui (9 dans `moderation`) — à griser, pas à masquer.
+
+### `GET /guilds/{guild_id}/modules/logs/diagnostics`
+
+État réel de chaque salon de destination de la config **actuellement en base**. À
+afficher après une sauvegarde : les permissions peuvent disparaître *après* coup,
+et `manage_webhooks` n'a jamais bloqué.
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "enabled": true,
+  "checked": true,
+  "channels": [
+    {
+      "channel_id": "111111111111111111",
+      "exists": true, "is_thread": false, "unsupported_type": false,
+      "ok": true,
+      "missing_permissions": [],
+      "degraded_permissions": ["manage_webhooks"],
+      "categories": ["server", "moderation"]
+    }
+  ]
+}
+```
+
+`checked: false` = Discord n'a pas pu être interrogé (token absent, API
+injoignable) : rien à conclure, ce n'est pas un diagnostic négatif.
+
+### `DELETE /guilds/{guild_id}/modules/logs`
+
+Désactive le module en écrivant `{}` dans `data.modules.logs` — **sans retirer la
+clé**, contrairement au `DELETE` générique : côté bot une config vide *est* une
+suppression, et c'est la forme qu'écrit `/config`.
+
+```json
+{"guild_id": "123…", "module_id": "logs", "status": "disabled", "config": {}, "enabled": false}
+```
+
+**Actions :** écrit `{}`, invalide le cache, publie `module_disabled` sur `moddy:bot`.
+
+> **Webhooks orphelins :** délier un salon ne supprime pas le webhook `Moddy Logs`
+> que le bot y avait créé — il devient inerte mais reste visible dans les
+> intégrations du salon. Le backend n'en supprime aucun ; si le dashboard veut
+> nettoyer, c'est à lui de le faire, et seulement pour le salon délié.
+
+---
+
+## Module — Tickets
+
+`tickets` gère les panneaux de tickets (un message Discord porteur de boutons ou
+d'un menu) et les salons de support qu'ils créent. Le module a **deux moitiés
+d'état** : la **configuration** (`guilds.data.modules.tickets`, lue/écrite par le
+endpoint générique) et l'**état vivant** (table `tickets`, propriété du bot,
+**lecture seule** côté backend). Détails complets : `docs/TICKETS.md`.
+
+**Structure stockée** (`guilds.data.modules.tickets`) :
+
+```json
+{
+  "panels": [
+    {
+      "id": "p_a1b2c3",
+      "name": "Support",
+      "channel_id": "123456789012345678",
+      "message_id": "987654321098765432",
+      "title": "Besoin d'aide ?",
+      "description": "Choisis une catégorie",
+      "accent_color": 5793266,
+      "style": "buttons",
+      "placeholder": null,
+      "enabled": true,
+      "categories": [
+        {
+          "id": "c_d4e5f6",
+          "name": "Support général",
+          "emoji": "<:support:123456789012345678>",
+          "description": "Une question, un souci",
+          "button_style": "primary",
+          "discord_category_id": "111111111111111111",
+          "allowed_role_ids": [], "denied_role_ids": [], "ping_role_ids": ["222222222222222222"],
+          "permissions": {"222222222222222222": ["view", "close", "staff_thread"]},
+          "ping_staff_roles": true,
+          "claim_enabled": true,
+          "claim_lock": false,
+          "buttons": null,
+          "open_message": null, "close_message": null,
+          "name_format": "ticket-{number}",
+          "max_open_per_user": 1,
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "enabled": true
+}
+```
+
+| Champ | Type | Défaut | Contrainte |
+|---|---|---|---|
+| `panels[].id` | str | généré `p_` + 6 hex | **Stable** (voyage dans les `custom_id`). Doublon → 422 |
+| `panels[].name` | str | — | **Requis**, ≤60. Vide → 422 (le bot supprimerait le panneau) |
+| `panels[].channel_id` | str \| null | `null` | Salon texte/annonces du serveur. `null` = brouillon valide |
+| `panels[].message_id` | str \| null | reconduit | **Écrit par le bot** — à round-tripper, jamais inventé |
+| `panels[].title` / `description` | str \| null | `null` | ≤100 / ≤2000 |
+| `panels[].accent_color` | int \| null | `null` | `0..0xFFFFFF` |
+| `panels[].style` | str | `buttons` | `buttons` \| `select` |
+| `panels[].placeholder` | str \| null | `null` | ≤150, style `select` uniquement |
+| `panels[].enabled` | bool | `true` | |
+| `categories[].id` | str | généré `c_` + 6 hex | **Stable** (référencé par `tickets.category_id`). Doublon → 422 |
+| `categories[].name` | str | — | **Requis**, ≤60 |
+| `categories[].emoji` | str \| null | `null` | ≤64 |
+| `categories[].description` | str \| null | `null` | ≤100 (option du menu) |
+| `categories[].button_style` | str | `primary` | `primary` \| `secondary` \| `success` \| `danger` |
+| `categories[].discord_category_id` | str \| null | `null` | Doit être une **catégorie** Discord |
+| `categories[].allowed_role_ids` | array de str | `[]` | `[]` = tout le monde |
+| `categories[].denied_role_ids` | array de str | `[]` | Gagne toujours, même sur un admin |
+| `categories[].ping_role_ids` | array de str | `[]` | Mentionnés à l'ouverture |
+| `categories[].permissions` | object | `{}` | Clés = role_id **en chaîne**, valeurs parmi `view`, `close`, `claim`, `unclaim_others`, `staff_thread`, `rename`, `move`, `participants`, `admin`. Inconnue → 422 |
+| `categories[].ping_staff_roles` | bool | `true` | Mentionne aussi, à l'ouverture, les rôles qui ont `view` sur la catégorie |
+| `categories[].claim_enabled` | bool | `true` | Prise en charge + pastille de couleur dans le nom du salon |
+| `categories[].claim_lock` | bool | `false` | Claim ⇒ seuls claimeur, responsables, auteur et participants manuels **écrivent** ; les autres lisent |
+| `categories[].buttons` | array de str \| null | `null` | `close`, `claim`, `escalate`, `staff_thread`, `participants`, `close_request`. Inconnu → 422. **`null` ≠ `[]`** (voir ci-dessous) |
+| `categories[].open_message` | str \| null | `null` | ≤2000 — **le message entier** (titre + corps + footer) |
+| `categories[].close_message` | str \| null | `null` | ≤2000 |
+| `categories[].name_format` | str | `ticket-{number}` | ≤90 |
+| `categories[].max_open_per_user` | int | `1` | `1..10` |
+| `categories[].enabled` | bool | `true` | |
+
+**Snowflakes** : entiers ou chaînes acceptés à l'écriture, **stockés en entiers**,
+**renvoyés en chaînes**. `enabled` (racine) est **calculé** (au moins un panneau
+`enabled`), jamais stocké : envoyé par un client, il est ignoré.
+
+**Quotas** : 3 panneaux / 5 catégories par panneau en free, 10 / 15 en premium.
+Plafonds Discord par-dessus : 15 catégories en style `buttons`, 25 en `select`.
+
+> **Langue.** Les textes générés par le bot dans un ticket (panneaux, messages
+> d'ouverture par défaut, cartes) suivent la langue du **serveur**
+> (`GET/PUT /guilds/{id}/settings/language`) depuis 2026-08. `categories[].locale`
+> a été supprimée : elle est retirée à la lecture comme avant écriture, n'est plus
+> validée, et une écriture qui la porte est sans effet.
+
+**`buttons` — trois cas non équivalents** : clé absente ou `null` → les défauts du
+bot (`close`, `claim`, `escalate`, `staff_thread`, `participants`) ; `[]` → aucun
+bouton, tout passe par les commandes `/ticket` ; une liste → exactement ces
+boutons. L'ordre stocké est ignoré (c'est celui du bot qui rend), les doublons
+sont retirés, un bouton inconnu part en 422.
+
+**`open_message` est le message entier** : le bot n'ajoute plus ni titre
+(`### Ticket #42`) ni ligne meta autour. Une ligne contenant uniquement `---` y
+devient un vrai séparateur Components V2. `null` = le défaut **localisé** du bot :
+à round-tripper tel quel, jamais à recopier — le dashboard qui veut le pré-remplir
+lit les fichiers de locale, sinon les deux textes divergent au prochain wording.
+
+### `GET /guilds/{guild_id}/modules/tickets`
+
+Config stockée, snowflakes en chaînes, plus `enabled`.
+
+### `PUT` / `PATCH /guilds/{guild_id}/modules/tickets`
+
+⚠️ **Remplacement complet de l'objet**, pour les deux verbes : lire, muter,
+réécrire en entier.
+
+**Validation (422)** : schéma ci-dessus, puis quotas free/premium et — quand
+Discord répond — le salon du panneau existe, est un salon texte/annonces et le bot
+y a `view_channel` + `send_messages` + `embed_links` ; la `discord_category_id`
+existe et est bien une catégorie. Discord injoignable → les contrôles Discord sont
+sautés (le bot reste juge final), les quotas restent appliqués.
+
+**409** : une sauvegarde des tickets est déjà en vol pour ce serveur. Le bot
+réécrit tout le nœud `modules.tickets` après avoir republié les panneaux
+(last-writer-wins) : deux sauvegardes concurrentes s'écrasent, donc le backend
+n'en laisse passer qu'une à la fois (verrou Redis, TTL 45 s). À retenter dans
+quelques secondes.
+
+**Actions** : écrit `data.modules.tickets`, invalide `guild:{id}:config`, pousse
+une tâche **signée** `update_panel` sur `moddy:tasks` (payload
+`{module_id: "tickets", action: "updated", request_id}` — jamais de valeurs de
+config, le bot relit la base), attend l'accusé `module_config_applied` sur
+`moddy:dashboard` (25 s) et le renvoie sous `_apply`.
+
+**Réponse** : config + `enabled` + `_apply`.
+
+```json
+{
+  "panels": [ "…" ],
+  "enabled": true,
+  "_apply": {
+    "type": "module_config_applied", "ok": true, "action": "updated",
+    "enabled": true, "panels": 2, "panels_posted": 2, "panels_failed": 0
+  }
+}
+```
+
+> **`_apply.panels_failed > 0` doit être affiché à l'admin** : la sauvegarde est
+> enregistrée mais le panneau n'est pas visible (cause n°1 : le bot n'a pas
+> *Envoyer des messages* dans le salon, permission perdue après la sauvegarde).
+> `_apply.ok: false` + `error` = le bot n'a pas rechargé.
+> `_apply.error: "bot_timeout"` = pas d'accusé dans les 25 s ; la tâche reste dans
+> le stream et sera exécutée au redémarrage du bot — **ne pas réécrire**.
+
+### `DELETE /guilds/{guild_id}/modules/tickets`
+
+Retire `data.modules.tickets` et demande au bot de retirer **tous** les messages
+de panneau (`action: "deleted"`). Réponse : `{guild_id, module_id, status, _apply}`.
+
+> Supprimer la config **ne ferme pas** les tickets ouverts et ne supprime aucun
+> salon : les lignes de la table `tickets` restent.
+
+### `GET /guilds/{guild_id}/modules/tickets/limits`
+
+Quotas applicables **et** consommation actuelle, pour griser « Ajouter un
+panneau / une catégorie » avant l'envoi.
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "premium": false,
+  "enabled": true,
+  "max_panels": 3,
+  "max_categories_per_panel": 5,
+  "discord_max_categories_per_panel": {"buttons": 15, "select": 25},
+  "panels": 2,
+  "categories": {"p_a1b2c3": 4, "p_9f8e7d": 1}
+}
+```
+
+### `GET /guilds/{guild_id}/tickets`
+
+Tickets qui existent réellement, les plus récents d'abord (par `number`).
+**Lecture seule** — la table appartient au bot.
+
+Query : `status` (`open`\|`closed`), `panel_id`, `category_id`, `owner_id`,
+`limit` (1..200, défaut 50), `offset`.
+
+```json
+{
+  "tickets": [
+    {
+      "id": 42,
+      "guild_id": "123456789012345678",
+      "channel_id": "444444444444444444",
+      "panel_id": "p_a1b2c3", "category_id": "c_d4e5f6",
+      "number": 42,
+      "owner_id": "555555555555555555",
+      "status": "open",
+      "escalated": false,
+      "claimed_by": "666666666666666666", "claimed_at": "2026-08-23T10:05:00Z",
+      "pre_escalation_claim": null, "escalation_mute": false,
+      "staff_thread_id": null,
+      "participants": [], "participant_roles": [],
+      "close_requested_by": null, "close_request_reason": null,
+      "opened_at": "2026-08-23T10:00:00Z",
+      "closed_at": null, "closed_by": null, "close_reason": null,
+      "category": {"name": "Support général", "panel_id": "p_a1b2c3", "panel_name": "Support"}
+    }
+  ],
+  "total": 1, "limit": 50, "offset": 0
+}
+```
+
+`category: null` = la catégorie a disparu de la config (ticket **orphelin**).
+`number` est le compteur par serveur — c'est ce que les humains citent.
+
+`claimed_by` = l'agent qui s'en occupe maintenant (`null` = non pris en charge) ;
+`pre_escalation_claim` = le claim mis de côté pendant une escalade. Les deux ne
+sont **jamais** renseignés en même temps. La pastille de couleur du nom du salon
+(`🔴🟢🟣⚫`) est dérivée de cet état côté bot, jamais stockée : ne pas la parser.
+
+> Ces quatre champs sont ajoutés à la table par le bot à son démarrage. Si le
+> backend tourne avant lui, ils sont servis à `null` / `false` (et
+> `stats.claimed` à `0`) plutôt que de faire échouer la route — l'état réel d'une
+> base non migrée. **Déployer le bot en premier** pour les voir.
+
+### `GET /guilds/{guild_id}/tickets/stats`
+
+Compteurs du serveur + volume par catégorie sur `days` jours (1..365, défaut 30).
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "total": 128, "open": 12, "closed": 116, "escalated": 3, "close_requested": 1,
+  "claimed": 5,
+  "avg_resolution_seconds": 7412.5,
+  "window_days": 30,
+  "by_category": [
+    {"panel_id": "p_a1b2c3", "category_id": "c_d4e5f6", "total": 61,
+     "category": {"name": "Support général", "panel_id": "p_a1b2c3", "panel_name": "Support"}}
+  ]
+}
+```
+
+`claimed` compte les tickets **ouverts** actuellement pris en charge.
+`avg_resolution_seconds` est `null` tant qu'aucun ticket n'a été fermé. `closed`
+compte des salons qui **existent toujours** dans Discord : fermer ne supprime pas
+le salon.
+
+### `GET /guilds/{guild_id}/tickets/orphans`
+
+Tickets **ouverts** dont la catégorie n'existe plus dans la config (`limit`
+1..200, défaut 100). Supprimer une catégorie ne ferme pas ses tickets : le bot
+répond « catégorie disparue » à toute action tant qu'ils n'ont pas été déplacés.
+À proposer dans l'UI **avant** toute suppression de catégorie.
+
+```json
+{"guild_id": "123…", "tickets": [ "…" ], "count": 2}
+```
 
 ---
 
@@ -1711,52 +2203,451 @@ Détail d'une infraction : `group_id`, `level`, `actions`, `active_actions`,
 
 ---
 
-## Logging
+## Notifications
 
-### `GET /guilds/{guild_id}/logging`
+Tout ce que Moddy dit à un humain (DM Discord, avis à un serveur, mail, carte du
+dashboard) est **une** notification : une ligne avec un uuid, un template et les
+variables substituées pour ce destinataire-là. **Le bot écrit, le backend lit et
+rend** — voir `docs/NOTIFICATIONS.md`.
 
-Config logging du serveur (stockee comme `guilds.data.modules.logging`).
+Règles communes à tous les endpoints ci-dessous :
 
-**Auth :** guild_access
-**Reponse :**
+- le champ `content` est **résolu** (plus aucune accolade), jamais le template ;
+- `accent_color` est un hex CSS, `icon_url` une URL CDN Discord ou `null` ;
+- snowflakes en **chaînes**, dates en ISO-8601 UTC suffixé `Z` ;
+- pagination **keyset** : `next` vaut `"<created_at>,<uuid>"`, à repasser en
+  `?before=`. `next: null` = dernière page. Un curseur illisible → `422` ;
+- une notification qu'on n'a pas le droit de lire répond **404** (jamais 403 :
+  l'endpoint ne doit pas servir à tester l'existence d'un uuid) ;
+- accessible à un compte **suspendu** (`session`) : l'avis de suspension est
+  lui-même une notification.
+
+### `GET /notifications`
+
+Mes notifications, les plus récentes d'abord. Query : `limit` (≤100, défaut 25),
+`before`.
 
 ```json
 {
-  "guild_id": 123456789,
-  "config": {
-    "channel_id": 777888999,
-    "events": ["message_delete", "member_join", "member_leave"]
+  "items": [
+    {
+      "id": "0f2a4e2e-…",
+      "created_at": "2026-08-26T10:14:03Z",
+      "locale": "fr",
+      "kind": "guild",
+      "author": "guild",
+      "reportable": true,
+      "report_block": null,
+      "source": {
+        "service_id": "welcome_dm",
+        "service_label": "Welcome message",
+        "guild_id": "1421493239579676682",
+        "guild_name": "Moddy",
+        "guild_icon": "a1b2c3",
+        "verified": true,
+        "official": false,
+        "guild_url": "https://discord.com/channels/1421493239579676682"
+      },
+      "content": {
+        "title": "Moddy",
+        "body": "Bienvenue <@7> sur **Moddy** !",
+        "sections": [{"title": "Règles", "body": "Lis #rules"}],
+        "links": [{"label": "Ouvrir le serveur", "url": "https://discord.com/channels/1421493239579676682"}],
+        "footer": "Envoyé par Moddy",
+        "icon_url": "https://cdn.discordapp.com/emojis/1519789691711393982.webp",
+        "accent_color": "#5865F2",
+        "template_id": "welcome_dm.wdm_a1b2"
+      },
+      "delivery": {"discord": {"status": "sent", "message_id": "1554444444444444444"}}
+    }
+  ],
+  "next": "2026-08-26T10:14:03Z,0f2a4e2e-…"
+}
+```
+
+`kind = "official"` (Moddy en tant qu'institution) → `source: null` : il n'y a
+aucun tiers à nommer.
+
+`report_block` explique l'absence du bouton « signaler » avec les mots du bot :
+`moddy_authored` (les mots sont ceux de Moddy) ou `official_guild` (serveur
+officiel). `null` = signalable. **Le dépôt d'un signalement n'existe pas encore
+côté dashboard** (il poste aussi un panneau Discord, côté bot) : `reportable` est
+une information affichée, pas une action offerte.
+
+`delivery.discord.status` vaut `sent` / `failed` / `skipped` / `pending` : un
+membre dont les DM sont fermés voit ici le message qu'il n'a jamais reçu.
+
+### `GET /notifications/{id}`
+
+Une notification dont je suis le destinataire — ou dont j'administre le serveur
+destinataire. Même objet qu'un `items[]` ci-dessus. `404` sinon.
+
+### `GET /guilds/{guild_id}/notifications`
+
+**Auth : admin du serveur.** Ce que CE serveur a envoyé à travers Moddy
+(bienvenue, tickets, automod…). Ce sont ses propres mots, mais ils nomment ses
+membres : données personnelles. Query : `service`, `limit`, `before`.
+
+### `GET /guilds/{guild_id}/notifications/inbox`
+
+**Auth : admin du serveur.** Ce que Moddy a adressé à ce serveur (avis de
+sanction globale, annonces). Query : `limit`, `before`.
+
+### Staff
+
+**Auth : staff.** Rien ne s'écrit : `notification_reports` en particulier est en
+lecture seule (décider édite aussi le panneau Discord, les logs et le DM au
+signaleur).
+
+| Endpoint | Contenu |
+|---|---|
+| `GET /staff/notifications` | recherche : `recipient_id`, `guild_id`, `service`, `batch_id`, `kind`, `limit`, `offset` |
+| `GET /staff/notifications/{id}` | vue complète : livraisons par plateforme, template brut, `content_hash` + `content_uses`, `variables`, `actor_id`, signalements |
+| `GET /staff/notifications/campaigns` | diffusions récentes (une ligne par `batch_id`) |
+| `GET /staff/notifications/campaigns/{batch_id}` | avancement : compteurs par (plateforme, statut) |
+| `GET /staff/notifications/templates` | formulations les plus envoyées (`hash`, `uses`, `template_id`) |
+| `GET /staff/notifications/reports` | signalements (`status`, `notification_id`, `limit`, `offset`) + `review_url` vers le fil Discord |
+| `GET /staff/notifications/metrics` | file de livraison `email` / `dashboard` et signalements ouverts |
+
+`actor_id`, `variables`, le `recipient_id` d'un tiers et les raisons de
+signalement **ne sortent jamais** de ces surfaces.
+
+```json
+// GET /staff/notifications/metrics
+{
+  "platforms": {
+    "email": {"pending": 3, "oldest_seconds": 42},
+    "dashboard": {"pending": 0, "oldest_seconds": null}
+  },
+  "reports_open": 1
+}
+```
+
+`oldest_seconds` est la métrique à alarmer : une ligne `pending` de plus d'une
+heure est un bug du worker de livraison, pas un fournisseur lent.
+
+## Brocoli (assistant IA)
+
+Assistant conversationnel du backend. Le **genre** (`kind`) est décidé à partir
+de l'authentification, jamais du corps de la requête, et revérifié à **chaque**
+requête — voir `docs/AI_ASSISTANT.md`.
+
+Règles communes à tous les endpoints ci-dessous :
+
+- **Auth : `current_user`** partout (cookie de session ou `Authorization: Bearer`) ;
+- une conversation appartient à la personne qui l'a ouverte : la reprendre depuis
+  un autre compte répond **403** ;
+- snowflakes en **chaînes**, dates en ISO-8601 UTC ;
+- assistant non configuré (`OPENAI_API_KEY` absente) ou coupe-circuit armé
+  (`AI_ASSISTANT_ENABLED=false`) → **503** sur les quatre endpoints d'écriture
+  (`POST /ai/conversations`, `POST …/messages`, `POST …/decision`,
+  `POST …/answer`). `GET /ai/status` répond toujours ;
+- les trois endpoints de tour rendent un flux **`text/event-stream`**, pas du
+  JSON (8 types d'événements, §SSE plus bas).
+
+### `GET /ai/status`
+
+Disponibilité de l'assistant et quota restant de l'appelant.
+
+**Auth :** connecté
+
+**Réponse :**
+
+```json
+{
+  "enabled": true,
+  "model": "gpt-5.6-luna",
+  "modes": ["read_only", "ask", "auto"],
+  "default_mode": "ask",
+  "quota": {
+    "available": true,
+    "messages_used_today": 12,
+    "messages_limit": 100,
+    "guild_messages_used_today": null,
+    "guild_messages_limit": null,
+    "resets_in_seconds": 41230
   }
 }
 ```
 
+`model` vaut `null` si `enabled` est `false`. Redis indisponible → `quota` vaut
+`{"available": true, "detail": "compteurs indisponibles"}`.
+
 ---
 
-### `PATCH /guilds/{guild_id}/logging`
+### `POST /ai/conversations`
 
-Modifier la config logging.
+Ouvre une conversation.
 
-**Auth :** guild_access
-**Body :** nouvelle config
+**Auth :** connecté ; staff si `kind = support_staff` ; accès au serveur si
+`kind = guild_config`
+
+**Body :**
 
 ```json
 {
-  "channel_id": 777888999,
-  "events": ["message_delete", "member_join"]
+  "kind": "guild_config",
+  "mode": "ask",
+  "guild_id": "1421493239579676682",
+  "title": "Mise en place des tickets"
 }
 ```
 
-**Actions :** met a jour `guilds.data.modules.logging`, invalide cache, notifie bot
-**Reponse :**
+| Champ | Type | Défaut | Note |
+|---|---|---|---|
+| `kind` | string | `guild_config` | `guild_config`, `support_user`, `support_staff` |
+| `mode` | string | `ask` | `read_only`, `ask`, `auto` |
+| `guild_id` | string (optionnel) | `null` | **requis** pour `guild_config` |
+| `subject_user_id` | string (optionnel) | `null` | `support_staff` ; forcé à l'appelant en `support_user` |
+| `subject_guild_id` | string (optionnel) | `null` | `support_staff` |
+| `title` | string (optionnel) | `null` | tronqué à 120. Laissé vide, **généré automatiquement** après le premier message |
+| `subject_user_id` | string (optionnel) | `null` | `support_staff` ; forcé à l'appelant en `support_user` |
+| `subject_guild_id` | string (optionnel) | `null` | `support_staff` |
+| `title` | string (optionnel) | `null` | nettoyé, tronqué à 120 caractères |
+
+Une conversation `support_staff` doit désigner **au moins un** sujet
+(`subject_user_id` et/ou `subject_guild_id`). Le sujet est figé : aucun endpoint
+ne le modifie.
+
+**Réponse :**
 
 ```json
 {
-  "guild_id": 123456789,
-  "config": {"channel_id": 777888999, "events": ["message_delete", "member_join"]}
+  "id": "0f2a4e2e-8c1d-4c2b-9d3a-6b5e1f0a7c44",
+  "kind": "guild_config",
+  "mode": "ask",
+  "guild_id": "1421493239579676682",
+  "user_id": "708006478807793776",
+  "subject_user_id": null,
+  "subject_guild_id": null,
+  "actor_is_staff": false,
+  "title": "Mise en place des tickets",
+  "created_at": "2026-08-29T10:14:03+00:00",
+  "updated_at": "2026-08-29T10:14:03+00:00",
+  "archived_at": null
 }
 ```
 
+**Erreurs :** `422` (mode ou genre inconnu, `guild_id` manquant pour
+`guild_config`, sujet manquant pour `support_staff`, identifiant non numérique),
+`403` (pas staff, pas d'accès au serveur, serveur suspendu), `503`
+
 ---
+
+### `GET /ai/conversations`
+
+Les 30 conversations non archivées de l'appelant, `updated_at` décroissant.
+
+**Auth :** connecté
+
+**Réponse :** `{ "conversations": [ … ] }` (même objet que ci-dessus)
+
+---
+
+### `GET /ai/conversations/{conversation_id}`
+
+Conversation et transcript affichable.
+
+**Auth :** propriétaire de la conversation
+
+**Réponse :**
+
+```json
+{
+  "conversation": { "…": "…" },
+  "messages": [
+    { "id": 41, "seq": 1, "role": "user",
+      "content": {"text": "Active les tickets"},
+      "tokens_in": null, "tokens_out": null,
+      "created_at": "2026-08-29T10:14:05+00:00" },
+    { "id": 45, "seq": 5, "role": "action",
+      "content": {"action_id": "6d1c8f0a-…", "kind": "set_module_config",
+                  "risk": "high", "status": "pending",
+                  "summary": "Crée un panneau « Support » dans #aide",
+                  "call_id": "call_3"},
+      "tokens_in": null, "tokens_out": null,
+      "created_at": "2026-08-29T10:14:20+00:00" }
+  ]
+}
+```
+
+Seuls les rôles `user`, `assistant` et `action` sont rendus : les `tool_call` et
+`tool_result` bruts ne servent pas au dashboard.
+
+**Erreurs :** `404` conversation inexistante, `403` conversation d'un autre
+
+---
+
+### `PATCH /ai/conversations/{conversation_id}`
+
+Change le mode et/ou le titre.
+
+**Auth :** propriétaire de la conversation
+
+**Body :**
+
+```json
+{ "mode": "auto", "title": "Tickets — support" }
+```
+
+| Champ | Type | Valeurs acceptées |
+|---|---|---|
+| `mode` | string (optionnel) | `read_only`, `ask`, `auto` |
+| `title` | string (optionnel) | texte libre, tronqué à 120 |
+
+Un champ absent n'est pas modifié.
+
+**Réponse :** la conversation mise à jour
+
+**Erreurs :** `422` mode inconnu, `404`, `403`
+
+---
+
+### `DELETE /ai/conversations/{conversation_id}`
+
+Archive la conversation (`archived_at` posé, sortie du listing). Rien n'est
+supprimé.
+
+**Auth :** propriétaire de la conversation
+
+**Réponse :**
+
+```json
+{ "conversation_id": "0f2a4e2e-…", "status": "archived" }
+```
+
+**Erreurs :** `404`, `403`
+
+---
+
+### `POST /ai/conversations/{conversation_id}/messages`
+
+Envoie un message et rend la réponse en **SSE**.
+
+**Auth :** propriétaire de la conversation
+
+**Body :**
+
+```json
+{ "message": "Active le starboard à partir de 5 étoiles", "mode": "auto" }
+```
+
+| Champ | Type | Note |
+|---|---|---|
+| `message` | string | requis, non vide après nettoyage (max 8 000 caractères) |
+| `mode` | string (optionnel) | **persisté** sur la conversation avant le tour |
+
+**Réponse :** `200`, `Content-Type: text/event-stream`,
+`Cache-Control: no-store`, `X-Accel-Buffering: no`
+
+**Erreurs :** `422` message vide ou mode inconnu · `429` quota du jour atteint,
+avec en-tête **`Retry-After`** (secondes jusqu'à minuit UTC) · `409` un tour est
+déjà en cours sur cette conversation (un seul en vol, verrou Redis) · `503` ·
+`404` / `403`
+
+---
+
+### `POST /ai/conversations/{conversation_id}/actions/{action_id}/decision`
+
+Approuve ou refuse une action en attente et **reprend le tour**, en SSE.
+
+**Auth :** propriétaire de la conversation
+
+**Body :**
+
+```json
+{ "decision": "approve" }
+```
+
+| Champ | Type | Valeurs acceptées |
+|---|---|---|
+| `decision` | string | `approve`, `deny` |
+
+La transition `pending` → `approved`/`denied` se fait par un `UPDATE … WHERE
+status = 'pending' AND expires_at > now()` : deux clics simultanés ne peuvent pas
+exécuter l'action deux fois.
+
+**Réponse :** `200`, flux SSE (même contrat que ci-dessus)
+
+**Erreurs :** `422` décision invalide · `404` action inexistante ou rattachée à
+une autre conversation · `409` « Action déjà traitée » ou « Action expirée —
+redemande à Brocoli de la reformuler » · `409` un tour est déjà en cours ·
+`503` · `403`
+
+---
+
+### `POST /ai/conversations/{conversation_id}/questions/{question_id}/answer`
+
+Répond à une question posée par Brocoli (outil `ask_user`) et **reprend le
+tour**, en SSE. Brocoli ne pose jamais de question en texte : une question qui
+attend une réponse passe toujours par cet endpoint.
+
+**Auth :** propriétaire de la conversation
+
+**Body :**
+
+```json
+{
+  "answers": [
+    {"question_id": "q1", "value": "987654321098765432", "label": "#général"},
+    {"question_id": "q2", "values": ["bug", "facturation"]}
+  ]
+}
+```
+
+| Champ | Type | Note |
+|---|---|---|
+| `answers[].question_id` | string | `q1`, `q2`… tel que rendu par `user_question` |
+| `answers[].value` | string | réponse unique. Pour `channel` / `role` : l'**identifiant** |
+| `answers[].values` | string[] | réponses multiples (`multi_select`) ; prioritaire sur `value` |
+| `answers[].label` / `labels` | string / string[] | nom lisible (`#général`), repris par Brocoli dans sa réponse |
+| `answers[].skipped` | bool | question laissée sans réponse |
+| `cancelled` | bool | ferme la question sans y répondre |
+
+Une entrée dont le `question_id` n'a pas été posé est **ignorée**. Une question
+absente de `answers` est rendue au modèle comme explicitement non répondue. Même
+`UPDATE … WHERE status = 'pending'` que pour une décision : deux envois
+simultanés ne relancent pas deux tours.
+
+**Réponse :** `200`, flux SSE (même contrat que ci-dessus)
+
+**Erreurs :** `422` `answers` mal formé · `404` question inexistante ou rattachée
+à une autre conversation · `409` « Question déjà répondue » ou « Question
+expirée » · `409` un tour est déjà en cours · `503` · `403`
+
+---
+
+### Flux SSE — 8 événements
+
+Noms du backend, pas ceux d'OpenAI. `data` est du JSON compact ; les entiers
+dépassant 2^53-1 sont convertis en chaînes comme sur les autres réponses.
+
+| Événement | `data` |
+|---|---|
+| `message_start` | `{"conversation_id": "<uuid>"}` |
+| `text_delta` | `{"delta": "…"}` — fragment à concaténer |
+| `tool_call` | `{"call_id": "call_1", "name": "get_module_config", "arguments": "{\"module_id\":\"tickets\"}"}` — `arguments` est une **chaîne JSON** |
+| `tool_result` | `{"call_id": "call_1", "name": "get_module_config", "ok": true}` — jamais le contenu du résultat |
+| `permission_request` | `{"action_id", "kind", "risk", "status", "preview", "expires_at", "requires_confirmation": true}` |
+| `user_question` | `{"question_id", "questions": [{"id", "header", "question", "answer_type", "multi_select", "options", "recommended", "recommended_label", "recommendation_reason"}], "status", "expires_at"}` — `header` peut être `""` (pas de puce à afficher) ; tous les textes sont dans la langue de la conversation |
+| `run_end` | `{"status": "completed" \| "awaiting_confirmation" \| "awaiting_answer" \| "max_iterations" \| "error", "usage": {…}}` |
+| `error` | `{"code", "message"}` — codes : `timeout`, `network`, `rate_limited`, `upstream`, `bad_request`, `stream_error`, `ai_unavailable`, `internal` |
+
+`usage` (`{"input_tokens", "output_tokens", "total_tokens"}`) n'accompagne que
+`completed` et `awaiting_confirmation`. Un `error` est toujours suivi d'un
+`run_end`.
+
+`permission_request.preview` porte `{"summary"}` pour la plupart des actions, et
+pour une config de module `{"summary", "module_id", "valid", "errors", "diff"}`
+où `diff` est une liste plate `{"path", "op", "before", "after"}` (`op` :
+`added` / `removed` / `changed`, 200 entrées au maximum). `params` n'est jamais
+exposé.
+
+Un tour arrêté sur une confirmation se termine par `permission_request` puis
+`run_end: awaiting_confirmation`, et la connexion est fermée : la suite arrive
+dans le flux de `POST …/decision`. Voir `docs/AI_ASSISTANT.md` §6 pour la
+séquence complète et §7 pour le guide d'intégration dashboard.
+
 
 ## Stats
 
