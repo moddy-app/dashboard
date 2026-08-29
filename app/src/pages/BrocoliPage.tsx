@@ -273,7 +273,7 @@ export function BrocoliPage() {
           au-dessus du fil. Le titre et le nom du serveur vivent déjà dans le
           fil d'Ariane du dashboard, les répéter volait une bande de hauteur au
           seul contenu qui compte ici. */}
-      <div className="flex shrink-0 items-center gap-1 px-4 pt-2">
+      <div className="flex shrink-0 items-center justify-end gap-1 px-4 pt-2">
         {/* Repartir de zéro est l'action la plus fréquente une fois dans un
             fil : elle mérite son bouton, pas deux clics dans un menu. Elle
             n'apparaît que là — sur une conversation neuve, elle ne ferait
@@ -320,7 +320,9 @@ export function BrocoliPage() {
       />
 
       {/* ── Pied : erreurs, renvoi, saisie ── */}
-      <div className="shrink-0 bg-background pb-4">
+      {/* `pt-4` : sans lui, la saisie touche le dernier message de Brocoli et
+          les deux blocs se lisent comme un seul. */}
+      <div className="shrink-0 bg-background pt-4 pb-4">
         <div className={cn('flex flex-col gap-2', READING_COLUMN)}>
           {/* Épinglé juste au-dessus de la saisie : à l'endroit exact où
               l'utilisateur allait taper, et donc impossible à manquer. */}

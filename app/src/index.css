@@ -261,3 +261,34 @@ input[type="color"].color-field::-moz-color-swatch {
     animation: none;
   }
 }
+
+/* ─── Apparition du texte de Brocoli ──────────────────────────────────────────
+   Chaque mot arrivé dans le flux est un nœud **neuf** : l'animation se joue
+   donc une seule fois, à son apparition, et les mots déjà affichés ne rejouent
+   rien (leur nœud DOM est conservé d'un rendu à l'autre). C'est ce qui évite le
+   scintillement d'un texte qui se réanimerait en entier à chaque fragment.
+
+   Le flou reste faible et court : au-delà, lire devient inconfortable pendant
+   que la phrase se complète. */
+@utility brocoli-word {
+  animation: brocoli-word-in 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes brocoli-word-in {
+  from {
+    opacity: 0;
+    filter: blur(5px);
+    transform: translateY(1px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brocoli-word {
+    animation: none;
+  }
+}

@@ -20,6 +20,34 @@ import { memo, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { renderMentionText, type MentionSource } from '@/lib/brocoli-mentions'
 
+/**
+ * Compteur de mots partagé par toute une passe de rendu.
+ *
+ * La clé d'un mot est son **rang dans le message**, pas sa position dans son
+ * paragraphe : le flux étant purement additif, le mot n° 42 reste le mot n° 42
+ * d'un fragment à l'autre. React conserve donc son nœud DOM et l'animation
+ * d'apparition ne rejoue pas — seuls les mots réellement nouveaux s'animent.
+ */
+interface WordCounter {
+  n: number
+}
+
+/**
+ * Découpe un morceau de texte en mots animables. Les espaces restent **hors**
+ * des spans : les inclure ferait animer la largeur du blanc et déplacerait le
+ * mot suivant.
+ */
+function animateWords(text: string, counter: WordCounter): ReactNode[] {
+  return text.split(/(\s+)/).map((piece, index) => {
+    if (piece === '' || /^\s+$/.test(piece)) return piece
+    return (
+      <span key={`w${counter.n++}-${index}`} className="brocoli-word">
+        {piece}
+      </span>
+    )
+  })
+}
+
 // ─── Liens ────────────────────────────────────────────────────────────────────
 
 /**
@@ -71,7 +99,8 @@ const INLINE_SOURCE = [
 function parseInline(
   text: string,
   keyPrefix: string,
-  mentions: MentionSource | null
+  mentions: MentionSource | null,
+  words: WordCounter | null
 ): ReactNode[] {
   const nodes: ReactNode[] = []
   let last = 0
@@ -87,7 +116,11 @@ function parseInline(
     if (match.index > last) {
       // Seul le texte **nu** est balayé : à l'intérieur d'un `code` ou d'une URL,
       // un `#` n'est pas une mention.
-      nodes.push(...renderMentionText(text.slice(last, match.index), mentions, `${keyPrefix}-${last}`))
+      nodes.push(
+        ...renderMentionText(text.slice(last, match.index), mentions, `${keyPrefix}-${last}`).flatMap(
+          (node) => (words && typeof node === 'string' ? animateWords(node, words) : node)
+        )
+      )
     }
     const key = `${keyPrefix}-${match.index}`
     const [, code, linkText, linkUrl, boldStar, boldScore, strike, italicStar, italicScore, autolink] =
@@ -105,19 +138,19 @@ function parseInline(
     } else if (linkUrl !== undefined) {
       nodes.push(
         <Link key={key} href={linkUrl}>
-          {parseInline(linkText, key, mentions)}
+          {parseInline(linkText, key, mentions, words)}
         </Link>
       )
     } else if (boldStar !== undefined) {
-      nodes.push(<strong key={key}>{parseInline(boldStar, key, mentions)}</strong>)
+      nodes.push(<strong key={key}>{parseInline(boldStar, key, mentions, words)}</strong>)
     } else if (boldScore !== undefined) {
-      nodes.push(<strong key={key}>{parseInline(boldScore, key, mentions)}</strong>)
+      nodes.push(<strong key={key}>{parseInline(boldScore, key, mentions, words)}</strong>)
     } else if (strike !== undefined) {
-      nodes.push(<s key={key}>{parseInline(strike, key, mentions)}</s>)
+      nodes.push(<s key={key}>{parseInline(strike, key, mentions, words)}</s>)
     } else if (italicStar !== undefined) {
-      nodes.push(<em key={key}>{parseInline(italicStar, key, mentions)}</em>)
+      nodes.push(<em key={key}>{parseInline(italicStar, key, mentions, words)}</em>)
     } else if (italicScore !== undefined) {
-      nodes.push(<em key={key}>{parseInline(italicScore, key, mentions)}</em>)
+      nodes.push(<em key={key}>{parseInline(italicScore, key, mentions, words)}</em>)
     } else if (autolink !== undefined) {
       nodes.push(
         <Link key={key} href={autolink}>
@@ -129,7 +162,11 @@ function parseInline(
   }
 
   if (last < text.length) {
-    nodes.push(...renderMentionText(text.slice(last), mentions, `${keyPrefix}-${last}`))
+    nodes.push(
+      ...renderMentionText(text.slice(last), mentions, `${keyPrefix}-${last}`).flatMap((node) =>
+        words && typeof node === 'string' ? animateWords(node, words) : node
+      )
+    )
   }
   return nodes
 }
@@ -164,7 +201,11 @@ function CodeBlock({ code, language }: { code: string; language: string }) {
  * Découpe le texte en blocs. Les blocs de code sont extraits **en premier** :
  * sinon leurs `#` internes deviendraient des titres et leurs `-` des puces.
  */
-function renderBlocks(source: string, mentions: MentionSource | null): ReactNode[] {
+function renderBlocks(
+  source: string,
+  mentions: MentionSource | null,
+  words: WordCounter | null
+): ReactNode[] {
   const lines = source.split('\n')
   const out: ReactNode[] = []
 
@@ -180,7 +221,7 @@ function renderBlocks(source: string, mentions: MentionSource | null): ReactNode
     if (!text) return
     out.push(
       <p key={`p${out.length}`} className="my-2 whitespace-pre-wrap first:mt-0 last:mb-0">
-        {parseInline(text, `p${out.length}`, mentions)}
+        {parseInline(text, `p${out.length}`, mentions, words)}
       </p>
     )
   }
@@ -191,7 +232,7 @@ function renderBlocks(source: string, mentions: MentionSource | null): ReactNode
     out.push(
       <ul key={`u${out.length}`} className="my-2 flex list-disc flex-col gap-1 pl-5 first:mt-0 last:mb-0">
         {entries.map((entry, i) => (
-          <li key={i}>{parseInline(entry, `u${out.length}-${i}`, mentions)}</li>
+          <li key={i}>{parseInline(entry, `u${out.length}-${i}`, mentions, words)}</li>
         ))}
       </ul>
     )
@@ -203,7 +244,7 @@ function renderBlocks(source: string, mentions: MentionSource | null): ReactNode
     out.push(
       <ol key={`o${out.length}`} className="my-2 flex list-decimal flex-col gap-1 pl-5 first:mt-0 last:mb-0">
         {entries.map((entry, i) => (
-          <li key={i}>{parseInline(entry, `o${out.length}-${i}`, mentions)}</li>
+          <li key={i}>{parseInline(entry, `o${out.length}-${i}`, mentions, words)}</li>
         ))}
       </ol>
     )
@@ -217,7 +258,7 @@ function renderBlocks(source: string, mentions: MentionSource | null): ReactNode
         key={`q${out.length}`}
         className="my-2 border-l-2 border-border pl-3 text-muted-foreground first:mt-0 last:mb-0"
       >
-        {parseInline(text, `q${out.length}`, mentions)}
+        {parseInline(text, `q${out.length}`, mentions, words)}
       </blockquote>
     )
   }
@@ -261,7 +302,7 @@ function renderBlocks(source: string, mentions: MentionSource | null): ReactNode
       const Tag = (['h3', 'h4', 'h5', 'h6'] as const)[level - 1]
       out.push(
         <Tag key={`t${out.length}`} className={HEADING_CLASS[level - 1]}>
-          {parseInline(heading[2], `t${out.length}`, mentions)}
+          {parseInline(heading[2], `t${out.length}`, mentions, words)}
         </Tag>
       )
       continue
@@ -318,15 +359,21 @@ export const BrocoliMarkdown = memo(function BrocoliMarkdown({
   text,
   className,
   mentions = null,
+  animate = false,
 }: {
   text: string
   className?: string
   /** Salons et rôles du serveur, pour rendre `#salon` / `@rôle` en pastilles. */
   mentions?: MentionSource | null
+  /**
+   * Fait apparaître chaque mot à son arrivée. Réservé aux réponses reçues en
+   * direct : un transcript relu au chargement ne doit pas se rejouer.
+   */
+  animate?: boolean
 }) {
   return (
     <div className={cn('min-w-0 text-sm leading-relaxed', className)}>
-      {renderBlocks(text, mentions)}
+      {renderBlocks(text, mentions, animate ? { n: 0 } : null)}
     </div>
   )
 })
