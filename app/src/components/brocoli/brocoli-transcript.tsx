@@ -16,6 +16,7 @@
  *   que le nouveau tour ne semble pas commencer sur une page blanche.
  */
 
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { InfoIcon, SparklesIcon, TriangleAlertIcon } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -29,6 +30,7 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
+  useMessageScroller,
 } from '@/components/ui/message-scroller'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
@@ -110,6 +112,16 @@ function AssistantRow({
 }) {
   const { t } = useTranslation()
 
+  // L'apparition mot à mot vaut pour **toute la vie du message**, pas seulement
+  // pendant le flux : la couper à `run_end` remplacerait les spans par du texte
+  // nu et ferait claquer les derniers mots encore en cours d'animation. Un
+  // message relu depuis le transcript n'a jamais été « en flux » : il ne
+  // s'anime pas, ce qui serait absurde au chargement d'une page.
+  // Ajustement d'état **pendant le rendu** : lire une ref au rendu est
+  // interdit, et un effet arriverait une frame trop tard.
+  const [everStreamed, setEverStreamed] = useState(streaming)
+  if (streaming && !everStreamed) setEverStreamed(true)
+
   return (
     <Message>
       {/* TEMPORAIRE — avatar de Brocoli désactivé, à remettre plus tard :
@@ -124,7 +136,7 @@ function AssistantRow({
         <Bubble variant="ghost">
           <BubbleContent>
             {text ? (
-              <BrocoliMarkdown text={text} mentions={mentions} />
+              <BrocoliMarkdown text={text} mentions={mentions} animate={everStreamed} />
             ) : (
               <Marker role="status" className="w-auto">
                 <MarkerContent className="shimmer">{t('brocoli.thinking')}</MarkerContent>
@@ -171,6 +183,57 @@ function NoticeRow({ code, message }: { code: string; message: string }) {
   )
 }
 
+/**
+ * Suit le bas du fil pendant qu'un tour coule.
+ *
+ * `MessageScroller` ne suit de lui-même que si le lecteur est déjà au bord vif —
+ * c'est sa règle de base, et elle est bonne. Mais un tour s'ouvre en **ancrant**
+ * le message de l'utilisateur près du haut : la réponse grandit alors dans le
+ * vide en dessous, le viewport n'est plus au bord, et rien ne défile tant que
+ * la réponse n'a pas rempli l'écran. On rappelle donc explicitement le bas à
+ * chaque fragment.
+ *
+ * L'échappatoire compte autant que le suivi : dès que le lecteur remonte
+ * (molette, tactile, clavier), on lâche prise jusqu'au tour suivant. Sinon on
+ * le ramènerait de force au bas du fil pendant qu'il relit — exactement ce
+ * qu'une conversation en flux ne doit jamais faire.
+ */
+function StreamFollower({ active, signal }: { active: boolean; signal: number }) {
+  const { scrollToEnd } = useMessageScroller()
+  const releasedRef = useRef(false)
+
+  useEffect(() => {
+    if (!active) {
+      // Un nouveau tour reprend le suivi : le lecteur n'a rien demandé encore.
+      releasedRef.current = false
+      return
+    }
+    const viewport = document.querySelector<HTMLElement>(
+      '[data-slot="message-scroller-viewport"]'
+    )
+    if (!viewport) return
+
+    const release = () => {
+      releasedRef.current = true
+    }
+    // Toutes les façons de reprendre la main, pas seulement la molette.
+    viewport.addEventListener('wheel', release, { passive: true })
+    viewport.addEventListener('touchmove', release, { passive: true })
+    viewport.addEventListener('keydown', release)
+    return () => {
+      viewport.removeEventListener('wheel', release)
+      viewport.removeEventListener('touchmove', release)
+      viewport.removeEventListener('keydown', release)
+    }
+  }, [active])
+
+  useEffect(() => {
+    if (active && !releasedRef.current) scrollToEnd()
+  }, [active, signal, scrollToEnd])
+
+  return null
+}
+
 // ─── Fil ──────────────────────────────────────────────────────────────────────
 
 interface BrocoliTranscriptProps {
@@ -192,6 +255,22 @@ export function BrocoliTranscript({
   mentions,
   emptyState,
 }: BrocoliTranscriptProps) {
+  /**
+   * Ce qui dit « quelque chose a bougé en bas du fil ». La longueur du texte
+   * suffirait à suivre la frappe, mais raterait tout ce qui change la hauteur
+   * sans écrire un mot : une étape d'outil qui apparaît ou se termine, et
+   * surtout une action qu'on vient de décider — la reprise du tour est
+   * justement le moment où l'on veut être ramené en bas.
+   */
+  const streamSignal = items.reduce((total, item) => {
+    if (item.kind === 'assistant') return total + 1 + item.text.length
+    if (item.kind === 'tool') return total + 1 + item.state.length
+    if (item.kind === 'action') {
+      return total + 1 + item.action.status.length + (item.submitted ? 1 : 0)
+    }
+    return total + 1
+  }, 0)
+
   if (loading) {
     return (
       <div className={cn('flex flex-1 flex-col gap-6 py-2', READING_COLUMN)} aria-busy>
@@ -211,7 +290,12 @@ export function BrocoliTranscript({
       autoScroll
       defaultScrollPosition="last-anchor"
       scrollPreviousItemPeek={56}
+      // Seuil généreux : « près du bas » suffit à considérer que le lecteur
+      // suit le flux. Trop serré, le suivi se décrochait au moindre fragment
+      // qui dépassait d'une ligne.
+      scrollEdgeThreshold={200}
     >
+      <StreamFollower active={runState === 'streaming'} signal={streamSignal} />
       <MessageScroller className="flex-1">
         {/* Le viewport reste pleine largeur — la barre de défilement au bord
             de l'écran, comme partout ailleurs — et seul le *contenu* est borné
