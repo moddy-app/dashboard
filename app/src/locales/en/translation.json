@@ -1647,7 +1647,8 @@
     "groups": {
       "myServers": "My Servers",
       "usefulLinks": "Useful Links",
-      "myAccount": "My Account"
+      "myAccount": "My Account",
+      "assistant": "Assistant"
     },
     "items": {
       "addModdyToServer": "Add Moddy to a server",
@@ -1660,7 +1661,8 @@
       "notifications": "Notifications",
       "billing": "Billing",
       "settings": "Settings",
-      "logOut": "Log out"
+      "logOut": "Log out",
+      "brocoli": "Ask Brocoli"
     }
   },
   "notFound": {
@@ -1858,7 +1860,9 @@
     "yes": "Yes",
     "no": "No",
     "empty": "(empty)",
-    "clear": "Clear"
+    "clear": "Clear",
+    "cancel": "Cancel",
+    "dismiss": "Dismiss"
   },
   "verified": {
     "official": "Official Moddy server",
@@ -2288,6 +2292,159 @@
     "subject": {
       "you": "your account",
       "guild": "this server"
+    }
+  },
+  "brocoli": {
+    "title": "Brocoli",
+    "quota": "{{used}}/{{limit}} messages today",
+    "thinking": "Brocoli is thinking…",
+    "reload": "Refresh conversation",
+    "archive": "Archive conversation",
+    "retry": "Send that message again",
+    "empty": {
+      "title": "Set up {{guild}} by asking",
+      "description": "Brocoli reads your server settings and proposes the changes. Nothing is applied without your approval — you see every change before it happens.",
+      "suggestions": [
+        "Set up a ticket panel",
+        "Which modules are enabled?",
+        "Log message deletions",
+        "Welcome new members"
+      ]
+    },
+    "unavailable": {
+      "title": "Brocoli is unavailable",
+      "description": "The assistant is switched off right now. Nothing is wrong with your server — try again later.",
+      "back": "Back to the server"
+    },
+    "composer": {
+      "label": "Message to Brocoli",
+      "placeholder": "Ask Brocoli to set something up…",
+      "running": "Brocoli is answering…",
+      "awaitingDecision": "Waiting for your decision on the action above",
+      "send": "Send",
+      "disclaimer": "Brocoli can make mistakes. Every change is shown to you before it is applied.",
+      "mentionsLabel": "Channel and role suggestions"
+    },
+    "mode": {
+      "label": "Mode",
+      "read_only": {
+        "label": "Read only",
+        "description": "Brocoli has no write tools. It explains what it would do."
+      },
+      "ask": {
+        "label": "Ask me",
+        "description": "Every change is submitted to you before it is applied."
+      },
+      "auto": {
+        "label": "Apply automatically",
+        "description": "Ordinary changes are applied directly.",
+        "caveat": "Sensitive actions will still ask for your confirmation."
+      }
+    },
+    "tools": {
+      "default": "Working…",
+      "details": "Details",
+      "failed": "failed",
+      "list_channels": "Reading the channels",
+      "list_roles": "Reading the roles",
+      "lookup_member": "Looking up a member",
+      "get_bot_capabilities": "Checking the bot's permissions",
+      "get_module_config": "Reading the current configuration",
+      "get_module_schema": "Reading the module schema",
+      "validate_module_config": "Checking the configuration",
+      "search_documentation": "Searching the documentation",
+      "read_documentation_page": "Reading the documentation",
+      "read_internal_guide": "Reading its guide",
+      "get_guild_overview": "Looking at the server"
+    },
+    "risk": {
+      "low": {
+        "label": "Low risk",
+        "hint": "Reversible in one click from the dashboard."
+      },
+      "high": {
+        "label": "Visible change",
+        "hint": "Visible in Discord, and costly to undo by hand."
+      },
+      "critical": {
+        "label": "Irreversible",
+        "hint": "Irreversible, financial, or carrying authority. Read it carefully."
+      }
+    },
+    "action": {
+      "apply": "Apply",
+      "deny": "Reject",
+      "applyBlocked": "Fix the errors above first.",
+      "noSummary": "Action without a description",
+      "noPreview": "No detailed preview is available for this kind of action.",
+      "invalidTitle": "This configuration will be rejected",
+      "invalidHint": "Ask Brocoli to correct it rather than applying it.",
+      "expired": "Expired — ask Brocoli again",
+      "expiresTitle": "Time left to decide",
+      "criticalWord": "confirm",
+      "criticalTitle": "Confirm an irreversible action",
+      "criticalDescription": "This action cannot be undone from the dashboard.",
+      "criticalPrompt": "Type “{{word}}” to continue",
+      "criticalHint": "This step exists so that this is never a reflex click.",
+      "status": {
+        "pending": "Waiting for your decision",
+        "approved": "Approved",
+        "executed": "Applied",
+        "denied": "Rejected",
+        "expired": "Expired",
+        "failed": "Failed"
+      },
+      "panelLabel": "Action awaiting your decision",
+      "footerHint": "Nothing is applied until you approve.",
+      "sending": {
+        "approve": "Applying…",
+        "deny": "Rejecting…"
+      }
+    },
+    "diff": {
+      "title_one": "{{count}} change",
+      "title_other": "{{count}} changes",
+      "path": "Setting",
+      "before": "Before",
+      "after": "After",
+      "expand": "Show the full value",
+      "collapse": "Collapse",
+      "op": {
+        "added": "Added",
+        "removed": "Removed",
+        "changed": "Changed"
+      },
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    },
+    "history": {
+      "title": "History",
+      "new": "New conversation",
+      "recent": "Recent",
+      "empty": "No conversation on this server yet.",
+      "untitled": "Untitled conversation"
+    },
+    "streamErrors": {
+      "timeout": "Brocoli took too long to answer.",
+      "network": "The connection to Brocoli was lost.",
+      "rate_limited": "Too many requests — wait a moment before trying again.",
+      "upstream": "The AI provider returned an error.",
+      "bad_request": "Brocoli could not process this request.",
+      "stream_error": "The answer was interrupted before the end.",
+      "ai_unavailable": "The assistant is unavailable right now.",
+      "internal": "Something went wrong on Brocoli's side.",
+      "max_iterations": "Brocoli reached its tool limit for this turn. Rephrase or break the request into smaller steps."
+    },
+    "errors": {
+      "forbidden": "You no longer have access to this conversation. It has been closed.",
+      "not_found": "This conversation no longer exists.",
+      "conflict": "Another turn is already running on this conversation.",
+      "quota": "You have reached today's message quota.",
+      "unavailable": "The assistant is switched off right now.",
+      "invalid": "This message cannot be sent as is.",
+      "transport": "The connection to Brocoli failed.",
+      "retryIn": "Try again in {{minutes}} min.",
+      "reload": "Refresh"
     }
   }
 }

@@ -27,11 +27,14 @@ import {
   SettingsIcon,
   ShieldAlertIcon,
   ShieldIcon,
+  SparkleIcon,
   SparklesIcon,
   TicketIcon,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { getGuildIconUrl } from "@/lib/auth"
+import { useAiStatus } from "@/hooks/useAiStatus"
+import { useGuildContext } from "@/contexts/GuildContext"
 import { logger } from "@/lib/logger"
 
 interface Server {
@@ -80,6 +83,9 @@ export function CommandMenu({
   }, [open, onOpenChange])
 
   const navigate = useNavigate()
+  const { selectedGuildId } = useGuildContext()
+  // Entrée **masquée** si l'assistant est coupé côté backend, jamais grisée.
+  const { enabled: isBrocoliEnabled } = useAiStatus()
 
   const runCommand = (fn: () => void) => {
     onOpenChange(false)
@@ -96,6 +102,24 @@ export function CommandMenu({
         <CommandInput placeholder={t('commandMenu.placeholder')} />
         <CommandList>
           <CommandEmpty>{t('commandMenu.noResults')}</CommandEmpty>
+
+          {/* Brocoli — seulement dans le contexte d'un serveur : une
+              conversation de configuration en exige un. */}
+          {isBrocoliEnabled && selectedGuildId && (
+            <>
+              <CommandGroup heading={t('commandMenu.groups.assistant')}>
+                <CommandItem
+                  onSelect={() =>
+                    runCommand(() => navigate(`/servers/${selectedGuildId}/brocoli`))
+                  }
+                >
+                  <SparkleIcon />
+                  <span>{t('commandMenu.items.brocoli')}</span>
+                </CommandItem>
+              </CommandGroup>
+              <CommandSeparator />
+            </>
+          )}
 
           {/* Mes serveurs */}
           <CommandGroup heading={t('commandMenu.groups.myServers')}>

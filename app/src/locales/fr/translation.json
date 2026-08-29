@@ -1647,7 +1647,8 @@
     "groups": {
       "myServers": "Mes serveurs",
       "usefulLinks": "Liens utiles",
-      "myAccount": "Mon compte"
+      "myAccount": "Mon compte",
+      "assistant": "Assistant"
     },
     "items": {
       "addModdyToServer": "Ajouter Moddy à un serveur",
@@ -1660,7 +1661,8 @@
       "notifications": "Notifications",
       "billing": "Facturation",
       "settings": "Paramètres",
-      "logOut": "Se déconnecter"
+      "logOut": "Se déconnecter",
+      "brocoli": "Demander à Brocoli"
     }
   },
   "notFound": {
@@ -1858,7 +1860,9 @@
     "yes": "Oui",
     "no": "Non",
     "empty": "(vide)",
-    "clear": "Effacer"
+    "clear": "Effacer",
+    "cancel": "Annuler",
+    "dismiss": "Fermer"
   },
   "verified": {
     "official": "Serveur officiel de Moddy",
@@ -2288,6 +2292,159 @@
     "subject": {
       "you": "votre compte",
       "guild": "ce serveur"
+    }
+  },
+  "brocoli": {
+    "title": "Brocoli",
+    "quota": "{{used}}/{{limit}} messages aujourd'hui",
+    "thinking": "Brocoli réfléchit…",
+    "reload": "Rafraîchir la conversation",
+    "archive": "Archiver la conversation",
+    "retry": "Renvoyer ce message",
+    "empty": {
+      "title": "Configurez {{guild}} en le demandant",
+      "description": "Brocoli lit les réglages de votre serveur et propose les modifications. Rien n'est appliqué sans votre accord — vous voyez chaque changement avant qu'il ait lieu.",
+      "suggestions": [
+        "Mettre en place un panneau de tickets",
+        "Quels modules sont activés ?",
+        "Journaliser les suppressions de messages",
+        "Accueillir les nouveaux membres"
+      ]
+    },
+    "unavailable": {
+      "title": "Brocoli est indisponible",
+      "description": "L'assistant est coupé pour le moment. Votre serveur n'a aucun problème — réessayez plus tard.",
+      "back": "Retour au serveur"
+    },
+    "composer": {
+      "label": "Message à Brocoli",
+      "placeholder": "Demandez à Brocoli de configurer quelque chose…",
+      "running": "Brocoli répond…",
+      "awaitingDecision": "En attente de votre décision sur l'action ci-dessus",
+      "send": "Envoyer",
+      "disclaimer": "Brocoli peut se tromper. Chaque modification vous est montrée avant d'être appliquée.",
+      "mentionsLabel": "Suggestions de salons et de rôles"
+    },
+    "mode": {
+      "label": "Mode",
+      "read_only": {
+        "label": "Lecture seule",
+        "description": "Brocoli n'a aucun outil d'écriture. Il explique ce qu'il ferait."
+      },
+      "ask": {
+        "label": "Me demander",
+        "description": "Chaque modification vous est soumise avant d'être appliquée."
+      },
+      "auto": {
+        "label": "Appliquer automatiquement",
+        "description": "Les modifications ordinaires sont appliquées directement.",
+        "caveat": "Les actions sensibles vous seront quand même soumises."
+      }
+    },
+    "tools": {
+      "default": "Travaille…",
+      "details": "Détails",
+      "failed": "échec",
+      "list_channels": "Consulte les salons",
+      "list_roles": "Consulte les rôles",
+      "lookup_member": "Cherche un membre",
+      "get_bot_capabilities": "Vérifie les permissions du bot",
+      "get_module_config": "Lit la configuration actuelle",
+      "get_module_schema": "Lit le schéma du module",
+      "validate_module_config": "Vérifie la configuration",
+      "search_documentation": "Cherche dans la documentation",
+      "read_documentation_page": "Lit la documentation",
+      "read_internal_guide": "Consulte son guide",
+      "get_guild_overview": "Regarde le serveur"
+    },
+    "risk": {
+      "low": {
+        "label": "Risque faible",
+        "hint": "Réversible d'un clic depuis le dashboard."
+      },
+      "high": {
+        "label": "Modification visible",
+        "hint": "Visible dans Discord, et coûteuse à défaire à la main."
+      },
+      "critical": {
+        "label": "Irréversible",
+        "hint": "Irréversible, financière, ou porteuse d'autorité. À lire attentivement."
+      }
+    },
+    "action": {
+      "apply": "Appliquer",
+      "deny": "Refuser",
+      "applyBlocked": "Corrigez d'abord les erreurs ci-dessus.",
+      "noSummary": "Action sans description",
+      "noPreview": "Aucun aperçu détaillé n'est disponible pour ce type d'action.",
+      "invalidTitle": "Cette configuration sera refusée",
+      "invalidHint": "Demandez à Brocoli de la corriger plutôt que de l'appliquer.",
+      "expired": "Expirée — redemandez à Brocoli",
+      "expiresTitle": "Temps restant pour décider",
+      "criticalWord": "confirmer",
+      "criticalTitle": "Confirmer une action irréversible",
+      "criticalDescription": "Cette action ne pourra pas être annulée depuis le dashboard.",
+      "criticalPrompt": "Saisissez « {{word}} » pour continuer",
+      "criticalHint": "Cette étape existe pour que ce ne soit jamais un clic réflexe.",
+      "status": {
+        "pending": "En attente de votre décision",
+        "approved": "Approuvée",
+        "executed": "Appliquée",
+        "denied": "Refusée",
+        "expired": "Expirée",
+        "failed": "Échouée"
+      },
+      "panelLabel": "Action en attente de votre décision",
+      "footerHint": "Rien n'est appliqué tant que vous n'avez pas approuvé.",
+      "sending": {
+        "approve": "Application en cours…",
+        "deny": "Refus en cours…"
+      }
+    },
+    "diff": {
+      "title_one": "{{count}} modification",
+      "title_other": "{{count}} modifications",
+      "path": "Réglage",
+      "before": "Avant",
+      "after": "Après",
+      "expand": "Voir la valeur entière",
+      "collapse": "Replier",
+      "op": {
+        "added": "Ajouté",
+        "removed": "Retiré",
+        "changed": "Modifié"
+      },
+      "enabled": "Activé",
+      "disabled": "Désactivé"
+    },
+    "history": {
+      "title": "Historique",
+      "new": "Nouvelle conversation",
+      "recent": "Récentes",
+      "empty": "Aucune conversation sur ce serveur pour l'instant.",
+      "untitled": "Conversation sans titre"
+    },
+    "streamErrors": {
+      "timeout": "Brocoli a mis trop de temps à répondre.",
+      "network": "La connexion à Brocoli a été perdue.",
+      "rate_limited": "Trop de requêtes — patientez un instant avant de réessayer.",
+      "upstream": "Le fournisseur d'IA a renvoyé une erreur.",
+      "bad_request": "Brocoli n'a pas pu traiter cette demande.",
+      "stream_error": "La réponse a été interrompue avant la fin.",
+      "ai_unavailable": "L'assistant est indisponible pour le moment.",
+      "internal": "Un problème est survenu du côté de Brocoli.",
+      "max_iterations": "Brocoli a atteint sa limite d'outils pour ce tour. Reformulez ou découpez la demande."
+    },
+    "errors": {
+      "forbidden": "Vous n'avez plus accès à cette conversation. Elle a été fermée.",
+      "not_found": "Cette conversation n'existe plus.",
+      "conflict": "Un tour est déjà en cours sur cette conversation.",
+      "quota": "Vous avez atteint le quota de messages du jour.",
+      "unavailable": "L'assistant est coupé pour le moment.",
+      "invalid": "Ce message ne peut pas être envoyé tel quel.",
+      "transport": "La connexion à Brocoli a échoué.",
+      "retryIn": "Réessayez dans {{minutes}} min.",
+      "reload": "Rafraîchir"
     }
   }
 }

@@ -175,6 +175,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
       return items
     }
 
+    // /servers/:guildId/brocoli — assistant IA
+    if (path.match(/^\/servers\/\d+\/brocoli$/) && guildDetail) {
+      return [
+        { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
+        { label: t('brocoli.title') },
+      ]
+    }
+
     // /servers/:guildId/settings — réglages du serveur
     if (path.match(/^\/servers\/\d+\/settings$/) && guildDetail) {
       return [
