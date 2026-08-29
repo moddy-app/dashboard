@@ -1,12 +1,10 @@
 /**
  * Saisie d'un message.
  *
- * Trois verrous, tous structurels :
+ * Deux verrous, tous deux structurels :
  * - **pendant un tour** (`streaming`) : un seul tour en vol par conversation ;
  * - **pendant une confirmation en attente** (`awaiting_confirmation`) : le tour
- *   n'est pas terminé, proposer d'envoyer un nouveau message serait mentir ;
- * - **pendant une question en attente** (`awaiting_answer`) : idem — la
- *   réponse passe par le formulaire, pas par la saisie libre.
+ *   n'est pas terminé, proposer d'envoyer un nouveau message serait mentir.
  *
  * Le texte n'est jamais perdu : sur un envoi refusé *avant* le flux, l'appelant
  * le restitue via `restoreDraft`.
@@ -211,11 +209,9 @@ export function BrocoliComposer({
   const hint =
     runState === 'awaiting_confirmation'
       ? t('brocoli.composer.awaitingDecision')
-      : runState === 'awaiting_answer'
-        ? t('brocoli.composer.awaitingAnswer')
-        : runState === 'streaming'
-          ? t('brocoli.composer.running')
-          : (placeholder ?? t('brocoli.composer.placeholder'))
+      : runState === 'streaming'
+        ? t('brocoli.composer.running')
+        : (placeholder ?? t('brocoli.composer.placeholder'))
 
   return (
     <div className="relative flex flex-col gap-1.5">

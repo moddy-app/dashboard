@@ -3,13 +3,10 @@
  *
  * Porte les trois invariants qui font la correction de l'intégration :
  *
- * 1. **Un tour arrêté sur `awaiting_confirmation` ou `awaiting_answer` n'est
- *    pas terminé.** La saisie reste bloquée tant que la décision n'est pas
- *    prise ou la question pas répondue ; la suite arrive dans le flux de
- *    `POST …/decision` ou de `POST …/questions/{id}/answer`, avec le même
- *    gestionnaire d'événements. Les deux se traitent explicitement : rabattre
- *    l'un d'eux sur « terminé » rendrait la main à la saisie sans rien
- *    afficher, et la conversation resterait muette.
+ * 1. **Un tour arrêté sur `awaiting_confirmation` n'est pas terminé.** La
+ *    saisie reste bloquée tant que la décision n'est pas prise ; la suite
+ *    arrive dans le flux de `POST …/decision`, avec le même gestionnaire
+ *    d'événements.
  * 2. **Un envoi en échec n'est jamais rejoué automatiquement** — le message a
  *    peut-être été enregistré et le tour lancé. Une coupure en plein flux se
  *    répare par `GET /ai/conversations/{id}`, jamais par un renvoi.
@@ -24,16 +21,13 @@ import {
   actionFromTranscript,
   conflictKind,
   isActionDecidable,
-  isQuestionOpen,
   itemsFromTranscript,
   normalizePermissionRequest,
-  normalizeQuestionRequest,
   normalizeRunStatus,
   normalizeStreamErrorCode,
 } from '@/lib/brocoli'
 import { logger } from '@/lib/logger'
 import {
-  answerQuestion,
   archiveConversation,
   createConversation,
   decideAction,
@@ -43,7 +37,6 @@ import {
   sendMessage,
 } from '@/services/ai'
 import type {
-  AiAnswerBody,
   AiConversation,
   AiDecision,
   AiMode,
@@ -112,13 +105,9 @@ export interface BrocoliState {
   lastMessage: string | null
   /** Vrai tant qu'une décision est en vol (les deux boutons sont verrouillés). */
   deciding: boolean
-  /** Vrai tant qu'une réponse à une question est en vol. */
-  answering: boolean
 
   send: (text: string) => Promise<void>
   decide: (actionId: string, decision: AiDecision) => Promise<void>
-  /** Répond à une question ; `answers` vide + `cancelled` = bouton « Ignorer ». */
-  answer: (questionId: string, body: AiAnswerBody) => Promise<void>
   setMode: (mode: AiMode) => Promise<void>
   open: (conversationId: string) => Promise<void>
   startNew: () => void
@@ -128,8 +117,6 @@ export interface BrocoliState {
   dismissError: () => void
   /** Appelé par la carte d'action quand son compte à rebours atteint zéro. */
   markActionExpired: (actionId: string) => void
-  /** Idem pour le formulaire de question. */
-  markQuestionExpired: (questionId: string) => void
 }
 
 export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOptions): BrocoliState {
@@ -143,7 +130,6 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
   const [pendingMode, setPendingMode] = useState<AiMode>(defaultMode)
   const [lastMessage, setLastMessage] = useState<string | null>(null)
   const [deciding, setDeciding] = useState(false)
-  const [answering, setAnswering] = useState(false)
 
   // ── Tampon de rendu ────────────────────────────────────────────────────────
   // Les `text_delta` arrivent par dizaines par seconde. Les accumuler dans une
@@ -245,8 +231,30 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
         }
 
         case 'tool_result': {
+          // Appariement par `call_id` d'abord. Mais un `tool_result` peut
+          // arriver sans `call_id` exploitable (absent, ou différent de celui
+          // du `tool_call` correspondant) : sans repli, l'étape resterait
+          // indéfiniment sur sa roue alors que l'outil a bel et bien rendu.
+          // On retombe donc sur la **dernière étape encore en cours du même
+          // nom**, puis sur la dernière encore en cours tout court.
           const callId = typeof data.call_id === 'string' ? data.call_id : null
-          const index = list.findIndex((i) => i.kind === 'tool' && i.call_id === callId)
+          const name = typeof data.name === 'string' ? data.name : null
+          const lastRunning = (predicate: (i: BrocoliItem) => boolean) => {
+            for (let i = list.length - 1; i >= 0; i -= 1) {
+              const item = list[i]
+              if (item.kind === 'tool' && item.state === 'running' && predicate(item)) return i
+            }
+            return -1
+          }
+
+          let index = callId
+            ? list.findIndex((i) => i.kind === 'tool' && i.call_id === callId)
+            : -1
+          if (index < 0 && name) {
+            index = lastRunning((i) => i.kind === 'tool' && i.name === name)
+          }
+          if (index < 0) index = lastRunning(() => true)
+
           if (index >= 0) {
             const tool = list[index]
             if (tool.kind === 'tool') {
@@ -262,15 +270,6 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
           if (!action) return
           sealTrailingBubble()
           list.push({ kind: 'action', id: nextId(), action, submitted: null })
-          commit()
-          return
-        }
-
-        case 'user_question': {
-          const request = normalizeQuestionRequest(data)
-          if (!request) return
-          sealTrailingBubble()
-          list.push({ kind: 'question', id: nextId(), request, submitted: false })
           commit()
           return
         }
@@ -292,9 +291,20 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
           const status = normalizeRunStatus(data.status)
           // Fin de tour : plus rien ne coule, et une bulle restée vide (le
           // modèle n'a produit que des appels d'outils) n'a rien à afficher.
+          // Rien ne tourne plus après un `run_end` : une étape encore
+          // `running` a perdu son `tool_result` en route (jamais émis, ou
+          // inappariable). La laisser telle quelle afficherait une roue
+          // éternelle sur une étape terminée — le symptôme le plus visible du
+          // fil. `done` plutôt que `ok` : l'étape est finie, son verdict reste
+          // inconnu, et seul `tool_result.ok` peut l'affirmer.
           itemsRef.current = list
             .map((item) =>
               item.kind === 'assistant' && item.streaming ? { ...item, streaming: false } : item
+            )
+            .map((item) =>
+              item.kind === 'tool' && item.state === 'running'
+                ? { ...item, state: 'done' as const }
+                : item
             )
             .filter((item) => !(item.kind === 'assistant' && item.text.trim() === ''))
 
@@ -307,16 +317,7 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
             })
           }
 
-          // `awaiting_answer` est traité **explicitement** : le rabattre sur
-          // `idle` rendrait la main à la saisie sans afficher le formulaire, et
-          // la conversation resterait bloquée sans rien dire.
-          setRunState(
-            status === 'awaiting_confirmation'
-              ? 'awaiting_confirmation'
-              : status === 'awaiting_answer'
-                ? 'awaiting_answer'
-                : 'idle'
-          )
+          setRunState(status === 'awaiting_confirmation' ? 'awaiting_confirmation' : 'idle')
           replaceItems(itemsRef.current)
           return
         }
@@ -338,19 +339,12 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
       const next = itemsFromTranscript(detail.messages)
       replaceItems(next)
 
-      // Une action ou une question encore ouverte dans le transcript garde la
-      // saisie bloquée : le tour n'est pas terminé, même après un rechargement
-      // de page. L'échéance est vérifiée dans les deux cas — reproposer un
-      // formulaire expiré ne mènerait qu'à un `409` à l'envoi.
-      const pendingQuestion = next.some(
-        (item) => item.kind === 'question' && isQuestionOpen(item.request)
-      )
-      const pendingAction = next.some(
+      // Une action encore `pending` dans le transcript garde la saisie
+      // bloquée : le tour n'est pas terminé, même après un rechargement de page.
+      const pending = next.some(
         (item) => item.kind === 'action' && isActionDecidable(item.action)
       )
-      setRunState(
-        pendingQuestion ? 'awaiting_answer' : pendingAction ? 'awaiting_confirmation' : 'idle'
-      )
+      setRunState(pending ? 'awaiting_confirmation' : 'idle')
     },
     [replaceItems]
   )
@@ -597,95 +591,6 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
     [replaceItems]
   )
 
-  // ── Réponse à une question ─────────────────────────────────────────────────
-
-  /**
-   * Envoie le formulaire (ou le ferme, avec `cancelled`). La réponse est un
-   * nouveau flux, consommé par le **même** gestionnaire d'événements : il peut
-   * d'ailleurs s'achever sur une `permission_request`, et c'est le cas attendu
-   * — Brocoli demande ce qui lui manque, puis propose la configuration.
-   */
-  const answer = useCallback(
-    async (questionId: string, body: AiAnswerBody) => {
-      if (!conversation || busyRef.current) return
-      const target = itemsRef.current.find(
-        (i) => i.kind === 'question' && i.request.question_id === questionId
-      )
-      // Déjà envoyé depuis cet onglet : le serveur est idempotent, mais un
-      // second envoi ouvrirait un flux qui ne recevrait qu'un `409`.
-      if (!target || target.kind !== 'question' || target.submitted) return
-
-      busyRef.current = true
-      setAnswering(true)
-      setError(null)
-      // Verrouillage **dès le premier clic**, comme pour une décision.
-      itemsRef.current = itemsRef.current.map((i) =>
-        i.kind === 'question' && i.request.question_id === questionId
-          ? { ...i, submitted: true }
-          : i
-      )
-      replaceItems(itemsRef.current)
-      setRunState('streaming')
-
-      const conversationId = conversation.id
-      const result = await runStream((onEvent, signal) =>
-        answerQuestion(conversationId, questionId, body, onEvent, signal)
-      )
-
-      busyRef.current = false
-      setAnswering(false)
-
-      if (!result.ok) {
-        setRunState('idle')
-        if (result.error) setError(result.error)
-        // `409` (déjà répondue / expirée) comme coupure de flux : la vérité est
-        // en base — la ligne `question` y porte son statut réel — on la relit
-        // plutôt que de deviner.
-        if (result.error?.kind === 'conflict' || result.error?.kind === 'transport') {
-          await loadConversation(conversationId)
-        }
-        return
-      }
-
-      // Le flux de reprise ne réémet pas la question : sans cette mise à jour,
-      // le formulaire resterait indéfiniment « en cours d'envoi ».
-      itemsRef.current = itemsRef.current.map((i) =>
-        i.kind === 'question' && i.request.question_id === questionId
-          ? {
-              ...i,
-              request: {
-                ...i.request,
-                status: body.cancelled ? ('cancelled' as const) : ('answered' as const),
-              },
-            }
-          : i
-      )
-      replaceItems(itemsRef.current)
-
-      void refreshHistory()
-      onTurnEnd?.()
-    },
-    [conversation, loadConversation, onTurnEnd, refreshHistory, replaceItems, runStream]
-  )
-
-  const markQuestionExpired = useCallback(
-    (questionId: string) => {
-      itemsRef.current = itemsRef.current.map((i) =>
-        i.kind === 'question' &&
-        i.request.question_id === questionId &&
-        i.request.status === 'pending'
-          ? { ...i, request: { ...i.request, status: 'expired' as const } }
-          : i
-      )
-      replaceItems(itemsRef.current)
-      // Le formulaire n'est plus envoyable : la saisie doit repartir, sinon la
-      // conversation reste bloquée sur une question à laquelle on ne peut plus
-      // répondre.
-      setRunState((current) => (current === 'awaiting_answer' ? 'idle' : current))
-    },
-    [replaceItems]
-  )
-
   // ── Mode ───────────────────────────────────────────────────────────────────
 
   const setMode = useCallback(
@@ -756,10 +661,8 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
     mode,
     lastMessage,
     deciding,
-    answering,
     send,
     decide,
-    answer,
     setMode,
     open,
     startNew,
@@ -768,7 +671,6 @@ export function useBrocoli({ guildId, defaultMode, onTurnEnd }: UseBrocoliOption
     refreshHistory,
     dismissError,
     markActionExpired,
-    markQuestionExpired,
   }
 }
 

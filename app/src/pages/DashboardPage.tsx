@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { usePageTitle } from "@/hooks/usePageTitle"
+import { useViewportHeight } from "@/hooks/useViewportHeight"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -51,6 +52,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const { selectGuild, guilds, guildDetail, selectedGuildId } = useGuildContext()
   const { groups: sanctionGroups } = useSanctions()
   usePageTitle(t('pageTitle.dashboard'))
+  useViewportHeight()
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
@@ -245,7 +247,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
 
   return (
-    <div className="flex h-screen flex-col">
+    // Hauteur bornée au viewport **visuel** (`--app-height`, posé par
+    // `useViewportHeight`) et non à `100vh` : sur mobile, le clavier réduit la
+    // zone visible sans réduire `100vh`, le navigateur fait alors défiler la
+    // page et l'en-tête — fil d'Ariane, bouton de sidebar — sort par le haut.
+    // `100dvh` est le repli tant que la mesure n'est pas posée.
+    <div className="flex h-[var(--app-height,100dvh)] flex-col">
       {activeBanner && (
         <InfoBanner
           banner={activeBanner}

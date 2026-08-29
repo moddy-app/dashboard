@@ -33,7 +33,7 @@
  * irréversible.
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
   CheckIcon,
@@ -58,7 +58,6 @@ import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
-import { useCountdown } from '@/hooks/useCountdown'
 import { cn } from '@/lib/utils'
 import {
   RISK_META,
@@ -66,10 +65,43 @@ import {
   isPreviewBlocking,
   requiresDeliberateGesture,
   riskTone,
+  secondsUntil,
 } from '@/lib/brocoli'
 import type { MentionSource } from '@/lib/brocoli-mentions'
 import { BrocoliDiff } from './brocoli-diff'
 import type { AiDecision, AiPermissionRequest } from '@/types/ai'
+
+// ─── Compte à rebours ─────────────────────────────────────────────────────────
+
+/**
+ * Secondes restantes, rafraîchies chaque seconde. `null` quand l'action ne
+ * porte pas d'échéance — cas d'une relecture du transcript, qui ne renvoie pas
+ * `expires_at` : on n'affiche alors simplement pas de compte à rebours plutôt
+ * que d'en inventer un.
+ */
+function useCountdown(expiresAt: string | null, onExpire: () => void): number | null {
+  const [left, setLeft] = useState(() => secondsUntil(expiresAt))
+
+  useEffect(() => {
+    if (!expiresAt) {
+      setLeft(null)
+      return
+    }
+    const tick = () => {
+      const value = secondsUntil(expiresAt)
+      setLeft(value)
+      if (value !== null && value <= 0) onExpire()
+    }
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+    // `onExpire` est stable côté hook (useCallback) ; le relister relancerait
+    // l'intervalle à chaque rendu du fil pendant le stream.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expiresAt])
+
+  return left
+}
 
 // ─── Confirmation en deux temps (risk: critical) ──────────────────────────────
 

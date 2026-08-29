@@ -23,19 +23,9 @@ export function isAiMode(value: unknown): value is AiMode {
 /**
  * Statut de fin de tour (`run_end`). Un tour arrêté sur
  * `awaiting_confirmation` **n'est pas terminé** : il reprend dans le flux de
- * `POST …/decision`. Idem pour `awaiting_answer`, qui reprend dans celui de
- * `POST …/questions/{id}/answer`.
- *
- * ⚠️ `awaiting_answer` doit être traité **explicitement** : un `default` qui
- * rend la main à la saisie ferait sortir de l'attente sans afficher le
- * formulaire, et la conversation resterait muette.
+ * `POST …/decision`.
  */
-export type AiRunStatus =
-  | 'completed'
-  | 'awaiting_confirmation'
-  | 'awaiting_answer'
-  | 'error'
-  | 'max_iterations'
+export type AiRunStatus = 'completed' | 'awaiting_confirmation' | 'error' | 'max_iterations'
 
 /**
  * Niveau de risque d'une action soumise à confirmation.
@@ -120,17 +110,13 @@ export interface AiConversation {
 
 /**
  * Message du transcript rendu par `GET /ai/conversations/{id}`. Seuls les rôles
- * `user`, `assistant`, `action` et `question` sont servis : les `tool_call` /
- * `tool_result` bruts ne sont pas renvoyés, inutile de les gérer à la relecture.
- *
- * ⚠️ Une question répondue laisse **deux** lignes (`pending`, puis `answered`
- * ou `cancelled`) : les deux moments sont dans l'historique. Le regroupement
- * par `question_id` est fait par `itemsFromTranscript()`.
+ * `user`, `assistant` et `action` sont servis : les `tool_call` / `tool_result`
+ * bruts ne sont pas renvoyés, inutile de les gérer à la relecture.
  */
 export interface AiTranscriptMessage {
   id: number
   seq: number
-  role: 'user' | 'assistant' | 'action' | 'question'
+  role: 'user' | 'assistant' | 'action'
   content: Record<string, unknown>
   tokens_in: number | null
   tokens_out: number | null
@@ -187,105 +173,6 @@ export interface AiPermissionRequest {
 
 export type AiDecision = 'approve' | 'deny'
 
-// ─── Question posée à l'utilisateur ───────────────────────────────────────────
-
-/**
- * Nature de la réponse attendue — c'est elle, et elle seule, qui décide du
- * widget. Un champ texte de repli sur un `channel` annulerait tout l'intérêt de
- * la fonctionnalité : elle existe précisément pour éviter de faire recopier un
- * snowflake à la main.
- */
-export type AiAnswerType = 'channel' | 'role' | 'choice' | 'text'
-
-/** Une option de `answer_type: 'choice'` — 2 à 6 entrées. */
-export interface AiQuestionOption {
-  id: string
-  label: string
-  /** Ce qui est renvoyé dans la réponse. */
-  value: string
-  description: string | null
-  /** Au plus une option la porte : c'est la valeur **présélectionnée**. */
-  recommended: boolean
-}
-
-/**
- * Une question. Tout ce qui est du texte (`question`, `header`, `label`,
- * `description`, `recommendation_reason`) arrive **dans la langue de la
- * conversation** : rien n'est à traduire ici, et rien n'est à réécrire.
- */
-export interface AiQuestion {
-  /** `"q1"`, `"q2"`… — la clé pour répondre. */
-  id: string
-  /**
-   * Étiquette courte. **Peut être vide** : le backend préfère ne rien mettre
-   * plutôt qu'une puce en français sur une conversation en anglais. Vide → pas
-   * de puce, jamais un libellé inventé côté front.
-   */
-  header: string
-  question: string
-  answer_type: AiAnswerType
-  multi_select: boolean
-  /** Uniquement pour `choice`. */
-  options: AiQuestionOption[]
-  /**
-   * **Une valeur par défaut, pas un indice** : à présélectionner dans le
-   * widget. Un identifiant pour `channel` / `role`, une valeur d'option pour
-   * `choice`, du texte pour `text`. `null` = Brocoli n'a rien à proposer, et il
-   * ne faut alors **rien fabriquer** à sa place.
-   */
-  recommended: string | null
-  /** Nom lisible de `recommended` — repli d'affichage si l'id est introuvable. */
-  recommended_label: string | null
-  /** Une phrase, affichée sous le champ. */
-  recommendation_reason: string | null
-}
-
-/**
- * Cycle de vie d'une question. Seul `pending` (et non expiré) ouvre le
- * formulaire ; un envoi hors de là répond `409`.
- */
-export type AiQuestionStatus = 'pending' | 'answered' | 'cancelled' | 'expired'
-
-/** Charge de l'événement `user_question`, et d'une ligne `question` du transcript. */
-export interface AiQuestionRequest {
-  question_id: string
-  status: AiQuestionStatus
-  /**
-   * Échéance. Contrairement aux actions, la ligne du transcript **la porte**
-   * aussi : c'est ce qui permet, après un rechargement, de savoir si le
-   * formulaire est encore valide avant de le reproposer.
-   */
-  expires_at: string | null
-  /** 1 à 4 questions. */
-  questions: AiQuestion[]
-}
-
-/**
- * Une réponse. `values` prime sur `value`. `label` / `labels` sont le nom
- * lisible : **les renvoyer**, Brocoli les emploie dans sa phrase suivante au
- * lieu de relire les salons du serveur.
- */
-export interface AiAnswer {
-  question_id: string
-  value?: string
-  values?: string[]
-  label?: string
-  labels?: string[]
-  /** Question laissée de côté. */
-  skipped?: boolean
-}
-
-/**
- * Corps de `POST …/questions/{id}/answer`. `cancelled` ferme la question sans
- * y répondre — c'est ce que fait le bouton « Ignorer », sans lequel la seule
- * sortie d'une question mal posée serait d'y répondre n'importe quoi.
- */
-export interface AiAnswerBody {
-  answers?: AiAnswer[]
-  cancelled?: boolean
-}
-
-
 // ─── Événements du flux SSE ───────────────────────────────────────────────────
 
 export interface AiUsage {
@@ -295,7 +182,7 @@ export interface AiUsage {
 }
 
 /**
- * Les huit événements du flux. `arguments` d'un `tool_call` est une **chaîne
+ * Les sept événements du flux. `arguments` d'un `tool_call` est une **chaîne
  * JSON**, et c'est ce que Brocoli *demande*, pas ce qui a été fait : le
  * résultat, c'est `tool_result.ok` et, pour une écriture, l'action et son diff.
  */
@@ -305,7 +192,6 @@ export type AiStreamEvent =
   | { event: 'tool_call'; data: { call_id: string; name: string; arguments: string } }
   | { event: 'tool_result'; data: { call_id: string; name: string; ok: boolean } }
   | { event: 'permission_request'; data: AiPermissionRequest }
-  | { event: 'user_question'; data: AiQuestionRequest }
   | { event: 'run_end'; data: { status: AiRunStatus; usage?: AiUsage } }
   | { event: 'error'; data: { code: AiStreamErrorCode; message: string } }
 
@@ -333,7 +219,14 @@ export type BrocoliItem =
       name: string
       /** Chaîne JSON telle que reçue — affichée seulement en mode « détails ». */
       arguments: string
-      state: 'running' | 'ok' | 'failed'
+      /**
+       * `done` = étape terminée **sans verdict connu** : le `tool_result` n'est
+       * jamais arrivé (perdu, ou sans `call_id` appariable) et le tour s'est
+       * pourtant achevé. Rien ne tourne plus après un `run_end` : laisser
+       * l'étape en `running` afficherait une roue éternelle. On ne la classe ni
+       * en `ok` ni en `failed` — seul `tool_result.ok` dit lequel des deux.
+       */
+      state: 'running' | 'ok' | 'failed' | 'done'
     }
   | {
       kind: 'action'
@@ -342,18 +235,7 @@ export type BrocoliItem =
       /** Décision déjà envoyée depuis cet onglet (boutons verrouillés). */
       submitted: AiDecision | null
     }
-  | {
-      kind: 'question'
-      id: string
-      request: AiQuestionRequest
-      /** Formulaire déjà envoyé depuis cet onglet (champs et boutons verrouillés). */
-      submitted: boolean
-    }
   | { kind: 'notice'; id: string; code: AiStreamErrorCode | 'max_iterations'; message: string }
 
 /** État global d'un tour, du point de vue de la saisie. */
-export type BrocoliRunState =
-  | 'idle'
-  | 'streaming'
-  | 'awaiting_confirmation'
-  | 'awaiting_answer'
+export type BrocoliRunState = 'idle' | 'streaming' | 'awaiting_confirmation'

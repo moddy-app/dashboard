@@ -1,5 +1,14 @@
 # 2026-08-29 — Brocoli : formulaire de question (`user_question`)
 
+> ⚠️ **Travail annulé le jour même.** Le backend a retiré les questions
+> structurées quelques heures après cette session : plus d'événement
+> `user_question`, plus de statut `awaiting_answer`, plus d'endpoint
+> `/questions/{id}/answer`, plus d'outil `ask_user`. Tout ce qui est décrit
+> ci-dessous a été **retiré du code** — voir
+> `2026-08-29_brocoli-retrait-questions-et-correctifs.md`. La page est conservée
+> comme trace de la décision et de son revirement, pas comme description de
+> l'état du dépôt.
+
 ## Objectif
 
 Intégrer les changements de la session backend du 29/08 sur Brocoli. Une seule

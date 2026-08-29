@@ -78,6 +78,11 @@ export function PanelCard({
 }: PanelCardProps) {
   const { t } = useTranslation()
   const err = (field: string) => errors[panelFieldKey(panel.id, field)]
+  // Ces champs sont facultatifs **parce que le bot les remplit** : son texte est
+  // déjà traduit dans la langue du serveur et s'améliore d'une version à
+  // l'autre. Un texte écrit à leur place est figé dans une seule langue — le
+  // dire sous le champ, le placeholder seul ne l'explique pas.
+  const leaveEmpty = t("modules.tickets.leaveEmptyForDefault")
   const destinations = panelChannels(channels)
   const channel = panel.channel_id ? channels.find((c) => c.id === panel.channel_id) : undefined
   // Le plafond effectif dépend du style : il est recalculé à chaque rendu, donc
@@ -162,7 +167,7 @@ export function PanelCard({
 
         <Field
           label={t("modules.tickets.panel.title")}
-          description={t("modules.tickets.panel.titleDescription")}
+          description={`${t("modules.tickets.panel.titleDescription")} ${leaveEmpty}`}
           error={err("title")}
           hint={`${panel.title?.length ?? 0} / ${TICKET_TEXT_LIMITS.title}`}
         >
@@ -178,7 +183,7 @@ export function PanelCard({
 
         <Field
           label={t("modules.tickets.panel.description")}
-          description={t("modules.tickets.panel.descriptionHint")}
+          description={`${t("modules.tickets.panel.descriptionHint")} ${leaveEmpty}`}
           error={err("description")}
         >
           <MessageEditor
@@ -252,7 +257,7 @@ export function PanelCard({
         {panel.style === "select" && (
           <Field
             label={t("modules.tickets.panel.placeholder")}
-            description={t("modules.tickets.panel.placeholderDescription")}
+            description={`${t("modules.tickets.panel.placeholderDescription")} ${leaveEmpty}`}
             error={err("placeholder")}
             hint={`${panel.placeholder?.length ?? 0} / ${TICKET_TEXT_LIMITS.placeholder}`}
           >

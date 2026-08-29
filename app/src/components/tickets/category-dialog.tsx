@@ -76,6 +76,11 @@ export function CategoryDialog({
 }: CategoryDialogProps) {
   const { t } = useTranslation()
   const err = (field: string) => errors[categoryFieldKey(panel.id, category.id, field)]
+  // Facultatifs **parce que le bot les remplit** : son texte est déjà traduit
+  // dans la langue du serveur et s'améliore d'une version à l'autre. Un texte
+  // écrit à leur place est figé dans une seule langue — le placeholder seul ne
+  // le dit pas.
+  const leaveEmpty = t("modules.tickets.leaveEmptyForDefault")
   const parents = discordCategories(channels)
   const assignableRoles = roles.filter((r) => r.name !== "@everyone")
 
@@ -290,7 +295,7 @@ export function CategoryDialog({
             <MessageField
               guildId={guildId}
               label={t("modules.tickets.category.openMessage")}
-              description={t("modules.tickets.category.openMessageDescription")}
+              description={`${t("modules.tickets.category.openMessageDescription")} ${leaveEmpty}`}
               value={category.open_message}
               // Le défaut est traduit côté bot : on le montre en placeholder,
               // jamais en valeur — sinon il serait figé dans la config à la
@@ -303,7 +308,7 @@ export function CategoryDialog({
             <MessageField
               guildId={guildId}
               label={t("modules.tickets.category.closeMessage")}
-              description={t("modules.tickets.category.closeMessageDescription")}
+              description={`${t("modules.tickets.category.closeMessageDescription")} ${leaveEmpty}`}
               value={category.close_message}
               placeholder={t("modules.tickets.channel.default_close_message")}
               error={err("close_message")}

@@ -1345,6 +1345,7 @@
         "default_title": "Need help?",
         "default_description": "Pick a category below to open a ticket. A private channel will be created for you."
       },
+      "leaveEmptyForDefault": "Leave empty for Moddy's own text, translated into the server's language and improved from one version to the next.",
       "category": {
         "untitled": "Untitled category",
         "defaultName": "Category {{index}}",
@@ -2323,8 +2324,7 @@
       "awaitingDecision": "Waiting for your decision on the action above",
       "send": "Send",
       "disclaimer": "Brocoli can make mistakes. Every change is shown to you before it is applied.",
-      "mentionsLabel": "Channel and role suggestions",
-      "awaitingAnswer": "Waiting for your answer to the form above"
+      "mentionsLabel": "Channel and role suggestions"
     },
     "mode": {
       "label": "Mode",
@@ -2351,15 +2351,14 @@
       "lookup_member": "Looking up a member",
       "get_bot_capabilities": "Checking the bot's permissions",
       "get_module_config": "Reading the current configuration",
+      "describe_module_config": "Re-reading the configuration in plain words",
+      "list_module_catalogue": "Going through what it can configure",
       "get_module_schema": "Reading the module schema",
       "validate_module_config": "Checking the configuration",
       "search_documentation": "Searching the documentation",
       "read_documentation_page": "Reading the documentation",
       "read_internal_guide": "Reading its guide",
-      "get_guild_overview": "Looking at the server",
-      "ask_user": "Asking you something",
-      "describe_module_config": "Reading the configuration back in plain words",
-      "list_module_catalogue": "Going through what it can configure"
+      "get_guild_overview": "Looking at the server"
     },
     "risk": {
       "low": {
@@ -2449,35 +2448,6 @@
       "transport": "The connection to Brocoli failed.",
       "retryIn": "Try again in {{minutes}} min.",
       "reload": "Refresh"
-    },
-    "question": {
-      "panelLabel": "Question from Brocoli awaiting your answer",
-      "title": "Brocoli needs one detail",
-      "footerHint": "Brocoli can't go on without this information.",
-      "submit": "Send",
-      "sending": "Sending your answer…",
-      "skip": "Skip",
-      "recommended": "Recommended",
-      "none": "Leave blank",
-      "textPlaceholder": "Your answer…",
-      "expired": "Question expired — ask Brocoli again",
-      "expiresTitle": "Time left to answer",
-      "andMore_one": "and {{count}} more question",
-      "andMore_other": "and {{count}} more questions",
-      "pick": {
-        "channel": "Pick a channel",
-        "role": "Pick a role"
-      },
-      "add": {
-        "channel": "Add a channel",
-        "role": "Add a role"
-      },
-      "status": {
-        "pending": "Awaiting your answer",
-        "answered": "You answered",
-        "cancelled": "Question skipped",
-        "expired": "Question expired"
-      }
     }
   }
 }
