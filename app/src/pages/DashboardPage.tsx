@@ -39,6 +39,8 @@ import { DebugModeBadge } from "@/components/debug-error-overlay"
 import { InfoBanner } from "@/components/info-banner"
 import { useBanner } from "@/hooks/useBanner"
 import { DashboardSanctionBanner } from "@/components/violations/sanction-banner"
+import { InstallWelcomeDialog } from "@/components/install/install-welcome-dialog"
+import { useInstallWelcome } from "@/hooks/useInstallWelcome"
 
 interface DashboardPageProps {
   user: User | null
@@ -63,6 +65,9 @@ export function DashboardPage({ user }: DashboardPageProps) {
   // La boîte de réception est chargée ici plutôt que dans le tiroir : la pastille
   // du menu utilisateur a besoin du compte de non-lues sans qu'on l'ouvre.
   const notifications = useNotifications()
+  // Retour d'installation (`?installed=`, ou repli sur `/install/latest`) —
+  // monté ici pour être visible quelle que soit la route d'arrivée.
+  const installWelcome = useInstallWelcome()
   const activeBanner = banner && banner.id !== dismissedBannerId ? banner : null
 
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
@@ -308,6 +313,13 @@ export function DashboardPage({ user }: DashboardPageProps) {
         onOpenChange={setNotificationDrawerOpen}
         state={notifications}
         user={user}
+      />
+
+      <InstallWelcomeDialog
+        state={installWelcome.state}
+        isChecking={installWelcome.isChecking}
+        onDismiss={installWelcome.dismiss}
+        guilds={guilds}
       />
 
       <SettingsDialog
