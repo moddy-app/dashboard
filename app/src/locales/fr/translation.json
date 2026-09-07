@@ -1527,7 +1527,8 @@
       "guilds": "Serveurs",
       "cases": "Sanctions",
       "forms": "Applications",
-      "automodBudget": "Budget IA"
+      "automodBudget": "Budget IA",
+      "analytics": "Statistiques internes"
     },
     "stats": {
       "totalUsers": "Utilisateurs totaux",
@@ -2288,6 +2289,249 @@
     "subject": {
       "you": "votre compte",
       "guild": "ce serveur"
+    }
+  },
+  "install": {
+    "welcome": {
+      "title": "Merci d'avoir ajouté Moddy !",
+      "titleNamed": "Merci d'avoir ajouté Moddy à {{guild}} !",
+      "description": "Tout est en place. Il ne reste plus qu'à configurer Moddy comme vous l'entendez.",
+      "unknownGuild": "Serveur inconnu",
+      "confirmed": "Installé",
+      "pending": "Finalisation…",
+      "pendingHint": "Discord met une seconde ou deux à confirmer l'ajout du bot. Vous pouvez continuer sans attendre.",
+      "notManageable": {
+        "title": "Serveur pas encore disponible",
+        "description": "Discord n'a pas encore répercuté l'ajout. Rafraîchissez votre liste de serveurs pour y accéder."
+      },
+      "later": "Plus tard",
+      "configure": "Configurer",
+      "refreshGuilds": "Rafraîchir mes serveurs"
+    },
+    "cancelled": {
+      "title": "Installation annulée",
+      "description": "L'autorisation Discord n'a pas été accordée. Vous pouvez relancer l'installation quand vous voulez.",
+      "dismiss": "Fermer",
+      "retry": "Réessayer"
+    }
+  },
+  "stats": {
+    "retry": "Réessayer",
+    "approximate": "Valeur approximative (± 0,8 %).",
+    "approximateBadge": "Approximatif",
+    "sparseBadge": "Éparse",
+    "sparseNotice": "Cette métrique n'est écrite que lorsqu'elle change : les jours sans mesure reprennent la dernière valeur connue.",
+    "partialDayNotice": "Le {{day}} est la journée en cours : elle est encore incomplète.",
+    "chart": {
+      "partialDay": "journée en cours"
+    },
+    "range": {
+      "label": "Période",
+      "days": "{{count}} j"
+    },
+    "empty": {
+      "title": "Aucune donnée collectée",
+      "description": "Les statistiques apparaîtront ici dès que le bot aura commencé à mesurer."
+    },
+    "health": {
+      "title": "Collecte dégradée"
+    },
+    "tabs": {
+      "overview": "Vue d'ensemble",
+      "acquisition": "Acquisition",
+      "lifecycle": "Cycle de vie",
+      "metrics": "Métriques",
+      "ai": "IA"
+    },
+    "types": {
+      "counter": "Compteur",
+      "gauge": "Jauge",
+      "unique": "Uniques"
+    },
+    "sources": {
+      "topgg": "top.gg",
+      "discovery": "Découverte Discord",
+      "profile": "Profil du bot",
+      "ads": "Publicité",
+      "command": "Commande du bot",
+      "direct": "Lien direct",
+      "other": "Autre"
+    },
+    "dimensions": {
+      "command": "Commande",
+      "kind": "Type",
+      "module": "Module",
+      "platform": "Plateforme",
+      "model": "Modèle",
+      "exception": "Exception",
+      "source": "Source",
+      "ok": "Succès",
+      "reason": "Motif"
+    },
+    "overview": {
+      "window": "Du {{from}} au {{to}}",
+      "overWindow": " sur {{days}} j",
+      "gaugeAsOf": "au {{day}}",
+      "modulesAxis": "Serveurs",
+      "lifecycle": {
+        "title": "Serveurs gagnés et perdus",
+        "joins": "Ajouts",
+        "leaves": "Départs",
+        "net": "Solde net"
+      },
+      "churn": {
+        "leftCount": "Serveurs partis",
+        "avgLifetime": "Durée de vie moyenne",
+        "medianLifetime": "Durée de vie médiane"
+      },
+      "usage": {
+        "title": "Usage et coût",
+        "description": "Commandes exécutées, erreurs et consommation IA sur la période.",
+        "commands": "Commandes exécutées",
+        "errors": "Commandes en erreur",
+        "errorRate": "taux d'erreur {{rate}}",
+        "aiCost": "Coût IA"
+      },
+      "modules": {
+        "title": "Adoption des modules",
+        "description": "Nombre de serveurs ayant chaque module configuré."
+      }
+    },
+    "acquisition": {
+      "title": "Sources d'installation",
+      "description": "Conversion sur la période et rétention sur toute l'histoire, côte à côte.",
+      "stillHere": "({{still}} / {{acquired}})",
+      "clicksUnavailable": {
+        "title": "Clics indisponibles",
+        "description": "Le compteur de clics est best-effort et ne répond pas actuellement. Les colonnes « Autorisations » et « Installations » restent fiables."
+      },
+      "columns": {
+        "source": "Source",
+        "clicks": "Clics",
+        "started": "Autorisations",
+        "installed": "Installations",
+        "conversion": "Conversion",
+        "retention": "Rétention"
+      },
+      "hints": {
+        "clicks": "Liens ouverts. Compteur best-effort, purement indicatif — ne construisez rien dessus.",
+        "started": "Autorisation Discord accordée. L'installation a pu échouer ensuite.",
+        "installed": "Le bot a vraiment rejoint le serveur, confirmé par lui-même.",
+        "conversion": "Installations / autorisations, sur les {{days}} derniers jours.",
+        "retention": "Serveurs encore présents / serveurs acquis, sur toute l'histoire — pas sur la période affichée."
+      }
+    },
+    "installs": {
+      "title": "Installations détaillées",
+      "description": "Le contenu d'une campagne vit dans ses UTM : la source, elle, est volontairement pauvre.",
+      "allSources": "Toutes les sources",
+      "empty": "Aucune installation sur cette période.",
+      "confirmed": "Confirmée",
+      "pending": "En attente",
+      "columns": {
+        "guild": "Serveur",
+        "source": "Source",
+        "utm": "UTM",
+        "date": "Date",
+        "status": "Statut"
+      }
+    },
+    "lifecycle": {
+      "joins": "Ajouts",
+      "leaves": "Départs",
+      "net": "Solde net",
+      "cumulativeNet": "Cumul net",
+      "flow": {
+        "title": "Ajouts et départs",
+        "description": "Flux journalier, puis le cumul net déjà calculé par le backend."
+      }
+    },
+    "retention": {
+      "title": "Rétention par cohorte",
+      "description": "Cohortes mensuelles d'acquisition. L'état d'un serveur est son dernier événement : il peut partir puis revenir.",
+      "columns": {
+        "cohort": "Cohorte",
+        "acquired": "Acquis",
+        "retained": "Encore présents",
+        "rate": "Taux"
+      }
+    },
+    "events": {
+      "title": "Journal des ajouts et départs",
+      "description": "Le détail brut derrière les courbes.",
+      "all": "Tous les événements",
+      "join": "Ajout",
+      "leave": "Départ",
+      "empty": "Aucun événement.",
+      "columns": {
+        "event": "Événement",
+        "guild": "Serveur",
+        "members": "Membres",
+        "lifetime": "Durée de vie",
+        "source": "Source",
+        "date": "Date"
+      }
+    },
+    "explorer": {
+      "title": "Explorateur de métriques",
+      "description": "Les métriques, leurs filtres et leurs unités viennent du catalogue du backend — rien n'est codé en dur ici.",
+      "metric": "Métrique",
+      "scope": "Portée",
+      "scopeGlobal": "Global",
+      "scopeGuild": "Un serveur",
+      "guildId": "ID du serveur",
+      "guildIdPlaceholder": "123456789012345678",
+      "breakdownBy": "Répartir par",
+      "noBreakdown": "Aucune répartition",
+      "needGuildId": "Renseignez un ID de serveur pour afficher cette métrique.",
+      "totalOverWindow": "total sur {{days}} j",
+      "currentState": "état actuel",
+      "groups": {
+        "counter": "Compteurs",
+        "gauge": "Jauges",
+        "unique": "Uniques",
+        "guildOnly": "Par serveur"
+      }
+    },
+    "breakdown": {
+      "title": "Répartition par {{dimension}}",
+      "description": "Part de chaque valeur sur la période.",
+      "unknown": "Non renseigné",
+      "columns": {
+        "key": "Valeur",
+        "value": "Total",
+        "share": "Part"
+      }
+    },
+    "topGuilds": {
+      "title": "Serveurs les plus actifs",
+      "description": "Seuls les identifiants sont renvoyés par l'API.",
+      "columns": {
+        "guild": "Serveur",
+        "value": "Total"
+      }
+    },
+    "ai": {
+      "title": "Consommation IA",
+      "description": "Coût, jetons et appels sur la période. Le coût est converti par le backend.",
+      "guildIdPlaceholder": "Filtrer par ID de serveur",
+      "filter": "Filtrer",
+      "cost": "Coût total",
+      "tokens": "Jetons",
+      "calls": "Appels",
+      "failedCalls": "Appels en échec",
+      "failureRate": "taux d'échec {{rate}}",
+      "dailyCost": "Coût journalier",
+      "byModel": {
+        "title": "Par modèle",
+        "description": "Répartition du coût, des jetons et des appels.",
+        "columns": {
+          "model": "Modèle",
+          "cost": "Coût",
+          "tokens": "Jetons",
+          "calls": "Appels"
+        }
+      }
     }
   }
 }
