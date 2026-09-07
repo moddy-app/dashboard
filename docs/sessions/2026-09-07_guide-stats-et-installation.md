@@ -36,6 +36,10 @@ le **guide dashboard** qui a été retenu, pas le contrat backend : ce dépôt p
 - Adaptation de l'en-tête : les renvois vers `API_ENDPOINTS.md` et `STATS.md`
   pointent explicitement vers le dépôt backend, pour qu'on ne les cherche pas
   ici.
+- Mise à jour de `docs/API_ENDPOINTS.md` avec les nouveaux endpoints : section
+  **Installation** (3 endpoints) et les **12 endpoints staff** de statistiques,
+  plus les changements du callback OAuth2 (`guild_id`, `error`, redirection
+  `?installed=`) et les scopes réellement demandés par `/auth/login`.
 
 ## 3. Fichiers créés
 
@@ -44,7 +48,23 @@ le **guide dashboard** qui a été retenu, pas le contrat backend : ce dépôt p
 | `docs/backend-integration/stats-and-install.md` | Le guide (deux parties : installation, panneau stats) |
 | `docs/sessions/2026-09-07_guide-stats-et-installation.md` | Ce résumé |
 
-Aucun fichier existant modifié. Aucune dépendance ajoutée.
+## 3 bis. Fichier modifié
+
+`docs/API_ENDPOINTS.md` — +336 lignes : la section **Installation**
+(`GET /install`, `/install/latest`, `/install/sources`), les **12 endpoints
+staff** de statistiques, et la mise à jour de la section Auth (le callback
+accepte désormais `guild_id`, `state` et `error`, et redirige avec
+`?installed=<guild_id>` après une installation).
+
+Le report a été fait par patch depuis le dépôt backend plutôt que par copie du
+fichier entier : la copie de ce dépôt est **en avance** sur celle du backend
+concernant Brocoli (elle documente
+`POST /ai/conversations/{id}/questions/{qid}/answer` et l'outil `ask_user`, que
+la copie backend ne connaît pas encore). Une copie brute aurait supprimé ce
+contenu. Les deux fichiers ont donc divergé — à réconcilier un jour, dans le
+sens dashboard → backend pour la partie Brocoli.
+
+Aucune dépendance ajoutée, aucun code applicatif touché.
 
 ## 4. Ce que le guide contient
 
