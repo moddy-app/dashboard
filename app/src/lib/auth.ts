@@ -1,7 +1,36 @@
 import { logger } from '@/lib/logger'
 import type { SubjectSanctionStatus } from '@/types/violations'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
+export const API_BASE = import.meta.env.VITE_API_URL || 'https://api.moddy.app'
+
+/**
+ * `JSON.parse` d'une réponse du backend, en préservant les snowflakes.
+ *
+ * Les identifiants Discord sont des entiers 64-bit (> 2^53) que `JSON.parse`
+ * arrondirait silencieusement. La regex alterne : soit elle consomme un string
+ * literal entier (→ inchangé), soit elle entoure de guillemets un grand entier
+ * nu (après `:`, `[` ou `,`).
+ *
+ * Partagé avec le client SSE de Brocoli (`src/lib/ai-stream.ts`), qui parse les
+ * `data:` du flux hors du chemin de `api()`.
+ */
+export function parseApiJson(text: string): unknown {
+  if (!text) return null
+  const safe = text.replace(
+    /"(?:[^"\\]|\\.)*"|((?::|,|\[)\s*)(-?\d{15,})/g,
+    (match, prefix, digits) => (prefix !== undefined ? `${prefix}"${digits}"` : match)
+  )
+  return JSON.parse(safe)
+}
+
+/**
+ * Réaction commune à un `401` : la session a expiré, on repart sur le login du
+ * backend en gardant l'URL courante comme destination de retour.
+ */
+export function redirectToLogin(): void {
+  const redirect = encodeURIComponent(window.location.href)
+  window.location.href = `${API_BASE}/auth/login?redirect=${redirect}`
+}
 
 /** Une entrée du tableau `error` renvoyé sur un 422 de validation de schéma. */
 export interface ApiValidationIssue {
@@ -98,8 +127,7 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   if (!response.ok) {
     if (response.status === 401) {
       logger.warn('api', `← ${method} ${path} 401 ${duration}ms — redirecting to /auth/login`)
-      const redirect = encodeURIComponent(window.location.href)
-      window.location.href = `${API_BASE}/auth/login?redirect=${redirect}`
+      redirectToLogin()
       throw new ApiError(401, 'Unauthorized')
     }
     const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
@@ -110,14 +138,7 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
   }
 
   const text = await response.text()
-  // Snowflakes Discord sont des entiers 64-bit (> 2^53) — JSON.parse les arrondirait.
-  // La regex alterne : soit elle consomme un string literal entier (→ inchangé),
-  // soit elle wrappe un grand entier nu (après :, [, ou ,) dans des quotes.
-  const safe = text ? text.replace(
-    /"(?:[^"\\]|\\.)*"|((?::|,|\[)\s*)(-?\d{15,})/g,
-    (match, prefix, digits) => prefix !== undefined ? `${prefix}"${digits}"` : match
-  ) : text
-  const parsed = safe ? JSON.parse(safe) : null
+  const parsed = parseApiJson(text)
   logger.success('api', `← ${method} ${path} ${response.status} ${duration}ms`, parsed)
   return parsed
 }

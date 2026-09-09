@@ -32,6 +32,7 @@ import { MyCasesPage } from "@/pages/MyCasesPage"
 import { ViolationsPage } from "@/pages/ViolationsPage"
 import { GuildCasesPage } from "@/pages/GuildCasesPage"
 import { GuildSettingsPage } from "@/pages/GuildSettingsPage"
+import { BrocoliPage } from "@/pages/BrocoliPage"
 import { BillingRedirectPage } from "@/pages/BillingRedirectPage"
 import { RouteError } from "@/components/route-error"
 
@@ -53,6 +54,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId", element: <GuildOverviewPage /> },
       { path: "servers/:guildId/cases", element: <GuildCasesPage /> },
       { path: "servers/:guildId/settings", element: <GuildSettingsPage /> },
+      { path: "servers/:guildId/brocoli", element: <BrocoliPage /> },
       { path: "servers/:guildId/modules/starboard", element: <StarboardPage /> },
       { path: "servers/:guildId/modules/welcome_channel", element: <WelcomeChannelPage /> },
       { path: "servers/:guildId/modules/welcome_dm", element: <WelcomeDmPage /> },

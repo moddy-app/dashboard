@@ -3,6 +3,7 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { usePageTitle } from "@/hooks/usePageTitle"
+import { useViewportHeight } from "@/hooks/useViewportHeight"
 import { AppSidebar } from "@/components/app-sidebar"
 import {
   Breadcrumb,
@@ -20,6 +21,7 @@ import {
 import { CommandMenu } from "@/components/command-menu"
 import { NotificationDrawer } from "@/components/notification-drawer"
 import { SettingsDialog } from "@/components/settings-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -53,6 +55,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const { selectGuild, guilds, guildDetail, selectedGuildId } = useGuildContext()
   const { groups: sanctionGroups } = useSanctions()
   usePageTitle(t('pageTitle.dashboard'))
+  useViewportHeight()
 
   const [commandMenuOpen, setCommandMenuOpen] = useState(false)
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false)
@@ -136,7 +139,9 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   // Détermine le breadcrumb (liste de segments) selon la route courante.
   // Chaque segment : { label, href? }. Le dernier segment est la page courante.
-  type Crumb = { label: string; href?: string | null }
+  // `badge` : étiquette d'état (« Beta »…) posée après le segment. Elle n'est
+  // rendue que sur le dernier segment — c'est la page où l'on se trouve.
+  type Crumb = { label: string; href?: string | null; badge?: string }
   const getBreadcrumb = (): Crumb[] => {
     const path = location.pathname
     // Case ouverte (?case=REF) → segment final partagé par les 3 vues.
@@ -178,6 +183,14 @@ export function DashboardPage({ user }: DashboardPageProps) {
       ]
       if (caseRef) items.push({ label: caseRef })
       return items
+    }
+
+    // /servers/:guildId/brocoli — assistant IA
+    if (path.match(/^\/servers\/\d+\/brocoli$/) && guildDetail) {
+      return [
+        { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
+        { label: t('brocoli.title'), badge: t('brocoli.beta') },
+      ]
     }
 
     // /servers/:guildId/settings — réglages du serveur
@@ -242,7 +255,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const servers = guilds.map((g) => ({ name: g.name, id: String(g.id), icon: g.icon ?? null }))
 
   return (
-    <div className="flex h-screen flex-col">
+    // Hauteur bornée au viewport **visuel** (`--app-height`, posé par
+    // `useViewportHeight`) et non à `100vh` : sur mobile, le clavier réduit la
+    // zone visible sans réduire `100vh`, le navigateur fait alors défiler la
+    // page et l'en-tête — fil d'Ariane, bouton de sidebar — sort par le haut.
+    // `100dvh` est le repli tant que la mesure n'est pas posée.
+    <div className="flex h-[var(--app-height,100dvh)] flex-col">
       {activeBanner && (
         <InfoBanner
           banner={activeBanner}
@@ -276,6 +294,11 @@ export function DashboardPage({ user }: DashboardPageProps) {
                           <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
                         ) : (
                           <span className="text-foreground font-medium">{crumb.label}</span>
+                        )}
+                        {isLast && crumb.badge && (
+                          <Badge variant="secondary" className="h-4.5 px-1.5 text-[10px] tracking-wide uppercase">
+                            {crumb.badge}
+                          </Badge>
                         )}
                       </BreadcrumbItem>
                       {!isLast && <BreadcrumbSeparator className="hidden md:block" />}
