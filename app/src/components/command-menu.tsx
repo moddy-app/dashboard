@@ -32,6 +32,7 @@ import {
   TicketIcon,
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
+import { Badge } from "@/components/ui/badge"
 import { getGuildIconUrl } from "@/lib/auth"
 import { useAiStatus } from "@/hooks/useAiStatus"
 import { useGuildContext } from "@/contexts/GuildContext"
@@ -115,6 +116,12 @@ export function CommandMenu({
                 >
                   <SparkleIcon />
                   <span>{t('commandMenu.items.brocoli')}</span>
+                  <Badge
+                    variant="secondary"
+                    className="ml-auto h-4.5 px-1.5 text-[10px] tracking-wide uppercase"
+                  >
+                    {t('brocoli.beta')}
+                  </Badge>
                 </CommandItem>
               </CommandGroup>
               <CommandSeparator />

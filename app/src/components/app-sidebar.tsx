@@ -136,6 +136,7 @@ export function AppSidebar({
           ? [
               {
                 title: t("brocoli.title"),
+                badge: t("brocoli.beta"),
                 url: `/servers/${selectedGuildId}/brocoli`,
                 icon: SparkleIcon,
                 isActive: location.pathname === `/servers/${selectedGuildId}/brocoli`,

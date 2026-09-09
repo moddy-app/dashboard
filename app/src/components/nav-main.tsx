@@ -23,6 +23,8 @@ interface NavSubItem {
   url: string
   icon?: LucideIcon
   disabled?: boolean
+  /** Étiquette d'état (« Beta »…) posée après le titre. */
+  badge?: string
 }
 
 interface NavItem {
@@ -31,7 +33,21 @@ interface NavItem {
   icon?: LucideIcon
   isActive?: boolean
   disabled?: boolean
+  /** Étiquette d'état (« Beta »…) posée après le titre. */
+  badge?: string
   items?: NavSubItem[]
+}
+
+/**
+ * Étiquette d'état d'une entrée de navigation. Elle disparaît quand la sidebar
+ * est repliée en icônes : il n'y reste plus de titre à qualifier.
+ */
+function NavBadge({ children }: { children: string }) {
+  return (
+    <span className="ml-auto shrink-0 rounded-4xl bg-sidebar-accent px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-wide text-sidebar-foreground/70 uppercase group-data-[collapsible=icon]:hidden">
+      {children}
+    </span>
+  )
 }
 
 export function NavMain({
@@ -96,14 +112,20 @@ export function NavMain({
                                   {subItem.icon && (
                                     <subItem.icon className="size-3.5" />
                                   )}
-                                  <span>{subItem.title}</span>
+                                  <span className="truncate">{subItem.title}</span>
+                                  {subItem.badge && (
+                                    <NavBadge>{subItem.badge}</NavBadge>
+                                  )}
                                 </span>
                               ) : (
                                 <Link to={subItem.url}>
                                   {subItem.icon && (
                                     <subItem.icon className="size-3.5" />
                                   )}
-                                  <span>{subItem.title}</span>
+                                  <span className="truncate">{subItem.title}</span>
+                                  {subItem.badge && (
+                                    <NavBadge>{subItem.badge}</NavBadge>
+                                  )}
                                 </Link>
                               )}
                             </SidebarMenuSubButton>
@@ -131,12 +153,14 @@ export function NavMain({
                 {item.disabled || item.url === '#' ? (
                   <span>
                     {item.icon && <item.icon />}
-                    <span>{item.title}</span>
+                    <span className="truncate">{item.title}</span>
+                    {item.badge && <NavBadge>{item.badge}</NavBadge>}
                   </span>
                 ) : (
                   <Link to={item.url}>
                     {item.icon && <item.icon />}
-                    <span>{item.title}</span>
+                    <span className="truncate">{item.title}</span>
+                    {item.badge && <NavBadge>{item.badge}</NavBadge>}
                   </Link>
                 )}
               </SidebarMenuButton>

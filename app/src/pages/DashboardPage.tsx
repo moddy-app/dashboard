@@ -21,6 +21,7 @@ import {
 import { CommandMenu } from "@/components/command-menu"
 import { NotificationDrawer } from "@/components/notification-drawer"
 import { SettingsDialog } from "@/components/settings-dialog"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -138,7 +139,9 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
   // Détermine le breadcrumb (liste de segments) selon la route courante.
   // Chaque segment : { label, href? }. Le dernier segment est la page courante.
-  type Crumb = { label: string; href?: string | null }
+  // `badge` : étiquette d'état (« Beta »…) posée après le segment. Elle n'est
+  // rendue que sur le dernier segment — c'est la page où l'on se trouve.
+  type Crumb = { label: string; href?: string | null; badge?: string }
   const getBreadcrumb = (): Crumb[] => {
     const path = location.pathname
     // Case ouverte (?case=REF) → segment final partagé par les 3 vues.
@@ -186,7 +189,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
     if (path.match(/^\/servers\/\d+\/brocoli$/) && guildDetail) {
       return [
         { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
-        { label: t('brocoli.title') },
+        { label: t('brocoli.title'), badge: t('brocoli.beta') },
       ]
     }
 
@@ -291,6 +294,11 @@ export function DashboardPage({ user }: DashboardPageProps) {
                           <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
                         ) : (
                           <span className="text-foreground font-medium">{crumb.label}</span>
+                        )}
+                        {isLast && crumb.badge && (
+                          <Badge variant="secondary" className="h-4.5 px-1.5 text-[10px] tracking-wide uppercase">
+                            {crumb.badge}
+                          </Badge>
                         )}
                       </BreadcrumbItem>
                       {!isLast && <BreadcrumbSeparator className="hidden md:block" />}

@@ -2298,6 +2298,7 @@
   },
   "brocoli": {
     "title": "Brocoli",
+    "beta": "Bêta",
     "quota": "{{used}}/{{limit}} messages aujourd'hui",
     "thinking": "Brocoli réfléchit…",
     "reload": "Rafraîchir la conversation",
