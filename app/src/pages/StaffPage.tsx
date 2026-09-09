@@ -52,6 +52,7 @@ import { getGlobalStats, getBotStatus, getAllGuilds, searchUsers, getTallyForms,
 import type { GlobalStats, BotStatus, UserFullProfile, TallyForm, TallySubmissionsResponse, TallySubmissionDetail, TallySubmissionStatus } from "@/types/api"
 import { CasesBrowser } from "@/components/cases/cases-browser"
 import { AutomodBudgetPanel } from "@/components/automod/automod-budget-panel"
+import { StatsPanel } from "@/components/stats/stats-panel"
 import { canModerateCases } from "@/lib/cases"
 
 // Rôles staff ayant accès aux différentes sections
@@ -958,6 +959,11 @@ export function StaffPage() {
       {/* Contenu de l'onglet actif — navigation gérée par la sidebar */}
       {activeTab === 'stats' && hasRole(staffRoles, CAN_ACCESS_STATS) && (
         <StatsTab staffRoles={staffRoles} />
+      )}
+      {/* Statistiques internes (collecte du bot) — distinctes de l'onglet
+          « Statistiques », qui n'est qu'un COUNT(*) sur les tables métier. */}
+      {activeTab === 'analytics' && hasRole(staffRoles, CAN_ACCESS_STATS) && (
+        <StatsPanel />
       )}
       {activeTab === 'users' && hasRole(staffRoles, CAN_MANAGE_USERS) && (
         <UsersTab />

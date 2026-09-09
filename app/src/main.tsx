@@ -33,6 +33,7 @@ import { ViolationsPage } from "@/pages/ViolationsPage"
 import { GuildCasesPage } from "@/pages/GuildCasesPage"
 import { GuildSettingsPage } from "@/pages/GuildSettingsPage"
 import { BrocoliPage } from "@/pages/BrocoliPage"
+import { BillingRedirectPage } from "@/pages/BillingRedirectPage"
 import { RouteError } from "@/components/route-error"
 
 Sentry.init({
@@ -69,6 +70,7 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/tickets", element: <TicketsPage /> },
       { path: "staff", element: <StaffPage /> },
       { path: "premium", element: <PremiumPage /> },
+      { path: "billing", element: <BillingRedirectPage /> },
       { path: "select-premium-servers", element: <Navigate to="/?openSettings=billing" replace /> },
     ],
   },

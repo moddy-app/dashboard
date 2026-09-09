@@ -1,6 +1,7 @@
 import * as React from "react"
-import * as LabelPrimitive from "@radix-ui/react-label"
-import { Slot } from "@radix-ui/react-slot"
+// Le projet dépend du paquet parapluie `radix-ui`, pas des paquets `@radix-ui/*`
+// individuels : les importer directement casse le build (module introuvable).
+import { Label as LabelPrimitive, Slot as SlotPrimitive } from "radix-ui"
 import {
   Controller,
   FormProvider,
@@ -101,11 +102,11 @@ function FormLabel({
   )
 }
 
-function FormControl({ ...props }: React.ComponentPropsWithoutRef<typeof Slot>) {
+function FormControl({ ...props }: React.ComponentPropsWithoutRef<typeof SlotPrimitive.Root>) {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
   return (
-    <Slot
+    <SlotPrimitive.Root
       data-slot="form-control"
       id={formItemId}
       aria-describedby={

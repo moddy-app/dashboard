@@ -38,8 +38,12 @@ Voir `docs/GLOBAL_SANCTIONS.md` (regles backend) et
 Redirige vers la page d'autorisation Discord OAuth2.
 
 **Auth :** aucune
-**Scopes Discord demandes :** `identify email guilds`
-**Reponse :** Redirect 302 vers `https://discord.com/oauth2/authorize?client_id=...&scope=identify+guilds&...`
+**Scopes Discord demandes :** `identify email guilds role_connections.write`
+**Reponse :** Redirect 302 vers `https://discord.com/oauth2/authorize?...`
+
+Pour **installer** le bot en meme temps que se connecter, c'est `GET /install`
+(section Installation) : meme callback, meme session, plus la source
+d'acquisition.
 
 ---
 
@@ -53,6 +57,9 @@ Callback OAuth2 Discord. Echange le code, cree la session, redirige vers le dash
 | Param | Type | Description |
 |---|---|---|
 | `code` | string | Code d'autorisation Discord |
+| `state` | string | Jeton anti-CSRF, consomme (usage unique). Porte aussi la destination et le contexte d'acquisition |
+| `guild_id` | string | Ajoute par Discord quand l'autorisation portait le scope `bot` — donc quand le lien etait un lien d'installation |
+| `error` | string | Refus de l'utilisateur sur l'ecran Discord |
 
 **Flux interne :**
 1. Echange le code contre un access_token via `POST /oauth2/token`
@@ -65,7 +72,20 @@ Callback OAuth2 Discord. Echange le code, cree la session, redirige vers le dash
 8. Cree la session Redis (`session:{token}` → JSON, TTL 30j)
 9. Set le cookie `session_token` (HttpOnly, Secure, SameSite=Lax, Domain=.moddy.app)
 
+**Si `guild_id` est present** (installation) :
+
+- verifie que ce serveur figure dans la liste Discord de l'appelant AVEC le
+  droit d'y ajouter un bot (`MANAGE_GUILD`, admin ou proprietaire). Le
+  `guild_id` vient du navigateur : sans ce controle, n'importe qui pourrait
+  reecrire la source d'acquisition d'un serveur qui n'est pas le sien ;
+- ecrit `guild_installs` (source + UTM figes dans le `state`) ;
+- invalide le cache `moddy:bot_guilds` et ajoute le serveur a la session, sinon
+  le bouton « configurer » de l'ecran de remerciement tombe sur un 403 ;
+- redirige avec `?installed=<guild_id>`.
+
 **Reponse :** Redirect 302 vers `https://dashboard.moddy.app`
+(`?installed=<guild_id>` apres une installation, `?auth_error=access_denied` si
+l'utilisateur a refuse sur l'ecran Discord)
 
 ---
 
@@ -214,6 +234,77 @@ le dashboard puisse afficher l'ecran de suspension plutot qu'une erreur. Idem po
 | `ACTIVE_DEVELOPER` | Developpeur actif |
 
 **Note :** Les donnees sont issues de la session Redis capturee au login. Pour rafraichir les guilds, utiliser `POST /auth/refresh-guilds`. Les donnees de profil (badges, email, etc.) sont mises a jour a la prochaine connexion.
+
+---
+
+## Installation
+
+Guide d'integration front : `docs/backend-integration/stats-and-install.md`
+(fabriquer les liens, ecran de remerciement, cas limites). Contrat backend :
+`docs/STATS.md` §4 dans `moddy-app/website-backend`.
+
+### `GET /install`
+
+**LE** lien a partager partout (top.gg, profil du bot, site, publicites, bouton
+d'une commande). Une seule autorisation Discord ajoute le bot, connecte la
+personne au dashboard et rattache l'installation a sa source.
+
+**Auth :** aucune — c'est souvent le tout premier contact avec Moddy
+**Query params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `source` | string | Vocabulaire **ferme** : `topgg`, `discovery`, `profile`, `ads`, `command`, `direct`. Hors vocabulaire -> `other` (brut conserve dans `utm.source_raw`). Absent -> `direct` |
+| `utm_medium` / `utm_campaign` / `utm_content` / `utm_term` | string | Libres, tronques a 200 caracteres. **Jamais** une dimension |
+| `guild_id` | int | Preselectionne un serveur sur l'ecran Discord |
+| `redirect` | string | Destination finale (allowlist `*.moddy.app`) |
+
+**Reponse :** Redirect 302 vers l'ecran d'autorisation Discord
+(`scope=bot applications.commands identify email guilds role_connections.write`,
+`permissions=DISCORD_BOT_PERMISSIONS`)
+
+La source voyage dans le `state` (Redis, TTL 5 min), **jamais** dans l'URL de
+retour : une source reecrite par le navigateur entre l'aller et le retour n'est
+pas une mesure.
+
+---
+
+### `GET /install/latest`
+
+Derniere installation lancee par l'appelant (30 min max), ou `null`. Sert
+l'ecran « merci d'avoir ajoute Moddy » quand le `?installed=` de l'URL de retour
+a ete perdu (rafraichissement, redirection intermediaire).
+
+**Auth :** session
+
+```json
+{
+  "install": {
+    "guild_id": "123456789",
+    "source": "topgg",
+    "utm": {"campaign": "hiver"},
+    "first_seen_at": "2026-09-07T17:00:00+00:00",
+    "confirmed_at": null,
+    "confirmed": false,
+    "manageable": true
+  }
+}
+```
+
+`confirmed: false` juste apres le retour est **normal** : c'est le bot qui pose
+`confirmed_at` a `on_guild_join`. `manageable` dit si le serveur est deja dans
+la liste de la session, donc si le bouton « configurer » peut etre actif. Le nom
+et l'icone ne sont pas renvoyes (la base ne stocke que des ids) : le dashboard
+les a dans `/auth/me`.
+
+---
+
+### `GET /install/sources`
+
+Vocabulaire des sources et parametres UTM reconnus, pour construire les liens.
+
+**Auth :** aucune
+**Reponse :** `{"sources": [...], "default": "direct", "utm_params": ["utm_medium", ...]}`
 
 ---
 
@@ -2651,6 +2742,12 @@ séquence complète et §7 pour le guide d'intégration dashboard.
 
 ## Stats
 
+> Le systeme de statistiques collecte par le bot (compteurs, jauges, cycle de
+> vie, acquisition) est servi par les endpoints `/staff/stats/*` (section Staff
+> Panel), et le guide front les explique :
+> `docs/backend-integration/stats-and-install.md`. L'endpoint ci-dessous est
+> anterieur et ne lit que les tables metier.
+
 ### `GET /guilds/{guild_id}/stats`
 
 Stats de base d'un serveur.
@@ -3345,6 +3442,243 @@ SELECT
   (SELECT COUNT(*) FROM staff_permissions) AS total_staff,
   (SELECT COUNT(*) FROM cases WHERE status = 'open') AS open_cases;
 ```
+
+---
+
+> Le bloc ci-dessus n'est PAS le systeme de stats : c'est un `COUNT(*)` sur les
+> tables metier. Les mesures collectees par le bot (compteurs, jauges, cycle de
+> vie, acquisition) sont servies par les endpoints ci-dessous. Comment les lire
+> sans se tromper : `docs/backend-integration/stats-and-install.md`.
+
+### `GET /staff/stats/catalog`
+
+Catalogue des metriques : type, portees, bucket, dimensions, unite.
+
+**Auth :** staff
+**Pourquoi :** le dashboard construit ses ecrans avec — quelle metrique propose
+quel filtre, laquelle se somme (`additive: true`), laquelle est approximative.
+C'est aussi l'allowlist du backend : un `metric` hors catalogue est un **422**,
+jamais une requete SQL.
+
+```json
+{
+  "metrics": [
+    {"metric": "command.used", "type": "counter", "scopes": ["guild"], "bucket": "day",
+     "label": "Commandes executees", "dims": ["command", "kind"], "unit": "count",
+     "additive": true, "sparse": false, "approximate": false, "notes": ""}
+  ],
+  "types": {"counter": "...", "gauge": "...", "unique": "..."},
+  "install_sources": ["topgg", "discovery", "profile", "ads", "command", "direct", "other"]
+}
+```
+
+---
+
+### `GET /staff/stats/overview`
+
+En-tete du panneau : jauges globales et leur variation, cycle de vie, usage,
+cout IA, adoption des modules.
+
+**Auth :** staff
+**Query params :** `days` (2-400, defaut 30)
+
+```json
+{
+  "window": {"from": "2026-08-09", "to": "2026-09-07", "days": 30, "partial_day": "2026-09-07"},
+  "gauges": [
+    {"metric": "bot.guilds", "label": "Serveurs", "value": 5210,
+     "day": "2026-09-07", "previous": 4980, "delta": 230}
+  ],
+  "guilds": {"joins": 312, "leaves": 88, "net": 224,
+             "churn": {"left_count": 88, "avg_lifetime_seconds": 1209600,
+                       "median_lifetime_seconds": 864000}},
+  "usage": {"commands": 128400, "command_errors": 312, "error_rate": 0.0024},
+  "ai": {"cost_micro_usd": 4120000, "cost_usd": 4.12},
+  "modules": [{"module": "logs", "guilds": 1830, "day": "2026-09-07"}]
+}
+```
+
+`gauges[].day` peut dater d'hier : le rollup passe toutes les 6 h, ce n'est pas
+un bug. Une jauge ne se somme jamais.
+
+---
+
+### `GET /staff/stats/series`
+
+Serie journaliere d'une metrique, quel que soit son etage de stockage.
+
+**Auth :** staff
+**Query params :**
+
+| Param | Type | Description |
+|---|---|---|
+| `metric` | string | Nom du catalogue. Hors catalogue -> 422 |
+| `days` | int | 1-400, defaut 30 |
+| `scope` | string | `global` (defaut) ou `guild` |
+| `scope_id` | int | Requis si `scope=guild` |
+| `dims` | string | Filtre JSON, valeurs **toutes des chaines** : `{"command":"config"}`, `{"ok":"true"}` |
+
+```json
+{
+  "metric": "command.used", "type": "counter", "unit": "count",
+  "label": "Commandes executees", "additive": true, "approximate": false,
+  "from": "2026-08-09", "to": "2026-09-07", "partial_day": "2026-09-07",
+  "points": [{"day": "2026-08-09", "value": 0}, {"day": "2026-08-10", "value": 412}]
+}
+```
+
+- **Compteur** : axe des jours complet, un jour sans ligne vaut **zero**.
+- **Jauge / unique** : lu dans `stats_snapshots`. Pour une jauge eparse
+  (`guild.members`), le backend reporte la derniere valeur connue et marque les
+  points reconstruits `"filled": true` — `null` tant qu'aucune valeur n'est
+  connue, jamais zero.
+- `ai.cost` ajoute `total_usd`.
+
+**Erreurs :** `422` metrique inconnue, metrique hors de sa portee, `scope_id`
+manquant en portee guild, `dims` mal forme ou portant une valeur non-chaine.
+
+---
+
+### `GET /staff/stats/breakdown`
+
+Repartition d'un compteur par valeur d'une dimension.
+
+**Auth :** staff
+**Query params :** `metric`, `by` (dimension declaree par la metrique),
+`days`, `scope`, `scope_id`, `dims`, `limit` (1-100, defaut 20)
+
+```json
+{
+  "metric": "command.used", "unit": "count", "dimension": "command",
+  "from": "2026-08-09", "to": "2026-09-07", "total": 18,
+  "items": [{"key": "config", "value": 12, "share": 0.6667},
+            {"key": "unknown", "value": 6, "share": 0.3333}]
+}
+```
+
+`unknown` = lignes sans cette dimension. `by` hors des dimensions declarees -> 422.
+
+---
+
+### `GET /staff/stats/top-guilds`
+
+Serveurs les plus actifs sur un compteur.
+
+**Auth :** staff
+**Query params :** `metric` (defaut `command.used`, portee guild obligatoire),
+`days`, `dims`, `limit` (1-100, defaut 20)
+**Reponse :** `{"metric", "unit", "from", "to", "items": [{"guild_id", "value"}]}`
+(`value_usd` en plus pour `ai.cost`)
+
+---
+
+### `GET /staff/stats/guilds/lifecycle`
+
+Ajouts, departs, solde net par jour, plus le cumul sur la fenetre.
+
+**Auth :** staff
+**Query params :** `days` (1-400, defaut 30)
+
+```json
+{
+  "days": 30, "partial_day": "2026-09-07",
+  "points": [{"day": "2026-09-06", "joins": 12, "leaves": 3, "net": 9, "cumulative_net": 224}],
+  "totals": {"joins": 312, "leaves": 88, "net": 224}
+}
+```
+
+---
+
+### `GET /staff/stats/guilds/retention`
+
+Retention par cohorte mensuelle d'acquisition.
+
+**Auth :** staff
+**Reponse :** `{"cohorts": [{"cohort": "2026-08-01", "acquired": 420, "retained": 361, "rate": 0.8595}]}`
+
+L'etat courant d'un serveur est son **dernier** evenement : un serveur peut
+partir et revenir.
+
+---
+
+### `GET /staff/stats/guilds/events`
+
+Journal brut des ajouts et departs (le detail derriere les courbes).
+
+**Auth :** staff
+**Query params :** `guild_id`, `event` (`join`/`leave`), `limit` (1-200, defaut 50), `offset`
+**Reponse :** `{"events": [{"id", "guild_id", "event", "member_count", "owner_id",
+"guild_age_seconds", "lifetime_seconds", "source", "created_at"}]}`
+
+---
+
+### `GET /staff/stats/acquisition`
+
+Conversion et retention par source d'installation.
+
+**Auth :** staff
+**Query params :** `days` (1-400, defaut 30)
+
+```json
+{
+  "window": {"days": 30, "partial_day": "2026-09-07"},
+  "sources": [
+    {"source": "topgg", "clicks": 1840, "started": 210, "installed": 173,
+     "conversion_pct": 82.4, "acquired_all_time": 980, "still_here": 612,
+     "retention_pct": 62.4}
+  ],
+  "notes": {"clicks": "...", "started": "...", "installed": "..."}
+}
+```
+
+Il faut les trois chiffres : `clicks` (liens ouverts, compteur Redis
+best-effort, `null` si indisponible), `started` (autorisation Discord accordee)
+et `installed` (le bot a vraiment rejoint, confirme par lui). `retention_pct`
+vient de `guild_events`, sur toute l'histoire — une source qui convertit bien
+mais retient mal achete les mauvais serveurs.
+
+---
+
+### `GET /staff/stats/installs`
+
+Installations avec leurs UTM complets.
+
+**Auth :** staff
+**Query params :** `source` (vocabulaire ferme, sinon 422), `confirmed` (bool),
+`days`, `limit` (1-200, defaut 50), `offset`
+**Reponse :** `{"installs": [{"guild_id", "installer_id", "source", "utm",
+"first_seen_at", "confirmed_at", "confirmed"}]}`
+
+C'est ici qu'on lit le detail d'une campagne : `source` est volontairement
+pauvre (c'est une dimension), le contenu est dans `utm`.
+
+---
+
+### `GET /staff/stats/ai`
+
+Consommation IA : cout (converti en dollars), tokens, appels, par modele.
+
+**Auth :** staff
+**Query params :** `days` (1-400, defaut 30), `guild_id` (optionnel)
+**Reponse :** `{"window", "guild_id", "cost_micro_usd", "cost_usd", "tokens",
+"calls", "failed_calls", "failure_rate", "by_model": [...], "daily_cost": [...]}`
+
+`ai.cost` est stocke en **micro-dollars** : les deux formes sont rendues pour
+que la conversion ne depende pas du front.
+
+---
+
+### `GET /staff/stats/health`
+
+Fraicheur de la collecte et alerte sur les partitions de secours.
+
+**Auth :** staff
+**Reponse :** `{"counters", "snapshots", "guild_events", "guild_installs",
+"default_partitions", "alerts": [], "ok": true}`
+
+`stats_counters_default` non vide = une creation de partition a ete ratee cote
+bot : les lignes y sont lisibles mais ne seront plus purgeables par `DROP`.
+C'est le seul signal d'alerte de cette page.
 
 ---
 

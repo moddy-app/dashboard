@@ -12,6 +12,7 @@ import {
   MailIcon,
   MessageSquareIcon,
   ActivityIcon,
+  ChartLineIcon,
   FileClockIcon,
   AlertTriangleIcon,
   ServerIcon,
@@ -246,6 +247,12 @@ export function AppSidebar({
           url: "/staff?tab=stats",
           icon: ActivityIcon,
           isActive: staffTab === "stats",
+        },
+        {
+          title: t("staff.tabs.analytics"),
+          url: "/staff?tab=analytics",
+          icon: ChartLineIcon,
+          isActive: staffTab === "analytics",
         },
         {
           title: t("staff.tabs.guilds"),

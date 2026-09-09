@@ -1528,7 +1528,8 @@
       "guilds": "Servers",
       "cases": "Cases",
       "forms": "Applications",
-      "automodBudget": "AI budget"
+      "automodBudget": "AI budget",
+      "analytics": "Internal stats"
     },
     "stats": {
       "totalUsers": "Total Users",
@@ -2448,6 +2449,249 @@
       "transport": "The connection to Brocoli failed.",
       "retryIn": "Try again in {{minutes}} min.",
       "reload": "Refresh"
+    }
+  },
+  "install": {
+    "welcome": {
+      "title": "Thanks for adding Moddy!",
+      "titleNamed": "Thanks for adding Moddy to {{guild}}!",
+      "description": "Everything is in place. All that's left is to set Moddy up the way you want.",
+      "unknownGuild": "Unknown server",
+      "confirmed": "Installed",
+      "pending": "Finishing up…",
+      "pendingHint": "Discord takes a second or two to confirm the bot joined. You can carry on without waiting.",
+      "notManageable": {
+        "title": "Server not available yet",
+        "description": "Discord hasn't propagated the addition yet. Refresh your server list to reach it."
+      },
+      "later": "Later",
+      "configure": "Configure",
+      "refreshGuilds": "Refresh my servers"
+    },
+    "cancelled": {
+      "title": "Installation cancelled",
+      "description": "The Discord authorization wasn't granted. You can start the installation again whenever you like.",
+      "dismiss": "Close",
+      "retry": "Try again"
+    }
+  },
+  "stats": {
+    "retry": "Try again",
+    "approximate": "Approximate value (± 0.8%).",
+    "approximateBadge": "Approximate",
+    "sparseBadge": "Sparse",
+    "sparseNotice": "This metric is only written when it changes: days without a measurement carry the last known value.",
+    "partialDayNotice": "{{day}} is the current day: it is still incomplete.",
+    "chart": {
+      "partialDay": "current day"
+    },
+    "range": {
+      "label": "Range",
+      "days": "{{count}}d"
+    },
+    "empty": {
+      "title": "No data collected",
+      "description": "Statistics will appear here as soon as the bot starts measuring."
+    },
+    "health": {
+      "title": "Degraded collection"
+    },
+    "tabs": {
+      "overview": "Overview",
+      "acquisition": "Acquisition",
+      "lifecycle": "Lifecycle",
+      "metrics": "Metrics",
+      "ai": "AI"
+    },
+    "types": {
+      "counter": "Counter",
+      "gauge": "Gauge",
+      "unique": "Uniques"
+    },
+    "sources": {
+      "topgg": "top.gg",
+      "discovery": "Discord discovery",
+      "profile": "Bot profile",
+      "ads": "Paid ads",
+      "command": "Bot command",
+      "direct": "Direct link",
+      "other": "Other"
+    },
+    "dimensions": {
+      "command": "Command",
+      "kind": "Kind",
+      "module": "Module",
+      "platform": "Platform",
+      "model": "Model",
+      "exception": "Exception",
+      "source": "Source",
+      "ok": "Success",
+      "reason": "Reason"
+    },
+    "overview": {
+      "window": "{{from}} → {{to}}",
+      "overWindow": " over {{days}}d",
+      "gaugeAsOf": "as of {{day}}",
+      "modulesAxis": "Servers",
+      "lifecycle": {
+        "title": "Servers gained and lost",
+        "joins": "Joins",
+        "leaves": "Leaves",
+        "net": "Net"
+      },
+      "churn": {
+        "leftCount": "Servers left",
+        "avgLifetime": "Average lifetime",
+        "medianLifetime": "Median lifetime"
+      },
+      "usage": {
+        "title": "Usage and cost",
+        "description": "Commands run, errors and AI spend over the window.",
+        "commands": "Commands run",
+        "errors": "Failed commands",
+        "errorRate": "error rate {{rate}}",
+        "aiCost": "AI cost"
+      },
+      "modules": {
+        "title": "Module adoption",
+        "description": "Number of servers with each module configured."
+      }
+    },
+    "acquisition": {
+      "title": "Install sources",
+      "description": "Conversion over the window and retention over all time, side by side.",
+      "stillHere": "({{still}} / {{acquired}})",
+      "clicksUnavailable": {
+        "title": "Clicks unavailable",
+        "description": "The click counter is best-effort and isn't responding right now. The Authorizations and Installs columns remain reliable."
+      },
+      "columns": {
+        "source": "Source",
+        "clicks": "Clicks",
+        "started": "Authorizations",
+        "installed": "Installs",
+        "conversion": "Conversion",
+        "retention": "Retention"
+      },
+      "hints": {
+        "clicks": "Links opened. Best-effort counter, indicative only — don't build anything on it.",
+        "started": "Discord authorization granted. The install may still have failed afterwards.",
+        "installed": "The bot actually joined, as confirmed by the bot itself.",
+        "conversion": "Installs / authorizations, over the last {{days}} days.",
+        "retention": "Servers still present / servers acquired, over all time — not over the window shown."
+      }
+    },
+    "installs": {
+      "title": "Install details",
+      "description": "A campaign's content lives in its UTMs; the source itself is deliberately coarse.",
+      "allSources": "All sources",
+      "empty": "No installs over this window.",
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "columns": {
+        "guild": "Server",
+        "source": "Source",
+        "utm": "UTM",
+        "date": "Date",
+        "status": "Status"
+      }
+    },
+    "lifecycle": {
+      "joins": "Joins",
+      "leaves": "Leaves",
+      "net": "Net",
+      "cumulativeNet": "Cumulative net",
+      "flow": {
+        "title": "Joins and leaves",
+        "description": "Daily flow, then the cumulative net already computed by the backend."
+      }
+    },
+    "retention": {
+      "title": "Retention by cohort",
+      "description": "Monthly acquisition cohorts. A server's state is its latest event: it can leave and come back.",
+      "columns": {
+        "cohort": "Cohort",
+        "acquired": "Acquired",
+        "retained": "Still present",
+        "rate": "Rate"
+      }
+    },
+    "events": {
+      "title": "Join and leave log",
+      "description": "The raw detail behind the curves.",
+      "all": "All events",
+      "join": "Join",
+      "leave": "Leave",
+      "empty": "No events.",
+      "columns": {
+        "event": "Event",
+        "guild": "Server",
+        "members": "Members",
+        "lifetime": "Lifetime",
+        "source": "Source",
+        "date": "Date"
+      }
+    },
+    "explorer": {
+      "title": "Metric explorer",
+      "description": "Metrics, their filters and their units come from the backend catalog — nothing is hardcoded here.",
+      "metric": "Metric",
+      "scope": "Scope",
+      "scopeGlobal": "Global",
+      "scopeGuild": "A server",
+      "guildId": "Server ID",
+      "guildIdPlaceholder": "123456789012345678",
+      "breakdownBy": "Break down by",
+      "noBreakdown": "No breakdown",
+      "needGuildId": "Enter a server ID to display this metric.",
+      "totalOverWindow": "total over {{days}}d",
+      "currentState": "current state",
+      "groups": {
+        "counter": "Counters",
+        "gauge": "Gauges",
+        "unique": "Uniques",
+        "guildOnly": "Per server"
+      }
+    },
+    "breakdown": {
+      "title": "Breakdown by {{dimension}}",
+      "description": "Share of each value over the window.",
+      "unknown": "Not set",
+      "columns": {
+        "key": "Value",
+        "value": "Total",
+        "share": "Share"
+      }
+    },
+    "topGuilds": {
+      "title": "Most active servers",
+      "description": "The API only returns identifiers.",
+      "columns": {
+        "guild": "Server",
+        "value": "Total"
+      }
+    },
+    "ai": {
+      "title": "AI usage",
+      "description": "Cost, tokens and calls over the window. The cost is converted by the backend.",
+      "guildIdPlaceholder": "Filter by server ID",
+      "filter": "Filter",
+      "cost": "Total cost",
+      "tokens": "Tokens",
+      "calls": "Calls",
+      "failedCalls": "Failed calls",
+      "failureRate": "failure rate {{rate}}",
+      "dailyCost": "Daily cost",
+      "byModel": {
+        "title": "By model",
+        "description": "Cost, tokens and calls per model.",
+        "columns": {
+          "model": "Model",
+          "cost": "Cost",
+          "tokens": "Tokens",
+          "calls": "Calls"
+        }
+      }
     }
   }
 }
