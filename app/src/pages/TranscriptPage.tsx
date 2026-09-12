@@ -86,7 +86,15 @@ export function TranscriptPage() {
         </div>
       )
     }
-    return <TranscriptView transcript={transcript} onBack={() => navigate(-1)} className="flex-1" />
+    return (
+      <TranscriptView
+        transcript={transcript}
+        // Seuls les messages du compte connecté s'alignent à droite.
+        selfId={auth.status === "authenticated" ? auth.user.user_id : null}
+        onBack={() => navigate(-1)}
+        className="flex-1"
+      />
+    )
   }
 
   return (

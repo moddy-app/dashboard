@@ -27,6 +27,7 @@ import {
 import { DiscordMarkup } from "@/components/discord-markup"
 import { cn } from "@/lib/utils"
 import { discordColorToHex, formatBytes, isImageAttachment } from "@/lib/transcripts"
+import { emojiCdnUrl, parseEmojiToken } from "@/lib/discord-emoji"
 import type {
   TranscriptAttachment,
   TranscriptComponent,
@@ -47,6 +48,39 @@ import type {
 // 2. **Rien ne disparaît en silence.** Une URL de CDN expirée, un composant d'un
 //    bot plus récent que ce dashboard, un média sans aperçu : chacun laisse une
 //    trace lisible plutôt qu'un trou dans la conversation.
+
+// ─── Émojis ───────────────────────────────────────────────────────────────────
+
+/**
+ * Texte court pouvant porter des émojis personnalisés (`<:nom:id>`) : une
+ * réaction, un libellé de bouton. Chaque jeton devient l'image du CDN — un
+ * émoji animé passe par `animated=true`, sans quoi il reviendrait figé — et
+ * tout le reste (les émojis Unicode compris) reste du texte.
+ */
+export function EmojiText({ text, className }: { text: string; className?: string }) {
+  const parts = text.split(/(<a?:[^:\s]+:\d+>)/g).filter(Boolean)
+
+  return (
+    <span className={className}>
+      {parts.map((part, index) => {
+        const emoji = parseEmojiToken(part)
+        if (!emoji) return <span key={index}>{part}</span>
+        return (
+          <img
+            key={index}
+            src={emojiCdnUrl(emoji.id, emoji.animated)}
+            alt={`:${emoji.name}:`}
+            title={`:${emoji.name}:`}
+            loading="lazy"
+            draggable={false}
+            referrerPolicy="no-referrer"
+            className="emoji"
+          />
+        )
+      })}
+    </span>
+  )
+}
 
 // ─── Contenu complet d'un message ─────────────────────────────────────────────
 
@@ -326,7 +360,7 @@ function DiscordComponent({ component }: { component: TranscriptComponent }) {
           <Button variant="outline" size="sm" asChild>
             <a href={component.url} target="_blank" rel="noopener noreferrer">
               <ExternalLinkIcon data-icon="inline-start" />
-              {label}
+              <EmojiText text={label} />
             </a>
           </Button>
         )
@@ -337,7 +371,7 @@ function DiscordComponent({ component }: { component: TranscriptComponent }) {
           size="sm"
           disabled
         >
-          {component.emoji && <span aria-hidden>{component.emoji}</span>}
+          {component.emoji && <EmojiText text={component.emoji} />}
           {component.label}
         </Button>
       )

@@ -101,12 +101,19 @@ const BUTTON_STYLES: Record<number, Extract<TranscriptComponent, { kind: 'button
   6: 'premium',
 }
 
+/**
+ * Un émoji de composant, rendu dans **la syntaxe de Discord** : un émoji custom
+ * ressort en `<:nom:id>` / `<a:nom:id>` pour que l'affichage aille chercher son
+ * image sur le CDN, un émoji Unicode reste son glyphe.
+ */
 function emojiLabel(value: unknown): string | null {
   const emoji = obj(value)
   if (!emoji) return null
   const name = str(emoji.name)
-  // Un émoji custom n'a pas de glyphe : son nom vaut mieux qu'un carré vide.
-  return name ? (str(emoji.id) ? `:${name}:` : name) : null
+  if (!name) return null
+  const id = str(emoji.id)
+  if (!id) return name
+  return `<${emoji.animated === true ? 'a' : ''}:${name}:${id}>`
 }
 
 /**

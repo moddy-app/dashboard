@@ -37,7 +37,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { DiscordMessageBody } from "@/components/tickets/discord-message"
+import { DiscordMessageBody, EmojiText } from "@/components/tickets/discord-message"
 import { Notice } from "@/components/tickets/fields"
 import { cn } from "@/lib/utils"
 import { formatDuration } from "@/lib/tickets"
@@ -79,10 +79,18 @@ const WINDOW_STEP = 200
 
 export function TranscriptView({
   transcript,
+  selfId,
   onBack,
   className,
 }: {
   transcript: TranscriptDetail
+  /**
+   * Identifiant Discord du lecteur connecté. **Seuls ses propres messages**
+   * passent à droite : un fil de support n'a pas deux camps, il a une personne
+   * qui lit et tous les autres. Sans lui, tout s'aligne à gauche — ce qui est
+   * la bonne lecture d'une conversation à laquelle on n'a pas participé.
+   */
+  selfId?: string | null
   onBack?: () => void
   className?: string
 }) {
@@ -140,21 +148,32 @@ export function TranscriptView({
             </Button>
           )}
           <div className="min-w-0">
-            <h1 className="flex flex-wrap items-center gap-2 text-lg font-semibold leading-tight">
-              <span className="tabular-nums">
-                {t("modules.tickets.transcript.title", { number: transcript.ticket_number })}
-              </span>
-              {transcript.category_name && (
-                <Badge variant="secondary" className="max-w-full truncate">
-                  {transcript.category_name}
-                </Badge>
-              )}
+            <h1 className="text-xl font-semibold tracking-tight tabular-nums">
+              {t("modules.tickets.transcript.title", { number: transcript.ticket_number })}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("modules.tickets.transcript.closedOn", {
-                date: formatDateTime(transcript.closed_at, i18n.language),
-              })}
-              {duration !== null && ` · ${formatDuration(duration)}`}
+            {/* Une seule ligne de méta, ponctuée de points : la catégorie, la
+                date de fermeture, la durée. Trois badges feraient du bruit
+                là où il n'y a qu'un contexte à poser. */}
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
+              {transcript.category_name && (
+                <>
+                  <span className="truncate font-medium text-foreground">
+                    {transcript.category_name}
+                  </span>
+                  <span aria-hidden>·</span>
+                </>
+              )}
+              <span>
+                {t("modules.tickets.transcript.closedOn", {
+                  date: formatDateTime(transcript.closed_at, i18n.language),
+                })}
+              </span>
+              {duration !== null && (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className="tabular-nums">{formatDuration(duration)}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -261,6 +280,7 @@ export function TranscriptView({
               <Thread
                 messages={transcript.messages}
                 transcript={transcript}
+                selfId={selfId}
                 authors={authors}
                 label={label}
                 query={query}
@@ -275,6 +295,7 @@ export function TranscriptView({
                 <Thread
                   messages={transcript.staff_thread}
                   transcript={transcript}
+                  selfId={selfId}
                   authors={authors}
                   label={label}
                   query={query}
@@ -297,12 +318,14 @@ export function TranscriptView({
 function Thread({
   messages,
   transcript,
+  selfId,
   authors,
   label,
   query,
 }: {
   messages: TranscriptMessage[]
   transcript: TranscriptDetail
+  selfId?: string | null
   authors: Map<string, TranscriptAuthor>
   label: (authorId: string) => string
   query: string
@@ -391,8 +414,8 @@ function Thread({
       <div className="min-h-0 flex-1 overflow-hidden rounded-xl border bg-card">
         <MessageScrollerProvider defaultScrollPosition="end">
           <MessageScroller>
-            <MessageScrollerViewport ref={viewportRef} className="px-3 py-4 sm:px-5">
-              <MessageScrollerContent className="gap-4">
+            <MessageScrollerViewport ref={viewportRef} className="px-3 py-5 sm:px-6">
+              <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-5">
                 {/* Fenêtre : le début d'une très longue conversation n'est monté
                     qu'à la demande. Le scroller garde la position au dépliage. */}
                 {hidden > 0 && !query.trim() && (
@@ -417,7 +440,9 @@ function Thread({
                     return (
                       <MessageScrollerItem key={block.id} messageId={block.id}>
                         <Marker variant="separator">
-                          <MarkerContent>{formatDay(block.date)}</MarkerContent>
+                          <MarkerContent className="text-[11px] font-medium tracking-wide uppercase">
+                            {formatDay(block.date)}
+                          </MarkerContent>
                         </Marker>
                       </MessageScrollerItem>
                     )
@@ -437,6 +462,7 @@ function Thread({
                         authorId={block.authorId}
                         messages={block.messages}
                         transcript={transcript}
+                        selfId={selfId}
                         author={authors.get(block.authorId)}
                         label={label}
                         matches={matchSet}
@@ -461,6 +487,7 @@ function MessageBlock({
   authorId,
   messages,
   transcript,
+  selfId,
   author,
   label,
   matches,
@@ -470,6 +497,7 @@ function MessageBlock({
   authorId: string
   messages: TranscriptMessage[]
   transcript: TranscriptDetail
+  selfId?: string | null
   author: TranscriptAuthor | undefined
   label: (authorId: string) => string
   matches: Set<string>
@@ -478,37 +506,39 @@ function MessageBlock({
 }) {
   const { t, i18n } = useTranslation()
 
-  // Le côté droit est **celui du lecteur** : l'auteur du ticket s'y reconnaît,
-  // l'équipe y retrouve ses propres réponses.
-  const mine = transcript.viewer.is_owner
-    ? authorId === transcript.owner_id
-    : authorId !== transcript.owner_id
+  // **Seuls les messages du lecteur connecté** passent à droite. Une archive de
+  // support n'oppose pas deux camps : il y a celui qui lit, et tous les autres.
+  const mine = Boolean(selfId) && authorId === selfId
   const align = mine ? "end" : "start"
   const name = label(authorId)
   const isOwner = authorId === transcript.owner_id
 
+  // Le rôle ne se dit que lorsqu'il apprend quelque chose : un bot, ou l'auteur
+  // du ticket. Étiqueter chaque groupe transformerait le fil en mur de badges.
   const role = author?.is_bot
     ? t("modules.tickets.transcript.roles.bot")
     : isOwner
       ? t("modules.tickets.transcript.roles.author")
-      : t("modules.tickets.transcript.roles.staff")
+      : null
 
   return (
     <Message align={align}>
-      <MessageAvatar>
-        <Avatar className="size-8">
+      {/* L'avatar se pose en haut du groupe, en face du nom — collé en bas, il
+          flottait loin de la personne à qui il appartient. */}
+      <MessageAvatar className="translate-y-0! self-start">
+        <Avatar className="size-7">
           {author?.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
-          <AvatarFallback>{authorInitials(name)}</AvatarFallback>
+          <AvatarFallback className="text-[11px]">{authorInitials(name)}</AvatarFallback>
         </Avatar>
       </MessageAvatar>
 
-      <MessageContent>
-        <MessageHeader className="gap-2">
-          <span className="truncate font-semibold text-foreground">{name}</span>
-          <Badge variant="secondary" className="shrink-0">
-            {role}
-          </Badge>
-          <span className="shrink-0 tabular-nums">
+      <MessageContent className="gap-1.5">
+        <MessageHeader className="gap-2 px-1">
+          <span className="truncate font-medium text-foreground">{name}</span>
+          {role && (
+            <span className="shrink-0 text-muted-foreground/80">{role}</span>
+          )}
+          <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground/70">
             {formatTime(messages[0].created_at, i18n.language)}
           </span>
         </MessageHeader>
@@ -519,16 +549,17 @@ function MessageBlock({
             align={align}
             // Un message qui n'est fait que de composants V2 ou d'embeds porte
             // déjà son propre cadre (conteneur à barre d'accent) : l'enfermer
-            // dans une bulle ferait un cadre dans un cadre. Sinon, des tons
-            // calmes — l'archive se lit longtemps — et une seule teinte pour
-            // distinguer les deux côtés.
+            // dans une bulle ferait un cadre dans un cadre. Sinon : le bleu
+            // d'accentuation pour le lecteur (`default`), un gris calme pour
+            // les autres, un contour pour le bot — une archive se lit
+            // longtemps, une seule couleur vive suffit à s'y repérer.
             variant={
               isSelfFramed(message)
                 ? "ghost"
-                : author?.is_bot
-                  ? "outline"
-                  : mine
-                    ? "tinted"
+                : mine
+                  ? "default"
+                  : author?.is_bot
+                    ? "outline"
                     : "muted"
             }
             data-message-id={message.id}
@@ -553,7 +584,14 @@ function MessageBlock({
               <DiscordMessageBody message={message} />
 
               {(message.edited_at || message.pinned) && (
-                <p className="flex items-center gap-2 text-xs text-muted-foreground">
+                <p
+                  className={cn(
+                    "flex items-center gap-2 text-[11px]",
+                    // Sur la bulle pleine, `muted-foreground` devient illisible :
+                    // on atténue la couleur du texte au lieu de la remplacer.
+                    mine ? "opacity-70" : "text-muted-foreground"
+                  )}
+                >
                   {message.edited_at && (
                     <span className="inline-flex items-center gap-1">
                       <PencilIcon className="size-3" />
@@ -574,7 +612,9 @@ function MessageBlock({
               <BubbleReactions side="bottom" align={align}>
                 {message.reactions.map((reaction, index) => (
                   <Badge key={index} variant="secondary" className="gap-1">
-                    <span aria-hidden>{reaction.emoji}</span>
+                    {/* Une réaction peut être un émoji du serveur : c'est une
+                        image du CDN, pas un caractère. */}
+                    <EmojiText text={reaction.emoji} />
                     <span className="tabular-nums">{reaction.count}</span>
                   </Badge>
                 ))}
@@ -701,6 +741,9 @@ function TranscriptAside({
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4">
+      <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+        {t("modules.tickets.transcript.details")}
+      </p>
       <div className="flex flex-col gap-3">
         <PropRow label={t("modules.tickets.transcript.props.author")} value={label(transcript.owner_id)} />
         {agent && (
@@ -802,8 +845,8 @@ function TranscriptAside({
 function PropRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm wrap-break-word">{value}</span>
+      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium wrap-break-word">{value}</span>
     </div>
   )
 }
