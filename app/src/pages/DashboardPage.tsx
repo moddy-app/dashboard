@@ -75,7 +75,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
   // Retour d'installation (`?installed=`, ou repli sur `/install/latest`) —
   // monté ici pour être visible quelle que soit la route d'arrivée.
   const installWelcome = useInstallWelcome()
-  const activeBanner = banner && banner.id !== dismissedBannerId ? banner : null
   // Pas d'id dans le payload `health.moddy.app` : on fabrique une clé à partir
   // du contenu, stable tant que l'incident/la fenêtre de maintenance ne change pas.
   const statusBannerKey = statusBanner
@@ -83,6 +82,11 @@ export function DashboardPage({ user }: DashboardPageProps) {
     : null
   const activeStatusBanner =
     statusBanner && statusBannerKey !== dismissedStatusKey ? statusBanner : null
+  // Le statut de service passe avant tout le reste : un incident/une
+  // maintenance en cours prime sur une simple annonce éditoriale, qui
+  // resterait à côté du sujet tant que le premier n'est pas résolu.
+  const activeBanner =
+    !activeStatusBanner && banner && banner.id !== dismissedBannerId ? banner : null
 
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
   useEffect(() => {
