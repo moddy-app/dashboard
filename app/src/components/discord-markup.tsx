@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { emojiCdnUrl } from "@/lib/discord-emoji"
 
 /**
  * Rendu du markdown Discord, pour l'aperçu de la bio du bot.
@@ -67,11 +68,12 @@ function parseInline(text: string, keyPrefix: string): ReactNode[] {
     } else if (codeInline !== undefined) {
       nodes.push(<code key={key}>{codeInline}</code>)
     } else if (emojiId !== undefined) {
-      const ext = animated === "a" ? "gif" : "png"
       nodes.push(
         <img
           key={key}
-          src={`https://cdn.discordapp.com/emojis/${emojiId}.${ext}?size=32`}
+          // `webp` + `animated=true` : le format que sert le client Discord.
+          // Sans le paramètre, un émoji animé revient figé sur sa première image.
+          src={emojiCdnUrl(emojiId, animated === "a")}
           alt={`:${emojiName}:`}
           className="emoji"
           draggable={false}

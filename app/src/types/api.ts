@@ -870,7 +870,11 @@ export const TICKET_DEFAULT_BUTTONS: readonly TicketButton[] = [
   'participants',
 ]
 
-/** Permissions par rôle **et par catégorie**. `admin` implique toutes les autres. */
+/**
+ * Permissions par rôle **et par catégorie**. `admin` implique toutes les autres.
+ * L'ordre est celui de l'API et il est stable — `stats` (lire les notes de prise
+ * en charge) a été ajoutée en avant-dernier, jamais au milieu.
+ */
 export const TICKET_PERMISSIONS = [
   'view',
   'close',
@@ -880,6 +884,7 @@ export const TICKET_PERMISSIONS = [
   'rename',
   'move',
   'participants',
+  'stats',
   'admin',
 ] as const
 export type TicketPermission = (typeof TICKET_PERMISSIONS)[number]
@@ -977,8 +982,45 @@ export interface TicketPanel {
   categories: TicketCategory[]
 }
 
+/**
+ * Réglages du module — ils vivent dans **la config du module**, pas derrière un
+ * endpoint dédié : ils partent dans le même `PUT` que les panneaux, sous la clé
+ * `settings`. Les omettre les remet aux défauts ci-dessous.
+ *
+ * Le bot accepte encore ces cinq clés à plat à la racine ; le backend les remonte
+ * dans `settings` à la lecture (où `settings` gagne sur la clé plate) et n'écrit
+ * plus que la forme groupée. Côté dashboard : écrire sous `settings`, point.
+ */
+export interface TicketsSettings {
+  /** Salon du journal des tickets (fiche de fermeture + lien d'archive). */
+  log_channel_id: string | null
+  /** Archiver la conversation à la fermeture. */
+  transcripts_enabled: boolean
+  /** `0..3650`, `0` = illimité. **Purge faite par le bot** : l'abaisser efface. */
+  transcript_retention_days: number
+  /** Détection IA d'une conversation terminée — consomme du quota IA. */
+  closure_detection_enabled: boolean
+  /** Proposer un avis à la fermeture. */
+  rating_enabled: boolean
+}
+
+export const TICKET_SETTINGS_DEFAULTS: TicketsSettings = {
+  log_channel_id: null,
+  transcripts_enabled: true,
+  transcript_retention_days: 0,
+  closure_detection_enabled: false,
+  rating_enabled: true,
+}
+
+/** Bornes de `transcript_retention_days` — hors de cet intervalle, c'est un 422. */
+export const TICKET_RETENTION_RANGE = { min: 0, max: 3650 } as const
+
+/** Durées proposées dans l'UI. `0` = illimité, et reste le défaut. */
+export const TICKET_RETENTION_PRESETS = [0, 7, 30, 90, 180, 365, 730] as const
+
 export interface TicketsConfig {
   panels: TicketPanel[]
+  settings: TicketsSettings
   /** Calculé côté serveur : lecture seule, jamais envoyé. */
   enabled?: boolean
 }

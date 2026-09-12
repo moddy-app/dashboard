@@ -29,7 +29,10 @@ import { UnsavedBar } from "@/components/unsaved-bar"
 import { ApplyNotice, Notice } from "@/components/tickets/fields"
 import { CategoryDialog } from "@/components/tickets/category-dialog"
 import { PanelCard } from "@/components/tickets/panel-card"
+import { RatingsPanel } from "@/components/tickets/ratings-panel"
 import { TicketExplorer } from "@/components/tickets/ticket-explorer"
+import { TicketsSettingsPanel } from "@/components/tickets/settings-panel"
+import { TranscriptList } from "@/components/tickets/transcript-list"
 import i18n from "@/i18n"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
@@ -45,6 +48,7 @@ import {
   issuesByField,
   mapTicketsApiError,
   openTicketsForCategory,
+  retentionShrinks,
   serializeTicketsConfig,
   ticketsApplyFeedback,
   validateTicketsConfig,
@@ -58,7 +62,14 @@ import {
   getTicketsLimits,
   saveTicketsConfig,
 } from "@/services/tickets"
-import type { Ticket, TicketCategory, TicketPanel, TicketsLimits } from "@/types/api"
+import { TICKET_SETTINGS_DEFAULTS } from "@/types/api"
+import type {
+  Ticket,
+  TicketCategory,
+  TicketPanel,
+  TicketsLimits,
+  TicketsSettings,
+} from "@/types/api"
 
 const MODULE_ID = "tickets"
 
@@ -91,6 +102,12 @@ function TicketsForm() {
 
   const [savedPanels, setSavedPanels] = useState<TicketPanel[] | null>(null)
   const [panels, setPanels] = useState<TicketPanel[]>([])
+  // Les réglages vivent dans **le même document** que les panneaux : un seul
+  // brouillon, une seule écriture, un seul bouton « enregistrer ».
+  const [savedSettings, setSavedSettings] = useState<TicketsSettings>(TICKET_SETTINGS_DEFAULTS)
+  const [settings, setSettings] = useState<TicketsSettings>(TICKET_SETTINGS_DEFAULTS)
+  /** Abaisser la rétention efface des conversations : on le fait confirmer. */
+  const [confirmRetention, setConfirmRetention] = useState(false)
   const [limits, setLimits] = useState<TicketsLimits | null>(null)
   const [orphanCount, setOrphanCount] = useState(0)
   /** Tickets ouverts — servent d'avertissement avant de supprimer une catégorie. */
@@ -148,6 +165,8 @@ function TicketsForm() {
         setIsConfigured(config !== null)
         setSavedPanels(config?.panels ?? [])
         setPanels(config?.panels ?? [])
+        setSavedSettings(config?.settings ?? TICKET_SETTINGS_DEFAULTS)
+        setSettings(config?.settings ?? TICKET_SETTINGS_DEFAULTS)
       } catch (e) {
         if (cancelled) return
         logger.error("module:tickets", "Load failed", e)
@@ -234,8 +253,8 @@ function TicketsForm() {
   // ── Validation ────────────────────────────────────────────────────────────
 
   const issues = useMemo(
-    () => validateTicketsConfig(panels, { limits, channels }),
-    [panels, limits, channels]
+    () => validateTicketsConfig(panels, { limits, channels, settings }),
+    [panels, limits, channels, settings]
   )
 
   const fieldErrors = useMemo(() => {
@@ -258,10 +277,10 @@ function TicketsForm() {
   const isDirty = useMemo(() => {
     if (!savedPanels) return false
     return (
-      JSON.stringify(serializeTicketsConfig(panels)) !==
-      JSON.stringify(serializeTicketsConfig(savedPanels))
+      JSON.stringify(serializeTicketsConfig(panels, settings)) !==
+      JSON.stringify(serializeTicketsConfig(savedPanels, savedSettings))
     )
-  }, [panels, savedPanels])
+  }, [panels, settings, savedPanels, savedSettings])
 
   const openTicketCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -277,6 +296,8 @@ function TicketsForm() {
     // Une seule requête en vol : le backend n'en accepte qu'une par serveur, et
     // deux sauvegardes qui se croisent s'écrasent (last-writer-wins côté bot).
     if (savingRef.current) return
+
+    setConfirmRetention(false)
 
     // Sous sanction, activer un module *jamais configuré* est refusé. On le dit
     // ici plutôt que d'attendre le 403 : le message est le même, mais la
@@ -305,14 +326,16 @@ function TicketsForm() {
     logger.event("module:tickets", "Save", { panels: sent.length })
 
     try {
-      const { config, apply } = await saveTicketsConfig(guildId, sent)
+      const { config, apply } = await saveTicketsConfig(guildId, sent, settings)
       // La réponse porte les `message_id` frais : c'est elle le nouvel état.
       setSavedPanels(config.panels)
       setPanels(config.panels)
+      setSavedSettings(config.settings)
+      setSettings(config.settings)
       setIsConfigured(true)
       // La vue d'ensemble et la sidebar lisent `modules` du contexte : sans
       // cette synchro elles resteraient sur l'état d'avant la sauvegarde.
-      syncModule(MODULE_ID, { panels: config.panels })
+      syncModule(MODULE_ID, { panels: config.panels, settings: config.settings })
 
       // Un 200 ne veut pas dire que Discord a suivi — l'accusé du bot décide.
       const result = ticketsApplyFeedback(apply)
@@ -343,13 +366,27 @@ function TicketsForm() {
       savingRef.current = false
       setIsSaving(false)
     }
-  }, [guildId, panels, issues, isConfigured, gates, syncModule, loadSideData, t])
+  }, [guildId, panels, settings, issues, isConfigured, gates, syncModule, loadSideData, t])
+
+  /**
+   * Point d'entrée du bouton « enregistrer ». Abaisser `transcript_retention_days`
+   * fait **supprimer des conversations** par le bot à sa prochaine purge, et ce
+   * n'est pas réversible : on ne l'écrit jamais sans un oui explicite.
+   */
+  const requestSave = useCallback(() => {
+    if (retentionShrinks(savedSettings.transcript_retention_days, settings.transcript_retention_days)) {
+      setConfirmRetention(true)
+      return
+    }
+    handleSave()
+  }, [savedSettings.transcript_retention_days, settings.transcript_retention_days, handleSave])
 
   const handleDiscard = useCallback(() => {
     if (!savedPanels) return
     setPanels(savedPanels)
+    setSettings(savedSettings)
     setApiErrors({ fields: {}, global: [] })
-  }, [savedPanels])
+  }, [savedPanels, savedSettings])
 
   const handleDisable = useCallback(async () => {
     setIsDisabling(true)
@@ -357,6 +394,8 @@ function TicketsForm() {
       const apply = await deleteTicketsConfig(guildId)
       setSavedPanels([])
       setPanels([])
+      setSavedSettings(TICKET_SETTINGS_DEFAULTS)
+      setSettings(TICKET_SETTINGS_DEFAULTS)
       setIsConfigured(false)
       setApiErrors({ fields: {}, global: [] })
       syncModule(MODULE_ID, null)
@@ -457,10 +496,17 @@ function TicketsForm() {
       )}
 
       <Tabs defaultValue="settings">
-        <TabsList>
-          <TabsTrigger value="settings">{t("modules.tickets.tabs.settings")}</TabsTrigger>
-          <TabsTrigger value="tickets">{t("modules.tickets.tabs.tickets")}</TabsTrigger>
-        </TabsList>
+        {/* Cinq onglets sur un petit écran : la liste défile pour elle seule
+            plutôt que d'élargir la page. */}
+        <div className="-mx-1 overflow-x-auto px-1 scrollbar-none">
+          <TabsList>
+            <TabsTrigger value="settings">{t("modules.tickets.tabs.settings")}</TabsTrigger>
+            <TabsTrigger value="general">{t("modules.tickets.tabs.general")}</TabsTrigger>
+            <TabsTrigger value="tickets">{t("modules.tickets.tabs.tickets")}</TabsTrigger>
+            <TabsTrigger value="transcripts">{t("modules.tickets.tabs.transcripts")}</TabsTrigger>
+            <TabsTrigger value="ratings">{t("modules.tickets.tabs.ratings")}</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Configuration ────────────────────────────────────────────── */}
         <TabsContent value="settings" className="flex flex-col gap-4 pt-4">
@@ -552,9 +598,30 @@ function TicketsForm() {
           )}
         </TabsContent>
 
+        {/* ── Réglages du module ──────────────────────────────────────── */}
+        <TabsContent value="general" className="pt-4">
+          <TicketsSettingsPanel
+            settings={settings}
+            savedSettings={savedSettings}
+            channels={channels}
+            errors={fieldErrors}
+            onChange={(changes) => setSettings((prev) => ({ ...prev, ...changes }))}
+          />
+        </TabsContent>
+
         {/* ── Tickets réels (lecture seule) ────────────────────────────── */}
         <TabsContent value="tickets" className="pt-4">
           <TicketExplorer guildId={guildId} panels={savedPanels} />
+        </TabsContent>
+
+        {/* ── Archives ─────────────────────────────────────────────────── */}
+        <TabsContent value="transcripts" className="pt-4">
+          <TranscriptList guildId={guildId} panels={savedPanels} />
+        </TabsContent>
+
+        {/* ── Avis ─────────────────────────────────────────────────────── */}
+        <TabsContent value="ratings" className="pt-4">
+          <RatingsPanel guildId={guildId} panels={savedPanels} />
         </TabsContent>
       </Tabs>
 
@@ -628,10 +695,38 @@ function TicketsForm() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Baisser la rétention **supprime des conversations** : le bot efface, à
+          sa prochaine purge quotidienne, toute archive fermée depuis plus de N
+          jours. Ce n'est pas réversible — d'où un oui explicite, jamais un
+          simple enregistrement. */}
+      <AlertDialog open={confirmRetention} onOpenChange={setConfirmRetention}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("modules.tickets.settings.confirmRetentionTitle")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("modules.tickets.settings.confirmRetentionDescription", {
+                days: settings.transcript_retention_days,
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("modules.tickets.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleSave}
+            >
+              {t("modules.tickets.settings.confirmRetentionAction")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <UnsavedBar
         isDirty={isDirty}
         isSaving={isSaving}
-        onSave={handleSave}
+        onSave={requestSave}
         onDiscard={handleDiscard}
       />
     </div>
