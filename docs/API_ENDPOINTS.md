@@ -31,6 +31,32 @@ Voir `docs/GLOBAL_SANCTIONS.md` (regles backend) et
 
 ---
 
+## Stats publiques
+
+### `GET /public/stats`
+
+Aucune authentification. Sert deux jauges globales écrites par le bot
+(`bot.guilds`, `bot.known_users` — voir `docs/STATS.md`), lues via
+`models.fetch_latest_gauges` et mises en cache Redis 10 minutes
+(`public:stats`) pour ne jamais taper PostgreSQL sur un endpoint public.
+
+```json
+{
+  "guilds": 4213,
+  "users": 812345,
+  "measured_at": "2026-09-10",
+  "updated_at": "2026-09-10T14:32:00+00:00"
+}
+```
+
+- `guilds` / `users` : dernière valeur connue des jauges `bot.guilds` /
+  `bot.known_users` (mises à jour par le bot une fois par jour) ;
+- `measured_at` : jour (`day`) de la jauge en base ;
+- `updated_at` : horodatage de calcul de cette réponse (change au plus toutes
+  les 10 minutes, durée du cache).
+
+---
+
 ## Auth
 
 ### `GET /auth/login`
@@ -38,7 +64,8 @@ Voir `docs/GLOBAL_SANCTIONS.md` (regles backend) et
 Redirige vers la page d'autorisation Discord OAuth2.
 
 **Auth :** aucune
-**Scopes Discord demandes :** `identify email guilds role_connections.write`
+**Scopes Discord demandes :** `identify email guilds` (pas
+`role_connections.write` : il n'est demande que par `GET /linked-roles`)
 **Reponse :** Redirect 302 vers `https://discord.com/oauth2/authorize?...`
 
 Pour **installer** le bot en meme temps que se connecter, c'est `GET /install`
@@ -239,9 +266,7 @@ le dashboard puisse afficher l'ecran de suspension plutot qu'une erreur. Idem po
 
 ## Installation
 
-Guide d'integration front : `docs/backend-integration/stats-and-install.md`
-(fabriquer les liens, ecran de remerciement, cas limites). Contrat backend :
-`docs/STATS.md` §4 dans `moddy-app/website-backend`.
+Voir `docs/STATS.md` §4 pour le contrat complet (partage backend / bot).
 
 ### `GET /install`
 
@@ -254,13 +279,13 @@ personne au dashboard et rattache l'installation a sa source.
 
 | Param | Type | Description |
 |---|---|---|
-| `source` | string | Vocabulaire **ferme** : `topgg`, `discovery`, `profile`, `ads`, `command`, `direct`. Hors vocabulaire -> `other` (brut conserve dans `utm.source_raw`). Absent -> `direct` |
+| `source` | string | Vocabulaire **ferme** : `topgg`, `discord`, `ads`, `command`, `direct`, `outreach`. Hors vocabulaire -> `other` (brut conserve dans `utm.source_raw`). Absent -> `direct` |
 | `utm_medium` / `utm_campaign` / `utm_content` / `utm_term` | string | Libres, tronques a 200 caracteres. **Jamais** une dimension |
 | `guild_id` | int | Preselectionne un serveur sur l'ecran Discord |
 | `redirect` | string | Destination finale (allowlist `*.moddy.app`) |
 
 **Reponse :** Redirect 302 vers l'ecran d'autorisation Discord
-(`scope=bot applications.commands identify email guilds role_connections.write`,
+(`scope=bot applications.commands identify email guilds`,
 `permissions=DISCORD_BOT_PERMISSIONS`)
 
 La source voyage dans le `state` (Redis, TTL 5 min), **jamais** dans l'URL de
@@ -1407,6 +1432,7 @@ Le gating premium fait ici est un **filtre UX** ; le bot re-vérifie. Réinitial
   "avatar_url": "https://cdn.discordapp.com/guilds/123456789/users/<bot_id>/avatars/a_1c9e4f2b.gif",
   "banner_url": "https://cdn.discordapp.com/guilds/123456789/users/<bot_id>/banners/b_77f2a91d.png",
   "is_premium": true,
+  "premium_fields_unlocked": true,
   "limits": {
     "nickname_max_length": 32,
     "bio_max_length": 137,
@@ -1424,6 +1450,7 @@ Le gating premium fait ici est un **filtre UX** ; le bot re-vérifie. Réinitial
 - `config` = bloc stocké tel quel (`{}` si jamais personnalisé), `updated_by` exposé en **chaîne**.
 - `avatar_url` / `banner_url` sont calculées depuis les hashes (`.gif` si le hash commence par `a_`), `null` sans hash. **Aucune image n'est stockée côté Moddy.**
 - `bio_max_length` ne compte **que la partie serveur** : le bot ajoute lui-même `bio_attribution` en dernière ligne. Ne jamais l'envoyer dans `bio`.
+- `is_premium` = statut premium réel du serveur. `premium_fields_unlocked` = si les champs de `premium_fields` sont réellement utilisables — peut être `true` sans premium réel via l'attribut guilde `BOT_CUSTOMIZATION` (dérogation limitée à ce module, voir `docs/BOT_CUSTOMIZATION.md` §1). C'est ce second champ qu'il faut lire pour décider d'afficher un verrou premium.
 
 ### `GET /guilds/{guild_id}/modules/bot_customization/schema`
 
@@ -1797,6 +1824,13 @@ endpoint générique) et l'**état vivant** (table `tickets`, propriété du bot
       ]
     }
   ],
+  "settings": {
+    "log_channel_id": "333333333333333333",
+    "transcripts_enabled": true,
+    "transcript_retention_days": 0,
+    "closure_detection_enabled": false,
+    "rating_enabled": true
+  },
   "enabled": true
 }
 ```
@@ -1821,7 +1855,7 @@ endpoint générique) et l'**état vivant** (table `tickets`, propriété du bot
 | `categories[].allowed_role_ids` | array de str | `[]` | `[]` = tout le monde |
 | `categories[].denied_role_ids` | array de str | `[]` | Gagne toujours, même sur un admin |
 | `categories[].ping_role_ids` | array de str | `[]` | Mentionnés à l'ouverture |
-| `categories[].permissions` | object | `{}` | Clés = role_id **en chaîne**, valeurs parmi `view`, `close`, `claim`, `unclaim_others`, `staff_thread`, `rename`, `move`, `participants`, `admin`. Inconnue → 422 |
+| `categories[].permissions` | object | `{}` | Clés = role_id **en chaîne**, valeurs parmi `view`, `close`, `claim`, `unclaim_others`, `staff_thread`, `rename`, `move`, `participants`, `stats`, `admin`. Inconnue → 422 |
 | `categories[].ping_staff_roles` | bool | `true` | Mentionne aussi, à l'ouverture, les rôles qui ont `view` sur la catégorie |
 | `categories[].claim_enabled` | bool | `true` | Prise en charge + pastille de couleur dans le nom du salon |
 | `categories[].claim_lock` | bool | `false` | Claim ⇒ seuls claimeur, responsables, auteur et participants manuels **écrivent** ; les autres lisent |
@@ -1831,10 +1865,21 @@ endpoint générique) et l'**état vivant** (table `tickets`, propriété du bot
 | `categories[].name_format` | str | `ticket-{number}` | ≤90 |
 | `categories[].max_open_per_user` | int | `1` | `1..10` |
 | `categories[].enabled` | bool | `true` | |
+| `settings.log_channel_id` | str \| null | `null` | Salon texte du **journal des tickets** (fiche de fermeture + lien d'archive). Inconnu ou non texte → 422 |
+| `settings.transcripts_enabled` | bool | `true` | Archiver la conversation à la fermeture |
+| `settings.transcript_retention_days` | int | `0` | `0..3650`, `0` = illimité. **Purge faite par le bot** : l'abaisser supprime des conversations |
+| `settings.closure_detection_enabled` | bool | `false` | Détection IA d'une conversation terminée (consomme du quota IA) |
+| `settings.rating_enabled` | bool | `true` | Proposer un avis à la fermeture |
 
 **Snowflakes** : entiers ou chaînes acceptés à l'écriture, **stockés en entiers**,
 **renvoyés en chaînes**. `enabled` (racine) est **calculé** (au moins un panneau
 `enabled`), jamais stocké : envoyé par un client, il est ignoré.
+
+**`settings`** : toutes les clés sont optionnelles (une config écrite avant leur
+existence se charge avec les défauts ci-dessus). Le bot accepte encore ces cinq
+clés **à plat à la racine** ; le backend les remonte dans `settings` à la lecture
+comme avant une écriture (`settings` gagne sur la clé plate) et **n'écrit plus que
+la forme groupée**.
 
 **Quotas** : 3 panneaux / 5 catégories par panneau en free, 10 / 15 en premium.
 Plafonds Discord par-dessus : 15 catégories en style `buttons`, 25 en `select`.
@@ -2010,6 +2055,190 @@ répond « catégorie disparue » à toute action tant qu'ils n'ont pas été d�
 ```json
 {"guild_id": "123…", "tickets": [ "…" ], "count": 2}
 ```
+
+### `GET /guilds/{guild_id}/tickets/transcripts`
+
+Archives des tickets fermés, les plus récemment fermées d'abord. **Lecture
+seule** — les tables appartiennent au bot. Une ligne par **fermeture** : un
+ticket rouvert puis refermé apparaît deux fois.
+
+Query : `category_id`, `owner_id`, `staff_id` (l'agent du ticket : celui qui l'a
+pris en charge, sinon celui qui l'a fermé), `ticket_number`, `limit` (1..100,
+défaut 25), `offset`.
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "settings": {"transcripts_enabled": true, "transcript_retention_days": 0, "rating_enabled": true},
+  "transcripts": [
+    {
+      "key": "3f6f1f2e-6c7a-4a1d-9b0e-7c0b5d2a1e44",
+      "guild_id": "123456789012345678",
+      "channel_id": "444444444444444444",
+      "ticket_number": 42,
+      "panel_id": "p_a1b2c3", "category_id": "c_d4e5f6",
+      "category_name": "Support général",
+      "category": {"name": "Support général", "panel_id": "p_a1b2c3", "panel_name": "Support"},
+      "owner_id": "555555555555555555",
+      "participants": ["555555555555555555"],
+      "claimed_by": "666666666666666666", "closed_by": "666666666666666666",
+      "close_reason": "résolu",
+      "opened_at": "2026-09-01T10:00:00Z", "closed_at": "2026-09-01T11:02:00Z",
+      "message_count": 31, "truncated": false, "payload_size": 1584,
+      "speakers": [
+        {"author_id": "555555555555555555", "username": "membre",
+         "display_name": "Membre", "avatar_url": null, "is_bot": false}
+      ],
+      "rating": {"score": 4, "score_key": "good", "comment": "rapide",
+                 "created_at": "2026-09-01T11:05:00Z"}
+    }
+  ],
+  "total": 1, "limit": 25, "offset": 0
+}
+```
+
+`settings` est servi avec la liste pour qu'un **vide s'explique** : archives
+coupées, ou rétention déjà passée. `category_name` est un **instantané** pris à
+la fermeture ; `category` est la catégorie actuelle de la config, `null` si elle
+n'existe plus. `truncated: true` = plus de 20 000 messages, seuls les plus
+récents ont été gardés (à afficher, le début est perdu). `payload_size` est la
+taille **décompressée**. `speakers` et `rating` sont joints ici : un listing
+répond « qui a parlé, quelle note » **sans décompresser un octet**.
+
+Le **corps** d'une archive se lit sur `GET /transcripts/{key}`.
+
+### `GET /transcripts/{key}`
+
+Une archive complète : métadonnées, auteurs, conversation, note. Route **hors
+`/guilds`** : le bot donne ce lien au salon de journal (l'équipe) **et** au DM de
+fermeture (l'auteur du ticket).
+
+**Autorisation** : l'auteur du ticket (`owner_id`), ou l'équipe du serveur —
+équipe Moddy, administrateur du serveur (session), ou membre dont un rôle est
+administrateur Discord ou porte une permission de tickets dans la config. Tout le
+reste est un **404**, identique à celui d'une clé inconnue ou mal formée :
+confirmer qu'une clé existe est déjà une fuite. La `key` est le seul élément
+secret du lien — à traiter comme sensible au partage.
+
+```json
+{
+  "key": "3f6f1f2e-6c7a-4a1d-9b0e-7c0b5d2a1e44",
+  "guild_id": "123456789012345678", "channel_id": "444444444444444444",
+  "ticket_number": 42, "panel_id": "p_a1b2c3", "category_id": "c_d4e5f6",
+  "category_name": "Support général",
+  "owner_id": "555555555555555555", "participants": ["555555555555555555"],
+  "claimed_by": "666666666666666666", "closed_by": "666666666666666666",
+  "close_reason": "résolu",
+  "opened_at": "2026-09-01T10:00:00Z", "closed_at": "2026-09-01T11:02:00Z",
+  "message_count": 31, "truncated": false, "payload_size": 1584,
+  "viewer": {"is_staff": false, "is_owner": true},
+  "authors": [
+    {"author_id": "555555555555555555", "username": "membre",
+     "display_name": "Membre", "avatar_url": null, "is_bot": false}
+  ],
+  "version": 1,
+  "messages": [
+    {
+      "id": "1234567890123456789",
+      "author_id": "555555555555555555",
+      "created_at": "2026-09-01T10:00:04Z",
+      "content": "bonjour", "edited_at": null,
+      "attachments": [{"filename": "capture.png", "url": "https://cdn.discordapp.com/…",
+                       "size": 20481, "content_type": "image/png"}],
+      "embeds": [], "reactions": [{"emoji": "👍", "count": 2}],
+      "reply_to": null, "system_type": null
+    }
+  ],
+  "has_staff_thread": true,
+  "staff_thread_withheld": true,
+  "rating": {"score": 4, "score_key": "good", "comment": "rapide", "trigger": "dm_button",
+             "rated_staff_id": "666666666666666666", "rated_by": "555555555555555555",
+             "ticket_number": 42, "category_id": "c_d4e5f6", "category_name": "Support général",
+             "channel_id": "444444444444444444",
+             "transcript_key": "3f6f1f2e-6c7a-4a1d-9b0e-7c0b5d2a1e44",
+             "created_at": "2026-09-01T11:05:00Z"}
+}
+```
+
+> ⚠️ **`staff_thread` est réservé à l'équipe.** Il n'est présent que si
+> `viewer.is_staff` ; pour l'auteur du ticket la clé est **absente** et seul
+> `staff_thread_withheld: true` dit qu'il en existait un. Le fusionner dans
+> `messages` livrerait à un membre la conversation que l'équipe a eue à son sujet.
+
+`messages` est ordonné du plus ancien au plus récent. `authors` est un
+**instantané** pris à la fermeture : à rendre tel quel, pas à relire chez
+Discord. Les pièces jointes sont des **références** — l'URL est le CDN de
+Discord, elle expire et personne ne la re-signe.
+
+**422** : l'archive existe et l'appelant a le droit de la lire, mais son corps
+n'est pas rendable (codec inconnu, version de schéma plus récente que ce backend,
+données corrompues). Pas un 404 : ce n'est pas un problème de droits.
+
+### `GET /guilds/{guild_id}/tickets/ratings`
+
+Notes laissées par les auteurs de tickets, les plus récentes d'abord.
+
+Query : `rated_staff_id`, `category_id`, `trigger` (`close_request` \|
+`self_close` \| `dm_button`), `max_score` (1..5 — `2` sert la vue des tickets mal
+vécus), `days` (1..365), `limit` (1..200, défaut 50), `offset`.
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "ratings": [
+    {
+      "id": 12, "ticket_number": 42,
+      "category_id": "c_d4e5f6", "category_name": "Support général",
+      "channel_id": "444444444444444444",
+      "transcript_key": "3f6f1f2e-6c7a-4a1d-9b0e-7c0b5d2a1e44",
+      "rated_staff_id": "666666666666666666", "rated_by": "555555555555555555",
+      "score": 4, "score_key": "good", "comment": "rapide",
+      "trigger": "dm_button", "created_at": "2026-09-01T11:05:00Z"
+    }
+  ],
+  "total": 1, "limit": 50, "offset": 0
+}
+```
+
+**Rendre l'appréciation, pas `n/5`** : la personne n'a jamais vu de chiffre, la
+fenêtre du bot propose cinq appréciations. `score_key`
+(`very_bad`/`poor`/`fair`/`good`/`excellent`) est là pour que le dashboard rende
+l'adjectif depuis **ses** traductions — le texte du bot est localisé dans cinq
+langues et s'améliore avec le produit.
+
+`rated_staff_id: null` = « personne en particulier », une réponse réelle et non
+une donnée manquante. `transcript_key: null` = l'archive a été purgée par la
+rétention (la note lui survit).
+
+### `GET /guilds/{guild_id}/tickets/ratings/summary`
+
+Agrégats sur `days` jours (1..365, défaut 30) — les mêmes que `/ticket stats`
+dans Discord.
+
+```json
+{
+  "guild_id": "123456789012345678",
+  "window_days": 30,
+  "score_keys": {"1": "very_bad", "2": "poor", "3": "fair", "4": "good", "5": "excellent"},
+  "guild": {"ratings": 37, "average": 4.24, "negative": 3,
+            "distribution": {"1": 1, "2": 2, "3": 4, "4": 12, "5": 18}},
+  "by_staff": [
+    {"staff_id": "666666666666666666", "ratings": 21, "average": 4.4,
+     "negative": 1, "handled": 34, "low_sample": false},
+    {"staff_id": "777777777777777777", "ratings": 0, "average": null,
+     "negative": 0, "handled": 6, "low_sample": true}
+  ]
+}
+```
+
+`guild` **garde** les notes sans agent désigné ; `by_staff` les **exclut** (ce
+n'est pas un agent) et se classe **par volume, jamais par moyenne** — un unique
+5/5 ne doit pas devancer cinquante tickets. `low_sample: true` (moins de 3 avis)
+est à signaler plutôt qu'à classer. `negative` compte les notes ≤ 2.
+
+`handled` vient des **archives**, pas de la table `tickets` : un ticket fermé
+dont le salon a été rangé compte quand même dans le travail de son agent — d'où
+des agents à `ratings: 0` et `handled > 0`, qu'il ne faut pas masquer.
 
 ---
 
@@ -2430,11 +2659,11 @@ Règles communes à tous les endpoints ci-dessous :
   un autre compte répond **403** ;
 - snowflakes en **chaînes**, dates en ISO-8601 UTC ;
 - assistant non configuré (`OPENAI_API_KEY` absente) ou coupe-circuit armé
-  (`AI_ASSISTANT_ENABLED=false`) → **503** sur les quatre endpoints d'écriture
-  (`POST /ai/conversations`, `POST …/messages`, `POST …/decision`,
-  `POST …/answer`). `GET /ai/status` répond toujours ;
-- les trois endpoints de tour rendent un flux **`text/event-stream`**, pas du
-  JSON (8 types d'événements, §SSE plus bas).
+  (`AI_ASSISTANT_ENABLED=false`) → **503** sur les trois endpoints d'écriture
+  (`POST /ai/conversations`, `POST …/messages`, `POST …/decision`).
+  `GET /ai/status` répond toujours ;
+- les deux endpoints de tour rendent un flux **`text/event-stream`**, pas du
+  JSON (7 types d'événements, §SSE plus bas).
 
 ### `GET /ai/status`
 
@@ -2492,9 +2721,6 @@ Ouvre une conversation.
 | `subject_user_id` | string (optionnel) | `null` | `support_staff` ; forcé à l'appelant en `support_user` |
 | `subject_guild_id` | string (optionnel) | `null` | `support_staff` |
 | `title` | string (optionnel) | `null` | tronqué à 120. Laissé vide, **généré automatiquement** après le premier message |
-| `subject_user_id` | string (optionnel) | `null` | `support_staff` ; forcé à l'appelant en `support_user` |
-| `subject_guild_id` | string (optionnel) | `null` | `support_staff` |
-| `title` | string (optionnel) | `null` | nettoyé, tronqué à 120 caractères |
 
 Une conversation `support_staff` doit désigner **au moins un** sujet
 (`subject_user_id` et/ou `subject_guild_id`). Le sujet est figé : aucun endpoint
@@ -2667,48 +2893,7 @@ redemande à Brocoli de la reformuler » · `409` un tour est déjà en cours ·
 
 ---
 
-### `POST /ai/conversations/{conversation_id}/questions/{question_id}/answer`
-
-Répond à une question posée par Brocoli (outil `ask_user`) et **reprend le
-tour**, en SSE. Brocoli ne pose jamais de question en texte : une question qui
-attend une réponse passe toujours par cet endpoint.
-
-**Auth :** propriétaire de la conversation
-
-**Body :**
-
-```json
-{
-  "answers": [
-    {"question_id": "q1", "value": "987654321098765432", "label": "#général"},
-    {"question_id": "q2", "values": ["bug", "facturation"]}
-  ]
-}
-```
-
-| Champ | Type | Note |
-|---|---|---|
-| `answers[].question_id` | string | `q1`, `q2`… tel que rendu par `user_question` |
-| `answers[].value` | string | réponse unique. Pour `channel` / `role` : l'**identifiant** |
-| `answers[].values` | string[] | réponses multiples (`multi_select`) ; prioritaire sur `value` |
-| `answers[].label` / `labels` | string / string[] | nom lisible (`#général`), repris par Brocoli dans sa réponse |
-| `answers[].skipped` | bool | question laissée sans réponse |
-| `cancelled` | bool | ferme la question sans y répondre |
-
-Une entrée dont le `question_id` n'a pas été posé est **ignorée**. Une question
-absente de `answers` est rendue au modèle comme explicitement non répondue. Même
-`UPDATE … WHERE status = 'pending'` que pour une décision : deux envois
-simultanés ne relancent pas deux tours.
-
-**Réponse :** `200`, flux SSE (même contrat que ci-dessus)
-
-**Erreurs :** `422` `answers` mal formé · `404` question inexistante ou rattachée
-à une autre conversation · `409` « Question déjà répondue » ou « Question
-expirée » · `409` un tour est déjà en cours · `503` · `403`
-
----
-
-### Flux SSE — 8 événements
+### Flux SSE — 7 événements
 
 Noms du backend, pas ceux d'OpenAI. `data` est du JSON compact ; les entiers
 dépassant 2^53-1 sont convertis en chaînes comme sur les autres réponses.
@@ -2720,8 +2905,7 @@ dépassant 2^53-1 sont convertis en chaînes comme sur les autres réponses.
 | `tool_call` | `{"call_id": "call_1", "name": "get_module_config", "arguments": "{\"module_id\":\"tickets\"}"}` — `arguments` est une **chaîne JSON** |
 | `tool_result` | `{"call_id": "call_1", "name": "get_module_config", "ok": true}` — jamais le contenu du résultat |
 | `permission_request` | `{"action_id", "kind", "risk", "status", "preview", "expires_at", "requires_confirmation": true}` |
-| `user_question` | `{"question_id", "questions": [{"id", "header", "question", "answer_type", "multi_select", "options", "recommended", "recommended_label", "recommendation_reason"}], "status", "expires_at"}` — `header` peut être `""` (pas de puce à afficher) ; tous les textes sont dans la langue de la conversation |
-| `run_end` | `{"status": "completed" \| "awaiting_confirmation" \| "awaiting_answer" \| "max_iterations" \| "error", "usage": {…}}` |
+| `run_end` | `{"status": "completed" \| "awaiting_confirmation" \| "max_iterations" \| "error", "usage": {…}}` |
 | `error` | `{"code", "message"}` — codes : `timeout`, `network`, `rate_limited`, `upstream`, `bad_request`, `stream_error`, `ai_unavailable`, `internal` |
 
 `usage` (`{"input_tokens", "output_tokens", "total_tokens"}`) n'accompagne que
@@ -2740,12 +2924,76 @@ dans le flux de `POST …/decision`. Voir `docs/AI_ASSISTANT.md` §6 pour la
 séquence complète et §7 pour le guide d'intégration dashboard.
 
 
+## Roles lies (linked roles)
+
+Rôles Discord attribués automatiquement selon nos données : `team` (membre de
+l'équipe Moddy) et `manager` (rôle `Manager` dans `staff_permissions.roles`).
+Le backend publie ces valeurs chez Discord avec un jeton OAuth2 **de
+l'utilisateur** — voir `docs/LINKED_ROLES.md`.
+
+Toutes les routes répondent `503` si `LINKED_ROLES_ENABLED` est `false`. Aucune
+réponse ne contient de jeton.
+
+### `GET /linked-roles`
+
+URL de vérification déclarée dans le portail développeur : Discord y envoie un
+membre qui clique « Se connecter » sur un rôle lié. Redirige (302) vers l'écran
+de consentement Discord (`identify role_connections.write`).
+
+**Auth :** aucune (ouverte dans un navigateur)
+
+### `GET /linked-roles/callback`
+
+Retour du consentement. Query : `code`, `state` (ou `error` si refus). Échange
+le code, enregistre les jetons et publie les métadonnées. Réponse **texte
+brut** — l'API ne sert aucun document HTML.
+
+**Auth :** aucune — l'identité vient du jeton OAuth2, jamais d'un paramètre
+
+| Code | Quand |
+|---|---|
+| `200` | connecté (ou refus assumé de l'utilisateur) |
+| `400` | `code` manquant, `state` invalide/expiré, ou autorisation sans le scope d'écriture |
+| `502` | Discord n'a pas validé l'échange |
+
+### `GET /linked-roles/status`
+
+**Auth :** session (accessible à un compte sanctionné — c'est lui qui doit
+comprendre pourquoi son rôle lié a changé)
+
+```json
+{
+  "connected": true,
+  "metadata": { "team": "0", "manager": "1" },
+  "pushed_metadata": { "team": "0", "manager": "1" },
+  "connected_at": "2026-09-01T10:00:00Z",
+  "pushed_at": "2026-09-01T10:00:01Z",
+  "expires_at": "2026-09-08T10:00:00Z",
+  "last_error": null
+}
+```
+
+`metadata` = ce qui est vrai maintenant, `pushed_metadata` = ce que Discord a
+accepté en dernier. Un écart entre les deux signifie une republication en
+attente (file ou erreur, voir `last_error`).
+
+### `POST /linked-roles/sync`
+
+Republie immédiatement. `{"status": "pushed" | "unchanged" | "revoked"}`.
+`404` si le compte n'est pas lié, `502` si Discord refuse.
+
+### `DELETE /linked-roles`
+
+Vide les métadonnées (toutes les clés à `"0"`), révoque l'autorisation et
+supprime la connexion. `{"status": "disconnected"}`, `404` si rien n'était lié.
+
+---
+
 ## Stats
 
 > Le systeme de statistiques collecte par le bot (compteurs, jauges, cycle de
 > vie, acquisition) est servi par les endpoints `/staff/stats/*` (section Staff
-> Panel), et le guide front les explique :
-> `docs/backend-integration/stats-and-install.md`. L'endpoint ci-dessous est
+> Panel). Contrat complet : `docs/STATS.md`. L'endpoint ci-dessous est
 > anterieur et ne lit que les tables metier.
 
 ### `GET /guilds/{guild_id}/stats`
@@ -3088,15 +3336,25 @@ Webhook Stripe principal. **Pas d'auth session** — authentifie via `Stripe-Sig
 **Comportement :**
 - Verifie la signature → 400 si invalide
 - Controle l'idempotence (Redis SET NX, TTL 7j) — double livraison ignoree silencieusement
-- Retourne 200 immediatement, traite en arriere-plan (`BackgroundTasks`)
+- Traite l'event AVANT d'accuser reception : un echec libere la reservation et
+  repond 503, pour que Stripe rejoue (une reponse 200 puis un worker tue perdrait
+  l'event)
 
 **Events traites :**
 
 | Event | Action DB | Redis | Pub/Sub |
 |---|---|---|---|
-| `invoice.payment_succeeded` | `subscription_tier` + `subscription_expires_at` mis a jour | Ecrit `sub:user:{id}` avec TTL | `notify_subscription_started` ou `notify_subscription_renewed` |
+| `invoice.payment_succeeded` | `subscription_tier` + `subscription_expires_at` mis a jour | Ecrit `sub:user:{id}` avec TTL | `notify_subscription_started` ou `notify_subscription_renewed`, puis `notify_invoice` |
 | `customer.subscription.deleted` | `subscription_tier = NULL`, `subscription_expires_at = NOW()` | Supprime `sub:user:{id}` | `refresh` |
 | `invoice.payment_failed` | Aucune modification | Aucune modification | `notify_payment_late` |
+
+**Facture.** Sur `invoice.payment_succeeded`, le backend envoie en plus le mail
+de facture (Resend, meme gabarit que les autres mails transactionnels) et publie
+`notify_invoice` pour le DM du bot — pour toute facture, **montant nul compris**
+(un essai gratuit produit une vraie facture Stripe ; le champ `variant` dit au
+bot de ne pas l'annoncer comme un paiement recu). Les deux sont best-effort : un
+incident d'envoi est journalise, jamais remonte en 503 — le premium reste active.
+Voir `app/support/invoices.py`.
 
 **Reponse :**
 
@@ -3447,8 +3705,8 @@ SELECT
 
 > Le bloc ci-dessus n'est PAS le systeme de stats : c'est un `COUNT(*)` sur les
 > tables metier. Les mesures collectees par le bot (compteurs, jauges, cycle de
-> vie, acquisition) sont servies par les endpoints ci-dessous. Comment les lire
-> sans se tromper : `docs/backend-integration/stats-and-install.md`.
+> vie, acquisition) sont servies par les endpoints ci-dessous. Contrat complet :
+> `docs/STATS.md`.
 
 ### `GET /staff/stats/catalog`
 
@@ -3468,7 +3726,7 @@ jamais une requete SQL.
      "additive": true, "sparse": false, "approximate": false, "notes": ""}
   ],
   "types": {"counter": "...", "gauge": "...", "unique": "..."},
-  "install_sources": ["topgg", "discovery", "profile", "ads", "command", "direct", "other"]
+  "install_sources": ["topgg", "discord", "ads", "command", "direct", "outreach", "other"]
 }
 ```
 
@@ -3907,6 +4165,24 @@ Envoyer une annonce via le bot (tache critique Redis Stream).
 ```json
 {"status": "queued"}
 ```
+
+---
+
+### Staff — Roles lies
+
+Toutes sous `staff_user`. Voir `docs/LINKED_ROLES.md`.
+
+| Methode | Route | Role |
+|---|---|---|
+| `GET` | `/staff/linked-roles/metrics` | comptes lies (`connected`, `expired`, `in_error`, `never_pushed`, `next_expiry`, `last_push`), taille de la file, schema local |
+| `GET` | `/staff/linked-roles/schema` | compare le schema du code (`local`) a celui enregistre chez Discord (`registered`), avec `in_sync` |
+| `POST` | `/staff/linked-roles/schema` | declare le schema a Discord. **Geste explicite** : le `PUT` remplace TOUT le schema, jamais automatique au demarrage |
+| `GET` | `/staff/linked-roles/register` | enregistre le schema **depuis un navigateur** (enregistre, relit chez Discord, confirme). Reponse en texte brut. Reservee au seul compte `SCHEMA_REGISTRAR_ID` (en dur) : `403` pour tout autre, staff compris. Idempotente |
+| `POST` | `/staff/linked-roles/resync` | remet tous les comptes lies dans la file (`{"status":"queued","accounts":N}`) |
+| `GET` | `/staff/linked-roles/users/{user_id}` | etat du lien d'un compte (jamais de jeton) |
+| `POST` | `/staff/linked-roles/users/{user_id}/sync` | republie les metadonnees d'un compte |
+
+`502` quand Discord refuse (schema invalide, jeton de bot absent, panne).
 
 ---
 
