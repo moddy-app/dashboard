@@ -1252,7 +1252,10 @@
       "statusInactive": "Inactive",
       "tabs": {
         "settings": "Panels",
-        "tickets": "Tickets"
+        "tickets": "Tickets",
+        "general": "Settings",
+        "transcripts": "Archives",
+        "ratings": "Feedback"
       },
       "panelQuota": "{{count}} of {{max}} panels used",
       "panelQuotaUnknown": "Quotas unavailable — saving is still allowed.",
@@ -1294,7 +1297,8 @@
         "unknownDiscordCategory": "This Discord category no longer exists.",
         "notADiscordCategory": "This destination is not a Discord category.",
         "tooManyCategories": "'{{name}}' has too many categories ({{count}}/{{max}}).",
-        "maxOpenRange": "Between {{min}} and {{max}}."
+        "maxOpenRange": "Between {{min}} and {{max}}.",
+        "retentionRange": "Between {{min}} and {{max}} days."
       },
       "apply": {
         "savedOnly": "Settings saved.",
@@ -1480,6 +1484,10 @@
           "admin": {
             "label": "Admin",
             "description": "Everything above, and keeps access after an escalation."
+          },
+          "stats": {
+            "label": "Feedback",
+            "description": "Read the ratings left on this category's tickets."
           }
         }
       },
@@ -1513,6 +1521,166 @@
       "channel": {
         "default_open_message": "### {icon} Ticket #{number}\nThanks for opening a ticket. Describe your request as precisely as you can — the team will answer you here.\n-# Opened by · {user} · `{category}`",
         "default_close_message": "Thanks for reaching out. If you need anything else, open a new ticket."
+      },
+      "settings": {
+        "logChannel": "Ticket log channel",
+        "logChannelDescription": "Where Moddy posts the closing summary and the link to the archive. Leave empty to post nothing.",
+        "selectLogChannel": "Select a channel",
+        "noTextChannel": "No text channel on this server",
+        "noLogChannel": "No log channel",
+        "transcripts": "Archive conversations",
+        "transcriptsDescription": "When a ticket is closed, Moddy keeps the whole conversation so it can be read again from the dashboard.",
+        "retention": "Keep archives for",
+        "retentionDescription": "How long a closed conversation is kept. The bot runs the purge — the dashboard never deletes anything itself.",
+        "retentionUnlimited": "Forever",
+        "retentionDays_one": "{{count}} day",
+        "retentionDays_other": "{{count}} days",
+        "retentionCustom": "Custom…",
+        "retentionWarningTitle": "This will delete conversations",
+        "retentionWarningDescription": "Saving with this value makes the bot erase, on its next daily purge, every archive closed more than {{days}} days ago. This cannot be undone.",
+        "confirmRetentionTitle": "Shorten the retention?",
+        "confirmRetentionDescription": "Every archive closed more than {{days}} days ago will be erased by the bot on its next daily purge. Ratings survive, the conversations do not. This cannot be undone.",
+        "confirmRetentionAction": "Save and delete",
+        "closureDetection": "Detect finished conversations",
+        "closureDetectionDescription": "Moddy's AI notices when a conversation looks resolved and offers to close the ticket. This uses your AI quota.",
+        "rating": "Ask for feedback",
+        "ratingDescription": "When a ticket closes, the author is offered five appreciations and an optional comment.",
+        "purgeHint": "Retention is applied by the bot, once a day — a change does not take effect instantly."
+      },
+      "transcripts": {
+        "disabledTitle": "Archiving is off",
+        "disabledDescription": "New tickets are closed without keeping their conversation. Existing archives stay readable.",
+        "retentionTitle": "Archives are kept for a limited time",
+        "retentionDescription": "Conversations closed more than {{days}} days ago have been erased by the bot. Their ratings are kept.",
+        "ticketNumber": "Ticket number",
+        "ownerId": "Author ID",
+        "clearFilters": "Clear",
+        "loadError": "Archives could not be loaded",
+        "emptyTitle": "No archive yet",
+        "emptyDescription": "A conversation is archived when its ticket is closed. Nothing has been closed here yet — or the retention has already passed.",
+        "emptyFiltered": "No archive matches these filters.",
+        "noCategory": "No category",
+        "renamed": "now “{{name}}”",
+        "categoryDeleted": "category deleted since",
+        "truncated": "Partial",
+        "pagination": "Page {{page}} of {{pages}} — {{total}} archives",
+        "previousPage": "Previous page",
+        "nextPage": "Next page"
+      },
+      "transcript": {
+        "title": "Ticket #{{number}}",
+        "closedOn": "Closed on {{date}}",
+        "back": "Back",
+        "backToDashboard": "Back to the dashboard",
+        "details": "Ticket details",
+        "conversation": "Conversation",
+        "staffThread": "Staff thread",
+        "staffThreadTitle": "Private staff conversation",
+        "staffThreadDescription": "This thread is only visible to the server team. It is never mixed into the conversation, and the ticket author cannot read it.",
+        "staffThreadWithheldTitle": "A staff thread existed on this ticket",
+        "staffThreadWithheldDescription": "The team had a private conversation about this ticket. Its content is not part of this archive.",
+        "truncatedTitle": "The beginning was not kept",
+        "truncatedDescription": "This ticket went past 20,000 messages: only the most recent ones were archived. The start of the conversation is really gone.",
+        "copyLink": "Copy link",
+        "copyLinkHint": "Anyone with this link and a Moddy account who is allowed to read it can open the conversation — share it carefully.",
+        "download": "Download",
+        "searchPlaceholder": "Search this conversation",
+        "clearSearch": "Clear search",
+        "matchCount": "Match {{index}} of {{count}}",
+        "noMatch": "No match",
+        "previousMatch": "Previous match",
+        "nextMatch": "Next match",
+        "loadEarlier_one": "Load {{count}} earlier block",
+        "loadEarlier_other": "Load {{count}} earlier blocks",
+        "loadAll": "Load everything",
+        "noMessage": "This archive has no message.",
+        "noTextContent": "No text",
+        "replyUnavailable": "The replied-to message is not in this archive.",
+        "edited": "edited",
+        "pinned": "pinned",
+        "spoiler": "Spoiler — click to reveal",
+        "imageAlt": "Attached image",
+        "linkExpired": "link expired",
+        "openAttachment": "Open the attachment",
+        "unnamedFile": "File",
+        "selectMenu": "Dropdown menu",
+        "unsupportedComponent": "Component not supported by this dashboard",
+        "roles": {
+          "author": "Author",
+          "staff": "Team",
+          "bot": "Bot"
+        },
+        "props": {
+          "author": "Ticket author",
+          "claimedBy": "Handled by",
+          "closedBy": "Closed by",
+          "closeReason": "Closing reason",
+          "opened": "Opened",
+          "closed": "Closed",
+          "duration": "Duration",
+          "messages": "Messages",
+          "size": "Size",
+          "participants_one": "{{count}} participant",
+          "participants_other": "{{count}} participants"
+        },
+        "system": {
+          "unknown": "{{user}} — system event ({{type}})",
+          "pin_add": "{{user}} pinned a message.",
+          "thread_created": "{{user}} started a thread.",
+          "channel_name_change": "{{user}} renamed the channel.",
+          "recipient_add": "{{user}} added someone to the ticket.",
+          "recipient_remove": "{{user}} removed someone from the ticket.",
+          "user_join": "{{user}} joined."
+        },
+        "errors": {
+          "notFoundTitle": "Archive not found",
+          "notFoundDescription": "This archive does not exist, the link has expired, or it is not one you can read. Ask the server team for a fresh link.",
+          "unrenderableTitle": "This archive cannot be displayed",
+          "unrenderableDescription": "The archive exists and you are allowed to read it, but its content cannot be rendered by this version of Moddy. Retrying will not help — please contact support.",
+          "suspendedTitle": "Account suspended",
+          "suspendedDescription": "Your account is under a global suspension, so archives are not accessible.",
+          "unknownTitle": "Something went wrong",
+          "unknownDescription": "The archive could not be loaded. Try again in a few moments."
+        }
+      },
+      "ratings": {
+        "title": "Feedback",
+        "listTitle": "Latest feedback",
+        "window": "Last {{days}} days",
+        "windowHint": "over the last {{days}} days",
+        "count": "Ratings",
+        "average": "Average",
+        "negativeCount_one": "{{count}} negative rating",
+        "negativeCount_other": "{{count}} negative ratings",
+        "negativeShort": "Negative",
+        "negativeOnly": "Bad experiences",
+        "allTriggers": "Any moment",
+        "byStaff": "Per agent",
+        "byStaffHint": "Ordered by volume of tickets handled, never by average — a single perfect rating should not outrank fifty tickets. “Handled” comes from the archives, so an agent can appear with work but no rating.",
+        "staff": "Agent",
+        "handled": "Handled",
+        "lowSample": "Few ratings",
+        "lowSampleHint": "Fewer than 3 ratings: the average says little.",
+        "aboutStaff": "About {{name}}",
+        "noStaff": "No one in particular",
+        "openTranscript": "Read the conversation",
+        "empty": "No feedback matches these filters.",
+        "noneTitle": "No feedback yet",
+        "noneDescription": "Feedback is offered to the ticket author when a ticket closes. Nothing has been left over this period.",
+        "loadError": "Feedback could not be loaded",
+        "pagination": "Page {{page}} of {{pages}} — {{total}} ratings",
+        "scores": {
+          "very_bad": "Very bad",
+          "poor": "Poor",
+          "fair": "Fair",
+          "good": "Good",
+          "excellent": "Excellent"
+        },
+        "triggers": {
+          "close_request": "Accepted a closing request",
+          "self_close": "Closed the ticket themselves",
+          "dm_button": "Came back from the DM"
+        }
       }
     }
   },

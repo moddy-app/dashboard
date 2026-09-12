@@ -1252,7 +1252,10 @@
       "statusInactive": "Inactif",
       "tabs": {
         "settings": "Panneaux",
-        "tickets": "Tickets"
+        "tickets": "Tickets",
+        "general": "Réglages",
+        "transcripts": "Archives",
+        "ratings": "Avis"
       },
       "panelQuota": "{{count}} panneaux sur {{max}}",
       "panelQuotaUnknown": "Quotas indisponibles — l'enregistrement reste possible.",
@@ -1294,7 +1297,8 @@
         "unknownDiscordCategory": "Cette catégorie Discord n'existe plus.",
         "notADiscordCategory": "Cette destination n'est pas une catégorie Discord.",
         "tooManyCategories": "« {{name}} » a trop de catégories ({{count}}/{{max}}).",
-        "maxOpenRange": "Entre {{min}} et {{max}}."
+        "maxOpenRange": "Entre {{min}} et {{max}}.",
+        "retentionRange": "Entre {{min}} et {{max}} jours."
       },
       "apply": {
         "savedOnly": "Configuration enregistrée.",
@@ -1480,6 +1484,10 @@
           "admin": {
             "label": "Admin",
             "description": "Tout ce qui précède, et garde l'accès après une escalade."
+          },
+          "stats": {
+            "label": "Avis",
+            "description": "Lire les avis laissés sur les tickets de cette catégorie."
           }
         }
       },
@@ -1513,6 +1521,166 @@
       "channel": {
         "default_open_message": "### {icon} Ticket #{number}\nMerci d'avoir ouvert un ticket. Décrivez votre demande le plus précisément possible — l'équipe vous répondra ici.\n-# Ouvert par · {user} · `{category}`",
         "default_close_message": "Merci de nous avoir contactés. Si vous avez besoin d'autre chose, ouvrez un nouveau ticket."
+      },
+      "settings": {
+        "logChannel": "Salon du journal",
+        "logChannelDescription": "Où Moddy publie la fiche de fermeture et le lien vers l'archive. Laissez vide pour ne rien publier.",
+        "selectLogChannel": "Choisir un salon",
+        "noTextChannel": "Aucun salon textuel sur ce serveur",
+        "noLogChannel": "Aucun salon de journal",
+        "transcripts": "Archiver les conversations",
+        "transcriptsDescription": "À la fermeture d'un ticket, Moddy conserve toute la conversation pour qu'elle reste lisible depuis le dashboard.",
+        "retention": "Conserver les archives",
+        "retentionDescription": "Durée de conservation d'une conversation fermée. La purge est faite par le bot — le dashboard ne supprime jamais rien lui-même.",
+        "retentionUnlimited": "Sans limite",
+        "retentionDays_one": "{{count}} jour",
+        "retentionDays_other": "{{count}} jours",
+        "retentionCustom": "Personnalisé…",
+        "retentionWarningTitle": "Cela va supprimer des conversations",
+        "retentionWarningDescription": "Enregistrer avec cette valeur fera effacer par le bot, à sa prochaine purge quotidienne, toutes les archives fermées depuis plus de {{days}} jours. C'est irréversible.",
+        "confirmRetentionTitle": "Raccourcir la conservation ?",
+        "confirmRetentionDescription": "Toutes les archives fermées depuis plus de {{days}} jours seront effacées par le bot à sa prochaine purge quotidienne. Les avis survivent, les conversations non. C'est irréversible.",
+        "confirmRetentionAction": "Enregistrer et supprimer",
+        "closureDetection": "Détecter les conversations terminées",
+        "closureDetectionDescription": "L'IA de Moddy repère qu'une conversation semble résolue et propose de fermer le ticket. Cela consomme votre quota IA.",
+        "rating": "Demander un avis",
+        "ratingDescription": "À la fermeture, l'auteur du ticket se voit proposer cinq appréciations et un commentaire facultatif.",
+        "purgeHint": "La conservation est appliquée par le bot, une fois par jour — un changement n'est pas instantané."
+      },
+      "transcripts": {
+        "disabledTitle": "L'archivage est désactivé",
+        "disabledDescription": "Les nouveaux tickets sont fermés sans conserver leur conversation. Les archives existantes restent lisibles.",
+        "retentionTitle": "Les archives ont une durée de vie",
+        "retentionDescription": "Les conversations fermées depuis plus de {{days}} jours ont été effacées par le bot. Leurs avis sont conservés.",
+        "ticketNumber": "Numéro de ticket",
+        "ownerId": "ID de l'auteur",
+        "clearFilters": "Réinitialiser",
+        "loadError": "Impossible de charger les archives",
+        "emptyTitle": "Aucune archive",
+        "emptyDescription": "Une conversation est archivée à la fermeture de son ticket. Rien n'a encore été fermé ici — ou la durée de conservation est déjà passée.",
+        "emptyFiltered": "Aucune archive ne correspond à ces filtres.",
+        "noCategory": "Sans catégorie",
+        "renamed": "aujourd'hui « {{name}} »",
+        "categoryDeleted": "catégorie supprimée depuis",
+        "truncated": "Partielle",
+        "pagination": "Page {{page}} sur {{pages}} — {{total}} archives",
+        "previousPage": "Page précédente",
+        "nextPage": "Page suivante"
+      },
+      "transcript": {
+        "title": "Ticket #{{number}}",
+        "closedOn": "Fermé le {{date}}",
+        "back": "Retour",
+        "backToDashboard": "Retour au dashboard",
+        "details": "Détails du ticket",
+        "conversation": "Conversation",
+        "staffThread": "Fil de l'équipe",
+        "staffThreadTitle": "Conversation privée de l'équipe",
+        "staffThreadDescription": "Ce fil n'est visible que par l'équipe du serveur. Il n'est jamais mêlé à la conversation, et l'auteur du ticket ne peut pas le lire.",
+        "staffThreadWithheldTitle": "Un fil d'équipe a existé sur ce ticket",
+        "staffThreadWithheldDescription": "L'équipe a eu une conversation privée à propos de ce ticket. Son contenu ne fait pas partie de cette archive.",
+        "truncatedTitle": "Le début n'a pas été conservé",
+        "truncatedDescription": "Ce ticket a dépassé 20 000 messages : seuls les plus récents ont été archivés. Le début de la conversation est réellement perdu.",
+        "copyLink": "Copier le lien",
+        "copyLinkHint": "Toute personne disposant de ce lien, connectée et autorisée à le lire, peut ouvrir la conversation — à partager avec précaution.",
+        "download": "Télécharger",
+        "searchPlaceholder": "Rechercher dans la conversation",
+        "clearSearch": "Effacer la recherche",
+        "matchCount": "Résultat {{index}} sur {{count}}",
+        "noMatch": "Aucun résultat",
+        "previousMatch": "Résultat précédent",
+        "nextMatch": "Résultat suivant",
+        "loadEarlier_one": "Charger {{count}} bloc précédent",
+        "loadEarlier_other": "Charger {{count}} blocs précédents",
+        "loadAll": "Tout charger",
+        "noMessage": "Cette archive ne contient aucun message.",
+        "noTextContent": "Sans texte",
+        "replyUnavailable": "Le message cité ne fait pas partie de cette archive.",
+        "edited": "modifié",
+        "pinned": "épinglé",
+        "spoiler": "Spoiler — cliquez pour afficher",
+        "imageAlt": "Image jointe",
+        "linkExpired": "lien expiré",
+        "openAttachment": "Ouvrir la pièce jointe",
+        "unnamedFile": "Fichier",
+        "selectMenu": "Menu déroulant",
+        "unsupportedComponent": "Composant non pris en charge par ce dashboard",
+        "roles": {
+          "author": "Auteur",
+          "staff": "Équipe",
+          "bot": "Bot"
+        },
+        "props": {
+          "author": "Auteur du ticket",
+          "claimedBy": "Pris en charge par",
+          "closedBy": "Fermé par",
+          "closeReason": "Motif de fermeture",
+          "opened": "Ouvert le",
+          "closed": "Fermé le",
+          "duration": "Durée",
+          "messages": "Messages",
+          "size": "Taille",
+          "participants_one": "{{count}} participant",
+          "participants_other": "{{count}} participants"
+        },
+        "system": {
+          "unknown": "{{user}} — événement système ({{type}})",
+          "pin_add": "{{user}} a épinglé un message.",
+          "thread_created": "{{user}} a ouvert un fil.",
+          "channel_name_change": "{{user}} a renommé le salon.",
+          "recipient_add": "{{user}} a ajouté quelqu'un au ticket.",
+          "recipient_remove": "{{user}} a retiré quelqu'un du ticket.",
+          "user_join": "{{user}} a rejoint."
+        },
+        "errors": {
+          "notFoundTitle": "Archive introuvable",
+          "notFoundDescription": "Cette archive n'existe pas, le lien a expiré, ou ce n'est pas une archive que vous pouvez lire. Demandez un nouveau lien à l'équipe du serveur.",
+          "unrenderableTitle": "Cette archive ne peut pas être affichée",
+          "unrenderableDescription": "L'archive existe et vous avez le droit de la lire, mais son contenu n'est pas lisible par cette version de Moddy. Réessayer n'y changera rien — contactez le support.",
+          "suspendedTitle": "Compte suspendu",
+          "suspendedDescription": "Votre compte fait l'objet d'une suspension globale : les archives ne sont pas accessibles.",
+          "unknownTitle": "Une erreur est survenue",
+          "unknownDescription": "L'archive n'a pas pu être chargée. Réessayez dans quelques instants."
+        }
+      },
+      "ratings": {
+        "title": "Avis",
+        "listTitle": "Derniers avis",
+        "window": "{{days}} derniers jours",
+        "windowHint": "sur les {{days}} derniers jours",
+        "count": "Avis",
+        "average": "Moyenne",
+        "negativeCount_one": "{{count}} avis négatif",
+        "negativeCount_other": "{{count}} avis négatifs",
+        "negativeShort": "Négatifs",
+        "negativeOnly": "Mal vécus",
+        "allTriggers": "À tout moment",
+        "byStaff": "Par agent",
+        "byStaffHint": "Classé par volume de tickets traités, jamais par moyenne — un unique avis parfait ne doit pas devancer cinquante tickets. « Traités » vient des archives : un agent peut apparaître avec du travail et aucun avis.",
+        "staff": "Agent",
+        "handled": "Traités",
+        "lowSample": "Peu d'avis",
+        "lowSampleHint": "Moins de 3 avis : la moyenne ne dit pas grand-chose.",
+        "aboutStaff": "À propos de {{name}}",
+        "noStaff": "Personne en particulier",
+        "openTranscript": "Lire la conversation",
+        "empty": "Aucun avis ne correspond à ces filtres.",
+        "noneTitle": "Aucun avis",
+        "noneDescription": "L'avis est proposé à l'auteur du ticket à sa fermeture. Rien n'a été laissé sur cette période.",
+        "loadError": "Impossible de charger les avis",
+        "pagination": "Page {{page}} sur {{pages}} — {{total}} avis",
+        "scores": {
+          "very_bad": "Très mauvais",
+          "poor": "Mauvais",
+          "fair": "Correct",
+          "good": "Bien",
+          "excellent": "Excellent"
+        },
+        "triggers": {
+          "close_request": "A accepté une demande de fermeture",
+          "self_close": "A fermé le ticket lui-même",
+          "dm_button": "Est revenu depuis le DM"
+        }
       }
     }
   },

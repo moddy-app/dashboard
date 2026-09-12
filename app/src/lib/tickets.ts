@@ -1,5 +1,7 @@
 import {
   CHANNEL_TYPES,
+  TICKET_RETENTION_RANGE,
+  TICKET_SETTINGS_DEFAULTS,
   TICKET_BUTTONS,
   TICKET_BUTTON_STYLES,
   TICKET_DEFAULT_MAX_OPEN_PER_USER,
@@ -22,6 +24,7 @@ import type {
   TicketsApply,
   TicketsConfig,
   TicketsLimits,
+  TicketsSettings,
 } from '@/types/api'
 import { ApiError } from '@/lib/auth'
 import type { ApiValidationIssue } from '@/lib/auth'
@@ -163,6 +166,39 @@ export function normalizeTicketPanel(raw: Record<string, unknown>, existingIds: 
   }
 }
 
+function asBool(value: unknown, fallback: boolean): boolean {
+  return typeof value === 'boolean' ? value : fallback
+}
+
+/**
+ * Réglages du module. Le backend sert la forme groupée, mais le bot accepte
+ * encore les cinq clés **à plat à la racine** : on lit les deux, `settings`
+ * gagnant sur la clé plate — exactement comme le backend. Une config écrite
+ * avant l'existence de ces clés se charge donc avec les défauts.
+ */
+export function normalizeTicketsSettings(raw: Record<string, unknown> | null | undefined): TicketsSettings {
+  const root = (raw ?? {}) as Record<string, unknown>
+  const nested = (typeof root.settings === 'object' && root.settings !== null
+    ? root.settings
+    : {}) as Record<string, unknown>
+  const pick = (key: keyof TicketsSettings) => (key in nested ? nested[key] : root[key])
+
+  const days = Number(pick('transcript_retention_days'))
+
+  return {
+    log_channel_id: asSnowflake(pick('log_channel_id')),
+    transcripts_enabled: asBool(pick('transcripts_enabled'), TICKET_SETTINGS_DEFAULTS.transcripts_enabled),
+    transcript_retention_days: Number.isFinite(days)
+      ? Math.min(Math.max(Math.trunc(days), TICKET_RETENTION_RANGE.min), TICKET_RETENTION_RANGE.max)
+      : TICKET_SETTINGS_DEFAULTS.transcript_retention_days,
+    closure_detection_enabled: asBool(
+      pick('closure_detection_enabled'),
+      TICKET_SETTINGS_DEFAULTS.closure_detection_enabled
+    ),
+    rating_enabled: asBool(pick('rating_enabled'), TICKET_SETTINGS_DEFAULTS.rating_enabled),
+  }
+}
+
 export function normalizeTicketsConfig(raw: Record<string, unknown> | null | undefined): TicketsConfig {
   const rawPanels = Array.isArray(raw?.panels) ? (raw?.panels as unknown[]) : []
   const panelIds: string[] = []
@@ -171,7 +207,7 @@ export function normalizeTicketsConfig(raw: Record<string, unknown> | null | und
     panelIds.push(panel.id)
     return panel
   })
-  return { panels, enabled: raw?.enabled === true }
+  return { panels, settings: normalizeTicketsSettings(raw), enabled: raw?.enabled === true }
 }
 
 // ─── Création ─────────────────────────────────────────────────────────────────
@@ -242,9 +278,23 @@ export function serializePermissions(
 /**
  * Corps du `PUT` : l'objet **entier**, jamais un diff. `enabled` à la racine est
  * calculé côté serveur — l'envoyer n'a aucun effet, on l'omet.
+ *
+ * `settings` part toujours, et **sous la clé groupée uniquement** : l'omettre le
+ * remettrait aux défauts (archives réactivées, rétention illimitée, journal
+ * perdu), et l'écrire à plat serait la forme héritée que le backend n'écrit plus.
  */
-export function serializeTicketsConfig(panels: readonly TicketPanel[]): { panels: TicketPanel[] } {
+export function serializeTicketsConfig(
+  panels: readonly TicketPanel[],
+  settings: TicketsSettings
+): { panels: TicketPanel[]; settings: TicketsSettings } {
   return {
+    settings: {
+      log_channel_id: settings.log_channel_id,
+      transcripts_enabled: settings.transcripts_enabled,
+      transcript_retention_days: settings.transcript_retention_days,
+      closure_detection_enabled: settings.closure_detection_enabled,
+      rating_enabled: settings.rating_enabled,
+    },
     panels: panels.map((panel) => ({
       id: panel.id,
       name: panel.name.trim(),
@@ -350,6 +400,11 @@ export function categoryFieldKey(panelId: string, categoryId: string, field: str
   return `p:${panelId}.c:${categoryId}.${field}`
 }
 
+/** Clé de champ d'un réglage du module (`settings.log_channel_id`…). */
+export function settingsFieldKey(field: keyof TicketsSettings): string {
+  return `settings.${field}`
+}
+
 export interface TicketsIssue {
   /** Champ concerné, `null` quand le problème ne se rattache à aucun input. */
   field: string | null
@@ -363,6 +418,21 @@ const V = 'modules.tickets.validation.'
 interface ValidationContext {
   limits: TicketsLimits | null
   channels: Channel[]
+  settings: TicketsSettings
+}
+
+/**
+ * Une rétention **abaissée supprime des conversations** : le bot efface, à sa
+ * prochaine purge quotidienne, toute archive fermée depuis plus de N jours. Ce
+ * n'est pas réversible — d'où une confirmation explicite avant l'écriture.
+ *
+ * `0` = illimité, donc passer *de* `0` *à* n'importe quoi resserre, et passer
+ * *à* `0` élargit toujours.
+ */
+export function retentionShrinks(previous: number, next: number): boolean {
+  if (next === 0) return false
+  if (previous === 0) return true
+  return next < previous
 }
 
 /**
@@ -373,10 +443,29 @@ interface ValidationContext {
  */
 export function validateTicketsConfig(
   panels: readonly TicketPanel[],
-  { limits, channels }: ValidationContext
+  { limits, channels, settings }: ValidationContext
 ): TicketsIssue[] {
   const issues: TicketsIssue[] = []
   const L = TICKET_TEXT_LIMITS
+
+  // ── Réglages du module ──────────────────────────────────────────────────
+  const days = settings.transcript_retention_days
+  if (!Number.isInteger(days) || days < TICKET_RETENTION_RANGE.min || days > TICKET_RETENTION_RANGE.max) {
+    issues.push({
+      field: settingsFieldKey('transcript_retention_days'),
+      key: `${V}retentionRange`,
+      params: { min: TICKET_RETENTION_RANGE.min, max: TICKET_RETENTION_RANGE.max },
+    })
+  }
+
+  if (settings.log_channel_id && channels.length > 0) {
+    const channel = channels.find((c) => c.id === settings.log_channel_id)
+    if (!channel) {
+      issues.push({ field: settingsFieldKey('log_channel_id'), key: `${V}unknownChannel` })
+    } else if (channel.type !== CHANNEL_TYPES.TEXT && channel.type !== CHANNEL_TYPES.ANNOUNCEMENT) {
+      issues.push({ field: settingsFieldKey('log_channel_id'), key: `${V}notATextChannel` })
+    }
+  }
 
   if (limits && panels.length > limits.max_panels) {
     issues.push({
@@ -520,6 +609,16 @@ export function mapTicketsApiError(
 
   for (const issue of issues) {
     const loc = (issue.loc ?? []).filter((part) => part !== 'body' && part !== 'config')
+
+    // `settings` est un nœud à part : ses champs vivent hors des panneaux.
+    const settingsIdx = loc.indexOf('settings')
+    if (settingsIdx >= 0) {
+      const field = String(loc[settingsIdx + 1] ?? '')
+      if (field) fields[`settings.${field}`] = issue.msg
+      else global.push(issue.msg)
+      continue
+    }
+
     const panelsIdx = loc.indexOf('panels')
     const panelIndex = panelsIdx >= 0 ? loc[panelsIdx + 1] : undefined
     const panel = typeof panelIndex === 'number' ? sentPanels[panelIndex] : undefined

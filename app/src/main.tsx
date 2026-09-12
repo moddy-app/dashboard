@@ -26,6 +26,7 @@ import { BotCustomizationPage } from "@/pages/modules/BotCustomizationPage"
 import { AltGuardPage } from "@/pages/modules/AltGuardPage"
 import { LogsPage } from "@/pages/modules/LogsPage"
 import { TicketsPage } from "@/pages/modules/TicketsPage"
+import { TranscriptPage } from "@/pages/TranscriptPage"
 import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
 import { MyCasesPage } from "@/pages/MyCasesPage"
@@ -74,6 +75,9 @@ const router = createBrowserRouter([
       { path: "select-premium-servers", element: <Navigate to="/?openSettings=billing" replace /> },
     ],
   },
+  // Hors du châssis : le lien d'archive est donné au salon de journal **et** au
+  // DM de fermeture, donc à quelqu'un qui n'administre peut-être aucun serveur.
+  { path: "/transcripts/:key", element: <TranscriptPage />, errorElement: <RouteError /> },
   { path: "/debug", element: <DebugPage />, errorElement: <RouteError /> },
   { path: "*", element: <NotFoundPage /> },
 ])
