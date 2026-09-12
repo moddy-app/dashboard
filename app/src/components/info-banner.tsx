@@ -9,61 +9,7 @@ import {
   type LucideProps,
 } from 'lucide-react'
 import type { Banner, BannerType } from '@/services/banner'
-
-// ─── Markdown ─────────────────────────────────────────────────────────────────
-
-function parseInlineMarkdown(text: string): React.ReactNode[] {
-  const nodes: React.ReactNode[] = []
-  let remaining = text
-  let key = 0
-
-  while (remaining.length > 0) {
-    const linkMatch = remaining.match(/^\[([^\]]+)\]\(([^)]+)\)/)
-    if (linkMatch) {
-      nodes.push(
-        <a
-          key={key++}
-          href={linkMatch[2]}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline underline-offset-2"
-        >
-          {linkMatch[1]}
-        </a>
-      )
-      remaining = remaining.slice(linkMatch[0].length)
-      continue
-    }
-
-    const boldMatch = remaining.match(/^\*\*(.+?)\*\*/)
-    if (boldMatch) {
-      nodes.push(<strong key={key++}>{boldMatch[1]}</strong>)
-      remaining = remaining.slice(boldMatch[0].length)
-      continue
-    }
-
-    const italicMatch = remaining.match(/^\*(.+?)\*/)
-    if (italicMatch) {
-      nodes.push(<em key={key++}>{italicMatch[1]}</em>)
-      remaining = remaining.slice(italicMatch[0].length)
-      continue
-    }
-
-    const nextSpecial = remaining.search(/\[|\*/)
-    if (nextSpecial === -1) {
-      nodes.push(remaining)
-      remaining = ''
-    } else if (nextSpecial === 0) {
-      nodes.push(remaining[0])
-      remaining = remaining.slice(1)
-    } else {
-      nodes.push(remaining.slice(0, nextSpecial))
-      remaining = remaining.slice(nextSpecial)
-    }
-  }
-
-  return nodes
-}
+import { parseInlineMarkdown } from '@/lib/inline-markdown'
 
 // ─── Design system per type ───────────────────────────────────────────────────
 
