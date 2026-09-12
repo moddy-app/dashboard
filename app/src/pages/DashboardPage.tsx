@@ -40,6 +40,8 @@ import { useSanctions } from "@/contexts/SanctionContext"
 import { DebugModeBadge } from "@/components/debug-error-overlay"
 import { InfoBanner } from "@/components/info-banner"
 import { useBanner } from "@/hooks/useBanner"
+import { StatusBanner } from "@/components/status-banner"
+import { useStatusBanner } from "@/hooks/useStatusBanner"
 import { DashboardSanctionBanner } from "@/components/violations/sanction-banner"
 import { InstallWelcomeDialog } from "@/components/install/install-welcome-dialog"
 import { useInstallWelcome } from "@/hooks/useInstallWelcome"
@@ -63,8 +65,10 @@ export function DashboardPage({ user }: DashboardPageProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsDefaultTab, setSettingsDefaultTab] = useState('account')
   const [dismissedBannerId, setDismissedBannerId] = useState<number | null>(null)
+  const [dismissedStatusKey, setDismissedStatusKey] = useState<string | null>(null)
   const welcomeToastShown = useRef(false)
   const banner = useBanner('show_dashboard')
+  const statusBanner = useStatusBanner()
   // La boîte de réception est chargée ici plutôt que dans le tiroir : la pastille
   // du menu utilisateur a besoin du compte de non-lues sans qu'on l'ouvre.
   const notifications = useNotifications()
@@ -72,6 +76,13 @@ export function DashboardPage({ user }: DashboardPageProps) {
   // monté ici pour être visible quelle que soit la route d'arrivée.
   const installWelcome = useInstallWelcome()
   const activeBanner = banner && banner.id !== dismissedBannerId ? banner : null
+  // Pas d'id dans le payload `health.moddy.app` : on fabrique une clé à partir
+  // du contenu, stable tant que l'incident/la fenêtre de maintenance ne change pas.
+  const statusBannerKey = statusBanner
+    ? (statusBanner.url ?? statusBanner.title ?? statusBanner.message)
+    : null
+  const activeStatusBanner =
+    statusBanner && statusBannerKey !== dismissedStatusKey ? statusBanner : null
 
   // Ouvre les paramètres sur l'onglet ciblé si ?openSettings=<tab> est dans l'URL
   useEffect(() => {
@@ -261,6 +272,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
     // page et l'en-tête — fil d'Ariane, bouton de sidebar — sort par le haut.
     // `100dvh` est le repli tant que la mesure n'est pas posée.
     <div className="flex h-[var(--app-height,100dvh)] flex-col">
+      {activeStatusBanner && (
+        <StatusBanner
+          banner={activeStatusBanner}
+          onDismiss={() => setDismissedStatusKey(statusBannerKey)}
+        />
+      )}
       {activeBanner && (
         <InfoBanner
           banner={activeBanner}
