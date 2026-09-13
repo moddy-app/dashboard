@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -33,6 +33,7 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
+  useMessageScroller,
   useMessageScrollerVisibility,
 } from "@/components/ui/message-scroller"
 import { Separator } from "@/components/ui/separator"
@@ -356,6 +357,7 @@ function Thread({
   query: string
 }) {
   const { t } = useTranslation()
+  const { scrollToMessage } = useMessageScroller()
   const [window_, setWindow] = useState(INITIAL_WINDOW)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [matchIndex, setMatchIndex] = useState(0)
@@ -374,15 +376,40 @@ function Thread({
 
   const matchSet = useMemo(() => new Set(matches), [matches])
 
-  // Référence stable : l'effet de `LoadEarlier` ne doit se réarmer que sur un
-  // changement réel, jamais à cause d'une fonction recréée à chaque rendu — ce
-  // serait une boucle de chargement.
-  const loadMore = useCallback(() => setWindow((w) => w + WINDOW_STEP), [])
-
   const hidden = Math.max(blocks.length - window_, 0)
   // Une recherche porte sur **toute** la conversation : on déplie tout dès qu'il
   // y a des résultats, sinon un message trouvé resterait hors du DOM.
   const visible = query.trim() ? blocks : blocks.slice(hidden)
+
+  // Référence stable : l'effet de `LoadEarlier` ne doit se réarmer que sur un
+  // changement réel, jamais à cause d'une fonction recréée à chaque rendu — ce
+  // serait une boucle de chargement.
+  //
+  // `preserveScrollOnPrepend` du scroller ne suffit pas ici : sa restauration
+  // ne se déclenche que si le premier enfant précédent se retrouve à un index
+  // > 0 après coup. Or notre sentinelle (`LOAD_MORE_ID`) reste **toujours** le
+  // tout premier enfant tant que `hidden > 0` — les blocs nouvellement révélés
+  // s'insèrent *après* elle, jamais avant. Son index reste donc 0 à chaque
+  // rechargement, la restauration automatique ne se déclenche jamais, la
+  // sentinelle ne bouge jamais à l'écran, reste visible, et `onReach` se
+  // redéclenche en boucle — c'est le chargement infini. On ancre donc
+  // manuellement sur le premier bloc **réel** actuellement affiché : une fois
+  // la fenêtre agrandie, on ramène ce bloc en haut du viewport, ce qui pousse
+  // la sentinelle hors champ et arrête la boucle.
+  const anchorIdRef = useRef<string | null>(null)
+  const visibleRef = useRef(visible)
+  visibleRef.current = visible
+  const loadMore = useCallback(() => {
+    anchorIdRef.current = visibleRef.current[0]?.id ?? null
+    setWindow((w) => w + WINDOW_STEP)
+  }, [])
+
+  useLayoutEffect(() => {
+    const anchorId = anchorIdRef.current
+    if (!anchorId) return
+    anchorIdRef.current = null
+    scrollToMessage(anchorId, { align: "start" })
+  }, [window_, scrollToMessage])
 
   const jumpTo = useCallback((messageId: string) => {
     const node = viewportRef.current?.querySelector(`[data-message-id="${CSS.escape(messageId)}"]`)

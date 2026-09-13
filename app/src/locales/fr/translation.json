@@ -1254,7 +1254,6 @@
         "settings": "Panneaux",
         "tickets": "Tickets",
         "general": "Réglages",
-        "transcripts": "Archives",
         "ratings": "Avis"
       },
       "panelQuota": "{{count}} panneaux sur {{max}}",
@@ -1506,17 +1505,30 @@
         "avgResolution": "Résolution moy."
       },
       "filters": {
-        "allStatuses": "Tous les statuts",
         "open": "Ouverts",
         "closed": "Fermés",
         "allCategories": "Toutes les catégories",
-        "refresh": "Rafraîchir"
+        "refresh": "Rafraîchir",
+        "status": "Statut",
+        "category": "Catégorie",
+        "owner": "Auteur",
+        "ownerPlaceholder": "ID Discord",
+        "noCategory": "Aucune catégorie configurée.",
+        "panel": "Panneau",
+        "staff": "Pris en charge par",
+        "number": "Numéro de ticket",
+        "staffPlaceholder": "ID Discord",
+        "numberPlaceholder": "ex. 42",
+        "noPanel": "Aucun panneau configuré."
       },
       "list": {
         "empty": "Aucun ticket ne correspond à ces filtres.",
         "orphan": "Catégorie disparue",
         "closeRequested": "Fermeture demandée",
-        "pagination": "Page {{page}} sur {{pages}} — {{total}} tickets"
+        "pagination": "Page {{page}} sur {{pages}} — {{total}} tickets",
+        "noArchiveTitle": "Aucune archive trouvée",
+        "noArchiveDescription": "La conversation de ce ticket n'a jamais été archivée, ou sa rétention est déjà passée.",
+        "emptyArchives": "Aucune archive ne correspond à ces filtres."
       },
       "channel": {
         "default_open_message": "### {icon} Ticket #{number}\nMerci d'avoir ouvert un ticket. Décrivez votre demande le plus précisément possible — l'équipe vous répondra ici.\n-# Ouvert par · {user} · `{category}`",
@@ -1552,18 +1564,6 @@
         "disabledDescription": "Les nouveaux tickets sont fermés sans conserver leur conversation. Les archives existantes restent lisibles.",
         "retentionTitle": "Les archives ont une durée de vie",
         "retentionDescription": "Les conversations fermées depuis plus de {{days}} jours ont été effacées par le bot. Leurs avis sont conservés.",
-        "ticketNumber": "Numéro de ticket",
-        "ownerId": "ID de l'auteur",
-        "clearFilters": "Réinitialiser",
-        "loadError": "Impossible de charger les archives",
-        "emptyTitle": "Aucune archive",
-        "emptyDescription": "Une conversation est archivée à la fermeture de son ticket. Rien n'a encore été fermé ici — ou la durée de conservation est déjà passée.",
-        "emptyFiltered": "Aucune archive ne correspond à ces filtres.",
-        "noCategory": "Sans catégorie",
-        "renamed": "aujourd'hui « {{name}} »",
-        "categoryDeleted": "catégorie supprimée depuis",
-        "truncated": "Partielle",
-        "pagination": "Page {{page}} sur {{pages}} — {{total}} archives",
         "previousPage": "Page précédente",
         "nextPage": "Page suivante"
       },
