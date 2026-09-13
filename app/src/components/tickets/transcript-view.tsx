@@ -639,13 +639,24 @@ function MessageBlock({
               matches.has(message.id) && "rounded-3xl ring-2 ring-primary/60"
             )}
           >
-            <BubbleContent className="flex flex-col gap-2">
+            <BubbleContent
+              className={cn(
+                "flex flex-col gap-2",
+                // Une pastille de mention se peint en `primary` sur `primary` :
+                // sur la bulle pleine du lecteur, elle disparaissait purement et
+                // simplement. On la repeint dans le contraste de ce fond.
+                mine &&
+                  !isSelfFramed(message) &&
+                  "[&_[data-mention]]:bg-primary-foreground/20 [&_[data-mention]]:text-primary-foreground [&_[data-mention]:hover]:bg-primary-foreground/30"
+              )}
+            >
               {message.reply_to && (
                 <ReplyPreview
                   message={message}
                   messages={allMessages}
                   label={label}
                   onJump={onJump}
+                  onPrimary={mine && !isSelfFramed(message)}
                 />
               )}
 
@@ -739,23 +750,41 @@ function ReplyPreview({
   messages,
   label,
   onJump,
+  onPrimary = false,
 }: {
   message: TranscriptMessage
   messages: TranscriptMessage[]
   label: (authorId: string) => string
   onJump: (messageId: string) => void
+  /**
+   * La citation est-elle posée sur la bulle pleine du lecteur ? `muted-foreground`
+   * et la couleur de bordure par défaut y sont presque illisibles : sur ce fond,
+   * le contraste se prend sur `primary-foreground`, pas sur les tokens neutres.
+   */
+  onPrimary?: boolean
 }) {
   const { t } = useTranslation()
   const messageId = message.reply_to
   const target = messageId ? messages.find((m) => m.id === messageId) : undefined
   const preview = message.reference_preview
 
+  const quote = cn(
+    "border-l-2 pl-2 text-xs",
+    onPrimary
+      ? "border-primary-foreground/50 text-primary-foreground/80"
+      : "text-muted-foreground"
+  )
+
   if (target && messageId) {
     return (
       <button
         type="button"
         onClick={() => onJump(messageId)}
-        className="flex min-w-0 items-baseline gap-1.5 border-l-2 pl-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+        className={cn(
+          quote,
+          "flex min-w-0 items-baseline gap-1.5 text-left transition-colors",
+          onPrimary ? "hover:text-primary-foreground" : "hover:text-foreground"
+        )}
       >
         <span className="shrink-0 font-medium">{label(target.author_id)}</span>
         <span className="truncate">
@@ -770,16 +799,12 @@ function ReplyPreview({
   // Le message d'origine a bien existé, il n'existait plus à l'export. C'est une
   // information — souvent celle qu'on cherchait — pas un trou à masquer.
   if (preview?.kind === "deleted") {
-    return (
-      <p className="border-l-2 pl-2 text-xs text-muted-foreground italic">
-        {t("modules.tickets.transcript.replyDeleted")}
-      </p>
-    )
+    return <p className={cn(quote, "italic")}>{t("modules.tickets.transcript.replyDeleted")}</p>
   }
 
   if (preview?.kind === "preview") {
     return (
-      <div className="flex min-w-0 items-baseline gap-1.5 border-l-2 pl-2 text-xs text-muted-foreground">
+      <div className={cn(quote, "flex min-w-0 items-baseline gap-1.5")}>
         <span className="shrink-0 font-medium">
           {preview.author_id
             ? label(preview.author_id)
@@ -794,11 +819,7 @@ function ReplyPreview({
     )
   }
 
-  return (
-    <p className="border-l-2 pl-2 text-xs text-muted-foreground italic">
-      {t("modules.tickets.transcript.replyUnavailable")}
-    </p>
-  )
+  return <p className={cn(quote, "italic")}>{t("modules.tickets.transcript.replyUnavailable")}</p>
 }
 
 /**
