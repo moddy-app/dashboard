@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
@@ -33,12 +33,16 @@ import {
   MessageScrollerItem,
   MessageScrollerProvider,
   MessageScrollerViewport,
+  useMessageScrollerVisibility,
 } from "@/components/ui/message-scroller"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { DiscordMessageBody, EmojiText } from "@/components/tickets/discord-message"
 import { Notice } from "@/components/tickets/fields"
+import { DiscordMentionProvider } from "@/components/discord-mention"
+import { MessageContextMenu, UserContextMenu } from "@/components/tickets/message-context-menu"
 import { cn } from "@/lib/utils"
 import { formatDuration } from "@/lib/tickets"
 import {
@@ -109,6 +113,20 @@ export function TranscriptView({
     [authors]
   )
 
+  /**
+   * Les mentions `<@id>` ne se résolvent que sur `authors` — l'archive ne stocke
+   * ni la liste des membres, ni celle des rôles ou des salons. Un id absent
+   * reste donc affiché nu : ce composant ne sait rien de plus, et un nom inventé
+   * serait pire qu'un identifiant.
+   */
+  const resolveUser = useCallback(
+    (id: string) => {
+      const author = authors.get(id)
+      return author ? authorName(author, id) : null
+    },
+    [authors]
+  )
+
   const duration = transcriptDurationSeconds(transcript)
 
   const copyLink = async () => {
@@ -137,10 +155,14 @@ export function TranscriptView({
   }
 
   return (
-    <div className={cn("flex min-h-0 w-full flex-col gap-4", className)}>
+    <DiscordMentionProvider resolveUser={resolveUser} selfId={selfId}>
+    <div className={cn("flex min-h-0 w-full flex-col gap-3 sm:gap-4", className)}>
       {/* ── En-tête ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex min-w-0 items-start gap-3">
+      {/* Sur mobile, chaque ligne d'en-tête est prise sur la conversation : le
+          titre et les actions tiennent donc sur **une** rangée, et la méta se
+          résume à une ligne tronquée. */}
+      <div className="flex flex-wrap items-start justify-between gap-2 sm:gap-3">
+        <div className="flex min-w-0 flex-1 items-start gap-2 sm:gap-3">
           {onBack && (
             <Button variant="ghost" size="icon-sm" onClick={onBack} className="mt-0.5 shrink-0">
               <ArrowLeftIcon />
@@ -148,13 +170,13 @@ export function TranscriptView({
             </Button>
           )}
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-tight tabular-nums">
+            <h1 className="truncate text-lg font-semibold tracking-tight tabular-nums sm:text-xl">
               {t("modules.tickets.transcript.title", { number: transcript.ticket_number })}
             </h1>
             {/* Une seule ligne de méta, ponctuée de points : la catégorie, la
                 date de fermeture, la durée. Trois badges feraient du bruit
                 là où il n'y a qu'un contexte à poser. */}
-            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm text-muted-foreground">
+            <p className="mt-0.5 flex items-center gap-x-1.5 truncate text-xs text-muted-foreground sm:mt-1 sm:flex-wrap sm:text-sm">
               {transcript.category_name && (
                 <>
                   <span className="truncate font-medium text-foreground">
@@ -254,9 +276,11 @@ export function TranscriptView({
                 )}
               </TabsList>
 
-              {/* Sur un écran étroit, la recherche prend sa propre ligne :
-                  coincée à côté des onglets, elle se réduisait à deux lettres. */}
-              <InputGroup className="w-full min-w-0 sm:w-auto sm:max-w-xs sm:flex-1">
+              {/* La recherche partage la rangée des onglets : sur mobile,
+                  chaque ligne d'en-tête est prise sur la conversation. `basis`
+                  lui garde une largeur utilisable, et elle ne passe à la ligne
+                  que si l'écran est vraiment trop étroit. */}
+              <InputGroup className="min-w-0 flex-1 basis-40 sm:max-w-xs">
                 <InputGroupAddon>
                   <SearchIcon />
                 </InputGroupAddon>
@@ -310,6 +334,7 @@ export function TranscriptView({
         </aside>
       </div>
     </div>
+    </DiscordMentionProvider>
   )
 }
 
@@ -348,6 +373,11 @@ function Thread({
   }, [messages, query, label])
 
   const matchSet = useMemo(() => new Set(matches), [matches])
+
+  // Référence stable : l'effet de `LoadEarlier` ne doit se réarmer que sur un
+  // changement réel, jamais à cause d'une fonction recréée à chaque rendu — ce
+  // serait une boucle de chargement.
+  const loadMore = useCallback(() => setWindow((w) => w + WINDOW_STEP), [])
 
   const hidden = Math.max(blocks.length - window_, 0)
   // Une recherche porte sur **toute** la conversation : on déplie tout dès qu'il
@@ -411,27 +441,23 @@ function Thread({
         </div>
       )}
 
-      <div className="min-h-0 flex-1 overflow-hidden rounded-xl border bg-card">
+      {/* Pleine largeur sur mobile : les marges de la page et les coins arrondis
+          reprenaient une bande de chaque côté d'un écran qui n'en a pas à
+          donner. Le cadre revient dès qu'il y a la place. */}
+      <div className="-mx-3 min-h-0 flex-1 overflow-hidden border-y bg-card sm:mx-0 sm:rounded-xl sm:border">
         <MessageScrollerProvider defaultScrollPosition="end">
           <MessageScroller>
-            <MessageScrollerViewport ref={viewportRef} className="px-3 py-5 sm:px-6">
+            <MessageScrollerViewport
+              ref={viewportRef}
+              preserveScrollOnPrepend
+              className="px-3 py-4 sm:px-6 sm:py-5"
+            >
               <MessageScrollerContent className="mx-auto w-full max-w-3xl gap-5">
                 {/* Fenêtre : le début d'une très longue conversation n'est monté
                     qu'à la demande. Le scroller garde la position au dépliage. */}
                 {hidden > 0 && !query.trim() && (
-                  <MessageScrollerItem messageId="load-more">
-                    <div className="flex flex-wrap items-center justify-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setWindow((w) => w + WINDOW_STEP)}
-                      >
-                        {t("modules.tickets.transcript.loadEarlier", { count: hidden })}
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setWindow(blocks.length)}>
-                        {t("modules.tickets.transcript.loadAll")}
-                      </Button>
-                    </div>
+                  <MessageScrollerItem messageId={LOAD_MORE_ID}>
+                    <LoadEarlier remaining={hidden} onReach={loadMore} />
                   </MessageScrollerItem>
                 )}
 
@@ -440,7 +466,7 @@ function Thread({
                     return (
                       <MessageScrollerItem key={block.id} messageId={block.id}>
                         <Marker variant="separator">
-                          <MarkerContent className="text-[11px] font-medium tracking-wide uppercase">
+                          <MarkerContent className="text-[11px] font-medium">
                             {formatDay(block.date)}
                           </MarkerContent>
                         </Marker>
@@ -478,6 +504,39 @@ function Thread({
           </MessageScroller>
         </MessageScrollerProvider>
       </div>
+    </div>
+  )
+}
+
+/** Identifiant de la sentinelle de chargement, connu du scroller. */
+const LOAD_MORE_ID = "load-more"
+
+/**
+ * Chargement du début de la conversation **en remontant**, sans bouton.
+ *
+ * La visibilité est lue sur `useMessageScrollerVisibility` — l'échappatoire
+ * prévue par le scroller — plutôt que sur un `IntersectionObserver` maison : le
+ * scroller sait déjà quels éléments sont à l'écran, et c'est lui qui conserve la
+ * position quand des blocs s'insèrent au-dessus.
+ *
+ * `remaining` fait partie des dépendances : si l'ajout d'une tranche laisse la
+ * sentinelle encore visible (des blocs très courts), l'effet se réarme et charge
+ * la suivante. Sans ça, le chargement s'arrêterait sans que rien ne bouge à
+ * l'écran.
+ */
+function LoadEarlier({ remaining, onReach }: { remaining: number; onReach: () => void }) {
+  const { t } = useTranslation()
+  const { visibleMessageIds } = useMessageScrollerVisibility()
+  const visible = visibleMessageIds.includes(LOAD_MORE_ID)
+
+  useEffect(() => {
+    if (visible) onReach()
+  }, [visible, remaining, onReach])
+
+  return (
+    <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+      <Spinner />
+      {t("modules.tickets.transcript.loadingEarlier", { count: remaining })}
     </div>
   )
 }
@@ -544,8 +603,17 @@ function MessageBlock({
         </MessageHeader>
 
         {messages.map((message) => (
-          <Bubble
+          // Clic droit : copier l'identifiant du message, de son auteur, du
+          // salon ou du serveur. Une archive s'ouvre pour enquêter, et tout y
+          // est rendu sous forme lisible — l'identifiant n'apparaît nulle part
+          // ailleurs.
+          <MessageContextMenu
             key={message.id}
+            message={message}
+            transcript={transcript}
+            authorLabel={name}
+          >
+          <Bubble
             align={align}
             // Un message qui n'est fait que de composants V2 ou d'embeds porte
             // déjà son propre cadre (conteneur à barre d'accent) : l'enfermer
@@ -574,7 +642,7 @@ function MessageBlock({
             <BubbleContent className="flex flex-col gap-2">
               {message.reply_to && (
                 <ReplyPreview
-                  messageId={message.reply_to}
+                  message={message}
                   messages={allMessages}
                   label={label}
                   onJump={onJump}
@@ -621,6 +689,7 @@ function MessageBlock({
               </BubbleReactions>
             )}
           </Bubble>
+          </MessageContextMenu>
         ))}
       </MessageContent>
     </Message>
@@ -649,48 +718,99 @@ function plainPreview(text: string): string {
     .trim()
 }
 
-/** Citation du message auquel on répond — cliquable pour y sauter. */
+/**
+ * Citation du message auquel on répond.
+ *
+ * Trois sources, dans cet ordre — chacune sait quelque chose que la suivante
+ * ignore :
+ *
+ * 1. **Le message lui-même**, s'il est dans l'archive : la citation devient
+ *    cliquable, on saute dessus.
+ * 2. **`reference_preview`** (la clé `pr` du corps stocké) : un aperçu autonome
+ *    écrit à l'export. Il couvre exactement les cas où le 1 échoue — début
+ *    tronqué, message supprimé depuis — et il porte le texte même quand le
+ *    message d'origine était une carte sans `content`. Pas de saut possible :
+ *    la cible n'est pas montée.
+ * 3. **Rien** : Discord n'avait pas su résoudre la référence à l'export. On le
+ *    dit, plutôt que d'afficher une citation vide.
+ */
 function ReplyPreview({
-  messageId,
+  message,
   messages,
   label,
   onJump,
 }: {
-  messageId: string
+  message: TranscriptMessage
   messages: TranscriptMessage[]
   label: (authorId: string) => string
   onJump: (messageId: string) => void
 }) {
   const { t } = useTranslation()
-  const target = messages.find((m) => m.id === messageId)
+  const messageId = message.reply_to
+  const target = messageId ? messages.find((m) => m.id === messageId) : undefined
+  const preview = message.reference_preview
 
-  // Le message cité peut être hors de l'archive (conversation tronquée, message
-  // supprimé avant la fermeture) : on le dit plutôt que de rendre une citation
-  // vide.
-  if (!target) {
+  if (target && messageId) {
+    return (
+      <button
+        type="button"
+        onClick={() => onJump(messageId)}
+        className="flex min-w-0 items-baseline gap-1.5 border-l-2 pl-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <span className="shrink-0 font-medium">{label(target.author_id)}</span>
+        <span className="truncate">
+          {target.content
+            ? plainPreview(target.content)
+            : t("modules.tickets.transcript.noTextContent")}
+        </span>
+      </button>
+    )
+  }
+
+  // Le message d'origine a bien existé, il n'existait plus à l'export. C'est une
+  // information — souvent celle qu'on cherchait — pas un trou à masquer.
+  if (preview?.kind === "deleted") {
     return (
       <p className="border-l-2 pl-2 text-xs text-muted-foreground italic">
-        {t("modules.tickets.transcript.replyUnavailable")}
+        {t("modules.tickets.transcript.replyDeleted")}
       </p>
     )
   }
 
+  if (preview?.kind === "preview") {
+    return (
+      <div className="flex min-w-0 items-baseline gap-1.5 border-l-2 pl-2 text-xs text-muted-foreground">
+        <span className="shrink-0 font-medium">
+          {preview.author_id
+            ? label(preview.author_id)
+            : t("modules.tickets.transcript.unknownAuthor")}
+        </span>
+        <span className="truncate">
+          {preview.content
+            ? plainPreview(preview.content)
+            : t("modules.tickets.transcript.noTextContent")}
+        </span>
+      </div>
+    )
+  }
+
   return (
-    <button
-      type="button"
-      onClick={() => onJump(messageId)}
-      className="flex min-w-0 items-baseline gap-1.5 border-l-2 pl-2 text-left text-xs text-muted-foreground transition-colors hover:text-foreground"
-    >
-      <span className="shrink-0 font-medium">{label(target.author_id)}</span>
-      <span className="truncate">
-        {target.content
-          ? plainPreview(target.content)
-          : t("modules.tickets.transcript.noTextContent")}
-      </span>
-    </button>
+    <p className="border-l-2 pl-2 text-xs text-muted-foreground italic">
+      {t("modules.tickets.transcript.replyUnavailable")}
+    </p>
   )
 }
 
+/**
+ * Un **événement du salon** : épinglage, arrivée, départ, renommage. Une réponse
+ * n'en est pas un et ne passe jamais ici — voir `isSystemEvent()`.
+ *
+ * Deux champs additifs du corps stocké rendent ces lignes utiles plutôt que
+ * décoratives : `system_target` nomme la personne **concernée** par un
+ * `recipient_add` / `recipient_remove` (sans lui, « quelqu'un a été ajouté »
+ * n'apprend rien), et `reference_preview` cite le message épinglé — Discord
+ * attache la même référence à un `pin_add` qu'à une réponse.
+ */
 function SystemRow({
   message,
   label,
@@ -699,28 +819,50 @@ function SystemRow({
   label: (authorId: string) => string
 }) {
   const { t, i18n } = useTranslation()
-  const key = `modules.tickets.transcript.system.${message.system_type}`
+  const target = message.system_target
+  // Une clé `_target` dédiée quand la cible est connue : « X a ajouté Y » et
+  // « X a ajouté quelqu'un » sont deux phrases, pas une phrase à trou.
+  const base = `modules.tickets.transcript.system.${message.system_type}`
+  const key = target && i18n.exists(`${base}_target`) ? `${base}_target` : base
   const known = i18n.exists(key)
+  const preview = message.reference_preview
 
   return (
     <Marker>
-      <MarkerIcon>
-        <HashIcon />
-      </MarkerIcon>
-      <MarkerContent className="flex flex-wrap items-baseline gap-x-1.5 text-xs">
-        {/* Un type système inconnu n'est pas masqué : on montre son identifiant
-            plutôt que de faire disparaître une ligne de l'historique. */}
-        <span>
-          {known
-            ? t(key, { user: label(message.author_id) })
-            : t("modules.tickets.transcript.system.unknown", {
-                user: label(message.author_id),
-                type: message.system_type,
-              })}
+      <MarkerIcon>{message.system_type === "pin_add" ? <PinIcon /> : <HashIcon />}</MarkerIcon>
+      <MarkerContent className="flex min-w-0 flex-col gap-1 text-xs">
+        <span className="flex flex-wrap items-baseline gap-x-1.5">
+          {/* Un type système inconnu n'est pas masqué : on montre son identifiant
+              plutôt que de faire disparaître une ligne de l'historique. */}
+          <span>
+            {known
+              ? t(key, { user: label(message.author_id), target: target ? label(target) : "" })
+              : t("modules.tickets.transcript.system.unknown", {
+                  user: label(message.author_id),
+                  type: message.system_type,
+                })}
+          </span>
+          <span className="tabular-nums opacity-70">
+            {formatTime(message.created_at, i18n.language)}
+          </span>
         </span>
-        <span className="tabular-nums opacity-70">
-          {formatTime(message.created_at, i18n.language)}
-        </span>
+
+        {/* « A épinglé un message » sans dire lequel obligeait à recroiser toute
+            la conversation — quand le message y est encore. */}
+        {preview?.kind === "preview" && (
+          <span className="flex min-w-0 items-baseline gap-1.5 border-l-2 pl-2 text-muted-foreground">
+            <span className="shrink-0 font-medium">
+              {preview.author_id
+                ? label(preview.author_id)
+                : t("modules.tickets.transcript.unknownAuthor")}
+            </span>
+            <span className="truncate">
+              {preview.content
+                ? plainPreview(preview.content)
+                : t("modules.tickets.transcript.noTextContent")}
+            </span>
+          </span>
+        )}
       </MarkerContent>
     </Marker>
   )
@@ -741,7 +883,7 @@ function TranscriptAside({
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border p-4">
-      <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+      <p className="text-xs font-medium text-muted-foreground">
         {t("modules.tickets.transcript.details")}
       </p>
       <div className="flex flex-col gap-3">
@@ -797,20 +939,26 @@ function TranscriptAside({
         </p>
         <div className="flex flex-col gap-1.5">
           {transcript.authors.map((author) => (
-            <div key={author.author_id} className="flex min-w-0 items-center gap-2">
-              <Avatar className="size-6">
-                {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
-                <AvatarFallback className="text-[10px]">
-                  {authorInitials(authorName(author, author.author_id))}
-                </AvatarFallback>
-              </Avatar>
-              <span className="truncate text-sm">{authorName(author, author.author_id)}</span>
-              {author.is_bot && (
-                <Badge variant="secondary" className="shrink-0 text-[10px]">
-                  {t("modules.tickets.transcript.roles.bot")}
-                </Badge>
-              )}
-            </div>
+            <UserContextMenu
+              key={author.author_id}
+              userId={author.author_id}
+              label={authorName(author, author.author_id)}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <Avatar className="size-6">
+                  {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
+                  <AvatarFallback className="text-[10px]">
+                    {authorInitials(authorName(author, author.author_id))}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="truncate text-sm">{authorName(author, author.author_id)}</span>
+                {author.is_bot && (
+                  <Badge variant="secondary" className="shrink-0 text-[10px]">
+                    {t("modules.tickets.transcript.roles.bot")}
+                  </Badge>
+                )}
+              </div>
+            </UserContextMenu>
           ))}
         </div>
       </div>

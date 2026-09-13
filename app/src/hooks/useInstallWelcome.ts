@@ -11,10 +11,14 @@ import type { InstallInfo } from '@/types/stats'
  * 1. **Le paramètre `?installed=` est nettoyé de l'URL** dès qu'il est lu
  *    (`history.replaceState`). Sans ça, l'écran reviendrait à chaque
  *    rafraîchissement.
- * 2. **`confirmed: false` juste après le retour n'est pas un échec** : le bot
- *    pose `confirmed_at` quand la passerelle Discord lui livre l'événement,
- *    de l'ordre de la seconde. On affiche quand même, et on re-interroge
- *    `/install/latest` une fois ~3 s plus tard pour préciser l'état.
+ * 2. **La confirmation du bot n'est pas attendue.** `confirmed` dit seulement si
+ *    la passerelle Discord a déjà livré l'événement au bot. Ce n'est pas une
+ *    condition d'affichage : l'installation a réussi — la personne revient de
+ *    l'écran d'autorisation de Discord — et faire patienter devant une pastille
+ *    « en attente » donnait l'impression d'un échec là où il n'y avait qu'un
+ *    délai technique invisible pour elle. L'écran ne la montre donc plus, et
+ *    n'interroge plus `/install/latest` une seconde fois pour la voir changer.
+ *    Seul `manageable` a une conséquence visible : le bouton « Configurer ».
  * 3. **Une installation acquittée ne revient pas.** `/install/latest` répond
  *    pendant 30 minutes : sans mémoire locale, fermer l'écran puis recharger
  *    le rouvrirait. L'acquittement est un confort d'affichage, pas une donnée
@@ -22,8 +26,6 @@ import type { InstallInfo } from '@/types/stats'
  */
 
 const ACK_STORAGE_KEY = 'moddy_install_ack'
-/** Délai avant la relecture de confirmation — le guide parle de « ~3 s ». */
-const CONFIRM_RECHECK_MS = 3000
 
 function readAck(): string | null {
   try {
@@ -58,8 +60,6 @@ export type InstallWelcomeState =
 
 export interface UseInstallWelcome {
   state: InstallWelcomeState
-  /** `true` tant que la confirmation du bot est en cours de vérification. */
-  isChecking: boolean
   dismiss: () => void
   /** Relance une lecture de `/install/latest` (bouton « Réessayer » après un refresh guilds). */
   recheck: () => Promise<void>
@@ -83,7 +83,6 @@ export function useInstallWelcome(): UseInstallWelcome {
     if (installedId) return { kind: 'installed', guildId: installedId, install: null }
     return { kind: 'idle' }
   })
-  const [isChecking, setIsChecking] = useState(() => readReturnParams().installedId !== null)
   // StrictMode monte deux fois en développement : sans garde, `?installed=` est
   // lu une fois puis effacé, et le second passage repartirait sur le repli.
   const started = useRef(false)
@@ -100,9 +99,7 @@ export function useInstallWelcome(): UseInstallWelcome {
   }, [])
 
   const recheck = useCallback(async () => {
-    setIsChecking(true)
     const install = await fetchLatest()
-    setIsChecking(false)
     setState((current) => {
       if (current.kind !== 'installed') return current
       // On ne remplace que si la réponse parle bien du serveur affiché : une
@@ -129,7 +126,6 @@ export function useInstallWelcome(): UseInstallWelcome {
       if (cancelled) return
 
       if (installedId) {
-        setIsChecking(false)
         if (install && install.guild_id === installedId) {
           setState({ kind: 'installed', guildId: installedId, install })
         }
@@ -149,17 +145,6 @@ export function useInstallWelcome(): UseInstallWelcome {
     }
   }, [fetchLatest])
 
-  // Le bot n'a pas encore confirmé : une seule relecture, pas de sondage en boucle.
-  const recheckedFor = useRef<string | null>(null)
-  useEffect(() => {
-    if (state.kind !== 'installed') return
-    if (state.install && state.install.confirmed) return
-    if (recheckedFor.current === state.guildId) return
-    recheckedFor.current = state.guildId
-    const timer = setTimeout(() => void recheck(), CONFIRM_RECHECK_MS)
-    return () => clearTimeout(timer)
-  }, [state, recheck])
-
   const dismiss = useCallback(() => {
     setState((current) => {
       if (current.kind === 'installed') writeAck(current.guildId)
@@ -167,5 +152,5 @@ export function useInstallWelcome(): UseInstallWelcome {
     })
   }, [])
 
-  return { state, isChecking, dismiss, recheck }
+  return { state, dismiss, recheck }
 }

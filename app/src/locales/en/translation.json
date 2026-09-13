@@ -1590,9 +1590,6 @@
         "noMatch": "No match",
         "previousMatch": "Previous match",
         "nextMatch": "Next match",
-        "loadEarlier_one": "Load {{count}} earlier block",
-        "loadEarlier_other": "Load {{count}} earlier blocks",
-        "loadAll": "Load everything",
         "noMessage": "This archive has no message.",
         "noTextContent": "No text",
         "replyUnavailable": "The replied-to message is not in this archive.",
@@ -1630,7 +1627,9 @@
           "channel_name_change": "{{user}} renamed the channel.",
           "recipient_add": "{{user}} added someone to the ticket.",
           "recipient_remove": "{{user}} removed someone from the ticket.",
-          "user_join": "{{user}} joined."
+          "user_join": "{{user}} joined.",
+          "recipient_add_target": "{{user}} added {{target}} to the ticket.",
+          "recipient_remove_target": "{{user}} removed {{target}} from the ticket."
         },
         "errors": {
           "notFoundTitle": "Archive not found",
@@ -1641,7 +1640,19 @@
           "suspendedDescription": "Your account is under a global suspension, so archives are not accessible.",
           "unknownTitle": "Something went wrong",
           "unknownDescription": "The archive could not be loaded. Try again in a few moments."
-        }
+        },
+        "replyDeleted": "The quoted message was deleted.",
+        "unknownAuthor": "Unknown author",
+        "contextMenu": {
+          "copyText": "Copy text",
+          "copyMessageId": "Copy message ID",
+          "copyUserId": "Copy user ID",
+          "copyChannelId": "Copy channel ID",
+          "copyGuildId": "Copy server ID",
+          "openInDiscord": "Open in Discord"
+        },
+        "loadingEarlier_one": "Loading the earlier block…",
+        "loadingEarlier_other": "Loading {{count}} earlier blocks…"
       },
       "ratings": {
         "title": "Feedback",
@@ -2626,16 +2637,28 @@
       "titleNamed": "Thanks for adding Moddy to {{guild}}!",
       "description": "Everything is in place. All that's left is to set Moddy up the way you want.",
       "unknownGuild": "Unknown server",
-      "confirmed": "Installed",
-      "pending": "Finishing up…",
-      "pendingHint": "Discord takes a second or two to confirm the bot joined. You can carry on without waiting.",
       "notManageable": {
         "title": "Server not available yet",
         "description": "Discord hasn't propagated the addition yet. Refresh your server list to reach it."
       },
       "later": "Later",
       "configure": "Configure",
-      "refreshGuilds": "Refresh my servers"
+      "refreshGuilds": "Refresh my servers",
+      "quickStartTitle": "Where to start",
+      "quickStart": {
+        "tickets": {
+          "title": "Tickets",
+          "description": "A private support channel your members can open."
+        },
+        "logs": {
+          "title": "Server logs",
+          "description": "Follow what happens, event by channel."
+        },
+        "altguard": {
+          "title": "AltGuard",
+          "description": "Screen newcomers and block alternate accounts."
+        }
+      }
     },
     "cancelled": {
       "title": "Installation cancelled",
@@ -2861,6 +2884,17 @@
           "calls": "Calls"
         }
       }
+    }
+  },
+  "mentions": {
+    "copyId": "Copy ID",
+    "copied": "Copied to clipboard",
+    "kinds": {
+      "user": "User",
+      "role": "Role",
+      "channel": "Channel",
+      "everyone": "Mass mention",
+      "command": "Command"
     }
   }
 }

@@ -205,11 +205,11 @@ export function DebugPage() {
               </div>
             </div>
             <div className="rounded bg-muted p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.userInfoRaw')}</p>
+              <p className="mb-2 text-xs font-semibold text-muted-foreground">{t('debug.auth.userInfoRaw')}</p>
               <pre className="overflow-x-auto text-xs">{JSON.stringify(auth.user, null, 2)}</pre>
             </div>
             <div className="rounded bg-muted p-3">
-              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{t('debug.auth.sessionData')}</p>
+              <p className="mb-2 text-xs font-semibold text-muted-foreground">{t('debug.auth.sessionData')}</p>
               <KeyValue label={t('debug.auth.discordId')} value={auth.user.user_id} mono />
               <KeyValue label="Staff" value={String(auth.user.is_staff)} />
             </div>
@@ -353,7 +353,7 @@ export function DebugPage() {
       <DebugSection title={t('debug.storage.title')} defaultOpen={false}>
         <div className="space-y-3">
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{t('debug.storage.localStorage', { count: localStorage.length })}</p>
+            <p className="mb-1 text-xs font-semibold text-muted-foreground">{t('debug.storage.localStorage', { count: localStorage.length })}</p>
             {localStorage.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('debug.storage.empty')}</p>
             ) : (
@@ -367,7 +367,7 @@ export function DebugPage() {
             )}
           </div>
           <div>
-            <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{t('debug.storage.sessionStorage', { count: sessionStorage.length })}</p>
+            <p className="mb-1 text-xs font-semibold text-muted-foreground">{t('debug.storage.sessionStorage', { count: sessionStorage.length })}</p>
             {sessionStorage.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t('debug.storage.empty')}</p>
             ) : (

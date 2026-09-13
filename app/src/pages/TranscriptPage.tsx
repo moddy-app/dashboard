@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom"
 import { ArchiveXIcon, FileWarningIcon, ShieldAlertIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ModdyLogo } from "@/components/moddy-logo"
 import { TranscriptView } from "@/components/tickets/transcript-view"
 import { useAuth } from "@/hooks/useAuth"
 import { useViewportHeight } from "@/hooks/useViewportHeight"
@@ -27,7 +26,6 @@ import type { TranscriptDetail } from "@/types/transcripts"
  */
 export function TranscriptPage() {
   const { key } = useParams<{ key: string }>()
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const auth = useAuth()
   useViewportHeight()
@@ -98,19 +96,17 @@ export function TranscriptPage() {
   }
 
   return (
+    // Pas de barre de marque au-dessus de l'archive : elle ne portait qu'un
+    // logo — aucune navigation que la vue n'offre déjà (le bouton retour) — et
+    // prenait une bande de hauteur sur un écran de téléphone, au détriment de la
+    // conversation, qui est tout l'objet de la page.
     <div className="flex h-[var(--app-height,100dvh)] flex-col bg-background">
-      <header className="flex shrink-0 items-center gap-2 border-b px-4 py-3">
-        <button
-          type="button"
-          onClick={() => navigate("/")}
-          className="flex items-center gap-2 text-sm font-semibold"
-        >
-          <ModdyLogo className="h-5" />
-          <span className="sr-only">{t("modules.tickets.transcript.backToDashboard")}</span>
-        </button>
-      </header>
-
-      <main className="flex min-h-0 flex-1 flex-col px-4 py-5 sm:px-6 lg:px-8">{body()}</main>
+      {/* Marges resserrées sur mobile : l'archive est le contenu de la page, pas
+          un encart dedans. `min-w-0` évite qu'un message large ne pousse la
+          colonne au-delà de l'écran. */}
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col px-3 py-3 sm:px-6 sm:py-5 lg:px-8">
+        {body()}
+      </main>
     </div>
   )
 }
