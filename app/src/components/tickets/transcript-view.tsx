@@ -357,7 +357,6 @@ function Thread({
   query: string
 }) {
   const { t } = useTranslation()
-  const { scrollToMessage } = useMessageScroller()
   const [window_, setWindow] = useState(INITIAL_WINDOW)
   const viewportRef = useRef<HTMLDivElement>(null)
   const [matchIndex, setMatchIndex] = useState(0)
@@ -395,23 +394,20 @@ function Thread({
   // redéclenche en boucle — c'est le chargement infini. On ancre donc
   // manuellement sur le premier bloc **réel** actuellement affiché : une fois
   // la fenêtre agrandie, on ramène ce bloc en haut du viewport, ce qui pousse
-  // la sentinelle hors champ et arrête la boucle.
-  const anchorIdRef = useRef<string | null>(null)
+  // la sentinelle hors champ et arrête la boucle. `scrollToMessage` vient de
+  // `useMessageScroller()`, qui n'est lisible que par un **descendant** du
+  // `MessageScrollerProvider` rendu plus bas — jamais par `Thread` lui-même,
+  // qui le crée : d'où `pendingAnchor` en state, consommé par `ScrollAnchor`,
+  // rendu à l'intérieur du provider.
   const visibleRef = useRef(visible)
   useLayoutEffect(() => {
     visibleRef.current = visible
   })
+  const [pendingAnchor, setPendingAnchor] = useState<string | null>(null)
   const loadMore = useCallback(() => {
-    anchorIdRef.current = visibleRef.current[0]?.id ?? null
+    setPendingAnchor(visibleRef.current[0]?.id ?? null)
     setWindow((w) => w + WINDOW_STEP)
   }, [])
-
-  useLayoutEffect(() => {
-    const anchorId = anchorIdRef.current
-    if (!anchorId) return
-    anchorIdRef.current = null
-    scrollToMessage(anchorId, { align: "start" })
-  }, [window_, scrollToMessage])
 
   const jumpTo = useCallback((messageId: string) => {
     const node = viewportRef.current?.querySelector(`[data-message-id="${CSS.escape(messageId)}"]`)
@@ -475,6 +471,7 @@ function Thread({
           donner. Le cadre revient dès qu'il y a la place. */}
       <div className="-mx-3 min-h-0 flex-1 overflow-hidden border-y bg-card sm:mx-0 sm:rounded-xl sm:border">
         <MessageScrollerProvider defaultScrollPosition="end">
+          <ScrollAnchor pendingId={pendingAnchor} onSettled={() => setPendingAnchor(null)} />
           <MessageScroller>
             <MessageScrollerViewport
               ref={viewportRef}
@@ -535,6 +532,24 @@ function Thread({
       </div>
     </div>
   )
+}
+
+/**
+ * Exécute le rattrapage de scroll décrit plus haut. `useMessageScroller()` ne
+ * peut être lu que par un **descendant** de `MessageScrollerProvider` — jamais
+ * par le composant qui le crée — d'où ce composant séparé, rendu à l'intérieur.
+ */
+function ScrollAnchor({ pendingId, onSettled }: { pendingId: string | null; onSettled: () => void }) {
+  const { scrollToMessage } = useMessageScroller()
+
+  useLayoutEffect(() => {
+    if (!pendingId) return
+    scrollToMessage(pendingId, { align: "start" })
+    onSettled()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingId])
+
+  return null
 }
 
 /** Identifiant de la sentinelle de chargement, connu du scroller. */
