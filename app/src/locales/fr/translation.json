@@ -1590,9 +1590,6 @@
         "noMatch": "Aucun résultat",
         "previousMatch": "Résultat précédent",
         "nextMatch": "Résultat suivant",
-        "loadEarlier_one": "Charger {{count}} bloc précédent",
-        "loadEarlier_other": "Charger {{count}} blocs précédents",
-        "loadAll": "Tout charger",
         "noMessage": "Cette archive ne contient aucun message.",
         "noTextContent": "Sans texte",
         "replyUnavailable": "Le message cité ne fait pas partie de cette archive.",
@@ -1630,7 +1627,9 @@
           "channel_name_change": "{{user}} a renommé le salon.",
           "recipient_add": "{{user}} a ajouté quelqu'un au ticket.",
           "recipient_remove": "{{user}} a retiré quelqu'un du ticket.",
-          "user_join": "{{user}} a rejoint."
+          "user_join": "{{user}} a rejoint.",
+          "recipient_add_target": "{{user}} a ajouté {{target}} au ticket.",
+          "recipient_remove_target": "{{user}} a retiré {{target}} du ticket."
         },
         "errors": {
           "notFoundTitle": "Archive introuvable",
@@ -1641,7 +1640,19 @@
           "suspendedDescription": "Votre compte fait l'objet d'une suspension globale : les archives ne sont pas accessibles.",
           "unknownTitle": "Une erreur est survenue",
           "unknownDescription": "L'archive n'a pas pu être chargée. Réessayez dans quelques instants."
-        }
+        },
+        "replyDeleted": "Le message cité a été supprimé.",
+        "unknownAuthor": "Auteur inconnu",
+        "contextMenu": {
+          "copyText": "Copier le texte",
+          "copyMessageId": "Copier l'identifiant du message",
+          "copyUserId": "Copier l'identifiant de l'utilisateur",
+          "copyChannelId": "Copier l'identifiant du salon",
+          "copyGuildId": "Copier l'identifiant du serveur",
+          "openInDiscord": "Ouvrir dans Discord"
+        },
+        "loadingEarlier_one": "Chargement du bloc précédent…",
+        "loadingEarlier_other": "Chargement de {{count}} blocs précédents…"
       },
       "ratings": {
         "title": "Avis",
@@ -2626,16 +2637,28 @@
       "titleNamed": "Merci d'avoir ajouté Moddy à {{guild}} !",
       "description": "Tout est en place. Il ne reste plus qu'à configurer Moddy comme vous l'entendez.",
       "unknownGuild": "Serveur inconnu",
-      "confirmed": "Installé",
-      "pending": "Finalisation…",
-      "pendingHint": "Discord met une seconde ou deux à confirmer l'ajout du bot. Vous pouvez continuer sans attendre.",
       "notManageable": {
         "title": "Serveur pas encore disponible",
         "description": "Discord n'a pas encore répercuté l'ajout. Rafraîchissez votre liste de serveurs pour y accéder."
       },
       "later": "Plus tard",
       "configure": "Configurer",
-      "refreshGuilds": "Rafraîchir mes serveurs"
+      "refreshGuilds": "Rafraîchir mes serveurs",
+      "quickStartTitle": "Par où commencer",
+      "quickStart": {
+        "tickets": {
+          "title": "Tickets",
+          "description": "Un salon d'assistance privé, ouvert par vos membres."
+        },
+        "logs": {
+          "title": "Logs du serveur",
+          "description": "Suivre ce qui se passe, événement par salon."
+        },
+        "altguard": {
+          "title": "AltGuard",
+          "description": "Vérifier les arrivées et bloquer les multi-comptes."
+        }
+      }
     },
     "cancelled": {
       "title": "Installation annulée",
@@ -2861,6 +2884,17 @@
           "calls": "Appels"
         }
       }
+    }
+  },
+  "mentions": {
+    "copyId": "Copier l'identifiant",
+    "copied": "Copié dans le presse-papiers",
+    "kinds": {
+      "user": "Utilisateur",
+      "role": "Rôle",
+      "channel": "Salon",
+      "everyone": "Mention de masse",
+      "command": "Commande"
     }
   }
 }

@@ -317,7 +317,7 @@ export function DashboardPage({ user }: DashboardPageProps) {
                           <span className="text-foreground font-medium">{crumb.label}</span>
                         )}
                         {isLast && crumb.badge && (
-                          <Badge variant="secondary" className="h-4.5 px-1.5 text-[10px] tracking-wide uppercase">
+                          <Badge variant="secondary" className="h-4.5 px-1.5 text-[10px]">
                             {crumb.badge}
                           </Badge>
                         )}
@@ -361,7 +361,6 @@ export function DashboardPage({ user }: DashboardPageProps) {
 
       <InstallWelcomeDialog
         state={installWelcome.state}
-        isChecking={installWelcome.isChecking}
         onDismiss={installWelcome.dismiss}
         guilds={guilds}
       />

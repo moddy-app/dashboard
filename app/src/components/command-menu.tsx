@@ -118,7 +118,7 @@ export function CommandMenu({
                   <span>{t('commandMenu.items.brocoli')}</span>
                   <Badge
                     variant="secondary"
-                    className="ml-auto h-4.5 px-1.5 text-[10px] tracking-wide uppercase"
+                    className="ml-auto h-4.5 px-1.5 text-[10px]"
                   >
                     {t('brocoli.beta')}
                   </Badge>

@@ -9,6 +9,7 @@ import type {
   TranscriptDetail,
   TranscriptEmbed,
   TranscriptMessage,
+  TranscriptReferencePreview,
   TranscriptSummary,
 } from '@/types/transcripts'
 
@@ -208,6 +209,29 @@ function normalizeComponent(raw: unknown): TranscriptComponent {
   }
 }
 
+/**
+ * L'aperçu du message référencé (`pr`). Le corps stocké par le bot emploie des
+ * clés courtes (`a` = auteur, `c` = contenu) ; on accepte **aussi** la forme
+ * développée, le backend pouvant renommer ces clés en les servant — les deux
+ * lectures coûtent une ligne, deviner laquelle arrivera coûterait un aperçu
+ * silencieusement vide.
+ *
+ * `{"deleted": true}` est une **réponse**, pas une absence : le message d'origine
+ * a bien existé, il n'existait plus à l'export.
+ */
+function normalizeReferencePreview(raw: unknown): TranscriptReferencePreview | null {
+  const preview = obj(raw)
+  if (!preview) return null
+  if (preview.deleted === true) return { kind: 'deleted' }
+
+  const content = str(preview.c) ?? str(preview.content)
+  const authorId = str(preview.a) ?? str(preview.author_id)
+  // Ni texte ni auteur : il ne reste rien à montrer que `reply_to` ne dise déjà.
+  if (content === null && authorId === null) return null
+
+  return { kind: 'preview', author_id: authorId, content: content ?? '' }
+}
+
 function normalizeMessage(raw: Record<string, unknown>): TranscriptMessage {
   return {
     id: String(raw.id ?? ''),
@@ -243,8 +267,10 @@ function normalizeMessage(raw: Record<string, unknown>): TranscriptMessage {
         count: Number.isFinite(count) ? count : 0,
       }
     }),
-    reply_to: str(raw.reply_to),
+    reply_to: str(raw.reply_to) ?? str(raw.p),
+    reference_preview: normalizeReferencePreview(raw.reference_preview ?? raw.pr),
     system_type: str(raw.system_type),
+    system_target: str(raw.system_target) ?? str(raw.tg),
   }
 }
 
@@ -439,6 +465,33 @@ export type TranscriptBlock = TranscriptDayBlock | TranscriptMessageBlock | Tran
 /** Deux messages du même auteur restent groupés en deçà de ce délai. */
 const GROUP_WINDOW_MS = 7 * 60 * 1000
 
+/**
+ * Types Discord non-défaut qui restent des **messages écrits par quelqu'un** :
+ * ils ont un auteur, un contenu, des pièces jointes et des réactions.
+ *
+ * `system_type` ne dit que « ce message n'est pas de type 0 » — pas « c'est un
+ * événement du salon ». Une réponse est le cas le plus courant et le plus
+ * visible : rendue en ligne système, elle perdait son auteur, son texte, ses
+ * images et la citation au-dessus, réduite à « événement système (reply) ».
+ * Les invocations de commande (`/ticket close`) sont le même cas.
+ */
+const USER_MESSAGE_TYPES = new Set([
+  'default',
+  'reply',
+  'chat_input_command',
+  'context_menu_command',
+])
+
+/**
+ * Cette ligne est-elle un **événement du salon** (épinglage, arrivée, départ,
+ * renommage) plutôt qu'un message ? C'est la seule question qui décide du rendu,
+ * et elle ne se réduit pas à `system_type !== null`.
+ */
+export function isSystemEvent(message: TranscriptMessage): boolean {
+  if (!message.system_type) return false
+  return !USER_MESSAGE_TYPES.has(message.system_type)
+}
+
 function dayKey(date: Date): string {
   return `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
 }
@@ -466,7 +519,9 @@ export function groupTranscriptMessages(messages: readonly TranscriptMessage[]):
     }
 
     // Un message système n'appartient à personne : il coupe le groupe en cours.
-    if (message.system_type) {
+    // Une réponse, elle, appartient bien à son auteur — d'où `isSystemEvent()`
+    // et non `system_type`.
+    if (isSystemEvent(message)) {
       current = null
       blocks.push({ kind: 'system', id: `sys-${message.id}`, message })
       continue

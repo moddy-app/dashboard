@@ -277,6 +277,26 @@ export interface TranscriptSticker {
   url: string | null
 }
 
+/**
+ * Aperçu **autonome** du message référencé par `reply_to` — la clé `pr` du corps
+ * stocké (schéma v1, additive).
+ *
+ * Elle existe précisément pour ne pas dépendre du reste de l'archive : le
+ * message d'origine peut être hors export (début tronqué) ou supprimé avant la
+ * fermeture. Deux formes, jamais confondues :
+ *
+ * - `deleted` — le message d'origine n'existait plus à l'export. C'est une
+ *   information, pas un trou : on le dit.
+ * - `preview` — auteur + 150 caractères, texte pris dans le `content` brut ou,
+ *   à défaut, dans les Components V2 (une carte de Moddy n'a pas de `content`).
+ *
+ * Son **absence** veut dire que Discord n'a pas su résoudre la référence (message
+ * trop ancien, salon inaccessible) : `reply_to` reste alors la seule donnée.
+ */
+export type TranscriptReferencePreview =
+  | { kind: 'deleted' }
+  | { kind: 'preview'; author_id: string | null; content: string }
+
 export interface TranscriptMessage {
   id: string
   /** Se joint à `authors[].author_id`. */
@@ -295,8 +315,28 @@ export interface TranscriptMessage {
   pinned: boolean
   /** Id du message auquel il répond. */
   reply_to: string | null
-  /** `pin_add`, `thread_created`… sinon `null`. */
+  /**
+   * Aperçu autonome du message pointé par `reply_to`. Couvre **deux** cas avec
+   * la même donnée, parce que Discord y attache la même `message_reference` :
+   * une réponse, et la notification « a épinglé un message » (`pin_add`).
+   */
+  reference_preview: TranscriptReferencePreview | null
+  /**
+   * Le type Discord **non-défaut** du message : `pin_add`, `recipient_add`…
+   * `null` pour un message ordinaire.
+   *
+   * ⚠️ Tous les types non-défaut ne sont pas des **événements système** : une
+   * réponse (`reply`) ou une commande sont des messages écrits par quelqu'un,
+   * avec un contenu à rendre. Passer par `isSystemEvent()` plutôt que de tester
+   * ce champ pour savoir comment afficher la ligne.
+   */
   system_type: string | null
+  /**
+   * L'utilisateur **concerné** par un `recipient_add` / `recipient_remove` — la
+   * clé `tg` du corps stocké. Sans lui, « quelqu'un a été ajouté au ticket »
+   * n'apprend rien. Absent pour tout autre type système.
+   */
+  system_target: string | null
 }
 
 export interface TranscriptViewer {

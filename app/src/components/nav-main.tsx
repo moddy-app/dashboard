@@ -44,7 +44,7 @@ interface NavItem {
  */
 function NavBadge({ children }: { children: string }) {
   return (
-    <span className="ml-auto shrink-0 rounded-4xl bg-sidebar-accent px-1.5 py-0.5 text-[10px] leading-none font-medium tracking-wide text-sidebar-foreground/70 uppercase group-data-[collapsible=icon]:hidden">
+    <span className="ml-auto shrink-0 rounded-4xl bg-sidebar-accent px-1.5 py-0.5 text-[10px] leading-none font-medium text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
       {children}
     </span>
   )

@@ -800,7 +800,7 @@ function SubmissionDetail({
                 <div className="divide-y">
                   {visibleAnswers.map((answer) => (
                     <div key={answer.id} className="px-6 py-4">
-                      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      <p className="text-[11px] font-semibold text-muted-foreground mb-2">
                         {answer.label}
                       </p>
                       <p className={cn(
@@ -849,7 +849,7 @@ function SubmissionDetail({
 
                 {/* Date */}
                 <div className="pt-3 border-t">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">{t('staff.forms.date')}</p>
+                  <p className="text-[11px] font-semibold text-muted-foreground mb-1">{t('staff.forms.date')}</p>
                   <p className="text-xs">{new Date(detail.created_at).toLocaleString()}</p>
                 </div>
               </CardContent>
