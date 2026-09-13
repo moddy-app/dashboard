@@ -32,7 +32,6 @@ import { PanelCard } from "@/components/tickets/panel-card"
 import { RatingsPanel } from "@/components/tickets/ratings-panel"
 import { TicketExplorer } from "@/components/tickets/ticket-explorer"
 import { TicketsSettingsPanel } from "@/components/tickets/settings-panel"
-import { TranscriptList } from "@/components/tickets/transcript-list"
 import i18n from "@/i18n"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
@@ -496,14 +495,13 @@ function TicketsForm() {
       )}
 
       <Tabs defaultValue="settings">
-        {/* Cinq onglets sur un petit écran : la liste défile pour elle seule
+        {/* Quatre onglets sur un petit écran : la liste défile pour elle seule
             plutôt que d'élargir la page. */}
         <div className="-mx-1 overflow-x-auto px-1 scrollbar-none">
           <TabsList>
             <TabsTrigger value="settings">{t("modules.tickets.tabs.settings")}</TabsTrigger>
             <TabsTrigger value="general">{t("modules.tickets.tabs.general")}</TabsTrigger>
             <TabsTrigger value="tickets">{t("modules.tickets.tabs.tickets")}</TabsTrigger>
-            <TabsTrigger value="transcripts">{t("modules.tickets.tabs.transcripts")}</TabsTrigger>
             <TabsTrigger value="ratings">{t("modules.tickets.tabs.ratings")}</TabsTrigger>
           </TabsList>
         </div>
@@ -609,14 +607,11 @@ function TicketsForm() {
           />
         </TabsContent>
 
-        {/* ── Tickets réels (lecture seule) ────────────────────────────── */}
+        {/* ── Tickets réels + archives (lecture seule) ─────────────────── */}
+        {/* Un seul onglet : un ticket fermé s'ouvre directement sur sa
+            transcription, il n'y a plus d'onglet « Archives » séparé. */}
         <TabsContent value="tickets" className="pt-4">
-          <TicketExplorer guildId={guildId} panels={savedPanels} />
-        </TabsContent>
-
-        {/* ── Archives ─────────────────────────────────────────────────── */}
-        <TabsContent value="transcripts" className="pt-4">
-          <TranscriptList guildId={guildId} panels={savedPanels} />
+          <TicketExplorer guildId={guildId} panels={savedPanels} settings={savedSettings} />
         </TabsContent>
 
         {/* ── Avis ─────────────────────────────────────────────────────── */}
