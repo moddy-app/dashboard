@@ -563,22 +563,44 @@ const LOAD_MORE_ID = "load-more"
  * scroller sait déjà quels éléments sont à l'écran, et c'est lui qui conserve la
  * position quand des blocs s'insèrent au-dessus.
  *
- * `remaining` fait partie des dépendances : si l'ajout d'une tranche laisse la
- * sentinelle encore visible (des blocs très courts), l'effet se réarme et charge
- * la suivante. Sans ça, le chargement s'arrêterait sans que rien ne bouge à
- * l'écran.
+ * ⚠️ **Une tranche par passage à l'écran, jamais plus.** `visibleMessageIds` est
+ * alimenté par un `IntersectionObserver`, donc **de façon asynchrone** : il ne
+ * reflète pas le DOM du rendu en cours mais celui du dernier tir de l'observer.
+ * Or charger une tranche fait changer `remaining`, ce qui rejoue cet effet dans
+ * la foulée — et `visible` y vaut encore `true`, puisque l'observer n'a pas eu
+ * la main. Enchaîner sur cette valeur périmée rechargeait aussitôt la tranche
+ * suivante, et ainsi de suite : toute la conversation était montée d'un bloc,
+ * en une rafale qui fige l'onglet sur une grosse archive.
+ *
+ * Le verrou ne se réarme donc que lorsque la sentinelle est **réellement**
+ * ressortie de l'écran (`visible === false`, constaté par l'observer). C'est
+ * l'ancrage du scroll côté `Thread` qui l'y pousse à chaque tranche : le
+ * premier bloc réel est ramené en haut du viewport, et la sentinelle, qui vit
+ * au-dessus de lui, passe hors champ.
  */
 function LoadEarlier({ remaining, onReach }: { remaining: number; onReach: () => void }) {
   const { t } = useTranslation()
   const { visibleMessageIds } = useMessageScrollerVisibility()
   const visible = visibleMessageIds.includes(LOAD_MORE_ID)
+  const armedRef = useRef(true)
 
   useEffect(() => {
-    if (visible) onReach()
-  }, [visible, remaining, onReach])
+    if (!visible) {
+      armedRef.current = true
+      return
+    }
+    if (!armedRef.current) return
+    armedRef.current = false
+    onReach()
+  }, [visible, onReach])
 
   return (
-    <div className="flex items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
+    // La hauteur n'est pas décorative : le scroller observe ses éléments avec un
+    // `rootMargin` négatif en haut (son `scrollPreviousItemPeek`, 64 px). Une
+    // sentinelle plus courte que ce seuil n'intersecte **jamais** la zone de
+    // détection quand on est tout en haut du fil — elle est entièrement
+    // au-dessus — et le chargement ne repartait plus.
+    <div className="flex min-h-24 items-center justify-center gap-2 py-2 text-xs text-muted-foreground">
       <Spinner />
       {t("modules.tickets.transcript.loadingEarlier", { count: remaining })}
     </div>
