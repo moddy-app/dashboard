@@ -1565,7 +1565,9 @@
         "retentionTitle": "Archives are kept for a limited time",
         "retentionDescription": "Conversations closed more than {{days}} days ago have been erased by the bot. Their ratings are kept.",
         "previousPage": "Previous page",
-        "nextPage": "Next page"
+        "nextPage": "Next page",
+        "noCategory": "No category",
+        "truncated": "Partial"
       },
       "transcript": {
         "title": "Ticket #{{number}}",

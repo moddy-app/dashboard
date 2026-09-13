@@ -1565,7 +1565,9 @@
         "retentionTitle": "Les archives ont une durée de vie",
         "retentionDescription": "Les conversations fermées depuis plus de {{days}} jours ont été effacées par le bot. Leurs avis sont conservés.",
         "previousPage": "Page précédente",
-        "nextPage": "Page suivante"
+        "nextPage": "Page suivante",
+        "noCategory": "Aucune catégorie",
+        "truncated": "Partiel"
       },
       "transcript": {
         "title": "Ticket #{{number}}",

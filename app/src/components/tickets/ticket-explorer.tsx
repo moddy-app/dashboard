@@ -4,23 +4,30 @@ import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
 import {
   ArchiveIcon,
-  ArrowUpRightIcon,
+  CheckCircle2Icon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CircleDotIcon,
+  ClockIcon,
   Loader2Icon,
   MessageSquareIcon,
   RefreshCwIcon,
   ScissorsIcon,
   StarIcon,
   TicketIcon,
+  TriangleAlertIcon,
+  UserCheckIcon,
 } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useUserProfile } from "@/hooks/useProfile"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
-import { authorName, formatBytes, transcriptDurationSeconds } from "@/lib/transcripts"
+import { absoluteTime, relativeTime } from "@/lib/cases"
+import { authorInitials, authorName, formatBytes, transcriptDurationSeconds } from "@/lib/transcripts"
 import { formatDuration, ticketState } from "@/lib/tickets"
 import type { TicketState } from "@/lib/tickets"
 import { getTickets, getTicketStats, getTicketTranscripts } from "@/services/tickets"
@@ -57,11 +64,12 @@ import {
 
 const PAGE_SIZE = 25
 
-const STATE_TONE: Record<TicketState, string> = {
-  open: "bg-emerald-500",
-  claimed: "bg-sky-500",
-  escalated: "bg-purple-500",
-  closed: "bg-muted-foreground/50",
+/** Icône + ton par état — même lecture que la pastille de salon Discord (🔴🟢🟣⚫). */
+const STATE_META: Record<TicketState, { icon: typeof CircleDotIcon; tone: string }> = {
+  open: { icon: CircleDotIcon, tone: "text-emerald-500" },
+  claimed: { icon: UserCheckIcon, tone: "text-sky-500" },
+  escalated: { icon: TriangleAlertIcon, tone: "text-purple-500" },
+  closed: { icon: CheckCircle2Icon, tone: "text-muted-foreground/70" },
 }
 
 export function TicketExplorer({
@@ -349,6 +357,33 @@ function StatTile({
   )
 }
 
+/** Point de séparation dans une ligne de méta — même motif que `case-list.tsx`. */
+function Dot() {
+  return <span className="size-1 shrink-0 rounded-full bg-current opacity-40" />
+}
+
+/** Horodatage relatif, avec la date absolue en infobulle au survol. */
+function RelativeTime({ iso, locale }: { iso: string; locale: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="shrink-0 tabular-nums">{relativeTime(iso, locale)}</span>
+      </TooltipTrigger>
+      <TooltipContent>{absoluteTime(iso, locale)}</TooltipContent>
+    </Tooltip>
+  )
+}
+
+/** Avatar minuscule (agent qui a pris en charge) avec repli sur les initiales. */
+function MiniAvatar({ url, name }: { url?: string | null; name: string }) {
+  return (
+    <Avatar className="size-4">
+      {url && <AvatarImage src={url} alt="" />}
+      <AvatarFallback className="text-[8px]">{authorInitials(name)}</AvatarFallback>
+    </Avatar>
+  )
+}
+
 function TicketRow({
   ticket,
   resolving,
@@ -363,58 +398,76 @@ function TicketRow({
   const claimer = useUserProfile(ticket.claimed_by)
   const state = ticketState(ticket)
   const isClosed = state === "closed"
-
-  const opened = new Date(ticket.opened_at).toLocaleString(i18n.language, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  })
+  const ownerName = owner.data?.display_name ?? ticket.owner_id
+  const StateIcon = STATE_META[state].icon
 
   const content = (
     <>
-      <span className={cn("size-2 shrink-0 rounded-full", STATE_TONE[state])} />
+      <Avatar className="size-8 shrink-0">
+        {owner.data?.avatar_url && <AvatarImage src={owner.data.avatar_url} alt="" />}
+        <AvatarFallback className="text-xs">{authorInitials(ownerName)}</AvatarFallback>
+      </Avatar>
+
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-2 truncate text-sm font-medium">
           {/* Le numéro est ce que citent les humains, pas le snowflake du salon. */}
-          <span className="tabular-nums">#{ticket.number}</span>
-          <span className="truncate font-normal text-muted-foreground">
-            {owner.data?.display_name ?? ticket.owner_id}
-          </span>
+          <span className="tabular-nums text-muted-foreground">#{ticket.number}</span>
+          <span className="truncate">{ownerName}</span>
         </p>
-        <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 truncate text-xs text-muted-foreground">
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 truncate text-xs text-muted-foreground">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <StateIcon className={cn("size-3.5 shrink-0", STATE_META[state].tone)} />
+            </TooltipTrigger>
+            <TooltipContent>{t(`modules.tickets.states.${state}`)}</TooltipContent>
+          </Tooltip>
           {/* `category: null` = la catégorie a disparu de la config : le bot
               répond « catégorie disparue » à toute action dans ce ticket. */}
           {ticket.category ? (
-            <>
+            <span className="truncate">
               {ticket.category.panel_name} · {ticket.category.name}
-            </>
+            </span>
           ) : (
             <Badge variant="secondary" className="text-amber-600 dark:text-amber-400">
               {t("modules.tickets.list.orphan")}
             </Badge>
           )}
-          <span aria-hidden>·</span>
-          {opened}
-        </p>
+          <Dot />
+          <RelativeTime iso={ticket.opened_at} locale={i18n.language} />
+        </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-1.5">
+      <div className="flex shrink-0 items-center gap-2">
         {ticket.close_requested_by && (
-          <Badge variant="secondary">{t("modules.tickets.list.closeRequested")}</Badge>
-        )}
-        {ticket.claimed_by && (
-          <Badge variant="secondary" className="gap-1">
-            <ArrowUpRightIcon className="size-3" />
-            {claimer.data?.display_name ?? ticket.claimed_by}
+          <Badge variant="secondary" className="hidden sm:inline-flex">
+            {t("modules.tickets.list.closeRequested")}
           </Badge>
         )}
-        <Badge variant={isClosed ? "secondary" : "outline"}>
-          {t(`modules.tickets.states.${state}`)}
-        </Badge>
-        {isClosed && (
-          <span className="text-muted-foreground">
-            {resolving ? <Loader2Icon className="size-4 animate-spin" /> : null}
-          </span>
+        {ticket.claimed_by && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 py-0.5 pl-0.5 pr-2 text-xs text-muted-foreground">
+                <MiniAvatar
+                  url={claimer.data?.avatar_url}
+                  name={claimer.data?.display_name ?? ticket.claimed_by}
+                />
+                <span className="hidden max-w-24 truncate sm:inline">
+                  {claimer.data?.display_name ?? ticket.claimed_by}
+                </span>
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              {t("modules.tickets.filters.staff")}: {claimer.data?.display_name ?? ticket.claimed_by}
+            </TooltipContent>
+          </Tooltip>
         )}
+        {isClosed ? (
+          resolving ? (
+            <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+          ) : (
+            <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
+          )
+        ) : null}
       </div>
     </>
   )
@@ -422,7 +475,7 @@ function TicketRow({
   // Seul un ticket **fermé** ouvre une transcription : un ticket ouvert n'en a
   // pas encore, la ligne reste donc simplement informative.
   if (!isClosed) {
-    return <div className="flex items-center gap-3 p-3">{content}</div>
+    return <div className="flex items-center gap-3 px-3 py-2.5 sm:px-4">{content}</div>
   }
 
   return (
@@ -430,14 +483,14 @@ function TicketRow({
       type="button"
       onClick={onOpenTranscript}
       disabled={resolving}
-      className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50"
+      className="group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 sm:px-4"
     >
       {content}
     </button>
   )
 }
 
-/** Ligne d'archive — mêmes informations que l'ancien onglet « Archives ». */
+/** Ligne d'archive — mêmes informations que l'ancien onglet « Archives », en plus soigné. */
 function TranscriptRow({
   transcript,
   locale,
@@ -452,20 +505,24 @@ function TranscriptRow({
   // L'auteur vient de l'instantané de l'archive, pas d'un profil relu en direct :
   // c'est le nom qu'il portait au moment de la fermeture.
   const owner = transcript.speakers.find((s) => s.author_id === transcript.owner_id)
+  const ownerName = authorName(owner, transcript.owner_id)
   const duration = transcriptDurationSeconds(transcript)
 
   return (
     <button
       type="button"
       onClick={onOpen}
-      className="flex w-full items-center gap-3 p-3 text-left transition-colors hover:bg-muted/50"
+      className="group flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/50 sm:px-4"
     >
+      <Avatar className="size-8 shrink-0">
+        {owner?.avatar_url && <AvatarImage src={owner.avatar_url} alt="" />}
+        <AvatarFallback className="text-xs">{authorInitials(ownerName)}</AvatarFallback>
+      </Avatar>
+
       <div className="min-w-0 flex-1">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
-          <span className="tabular-nums">#{transcript.ticket_number}</span>
-          <span className="truncate font-normal text-muted-foreground">
-            {authorName(owner, transcript.owner_id)}
-          </span>
+          <span className="tabular-nums text-muted-foreground">#{transcript.ticket_number}</span>
+          <span className="truncate">{ownerName}</span>
           {transcript.truncated && (
             <Badge variant="secondary" className="gap-1 text-amber-600 dark:text-amber-400">
               <ScissorsIcon className="size-3" />
@@ -474,28 +531,30 @@ function TranscriptRow({
           )}
         </p>
 
-        <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
+        <div className="mt-0.5 flex flex-wrap items-center gap-1.5 truncate text-xs text-muted-foreground">
+          <CheckCircle2Icon className="size-3.5 shrink-0 text-muted-foreground/70" />
           <span className="truncate">
             {transcript.category_name ?? t("modules.tickets.transcripts.noCategory")}
           </span>
-          <span aria-hidden>·</span>
+          <Dot />
           <span className="inline-flex items-center gap-1 tabular-nums">
             <MessageSquareIcon className="size-3" />
             {transcript.message_count}
           </span>
           {duration !== null && (
             <>
-              <span aria-hidden>·</span>
-              <span className="tabular-nums">{formatDuration(duration)}</span>
+              <Dot />
+              <span className="inline-flex items-center gap-1 tabular-nums">
+                <ClockIcon className="size-3" />
+                {formatDuration(duration)}
+              </span>
             </>
           )}
-          <span aria-hidden className="hidden sm:inline">
-            ·
+          <span className="hidden items-center gap-1.5 sm:flex">
+            <Dot />
+            <span className="tabular-nums">{formatBytes(transcript.payload_size, locale)}</span>
           </span>
-          <span className="hidden tabular-nums sm:inline">
-            {formatBytes(transcript.payload_size, locale)}
-          </span>
-        </p>
+        </div>
       </div>
 
       <div className="flex shrink-0 flex-col items-end gap-1">
@@ -508,14 +567,10 @@ function TranscriptRow({
             </span>
           </Badge>
         )}
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {new Date(transcript.closed_at).toLocaleDateString(locale, {
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })}
-        </span>
+        <RelativeTime iso={transcript.closed_at} locale={locale} />
       </div>
+
+      <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
     </button>
   )
 }

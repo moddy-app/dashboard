@@ -398,7 +398,9 @@ function Thread({
   // la sentinelle hors champ et arrête la boucle.
   const anchorIdRef = useRef<string | null>(null)
   const visibleRef = useRef(visible)
-  visibleRef.current = visible
+  useLayoutEffect(() => {
+    visibleRef.current = visible
+  })
   const loadMore = useCallback(() => {
     anchorIdRef.current = visibleRef.current[0]?.id ?? null
     setWindow((w) => w + WINDOW_STEP)
