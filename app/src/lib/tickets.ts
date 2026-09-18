@@ -196,6 +196,10 @@ export function normalizeTicketsSettings(raw: Record<string, unknown> | null | u
       TICKET_SETTINGS_DEFAULTS.closure_detection_enabled
     ),
     rating_enabled: asBool(pick('rating_enabled'), TICKET_SETTINGS_DEFAULTS.rating_enabled),
+    keep_channel_on_close: asBool(
+      pick('keep_channel_on_close'),
+      TICKET_SETTINGS_DEFAULTS.keep_channel_on_close
+    ),
   }
 }
 
@@ -294,6 +298,7 @@ export function serializeTicketsConfig(
       transcript_retention_days: settings.transcript_retention_days,
       closure_detection_enabled: settings.closure_detection_enabled,
       rating_enabled: settings.rating_enabled,
+      keep_channel_on_close: settings.keep_channel_on_close,
     },
     panels: panels.map((panel) => ({
       id: panel.id,
