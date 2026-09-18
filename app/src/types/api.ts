@@ -1002,6 +1002,14 @@ export interface TicketsSettings {
   closure_detection_enabled: boolean
   /** Proposer un avis à la fermeture. */
   rating_enabled: boolean
+  /**
+   * Conserver la ligne interne du ticket à la fermeture (le salon Discord
+   * n'est jamais supprimé, dans un cas comme dans l'autre) — elle ne
+   * disparaît alors que lorsque le salon est supprimé après coup. `false`
+   * (défaut) : la ligne disparaît immédiatement à la fermeture. N'affecte
+   * ni les archives (`ticket_transcripts`/`ticket_ratings`) ni le salon.
+   */
+  keep_channel_on_close: boolean
 }
 
 export const TICKET_SETTINGS_DEFAULTS: TicketsSettings = {
@@ -1010,6 +1018,7 @@ export const TICKET_SETTINGS_DEFAULTS: TicketsSettings = {
   transcript_retention_days: 0,
   closure_detection_enabled: false,
   rating_enabled: true,
+  keep_channel_on_close: false,
 }
 
 /** Bornes de `transcript_retention_days` — hors de cet intervalle, c'est un 422. */

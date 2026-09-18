@@ -1557,6 +1557,8 @@
         "closureDetectionDescription": "Moddy's AI notices when a conversation looks resolved and offers to close the ticket. This uses your AI quota.",
         "rating": "Ask for feedback",
         "ratingDescription": "When a ticket closes, the author is offered five appreciations and an optional comment.",
+        "keepChannelOnClose": "Keep the ticket after closing",
+        "keepChannelOnCloseDescription": "The Discord channel is never deleted on close, either way. Enabled, the closed ticket stays visible in the dashboard views until the channel itself is deleted; disabled, it disappears from them right away. Archives are unaffected.",
         "purgeHint": "Retention is applied by the bot, once a day — a change does not take effect instantly."
       },
       "transcripts": {

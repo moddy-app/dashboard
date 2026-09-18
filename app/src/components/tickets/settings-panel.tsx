@@ -148,6 +148,13 @@ export function TicketsSettingsPanel({
         onCheckedChange={(value) => onChange({ rating_enabled: value })}
       />
 
+      <ToggleCard
+        label={t("modules.tickets.settings.keepChannelOnClose")}
+        description={t("modules.tickets.settings.keepChannelOnCloseDescription")}
+        checked={settings.keep_channel_on_close}
+        onCheckedChange={(value) => onChange({ keep_channel_on_close: value })}
+      />
+
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <ClockIcon className="mt-0.5 size-3.5 shrink-0" />
         {t("modules.tickets.settings.purgeHint")}

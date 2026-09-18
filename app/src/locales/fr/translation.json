@@ -1557,6 +1557,8 @@
         "closureDetectionDescription": "L'IA de Moddy repère qu'une conversation semble résolue et propose de fermer le ticket. Cela consomme votre quota IA.",
         "rating": "Demander un avis",
         "ratingDescription": "À la fermeture, l'auteur du ticket se voit proposer cinq appréciations et un commentaire facultatif.",
+        "keepChannelOnClose": "Conserver le ticket après fermeture",
+        "keepChannelOnCloseDescription": "Le salon Discord n'est jamais supprimé à la fermeture, dans un cas comme dans l'autre. Activé, le ticket fermé reste visible dans les vues du dashboard jusqu'à la suppression du salon ; désactivé, il en disparaît immédiatement. Les archives ne sont pas concernées.",
         "purgeHint": "La conservation est appliquée par le bot, une fois par jour — un changement n'est pas instantané."
       },
       "transcripts": {
