@@ -1737,7 +1737,8 @@
       },
       "panelsTitle": "Panneaux",
       "panelsHint": "Un panneau est un message posté par Moddy. Ouvrez-le pour régler son salon, son texte et ses catégories.",
-      "deleteAction": "Supprimer"
+      "deleteAction": "Supprimer",
+      "close": "Fermer"
     }
   },
   "staff": {

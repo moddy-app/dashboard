@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/command"
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -42,7 +43,7 @@ import { ChannelPicker, RoleDot, RoleMultiPicker } from "@/components/discord-pi
 import { EmojiPicker, EmojiView } from "@/components/discord-emoji"
 import { MessageEditor } from "@/components/message-editor"
 import { ServerLanguageNote } from "@/components/server-language-note"
-import { List, SegmentedControl, Subsection, SwitchRow } from "@/components/tickets/primitives"
+import { List, Section, SegmentedControl, SwitchRow } from "@/components/tickets/primitives"
 import { categoryFieldKey, discordCategories } from "@/lib/tickets"
 import { cn } from "@/lib/utils"
 import {
@@ -125,12 +126,16 @@ export function CategoryEditor({
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       {/* Grande modale : une catégorie porte quatre familles de réglages, les
           serrer dans une colonne étroite obligerait à défiler pour chacune. */}
-      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        {/* `pt-6` : l'en-tête d'une modale respire autant que son contenu, et le
-            bouton de fermeture (posé en `top-4 right-4` par `DialogContent`) a
-            besoin de sa place à droite de l'interrupteur. */}
-        <DialogHeader className="border-b px-6 pt-6 pb-4">
-          <div className="flex items-start justify-between gap-4 pr-9">
+      {/* `rounded-2xl` : le rayon par défaut d'un dialogue (`rounded-4xl`, 30 px)
+          est dessiné pour une petite boîte centrée. Sur une modale pleine
+          largeur dont l'en-tête est souligné, la courbe mange la ligne et laisse
+          une bande vide au-dessus du titre. */}
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[85vh] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-3xl"
+      >
+        <DialogHeader className="border-b bg-background px-6 py-4">
+          <div className="flex items-center justify-between gap-4">
             <div className="min-w-0">
               <DialogTitle className="flex items-center gap-2 truncate">
                 {category.emoji && <EmojiView value={category.emoji} />}
@@ -138,17 +143,32 @@ export function CategoryEditor({
               </DialogTitle>
               <DialogDescription>{t("modules.tickets.category.subtitle")}</DialogDescription>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                {category.enabled
-                  ? t("modules.tickets.panel.enabled")
-                  : t("modules.tickets.panel.disabled")}
-              </span>
-              <Switch
-                checked={category.enabled}
-                onCheckedChange={(v) => onChange({ enabled: v })}
-                aria-label={t("modules.tickets.category.enabledLabel")}
-              />
+            {/* Fermeture rendue ici plutôt qu'en absolu : le bouton par défaut
+                se pose en `top-4 right-4`, donc au-dessus de l'interrupteur et
+                décalé du titre. */}
+            <div className="flex shrink-0 items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {category.enabled
+                    ? t("modules.tickets.panel.enabled")
+                    : t("modules.tickets.panel.disabled")}
+                </span>
+                <Switch
+                  checked={category.enabled}
+                  onCheckedChange={(v) => onChange({ enabled: v })}
+                  aria-label={t("modules.tickets.category.enabledLabel")}
+                />
+              </div>
+              <DialogClose asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label={t("modules.tickets.close")}
+                >
+                  <XIcon />
+                </Button>
+              </DialogClose>
             </div>
           </div>
         </DialogHeader>
@@ -177,10 +197,10 @@ export function CategoryEditor({
 
           {/* Une seule zone de défilement, celle du contenu de l'onglet :
               l'en-tête et la barre d'onglets restent en place. */}
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/40 px-6 py-5">
             {/* ── Informations ──────────────────────────────────────────── */}
-            <TabsContent value="info" className="flex flex-col">
-              <Subsection
+            <TabsContent value="info" className="flex flex-col gap-4">
+              <Section
                 title={t("modules.tickets.category.sections.button")}
                 description={t("modules.tickets.category.sections.buttonHint")}
               >
@@ -248,9 +268,9 @@ export function CategoryEditor({
                   </Field>
                 )}
                 </FieldGroup>
-              </Subsection>
+              </Section>
 
-              <Subsection title={t("modules.tickets.category.sections.channel")}>
+              <Section title={t("modules.tickets.category.sections.channel")}>
                 <FieldGroup className="grid gap-5 sm:grid-cols-2">
                   <Field data-invalid={Boolean(err("discord_category_id")) || undefined}>
                     <FieldLabel>{t("modules.tickets.category.discordCategory")}</FieldLabel>
@@ -323,12 +343,12 @@ export function CategoryEditor({
                     </Field>
                   </div>
                 </FieldGroup>
-              </Subsection>
+              </Section>
             </TabsContent>
 
             {/* ── Permissions ───────────────────────────────────────────── */}
-            <TabsContent value="permissions" className="flex flex-col">
-              <Subsection
+            <TabsContent value="permissions" className="flex flex-col gap-4">
+              <Section
                 title={t("modules.tickets.category.sections.access")}
                 description={t("modules.tickets.category.sections.accessHint")}
               >
@@ -362,9 +382,9 @@ export function CategoryEditor({
                     </FieldDescription>
                   </Field>
                 </FieldGroup>
-              </Subsection>
+              </Section>
 
-              <Subsection title={t("modules.tickets.category.sections.onOpen")}>
+              <Section title={t("modules.tickets.category.sections.onOpen")}>
                 <FieldGroup className="gap-5">
                   <Field>
                     <FieldLabel>{t("modules.tickets.category.pingRoles")}</FieldLabel>
@@ -386,7 +406,7 @@ export function CategoryEditor({
                     onCheckedChange={(v) => onChange({ ping_staff_roles: v })}
                   />
                 </FieldGroup>
-              </Subsection>
+              </Section>
 
               <PermissionsEditor
                 permissions={category.permissions}
@@ -396,8 +416,8 @@ export function CategoryEditor({
             </TabsContent>
 
             {/* ── Messages ──────────────────────────────────────────────── */}
-            <TabsContent value="messages" className="flex flex-col">
-              <Subsection
+            <TabsContent value="messages" className="flex flex-col gap-4">
+              <Section
                 title={t("modules.tickets.category.sections.messages")}
                 description={t("modules.tickets.leaveEmptyForDefault")}
               >
@@ -439,12 +459,12 @@ export function CategoryEditor({
                 </FieldGroup>
 
                 <ServerLanguageNote guildId={guildId} />
-              </Subsection>
+              </Section>
             </TabsContent>
 
             {/* ── Avancé ────────────────────────────────────────────────── */}
-            <TabsContent value="advanced" className="flex flex-col">
-              <Subsection title={t("modules.tickets.category.sections.claim")}>
+            <TabsContent value="advanced" className="flex flex-col gap-4">
+              <Section title={t("modules.tickets.category.sections.claim")}>
                 <FieldGroup className="gap-5">
                   <SwitchRow
                     label={t("modules.tickets.category.claimEnabled")}
@@ -461,7 +481,7 @@ export function CategoryEditor({
                     />
                   )}
                 </FieldGroup>
-              </Subsection>
+              </Section>
 
               <ButtonsEditor
                 value={category.buttons}
@@ -520,7 +540,7 @@ function ButtonsEditor({
   const checked = value ?? []
 
   return (
-    <Subsection
+    <Section
       title={t("modules.tickets.category.sections.buttons")}
       description={t("modules.tickets.category.sections.buttonsHint")}
     >
@@ -571,7 +591,7 @@ function ButtonsEditor({
         </div>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
-    </Subsection>
+    </Section>
   )
 }
 
@@ -606,12 +626,12 @@ function PermissionsEditor({
   }
 
   return (
-    <Subsection
+    <Section
       title={t("modules.tickets.permissions.title")}
       description={t("modules.tickets.permissions.description")}
     >
       {entries.length > 0 && (
-        <List className="rounded-lg border">
+        <List className="-mx-6 border-y">
           {entries.map(([roleId, perms]) => {
             const role = roles.find((r) => r.id === roleId)
             const isAdmin = perms.includes("admin")
@@ -721,6 +741,6 @@ function PermissionsEditor({
           </PopoverContent>
         </Popover>
       )}
-    </Subsection>
+    </Section>
   )
 }

@@ -1737,7 +1737,8 @@
       },
       "panelsTitle": "Panels",
       "panelsHint": "A panel is a message posted by Moddy. Open one to set its channel, its text and its categories.",
-      "deleteAction": "Delete"
+      "deleteAction": "Delete",
+      "close": "Close"
     }
   },
   "staff": {
