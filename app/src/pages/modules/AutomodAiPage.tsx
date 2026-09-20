@@ -33,17 +33,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { ChannelPicker, RolePicker } from "@/components/discord-pickers"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
@@ -73,7 +67,6 @@ import type {
 
 const MAX_ACTIONS: AutomodMaxAction[] = ["warn", "mute", "ban"]
 /** Valeur sentinelle du Select : Radix interdit un SelectItem de valeur vide. */
-const NO_CHANNEL = "__none__"
 /** Délai avant de soumettre les indications au contrôle anti-injection. */
 const CHECK_DEBOUNCE_MS = 800
 
@@ -435,42 +428,17 @@ function AutomodAiForm() {
           {/* Salon d'alertes */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">{t("modules.automod_ai.notifyChannel")}</label>
-            <Select
-              value={draft.notify_channel_id ?? NO_CHANNEL}
-              onValueChange={(v) => {
-                patch({ notify_channel_id: v === NO_CHANNEL ? null : v })
+            <ChannelPicker
+              value={draft.notify_channel_id}
+              channels={textChannels}
+              onChange={(v) => {
+                patch({ notify_channel_id: v })
                 setFieldErrors((prev) => ({ ...prev, notify_channel_id: undefined }))
               }}
-            >
-              <SelectTrigger
-                className={cn(fieldErrors.notify_channel_id && "border-destructive")}
-                disabled={textChannels.length === 0}
-              >
-                <SelectValue placeholder={t("modules.selectChannel")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_CHANNEL}>{t("modules.automod_ai.noNotifyChannel")}</SelectItem>
-                {textChannels.length === 0 && (
-                  <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-                    <AlertCircleIcon className="size-4" />
-                    {t("modules.noChannels")}
-                  </div>
-                )}
-                {textChannels.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    # {c.name}
-                  </SelectItem>
-                ))}
-                {/* Salon enregistré absent de la liste (supprimé, mauvais type) :
-                    on l'affiche quand même pour ne pas retomber sur le placeholder. */}
-                {draft.notify_channel_id &&
-                  !textChannels.find((c) => c.id === draft.notify_channel_id) && (
-                    <SelectItem value={draft.notify_channel_id} disabled>
-                      # {draft.notify_channel_id}
-                    </SelectItem>
-                  )}
-              </SelectContent>
-            </Select>
+              placeholder={t("modules.selectChannel")}
+              clearLabel={t("modules.automod_ai.noNotifyChannel")}
+              invalid={Boolean(fieldErrors.notify_channel_id)}
+            />
             {fieldErrors.notify_channel_id ? (
               <p className="text-xs text-destructive">{fieldErrors.notify_channel_id}</p>
             ) : (
@@ -898,27 +866,14 @@ function FeatureCard({ featureId, feature, onChange }: FeatureCardProps) {
               </p>
             ) : (
               availableRoles.length > 0 && (
-                <Select
-                  value=""
-                  onValueChange={(roleId) => onChange({ exempt_roles: [...exemptRoles, roleId] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("modules.automod_ai.addRole")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRoles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="size-2 rounded-full"
-                            style={{ backgroundColor: roleColorToHex(role.color) }}
-                          />
-                          {role.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <RolePicker
+                  value={null}
+                  roles={availableRoles}
+                  onChange={(roleId) =>
+                    roleId && onChange({ exempt_roles: [...exemptRoles, roleId] })
+                  }
+                  placeholder={t("modules.automod_ai.addRole")}
+                />
               )
             )}
             <p className="text-xs text-muted-foreground">
@@ -964,23 +919,14 @@ function FeatureCard({ featureId, feature, onChange }: FeatureCardProps) {
               </p>
             ) : (
               availableChannels.length > 0 && (
-                <Select
-                  value=""
-                  onValueChange={(channelId) =>
-                    onChange({ exempt_channels: [...exemptChannels, channelId] })
+                <ChannelPicker
+                  value={null}
+                  channels={availableChannels}
+                  onChange={(channelId) =>
+                    channelId && onChange({ exempt_channels: [...exemptChannels, channelId] })
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("modules.automod_ai.addChannel")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableChannels.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        # {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={t("modules.automod_ai.addChannel")}
+                />
               )
             )}
             <p className="text-xs text-muted-foreground">

@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
-import { Trash2Icon, StarIcon, AlertCircleIcon, LoaderIcon, ChevronDownIcon } from "lucide-react"
+import { Trash2Icon, StarIcon, LoaderIcon, ChevronDownIcon } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { handleSaveError } from "@/lib/handle-error"
 import { ApiError } from "@/lib/auth"
@@ -33,14 +33,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ChannelPicker } from "@/components/discord-pickers"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
@@ -297,41 +291,14 @@ function StarboardForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t('modules.starboard.channel')}</FormLabel>
-                    <Select
-                      key={`${textChannels.length}:${String(currentConfig?.channel_id ?? '')}`}
-                      value={field.value || undefined}
-                      onValueChange={field.onChange}
-                    >
-                      <FormControl>
-                        <SelectTrigger disabled={textChannels.length === 0}>
-                          <SelectValue placeholder={t('modules.selectChannel')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {textChannels.length === 0 && (
-                          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-                            <AlertCircleIcon className="size-4" />
-                            {t('modules.noChannels')}
-                          </div>
-                        )}
-                        {textChannels.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            # {c.name}
-                          </SelectItem>
-                        ))}
-                        {/* Fallback item for saved value that no longer exists
-                            in the channel list (deleted, wrong type, snowflake
-                            precision mismatch) — keeps SelectValue displaying
-                            something instead of falling through to placeholder. */}
-                        {field.value &&
-                          textChannels.length > 0 &&
-                          !textChannels.find((c) => c.id === field.value) && (
-                            <SelectItem key={`fallback-${field.value}`} value={field.value} disabled>
-                              # {field.value}
-                            </SelectItem>
-                          )}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <ChannelPicker
+                        value={field.value || null}
+                        channels={textChannels}
+                        onChange={(v) => field.onChange(v ?? '')}
+                        placeholder={t('modules.selectChannel')}
+                      />
+                    </FormControl>
                     <FormDescription>{t('modules.starboard.channelDescription')}</FormDescription>
                     <FormMessage />
                   </FormItem>

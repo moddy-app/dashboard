@@ -7,7 +7,6 @@ import {
   PlusIcon,
   LoaderIcon,
   PencilIcon,
-  AlertCircleIcon,
 } from "lucide-react"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
@@ -37,16 +36,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Slider } from "@/components/ui/slider"
+import { ChannelPicker } from "@/components/discord-pickers"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { CHANNEL_TYPES } from "@/types/api"
@@ -132,28 +125,15 @@ function ChannelForm({
           {t('modules.adaptive_slowmode.channel')}
         </label>
         {/* Le select est libre en mode "ajout", verrouillé en mode "édition" */}
-        <Select
-          value={channelId ?? undefined}
-          onValueChange={onChannelChange}
+        {/* Le salon d'une règle existante ne se change pas : la règle *est*
+            attachée à son salon. */}
+        <ChannelPicker
+          value={channelId ?? null}
+          channels={textChannels}
+          onChange={(v) => v && onChannelChange(v)}
+          placeholder={t('modules.selectChannel')}
           disabled={!isNew}
-        >
-          <SelectTrigger disabled={textChannels.length === 0 || !isNew}>
-            <SelectValue placeholder={t('modules.selectChannel')} />
-          </SelectTrigger>
-          <SelectContent>
-            {textChannels.length === 0 && (
-              <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-                <AlertCircleIcon className="size-4" />
-                {t('modules.noChannels')}
-              </div>
-            )}
-            {textChannels.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                # {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        />
         {!isNew && (
           <p className="text-xs text-muted-foreground">{t('modules.adaptive_slowmode.channelLocked')}</p>
         )}

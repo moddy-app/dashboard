@@ -1340,14 +1340,10 @@
         "default_description": "Choisissez une catégorie ci-dessous pour ouvrir un ticket. Un salon privé sera créé pour vous.",
         "sections": {
           "publication": "Publication",
-          "appearance": "Apparence",
-          "categories": "Catégories",
           "publicationHint": "Un panneau sans salon reste enregistrable : il n'est simplement pas publié.",
           "message": "Message publié",
           "layout": "Présentation"
         },
-        "errorsCount_one": "{{count}} erreur",
-        "errorsCount_other": "{{count}} erreurs",
         "subtitle": "Où ce panneau est publié, ce qu'il affiche et ce qu'il propose.",
         "draft": "Brouillon",
         "enabled": "Activé",
@@ -1401,27 +1397,27 @@
         "confirmDeleteDescription": "La catégorie disparaît du panneau à la prochaine sauvegarde.",
         "confirmDeleteOpen_one": "{{count}} ticket ouvert utilise cette catégorie. Il restera ouvert mais deviendra inutilisable — déplacez-le d'abord avec /ticket move.",
         "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move.",
-        "tabHasErrors": "Cet onglet contient un champ invalide",
-        "inPanel": "Dans le panneau « {{name}} »",
-        "edit": "Modifier la catégorie",
         "subtitle": "Le bouton, et ce qui se passe quand un membre clique dessus.",
         "enabledLabel": "Activer cette catégorie",
         "sections": {
-          "identity": "Le bouton",
-          "identityHint": "Ce qu'un membre lit sur le panneau.",
           "channel": "Le salon créé",
           "access": "Qui peut ouvrir",
           "accessHint": "Les rôles interdits gagnent toujours, même sur un administrateur.",
           "onOpen": "À l'ouverture",
-          "messages": "Messages du bot",
-          "advanced": "Réglages avancés",
           "claim": "Prise en charge",
           "buttons": "Boutons du salon",
           "buttonsHint": "Les boutons affichés en haut d'un ticket ouvert."
         },
         "noParentShort": "Aucune catégorie Discord",
         "allowedRolesEveryone": "Aucun rôle : tout le monde peut ouvrir un ticket.",
-        "allowedRolesRestricted": "Seuls ces rôles peuvent ouvrir un ticket."
+        "allowedRolesRestricted": "Seuls ces rôles peuvent ouvrir un ticket.",
+        "tabs": {
+          "info": "Informations",
+          "permissions": "Permissions",
+          "messages": "Messages",
+          "advanced": "Avancé"
+        },
+        "done": "Terminé"
       },
       "buttonStyles": {
         "primary": "Blurple",
@@ -1501,7 +1497,6 @@
             "description": "Lire les avis laissés sur les tickets de cette catégorie."
           }
         },
-        "removeRole": "Retirer le rôle",
         "count_one": "{{count}} permission",
         "count_other": "{{count}} permissions"
       },
@@ -1739,14 +1734,7 @@
       },
       "panelsTitle": "Panneaux",
       "panelsHint": "Un panneau est un message posté par Moddy. Ouvrez-le pour régler son salon, son texte et ses catégories.",
-      "deleteAction": "Supprimer",
-      "pickers": {
-        "searchChannel": "Rechercher un salon…",
-        "noChannel": "Aucun salon trouvé.",
-        "searchRole": "Rechercher un rôle…",
-        "noRole": "Aucun rôle trouvé.",
-        "removeRole": "Retirer ce rôle"
-      }
+      "deleteAction": "Supprimer"
     }
   },
   "staff": {
@@ -2960,5 +2948,14 @@
     "noMatch": "Aucun émoji trouvé.",
     "usePasted": "Utiliser cet émoji",
     "clear": "Retirer l'émoji"
+  },
+  "pickers": {
+    "searchChannel": "Rechercher un salon…",
+    "noChannel": "Aucun salon trouvé.",
+    "searchRole": "Rechercher un rôle…",
+    "noRole": "Aucun rôle trouvé.",
+    "removeRole": "Retirer {{name}}",
+    "search": "Rechercher…",
+    "noResult": "Aucun résultat."
   }
 }

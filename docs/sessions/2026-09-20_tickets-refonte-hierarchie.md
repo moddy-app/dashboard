@@ -1,4 +1,4 @@
-# 2026-09-20 — Configuration Tickets : refonte en trois niveaux
+# 2026-09-20 — Configuration Tickets : refonte, et sélecteurs communs
 
 ## Objectif
 
@@ -14,26 +14,33 @@ inchangés.
 
 ## Ce qui change
 
-### 1. Hiérarchie en trois niveaux
+### 1. Hiérarchie : deux écrans et une modale
 
 | Niveau | Contenu |
 |---|---|
 | Module | État, encarts, quatre onglets, **liste des panneaux**, désactivation |
 | Panneau | Publication (nom, salon) → Message publié (titre, description, couleur) → Présentation (style, texte du menu) → Catégories |
-| Catégorie | Le bouton → Le salon créé → Qui peut ouvrir → À l'ouverture → Messages → Réglages avancés |
+| Catégorie | **Grande modale à onglets** : Informations, Permissions, Messages, Avancé |
 
-Chaque niveau a son écran, son en-tête avec chemin de retour et ses sections
-titrées séparées par des `Separator`. Plus d'accordéon, plus de modale de
-configuration, plus de `Card` autour d'un onglet.
+Une carte par bloc thématique, des lignes de liste bord à bord dans leur carte,
+une colonne centrée (`mx-auto max-w-5xl`). Les champs courts qui parlent du même
+sujet partagent une ligne (nom + salon, titre + couleur, nom du salon + max par
+membre). Un choix de 2 à 4 valeurs passe par `SegmentedControl`, avec une coche
+sur l'option active — l'état `on` de `ToggleGroup` seul est trop discret pour
+qu'on sache laquelle est choisie.
 
-**La navigation entre niveaux est locale, jamais routée.** `UnsavedBar` pose un
+Le **fil d'Ariane suit la descente** : la page publie ses segments dans un
+magasin hors de React (`lib/module-breadcrumb.ts`, `useSyncExternalStore`) que
+`DashboardPage` lit. Sans lui, l'en-tête s'arrêterait à « Tickets ».
+
+**La navigation entre écrans est locale, jamais routée.** `UnsavedBar` pose un
 `useBlocker` sur les changements d'URL : une route par niveau ferait surgir
-l'avertissement « modifications non enregistrées » à chaque descente. Les trois
-niveaux partagent donc un seul brouillon et une seule sauvegarde — fidèles au
-document unique de l'API.
+l'avertissement « modifications non enregistrées » à chaque descente. Tout
+partage donc un seul brouillon et une seule sauvegarde — fidèle au document
+unique de l'API.
 
 Le défilement vers le champ fautif (validation locale ou `422`) est conservé et
-**ouvre maintenant le bon niveau** avant de défiler : l'`id` DOM d'un champ est
+**ouvre maintenant le bon écran, et la catégorie s'il le faut,** avant de défiler : l'`id` DOM d'un champ est
 sa clé d'erreur (`panelFieldKey()` / `categoryFieldKey()`).
 
 ### 2. Émojis résolus, plus jamais en texte
@@ -48,13 +55,24 @@ sa clé d'erreur (`panelFieldKey()` / `categoryFieldKey()`).
 La valeur stockée reste la chaîne Discord attendue par l'API ; seul l'affichage
 change.
 
-### 3. Composants au lieu de markup maison
+### 3. Sélecteurs de salon et de rôle, communs à tout le dashboard
 
-`Field` / `FieldLabel` / `FieldDescription` / `FieldError`, `Empty`,
-`ToggleGroup` (style de panneau, couleur de bouton), `Popover` + `Command` pour
-les salons et les rôles — un `Select` est inutilisable sur plusieurs centaines
-de salons. Les 10 permissions d'un rôle tiennent dans un popover, une ligne par
-rôle.
+`src/components/discord-pickers.tsx` — `ChannelPicker`, `RolePicker`,
+`RoleMultiPicker`, `OptionPicker`, `RoleDot`, `ChannelIcon` : `Popover` +
+`Command`, la mécanique de la palette ⌘K. Un serveur aligne couramment
+plusieurs centaines de salons ; un `Select` y oblige à faire défiler sans
+chercher.
+
+Migrés : tickets, altguard, logs, automod, starboard, welcome_channel,
+auto_role, adaptive_slowmode, social_notifications. `ChannelSelect` et
+`RoleChips` de `tickets/fields.tsx` ne sont plus que des noms d'emprunt qui
+délèguent, ce qui fait suivre les réglages du module, les archives et les avis
+sans toucher à leurs appels. Un rôle refusé est **désactivé avec sa raison**
+(hiérarchie AltGuard), jamais retiré de la liste.
+
+Le reste du markup maison laisse place aux composants : `Field`, `Empty`,
+`Card`, `Badge`. Les 10 permissions d'un rôle tiennent dans un popover, une
+ligne par rôle.
 
 ### 4. Largeurs et bruit
 
@@ -72,6 +90,8 @@ utilisé ».
 ## Fichiers
 
 **Créés**
+- `app/src/components/discord-pickers.tsx` (sélecteurs communs)
+- `app/src/lib/module-breadcrumb.ts` (fil d'Ariane des écrans internes)
 - `app/src/components/discord-emoji.tsx`
 - `app/src/hooks/useGuildEmojis.ts`
 - `app/src/components/tickets/primitives.tsx`
@@ -85,8 +105,11 @@ utilisé ».
 - `app/src/components/tickets/category-dialog.tsx`
 
 **Modifiés**
-- `app/src/pages/modules/TicketsPage.tsx` (rendu en trois niveaux ; chargement,
+- `app/src/pages/modules/TicketsPage.tsx` (deux écrans + modale ; chargement,
   validation et sauvegarde inchangés)
+- `app/src/pages/DashboardPage.tsx` (segments de fil d'Ariane publiés par un module)
+- `app/src/pages/modules/{AltGuard,Logs,AutomodAi,Starboard,AutoRole,WelcomeChannel,AdaptiveSlowmode,SocialNotifications}Page.tsx`
+  (sélecteurs communs)
 - `app/src/lib/discord-emoji.ts` (+ `customEmojiToken`, `isUnicodeEmoji`)
 - `app/src/locales/{en,fr}/translation.json` (`modules.tickets`, `emojiPicker`)
 - `app/src/index.css` (scrollbars des modales)

@@ -16,17 +16,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { EmojiView } from "@/components/discord-emoji"
 import { MessageEditor } from "@/components/message-editor"
+import { ChannelPicker } from "@/components/discord-pickers"
 import {
-  ChannelPicker,
   List,
   NavRow,
   ScreenHeader,
   Section,
+  SegmentedControl,
 } from "@/components/tickets/primitives"
 import {
   accentToHex,
@@ -40,7 +39,6 @@ import type {
   Channel,
   TicketCategory,
   TicketPanel,
-  TicketPanelStyle,
   TicketsLimits,
 } from "@/types/api"
 
@@ -87,7 +85,7 @@ export function PanelEditor({
   const isFull = panel.categories.length >= cap
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <ScreenHeader
         back={t("modules.tickets.name")}
         onBack={onBack}
@@ -114,7 +112,7 @@ export function PanelEditor({
         title={t("modules.tickets.panel.sections.publication")}
         description={t("modules.tickets.panel.sections.publicationHint")}
       >
-        <FieldGroup className="gap-5">
+        <FieldGroup className="grid gap-5 sm:grid-cols-2">
           <Field data-invalid={Boolean(err("name")) || undefined}>
             <FieldLabel htmlFor={pf("name")}>
               {t("modules.tickets.panel.name")}
@@ -125,7 +123,6 @@ export function PanelEditor({
               maxLength={TICKET_TEXT_LIMITS.name}
               aria-invalid={Boolean(err("name"))}
               onChange={(e) => onChange({ name: e.target.value })}
-              className="max-w-sm"
             />
             <FieldDescription>{t("modules.tickets.panel.nameDescription")}</FieldDescription>
             <FieldError errors={err("name") ? [{ message: err("name") }] : undefined} />
@@ -140,7 +137,6 @@ export function PanelEditor({
               placeholder={t("modules.selectChannel")}
               clearLabel={t("modules.tickets.panel.noChannelOption")}
               invalid={Boolean(err("channel_id"))}
-              className="max-w-sm"
             />
             <FieldDescription>{t("modules.tickets.panel.channelDescription")}</FieldDescription>
             <FieldError errors={err("channel_id") ? [{ message: err("channel_id") }] : undefined} />
@@ -148,7 +144,6 @@ export function PanelEditor({
         </FieldGroup>
       </Section>
 
-      <Separator />
 
       {/* ── 2. Message publié ──────────────────────────────────────────── */}
       <Section
@@ -156,23 +151,57 @@ export function PanelEditor({
         description={t("modules.tickets.leaveEmptyForDefault")}
       >
         <FieldGroup className="gap-5">
-          <Field data-invalid={Boolean(err("title")) || undefined}>
-            <FieldLabel htmlFor={pf("title")}>
-              {t("modules.tickets.panel.title")}
-            </FieldLabel>
-            <Input
-              id={pf("title")}
-              value={panel.title ?? ""}
-              maxLength={TICKET_TEXT_LIMITS.title}
-              // Le défaut du bot reste un placeholder : écrit en valeur, il
-              // serait figé dans la config et dans une seule langue.
-              placeholder={t("modules.tickets.panel.default_title")}
-              aria-invalid={Boolean(err("title"))}
-              onChange={(e) => onChange({ title: e.target.value || null })}
-              className="max-w-sm"
-            />
-            <FieldError errors={err("title") ? [{ message: err("title") }] : undefined} />
-          </Field>
+          {/* Un titre court et une couleur : deux champs étroits, une ligne. */}
+          <div className="flex flex-wrap items-start gap-5">
+            <Field className="w-auto" data-invalid={Boolean(err("title")) || undefined}>
+              <FieldLabel htmlFor={pf("title")}>{t("modules.tickets.panel.title")}</FieldLabel>
+              <Input
+                id={pf("title")}
+                value={panel.title ?? ""}
+                maxLength={TICKET_TEXT_LIMITS.title}
+                // Le défaut du bot reste un placeholder : écrit en valeur, il
+                // serait figé dans la config et dans une seule langue.
+                placeholder={t("modules.tickets.panel.default_title")}
+                aria-invalid={Boolean(err("title"))}
+                onChange={(e) => onChange({ title: e.target.value || null })}
+                className="w-72"
+              />
+              <FieldError errors={err("title") ? [{ message: err("title") }] : undefined} />
+            </Field>
+
+            <Field className="w-auto">
+              <FieldLabel htmlFor={pf("accent_color")}>
+                {t("modules.tickets.panel.accentColor")}
+              </FieldLabel>
+              <div className="flex items-center gap-2">
+                <input
+                  id={pf("accent_color")}
+                  type="color"
+                  value={accentToHex(panel.accent_color)}
+                  onChange={(e) => onChange({ accent_color: hexToAccent(e.target.value) })}
+                  className="color-field size-9 shrink-0 rounded-md border"
+                />
+                <Input
+                  value={accentToHex(panel.accent_color)}
+                  onChange={(e) => {
+                    const parsed = hexToAccent(e.target.value)
+                    if (parsed !== null) onChange({ accent_color: parsed })
+                  }}
+                  className="w-28 font-mono"
+                />
+                {panel.accent_color !== null && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onChange({ accent_color: null })}
+                  >
+                    {t("modules.tickets.panel.resetColor")}
+                  </Button>
+                )}
+              </div>
+            </Field>
+          </div>
 
           <Field data-invalid={Boolean(err("description")) || undefined}>
             <FieldLabel>{t("modules.tickets.panel.description")}</FieldLabel>
@@ -187,60 +216,23 @@ export function PanelEditor({
             <FieldError errors={err("description") ? [{ message: err("description") }] : undefined} />
           </Field>
 
-          <Field>
-            <FieldLabel htmlFor={pf("accent_color")}>
-              {t("modules.tickets.panel.accentColor")}
-            </FieldLabel>
-            <div className="flex items-center gap-2">
-              <input
-                id={pf("accent_color")}
-                type="color"
-                value={accentToHex(panel.accent_color)}
-                onChange={(e) => onChange({ accent_color: hexToAccent(e.target.value) })}
-                className="size-9 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
-              />
-              <Input
-                value={accentToHex(panel.accent_color)}
-                onChange={(e) => {
-                  const parsed = hexToAccent(e.target.value)
-                  if (parsed !== null) onChange({ accent_color: parsed })
-                }}
-                className="w-28 font-mono"
-              />
-              {panel.accent_color !== null && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onChange({ accent_color: null })}
-                >
-                  {t("modules.tickets.panel.resetColor")}
-                </Button>
-              )}
-            </div>
-          </Field>
         </FieldGroup>
       </Section>
 
-      <Separator />
 
       {/* ── 3. Présentation des catégories ─────────────────────────────── */}
       <Section title={t("modules.tickets.panel.sections.layout")}>
         <FieldGroup className="gap-5">
           <Field>
             <FieldLabel>{t("modules.tickets.panel.style")}</FieldLabel>
-            <ToggleGroup
-              type="single"
+            <SegmentedControl
               value={panel.style}
-              onValueChange={(v) => v && onChange({ style: v as TicketPanelStyle })}
-              className="w-fit"
-            >
-              {TICKET_PANEL_STYLES.map((style) => (
-                <ToggleGroupItem key={style} value={style} className="px-3">
-                  {t(`modules.tickets.panel.styles.${style}`)}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
+              onChange={(style) => onChange({ style })}
+              options={TICKET_PANEL_STYLES.map((style) => ({
+                value: style,
+                label: t(`modules.tickets.panel.styles.${style}`),
+              }))}
+            />
             <FieldDescription>
               {t(`modules.tickets.panel.styleHint.${panel.style}`, { max: cap })}
             </FieldDescription>
@@ -271,7 +263,6 @@ export function PanelEditor({
         </FieldGroup>
       </Section>
 
-      <Separator />
 
       {/* ── 4. Catégories ──────────────────────────────────────────────── */}
       <Section
@@ -293,7 +284,7 @@ export function PanelEditor({
             </EmptyHeader>
           </Empty>
         ) : (
-          <List>
+          <List className="-mx-6 border-y">
             {panel.categories.map((category) => (
               <NavRow
                 key={category.id}
@@ -348,7 +339,6 @@ export function PanelEditor({
         </div>
       </Section>
 
-      <Separator />
 
       <div>
         <Button

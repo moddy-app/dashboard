@@ -45,16 +45,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { OptionPicker } from "@/components/discord-pickers"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
 import {
@@ -925,26 +919,15 @@ function IdPicker({
       {values.length >= max ? (
         <p className="text-xs text-amber-600 dark:text-amber-400">{limitLabel}</p>
       ) : available.length > 0 ? (
-        <Select value="" onValueChange={(id) => onChange([...values, id])}>
-          <SelectTrigger className="w-full sm:w-72">
-            <SelectValue placeholder={addLabel} />
-          </SelectTrigger>
-          <SelectContent>
-            {available.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                <div className="flex items-center gap-2">
-                  {option.color && (
-                    <span
-                      className="size-2 rounded-full shrink-0"
-                      style={{ backgroundColor: option.color }}
-                    />
-                  )}
-                  <span className="truncate">{option.label}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <OptionPicker
+          options={available.map((option) => ({
+            id: option.id,
+            label: option.label,
+            color: option.color,
+          }))}
+          onSelect={(id) => onChange([...values, id])}
+          addLabel={addLabel}
+        />
       ) : (
         values.length === 0 && (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -38,14 +38,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ChannelPicker, RolePicker } from "@/components/discord-pickers"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
@@ -66,14 +60,7 @@ import {
   getAltGuardConfig,
   saveAltGuardConfig,
 } from "@/services/altguard"
-import { roleColorToHex } from "@/types/api"
-import type {
-  AltGuardConfig,
-  Role,
-} from "@/types/api"
-
-/** Sentinelle du sélecteur : Radix Select refuse une valeur vide. */
-const NONE = "__none__"
+import type { AltGuardConfig, Channel, Role } from "@/types/api"
 
 /** Champs sur lesquels une erreur 422 peut être rattachée. */
 type FieldKey =
@@ -620,61 +607,46 @@ function Field({
   )
 }
 
+/**
+ * Sélecteur de salon du dashboard, avec la résolution d'id propre au module :
+ * un id enregistré avant le correctif de précision JSON peut ne pas matcher la
+ * liste live à la chaîne près.
+ */
 function ChannelSelect({
   value,
   channels,
   onChange,
   placeholder,
-  emptyLabel,
   clearable = false,
   clearLabel,
 }: {
   value: string | null
-  channels: { id: string; name: string }[]
+  channels: Channel[]
   onChange: (value: string | null) => void
   placeholder: string
-  emptyLabel: string
+  emptyLabel?: string
   clearable?: boolean
   clearLabel?: string
 }) {
-  // Un id enregistré avant le correctif de précision JSON peut ne pas matcher
-  // la liste live à la chaîne près — même résolution que les autres modules.
   const resolved = resolveChannelId(value, channels.map((c) => c.id))
-  const known = channels.some((c) => c.id === resolved)
 
   return (
-    <Select
-      value={resolved || NONE}
-      onValueChange={(v) => onChange(v === NONE ? null : v)}
-    >
-      <SelectTrigger className="w-full sm:w-72" disabled={channels.length === 0}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {channels.length === 0 && (
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-            <AlertCircleIcon className="size-4" />
-            {emptyLabel}
-          </div>
-        )}
-        {clearable && <SelectItem value={NONE}>{clearLabel}</SelectItem>}
-        {channels.map((c) => (
-          <SelectItem key={c.id} value={c.id}>
-            # {c.name}
-          </SelectItem>
-        ))}
-        {/* Valeur enregistrée absente de la liste (salon supprimé, mauvais
-            type) : gardée visible plutôt que de retomber sur le placeholder. */}
-        {resolved && !known && (
-          <SelectItem value={resolved} disabled>
-            # {resolved}
-          </SelectItem>
-        )}
-      </SelectContent>
-    </Select>
+    <ChannelPicker
+      value={resolved || null}
+      channels={channels}
+      onChange={onChange}
+      placeholder={placeholder}
+      clearLabel={clearable ? clearLabel : undefined}
+      className="sm:w-72"
+    />
   )
 }
 
+/**
+ * Sélecteur de rôle du dashboard. Deux règles propres au module y sont
+ * rappelées sur l'option plutôt que de la masquer : un rôle au-dessus de celui
+ * du bot ne peut pas être attribué, et l'API refuse deux rôles identiques.
+ */
 function RoleSelect({
   value,
   roles,
@@ -682,7 +654,6 @@ function RoleSelect({
   excludeId,
   onChange,
   placeholder,
-  emptyLabel,
   aboveBotLabel,
 }: {
   value: string | null
@@ -692,51 +663,21 @@ function RoleSelect({
   excludeId: string | null
   onChange: (value: string | null) => void
   placeholder: string
-  emptyLabel: string
+  emptyLabel?: string
   aboveBotLabel: string
 }) {
-  const resolved = value ? resolveRoleIds([value], roles.map((r) => r.id))[0] : ''
-  const known = roles.some((r) => r.id === resolved)
+  const resolved = value ? resolveRoleIds([value], roles.map((r) => r.id))[0] : null
 
   return (
-    <Select value={resolved || undefined} onValueChange={onChange}>
-      <SelectTrigger className="w-full sm:w-72" disabled={roles.length === 0}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {roles.length === 0 && (
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-            <AlertCircleIcon className="size-4" />
-            {emptyLabel}
-          </div>
-        )}
-        {roles.map((role) => {
-          const aboveBot = isRoleAboveBot(role, botTop)
-          return (
-            <SelectItem
-              key={role.id}
-              value={role.id}
-              disabled={role.id === excludeId || aboveBot}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="size-2 rounded-full shrink-0"
-                  style={{ backgroundColor: roleColorToHex(role.color) }}
-                />
-                <span className="truncate">{role.name}</span>
-                {aboveBot && (
-                  <span className="text-xs text-muted-foreground">{aboveBotLabel}</span>
-                )}
-              </div>
-            </SelectItem>
-          )
-        })}
-        {resolved && !known && (
-          <SelectItem value={resolved} disabled>
-            {resolved}
-          </SelectItem>
-        )}
-      </SelectContent>
-    </Select>
+    <RolePicker
+      value={resolved || null}
+      roles={roles}
+      onChange={onChange}
+      placeholder={placeholder}
+      isDisabled={(role) =>
+        isRoleAboveBot(role, botTop) ? aboveBotLabel : role.id === excludeId ? "" : null
+      }
+      className="sm:w-72"
+    />
   )
 }

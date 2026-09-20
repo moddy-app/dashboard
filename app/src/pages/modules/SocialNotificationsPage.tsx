@@ -57,6 +57,7 @@ import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ChannelPicker } from "@/components/discord-pickers"
 import {
   Tooltip,
   TooltipContent,
@@ -900,29 +901,12 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
       {/* Salon */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium">{t("modules.social_notifications.channel")}</label>
-        <Select value={draft.channel_id || undefined} onValueChange={(v) => onChange({ channel_id: v })}>
-          <SelectTrigger disabled={textChannels.length === 0}>
-            <SelectValue placeholder={t("modules.selectChannel")} />
-          </SelectTrigger>
-          <SelectContent>
-            {textChannels.length === 0 && (
-              <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-                <AlertCircleIcon className="size-4" />
-                {t("modules.noChannels")}
-              </div>
-            )}
-            {textChannels.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                # {c.name}
-              </SelectItem>
-            ))}
-            {draft.channel_id && !textChannels.find((c) => c.id === draft.channel_id) && (
-              <SelectItem value={draft.channel_id} disabled>
-                # {draft.channel_id}
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
+        <ChannelPicker
+          value={draft.channel_id || null}
+          channels={textChannels}
+          onChange={(v) => onChange({ channel_id: v ?? "" })}
+          placeholder={t("modules.selectChannel")}
+        />
       </div>
 
       {/* Rôles à mentionner */}

@@ -34,6 +34,7 @@ import {
 import { logout, refreshGuilds } from "@/lib/auth"
 import { openBillingPortal } from "@/services/guilds"
 import type { User } from "@/lib/auth"
+import { useModuleCrumbs } from "@/lib/module-breadcrumb"
 import { useNotifications } from "@/hooks/useNotifications"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctions } from "@/contexts/SanctionContext"
@@ -53,6 +54,9 @@ interface DashboardPageProps {
 export function DashboardPage({ user }: DashboardPageProps) {
   const { t } = useTranslation()
   const location = useLocation()
+  // Segments publiés par un module qui se parcourt en niveaux sans changer
+  // d'URL (Tickets) — voir `lib/module-breadcrumb.ts`.
+  const moduleCrumbs = useModuleCrumbs()
   const navigate = useNavigate()
   const { selectGuild, guilds, guildDetail, selectedGuildId } = useGuildContext()
   const { groups: sanctionGroups } = useSanctions()
@@ -156,7 +160,13 @@ export function DashboardPage({ user }: DashboardPageProps) {
   // Chaque segment : { label, href? }. Le dernier segment est la page courante.
   // `badge` : étiquette d'état (« Beta »…) posée après le segment. Elle n'est
   // rendue que sur le dernier segment — c'est la page où l'on se trouve.
-  type Crumb = { label: string; href?: string | null; badge?: string }
+  type Crumb = {
+    label: string
+    href?: string | null
+    badge?: string
+    /** Navigation **interne** à un module (Tickets), qui ne change pas d'URL. */
+    onSelect?: () => void
+  }
   const getBreadcrumb = (): Crumb[] => {
     const path = location.pathname
     // Case ouverte (?case=REF) → segment final partagé par les 3 vues.
@@ -221,9 +231,15 @@ export function DashboardPage({ user }: DashboardPageProps) {
     if (moduleMatch && guildDetail) {
       const moduleId = moduleMatch[1]
       const moduleName = t(`modules.${moduleId}.name`, { defaultValue: moduleId })
+      // Un module qui se parcourt en niveaux sans changer d'URL (Tickets)
+      // publie ses propres segments : sans eux, le fil d'Ariane s'arrêterait au
+      // nom du module alors qu'on est deux écrans plus bas.
       return [
         { label: guildDetail.name, href: `/servers/${selectedGuildId}` },
-        { label: moduleName },
+        moduleCrumbs.items.length > 0
+          ? { label: moduleName, onSelect: moduleCrumbs.onRoot }
+          : { label: moduleName },
+        ...moduleCrumbs.items,
       ]
     }
 
@@ -313,6 +329,12 @@ export function DashboardPage({ user }: DashboardPageProps) {
                           <BreadcrumbPage>{crumb.label}</BreadcrumbPage>
                         ) : crumb.href ? (
                           <BreadcrumbLink href={crumb.href}>{crumb.label}</BreadcrumbLink>
+                        ) : crumb.onSelect ? (
+                          <BreadcrumbLink asChild>
+                            <button type="button" onClick={crumb.onSelect}>
+                              {crumb.label}
+                            </button>
+                          </BreadcrumbLink>
                         ) : (
                           <span className="text-foreground font-medium">{crumb.label}</span>
                         )}

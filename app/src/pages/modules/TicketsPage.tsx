@@ -38,6 +38,7 @@ import { useSanctionGates } from "@/contexts/SanctionContext"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
+import { setModuleCrumbs } from "@/lib/module-breadcrumb"
 import { sanctionBlockedError } from "@/lib/sanctions"
 import { cn } from "@/lib/utils"
 import {
@@ -73,18 +74,16 @@ import type {
 const MODULE_ID = "tickets"
 
 /**
- * La configuration se parcourt en **trois niveaux** — module (liste des
- * panneaux), panneau, catégorie — qui partagent un seul brouillon et une seule
- * sauvegarde : la config tickets reste un document unique.
+ * La configuration se parcourt en **deux écrans** — module (liste des panneaux)
+ * puis panneau —, une catégorie s'éditant dans une modale à onglets posée sur
+ * son panneau. Tout partage un seul brouillon et une seule sauvegarde : la
+ * config tickets reste un document unique.
  *
  * La navigation entre niveaux est **locale, jamais routée** : `UnsavedBar` pose
  * un `useBlocker` sur les changements d'URL, une route par niveau ferait donc
  * surgir l'avertissement « modifications non enregistrées » à chaque descente.
  */
-type View =
-  | { level: "home" }
-  | { level: "panel"; panelId: string }
-  | { level: "category"; panelId: string; categoryId: string }
+type View = { level: "home" } | { level: "panel"; panelId: string }
 
 /**
  * Garde de chargement : le formulaire attend les salons et les rôles du serveur.
@@ -146,6 +145,8 @@ function TicketsForm() {
   const [isDisabling, setIsDisabling] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
   const [view, setView] = useState<View>({ level: "home" })
+  /** Catégorie ouverte dans la modale, rattachée au panneau affiché. */
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<
     | { kind: "panel"; panel: TicketPanel }
     | { kind: "category"; panelId: string; category: TicketCategory }
@@ -256,7 +257,7 @@ function TicketsForm() {
             t("modules.tickets.category.defaultName", { index: p.categories.length + 1 }),
             takenIds
           )
-          setView({ level: "category", panelId, categoryId: category.id })
+          setEditingCategoryId(category.id)
           return { ...p, categories: [...p.categories, category] }
         })
       })
@@ -266,6 +267,7 @@ function TicketsForm() {
 
   const removePanel = useCallback((panelId: string) => {
     setPanels((prev) => prev.filter((p) => p.id !== panelId))
+    setEditingCategoryId(null)
     setView({ level: "home" })
   }, [])
 
@@ -277,7 +279,7 @@ function TicketsForm() {
           : p
       )
     )
-    setView({ level: "panel", panelId })
+    setEditingCategoryId(null)
   }, [])
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -330,11 +332,8 @@ function TicketsForm() {
     if (!field) return
     const match = /^p:([^.]+)(?:\.c:([^.]+))?/.exec(field)
     if (match) {
-      setView(
-        match[2]
-          ? { level: "category", panelId: match[1], categoryId: match[2] }
-          : { level: "panel", panelId: match[1] }
-      )
+      setView({ level: "panel", panelId: match[1] })
+      setEditingCategoryId(match[2] ?? null)
     }
     scrollToField(field)
   }, [])
@@ -464,6 +463,38 @@ function TicketsForm() {
     }
   }, [guildId, syncModule, loadSideData, t])
 
+  // Un panneau ou une catégorie supprimé ailleurs ramène au niveau du dessus.
+  const activePanelId = view.level === "home" ? null : view.panelId
+  const activePanel = activePanelId ? panels.find((p) => p.id === activePanelId) : undefined
+  const activeCategory = editingCategoryId
+    ? activePanel?.categories.find((c) => c.id === editingCategoryId)
+    : undefined
+
+  // ── Fil d'Ariane ──────────────────────────────────────────────────────────
+  //
+  // Les niveaux ne changent pas d'URL : sans ça, l'en-tête s'arrêterait à
+  // « Tickets » alors qu'on édite une catégorie deux écrans plus bas.
+  const panelName = activePanel?.name || t("modules.tickets.panel.untitled")
+  const categoryName = activeCategory?.name || t("modules.tickets.category.untitled")
+
+  useEffect(() => {
+    if (view.level === "home" || !activePanelId) {
+      setModuleCrumbs(null)
+      return
+    }
+    setModuleCrumbs({
+      onRoot: () => setView({ level: "home" }),
+      // La catégorie ouverte est un segment de plus : la modale cache le
+      // panneau, le fil d'Ariane est le seul endroit qui dit où l'on est.
+      items: editingCategoryId
+        ? [{ label: panelName, onSelect: () => setEditingCategoryId(null) }, { label: categoryName }]
+        : [{ label: panelName }],
+    })
+  }, [view.level, activePanelId, editingCategoryId, panelName, categoryName])
+
+  // Le fil d'Ariane appartient à l'écran : en quittant le module, il repart.
+  useEffect(() => () => setModuleCrumbs(null), [])
+
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
   if (loadError) {
@@ -472,7 +503,7 @@ function TicketsForm() {
 
   if (isLoading || savedPanels === null) {
     return (
-      <div className="flex w-full flex-col gap-4">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 rounded-xl" />
         <Skeleton className="h-96 rounded-xl" />
@@ -481,12 +512,6 @@ function TicketsForm() {
   }
 
   const isActive = panels.some((p) => p.enabled && Boolean(p.channel_id))
-  // Un panneau ou une catégorie supprimé ailleurs ramène au niveau du dessus.
-  const activePanel = view.level === "home" ? undefined : panels.find((p) => p.id === view.panelId)
-  const activeCategory =
-    view.level === "category"
-      ? activePanel?.categories.find((c) => c.id === view.categoryId)
-      : undefined
 
   const dialogs = (
     <>
@@ -617,12 +642,29 @@ function TicketsForm() {
     className: cn("flex w-full flex-col gap-6", isSaving && "pointer-events-none opacity-60"),
   }
 
-  // ── Niveau 2 : une catégorie ────────────────────────────────────────────
-  if (view.level === "category" && activePanel && activeCategory) {
+  // ── Niveau 1 : un panneau ───────────────────────────────────────────────
+  if (view.level === "panel" && activePanel) {
     return (
-      <div className="flex w-full flex-col gap-6 pb-24">
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24">
         {notices}
         <div {...frozen}>
+          <PanelEditor
+            panel={activePanel}
+            guildId={guildId}
+            channels={channels}
+            limits={limits}
+            errors={fieldErrors}
+            onChange={(changes) => patchPanel(activePanel.id, changes)}
+            onDelete={() => setPendingDelete({ kind: "panel", panel: activePanel })}
+            onBack={() => setView({ level: "home" })}
+            onOpenCategory={(category) => setEditingCategoryId(category.id)}
+            onAddCategory={() => addCategory(activePanel.id)}
+            onToggleCategory={(category, enabled) =>
+              patchCategory(activePanel.id, category.id, { enabled })
+            }
+          />
+        </div>
+        {activeCategory && (
           <CategoryEditor
             panel={activePanel}
             category={activeCategory}
@@ -639,38 +681,9 @@ function TicketsForm() {
                 category: activeCategory,
               })
             }
-            onBack={() => setView({ level: "panel", panelId: activePanel.id })}
+            onClose={() => setEditingCategoryId(null)}
           />
-        </div>
-        {dialogs}
-      </div>
-    )
-  }
-
-  // ── Niveau 1 : un panneau ───────────────────────────────────────────────
-  if (view.level === "panel" && activePanel) {
-    return (
-      <div className="flex w-full flex-col gap-6 pb-24">
-        {notices}
-        <div {...frozen}>
-          <PanelEditor
-            panel={activePanel}
-            guildId={guildId}
-            channels={channels}
-            limits={limits}
-            errors={fieldErrors}
-            onChange={(changes) => patchPanel(activePanel.id, changes)}
-            onDelete={() => setPendingDelete({ kind: "panel", panel: activePanel })}
-            onBack={() => setView({ level: "home" })}
-            onOpenCategory={(category) =>
-              setView({ level: "category", panelId: activePanel.id, categoryId: category.id })
-            }
-            onAddCategory={() => addCategory(activePanel.id)}
-            onToggleCategory={(category, enabled) =>
-              patchCategory(activePanel.id, category.id, { enabled })
-            }
-          />
-        </div>
+        )}
         {dialogs}
       </div>
     )
@@ -678,7 +691,7 @@ function TicketsForm() {
 
   // ── Niveau 0 : le module ────────────────────────────────────────────────
   return (
-    <div className="flex w-full flex-col gap-6 pb-24">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 pb-24">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">{t("modules.tickets.name")}</h1>
@@ -717,7 +730,7 @@ function TicketsForm() {
 
         {/* ── Panneaux ────────────────────────────────────────────────── */}
         <TabsContent value="panels" className="pt-6">
-          <div {...frozen} className={cn(frozen.className, "max-w-3xl gap-8")}>
+          <div {...frozen} className={cn(frozen.className, "gap-6")}>
             {/* Supprimer une catégorie ne ferme pas ses tickets : ils restent
                 ouverts, et le bot répond « catégorie disparue » dedans. */}
             {orphanCount > 0 && (
@@ -772,7 +785,7 @@ function TicketsForm() {
 
         {/* ── Réglages du module ──────────────────────────────────────── */}
         <TabsContent value="settings" className="pt-6">
-          <div {...frozen} className={cn(frozen.className, "max-w-3xl")}>
+          <div {...frozen} className={frozen.className}>
             <TabHeader
               title={t("modules.tickets.cards.settings.title")}
               description={t("modules.tickets.cards.settings.description")}

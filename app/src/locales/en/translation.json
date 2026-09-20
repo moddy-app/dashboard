@@ -1340,14 +1340,10 @@
         "default_description": "Pick a category below to open a ticket. A private channel will be created for you.",
         "sections": {
           "publication": "Publishing",
-          "appearance": "Appearance",
-          "categories": "Categories",
           "publicationHint": "A panel without a channel still saves — it just isn't posted.",
           "message": "Posted message",
           "layout": "Layout"
         },
-        "errorsCount_one": "{{count}} error",
-        "errorsCount_other": "{{count}} errors",
         "subtitle": "Where this panel is posted, what it shows and what it offers.",
         "draft": "Draft",
         "enabled": "Enabled",
@@ -1401,27 +1397,27 @@
         "confirmDeleteDescription": "The category is dropped from the panel on the next save.",
         "confirmDeleteOpen_one": "{{count}} open ticket uses this category. It stays open but becomes unusable — move it first with /ticket move.",
         "confirmDeleteOpen_other": "{{count}} open tickets use this category. They stay open but become unusable — move them first with /ticket move.",
-        "tabHasErrors": "This tab has an invalid field",
-        "inPanel": "In panel “{{name}}”",
-        "edit": "Edit category",
         "subtitle": "The button, and what happens when a member clicks it.",
         "enabledLabel": "Enable this category",
         "sections": {
-          "identity": "The button",
-          "identityHint": "What a member reads on the panel.",
           "channel": "The channel created",
           "access": "Who can open",
           "accessHint": "Denied roles always win, even over an administrator.",
           "onOpen": "On open",
-          "messages": "Bot messages",
-          "advanced": "Advanced settings",
           "claim": "Claiming",
           "buttons": "Ticket channel buttons",
           "buttonsHint": "The buttons shown at the top of an open ticket."
         },
         "noParentShort": "No Discord category",
         "allowedRolesEveryone": "No role: everyone can open a ticket.",
-        "allowedRolesRestricted": "Only these roles can open a ticket."
+        "allowedRolesRestricted": "Only these roles can open a ticket.",
+        "tabs": {
+          "info": "Information",
+          "permissions": "Permissions",
+          "messages": "Messages",
+          "advanced": "Advanced"
+        },
+        "done": "Done"
       },
       "buttonStyles": {
         "primary": "Blurple",
@@ -1501,7 +1497,6 @@
             "description": "Read the ratings left on this category's tickets."
           }
         },
-        "removeRole": "Remove role",
         "count_one": "{{count}} permission",
         "count_other": "{{count}} permissions"
       },
@@ -1739,14 +1734,7 @@
       },
       "panelsTitle": "Panels",
       "panelsHint": "A panel is a message posted by Moddy. Open one to set its channel, its text and its categories.",
-      "deleteAction": "Delete",
-      "pickers": {
-        "searchChannel": "Search a channel…",
-        "noChannel": "No channel found.",
-        "searchRole": "Search a role…",
-        "noRole": "No role found.",
-        "removeRole": "Remove this role"
-      }
+      "deleteAction": "Delete"
     }
   },
   "staff": {
@@ -2960,5 +2948,14 @@
     "noMatch": "No emoji found.",
     "usePasted": "Use this emoji",
     "clear": "Remove emoji"
+  },
+  "pickers": {
+    "searchChannel": "Search a channel…",
+    "noChannel": "No channel found.",
+    "searchRole": "Search a role…",
+    "noRole": "No role found.",
+    "removeRole": "Remove {{name}}",
+    "search": "Search…",
+    "noResult": "No result."
   }
 }

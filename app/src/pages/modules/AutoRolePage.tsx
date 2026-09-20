@@ -21,14 +21,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { RolePicker } from "@/components/discord-pickers"
 import { ErrorPage } from "@/components/error-state"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { roleColorToHex } from "@/types/api"
 import type { AutoRoleConfig } from "@/types/api"
@@ -217,31 +211,15 @@ function AutoRoleForm() {
             </div>
           )}
 
-          {/* Sélecteur de rôle */}
+          {/* Sélecteur de rôle, commun au dashboard : il sait chercher. */}
           {availableRoles.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Select onValueChange={addRole}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder={t('modules.auto_role.addRole')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((role) => {
-                    const color = roleColorToHex(role.color)
-                    return (
-                      <SelectItem key={role.id} value={role.id}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="size-2 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                          {role.name}
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
+            <RolePicker
+              value={null}
+              roles={availableRoles}
+              onChange={(id) => id && addRole(id)}
+              placeholder={t('modules.auto_role.addRole')}
+              className="sm:w-72"
+            />
           )}
 
           {selectedRoleIds.length === 0 && (

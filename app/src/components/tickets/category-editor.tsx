@@ -1,8 +1,10 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  ChevronDownIcon,
+  InfoIcon,
+  MessageSquareIcon,
   PlusIcon,
+  ShieldIcon,
   SlidersHorizontalIcon,
   Trash2Icon,
   XIcon,
@@ -10,11 +12,6 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
 import {
   Command,
   CommandEmpty,
@@ -24,6 +21,13 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -32,20 +36,13 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { EmojiPicker } from "@/components/discord-emoji"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ChannelPicker, RoleDot, RoleMultiPicker } from "@/components/discord-pickers"
+import { EmojiPicker, EmojiView } from "@/components/discord-emoji"
 import { MessageEditor } from "@/components/message-editor"
 import { ServerLanguageNote } from "@/components/server-language-note"
-import {
-  ChannelPicker,
-  List,
-  RolePicker,
-  ScreenHeader,
-  Section,
-  SwitchRow,
-} from "@/components/tickets/primitives"
+import { List, SegmentedControl, Subsection, SwitchRow } from "@/components/tickets/primitives"
 import { categoryFieldKey, discordCategories } from "@/lib/tickets"
 import { cn } from "@/lib/utils"
 import {
@@ -68,6 +65,17 @@ import type {
   TicketPermission,
 } from "@/types/api"
 
+/** Couleurs des quatre styles de bouton Discord. */
+const DISCORD_BUTTON_COLORS: Record<TicketButtonStyle, string> = {
+  primary: "#5865F2",
+  secondary: "#4E5058",
+  success: "#248046",
+  danger: "#DA373C",
+}
+
+/** Couleur de repli d'un rôle inconnu — celle de Discord pour « pas de couleur ». */
+const DEFAULT_ROLE_COLOR = "#99aab5"
+
 interface CategoryEditorProps {
   panel: TicketPanel
   category: TicketCategory
@@ -79,13 +87,19 @@ interface CategoryEditorProps {
   openTickets: number
   onChange: (changes: Partial<TicketCategory>) => void
   onDelete: () => void
-  onBack: () => void
+  /** Fermeture de la modale — le brouillon de la page a déjà tout reçu. */
+  onClose: () => void
 }
 
 /**
- * Troisième niveau : une catégorie, c'est-à-dire un bouton du panneau et tout
- * ce qui arrive quand un membre clique dessus. Les réglages rares vivent sous
- * « avancé » — ils ne doivent pas être la première chose qu'on lit.
+ * Une catégorie : un bouton du panneau, et tout ce qui arrive quand un membre
+ * clique dessus. Elle s'édite dans une **modale à onglets** posée sur son
+ * panneau, plutôt que sur un écran de plus — on y entre pour un réglage précis
+ * et on en ressort.
+ *
+ * Les changements partent **immédiatement** dans le brouillon de la page : rien
+ * n'est écrit tant que la barre « enregistrer » ne l'est pas, un second niveau
+ * de brouillon n'apporterait que de la confusion.
  */
 export function CategoryEditor({
   panel,
@@ -97,7 +111,7 @@ export function CategoryEditor({
   openTickets,
   onChange,
   onDelete,
-  onBack,
+  onClose,
 }: CategoryEditorProps) {
   const { t } = useTranslation()
   // L'id d'un champ **est** sa clé d'erreur : c'est ce qui permet à la page de
@@ -108,380 +122,371 @@ export function CategoryEditor({
   const assignableRoles = roles.filter((r) => r.name !== "@everyone")
 
   return (
-    <div className="flex w-full max-w-3xl flex-col gap-8">
-      <ScreenHeader
-        back={panel.name || t("modules.tickets.panel.untitled")}
-        onBack={onBack}
-        title={category.name || t("modules.tickets.category.untitled")}
-        description={t("modules.tickets.category.subtitle")}
-        actions={
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">
-              {category.enabled
-                ? t("modules.tickets.panel.enabled")
-                : t("modules.tickets.panel.disabled")}
-            </span>
-            <Switch
-              checked={category.enabled}
-              onCheckedChange={(v) => onChange({ enabled: v })}
-              aria-label={t("modules.tickets.category.enabledLabel")}
-            />
-          </div>
-        }
-      />
-
-      {/* ── 1. Ce que voient les membres ───────────────────────────────── */}
-      <Section
-        title={t("modules.tickets.category.sections.identity")}
-        description={t("modules.tickets.category.sections.identityHint")}
-      >
-        <FieldGroup className="gap-5">
-          <Field data-invalid={Boolean(err("name")) || undefined}>
-            <FieldLabel htmlFor={cf("name")}>
-              {t("modules.tickets.category.name")}
-            </FieldLabel>
-            <div className="flex items-center gap-2">
-              <EmojiPicker
-                value={category.emoji}
-                onChange={(v) => onChange({ emoji: v })}
-                guildId={guildId}
-              />
-              <Input
-                id={cf("name")}
-                value={category.name}
-                maxLength={TICKET_TEXT_LIMITS.name}
-                aria-invalid={Boolean(err("name"))}
-                onChange={(e) => onChange({ name: e.target.value })}
-                className="max-w-sm"
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      {/* Grande modale : une catégorie porte quatre familles de réglages, les
+          serrer dans une colonne étroite obligerait à défiler pour chacune. */}
+      <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
+        <DialogHeader className="border-b px-6 py-4">
+          <div className="flex items-start justify-between gap-4 pr-6">
+            <div className="min-w-0">
+              <DialogTitle className="flex items-center gap-2 truncate">
+                {category.emoji && <EmojiView value={category.emoji} />}
+                {category.name || t("modules.tickets.category.untitled")}
+              </DialogTitle>
+              <DialogDescription>{t("modules.tickets.category.subtitle")}</DialogDescription>
+            </div>
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                {category.enabled
+                  ? t("modules.tickets.panel.enabled")
+                  : t("modules.tickets.panel.disabled")}
+              </span>
+              <Switch
+                checked={category.enabled}
+                onCheckedChange={(v) => onChange({ enabled: v })}
+                aria-label={t("modules.tickets.category.enabledLabel")}
               />
             </div>
-            <FieldDescription>{t("modules.tickets.category.nameDescription")}</FieldDescription>
-            <FieldError errors={err("name") ? [{ message: err("name") }] : undefined} />
-          </Field>
-
-          {/* Le style de bouton et la description de l'option ne coexistent
-              pas : l'un ne se voit qu'en boutons, l'autre qu'en menu. */}
-          {panel.style === "buttons" ? (
-            <Field>
-              <FieldLabel>{t("modules.tickets.category.buttonStyle")}</FieldLabel>
-              <ToggleGroup
-                type="single"
-                value={category.button_style}
-                onValueChange={(v) => v && onChange({ button_style: v as TicketButtonStyle })}
-                className="w-fit"
-              >
-                {TICKET_BUTTON_STYLES.map((style) => (
-                  <ToggleGroupItem key={style} value={style} className="px-3">
-                    {t(`modules.tickets.buttonStyles.${style}`)}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            </Field>
-          ) : (
-            <Field data-invalid={Boolean(err("description")) || undefined}>
-              <FieldLabel htmlFor={cf("description")}>
-                {t("modules.tickets.category.description")}
-              </FieldLabel>
-              <Input
-                id={cf("description")}
-                value={category.description ?? ""}
-                maxLength={TICKET_TEXT_LIMITS.categoryDescription}
-                aria-invalid={Boolean(err("description"))}
-                onChange={(e) => onChange({ description: e.target.value || null })}
-                className="max-w-md"
-              />
-              <FieldDescription>
-                {t("modules.tickets.category.descriptionHint")}
-              </FieldDescription>
-              <FieldError
-                errors={err("description") ? [{ message: err("description") }] : undefined}
-              />
-            </Field>
-          )}
-        </FieldGroup>
-      </Section>
-
-      <Separator />
-
-      {/* ── 2. Le salon créé ───────────────────────────────────────────── */}
-      <Section title={t("modules.tickets.category.sections.channel")}>
-        <FieldGroup className="gap-5">
-          <Field data-invalid={Boolean(err("discord_category_id")) || undefined}>
-            <FieldLabel>{t("modules.tickets.category.discordCategory")}</FieldLabel>
-            <ChannelPicker
-              value={category.discord_category_id}
-              channels={parents}
-              onChange={(v) => onChange({ discord_category_id: v })}
-              placeholder={t("modules.tickets.category.selectDiscordCategory")}
-              clearLabel={t("modules.tickets.category.noParent")}
-              invalid={Boolean(err("discord_category_id"))}
-              className="max-w-sm"
-            />
-            <FieldDescription>
-              {t("modules.tickets.category.discordCategoryDescription")}
-            </FieldDescription>
-            <FieldError
-              errors={
-                err("discord_category_id") ? [{ message: err("discord_category_id") }] : undefined
-              }
-            />
-          </Field>
-
-          <div className="flex flex-wrap gap-5">
-            <Field className="w-auto" data-invalid={Boolean(err("name_format")) || undefined}>
-              <FieldLabel htmlFor={cf("name_format")}>
-                {t("modules.tickets.category.nameFormat")}
-              </FieldLabel>
-              <Input
-                id={cf("name_format")}
-                value={category.name_format}
-                maxLength={TICKET_TEXT_LIMITS.nameFormat}
-                aria-invalid={Boolean(err("name_format"))}
-                onChange={(e) => onChange({ name_format: e.target.value })}
-                className="w-56 font-mono text-sm"
-              />
-              <FieldDescription>
-                {t("modules.tickets.category.nameFormatDescription")}
-              </FieldDescription>
-              <FieldError
-                errors={err("name_format") ? [{ message: err("name_format") }] : undefined}
-              />
-            </Field>
-
-            <Field className="w-auto" data-invalid={Boolean(err("max_open_per_user")) || undefined}>
-              <FieldLabel htmlFor={cf("max_open_per_user")}>
-                {t("modules.tickets.category.maxOpenPerUser")}
-              </FieldLabel>
-              <Input
-                id={cf("max_open_per_user")}
-                type="number"
-                min={TICKET_OPEN_PER_USER.min}
-                max={TICKET_OPEN_PER_USER.max}
-                value={category.max_open_per_user}
-                aria-invalid={Boolean(err("max_open_per_user"))}
-                onChange={(e) => onChange({ max_open_per_user: Number(e.target.value) })}
-                className="w-20"
-              />
-              <FieldDescription>
-                {t("modules.tickets.category.maxOpenPerUserDescription")}
-              </FieldDescription>
-              <FieldError
-                errors={
-                  err("max_open_per_user") ? [{ message: err("max_open_per_user") }] : undefined
-                }
-              />
-            </Field>
           </div>
-        </FieldGroup>
-      </Section>
+        </DialogHeader>
 
-      <Separator />
+        <Tabs defaultValue="info" className="flex min-h-0 flex-1 flex-col gap-0">
+          <div className="border-b px-6 py-3">
+            <TabsList>
+              <TabsTrigger value="info">
+                <InfoIcon data-icon="inline-start" />
+                {t("modules.tickets.category.tabs.info")}
+              </TabsTrigger>
+              <TabsTrigger value="permissions">
+                <ShieldIcon data-icon="inline-start" />
+                {t("modules.tickets.category.tabs.permissions")}
+              </TabsTrigger>
+              <TabsTrigger value="messages">
+                <MessageSquareIcon data-icon="inline-start" />
+                {t("modules.tickets.category.tabs.messages")}
+              </TabsTrigger>
+              <TabsTrigger value="advanced">
+                <SlidersHorizontalIcon data-icon="inline-start" />
+                {t("modules.tickets.category.tabs.advanced")}
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-      {/* ── 3. Accès ───────────────────────────────────────────────────── */}
-      <Section
-        title={t("modules.tickets.category.sections.access")}
-        description={t("modules.tickets.category.sections.accessHint")}
-      >
-        <FieldGroup className="gap-5">
-          <Field>
-            <FieldLabel>{t("modules.tickets.category.allowedRoles")}</FieldLabel>
-            <RolePicker
-              value={category.allowed_role_ids}
-              roles={assignableRoles}
-              onChange={(v) => onChange({ allowed_role_ids: v })}
-              addLabel={t("modules.tickets.category.addRole")}
-            />
-            <FieldDescription>
-              {category.allowed_role_ids.length === 0
-                ? t("modules.tickets.category.allowedRolesEveryone")
-                : t("modules.tickets.category.allowedRolesRestricted")}
-            </FieldDescription>
-          </Field>
+          {/* Une seule zone de défilement, celle du contenu de l'onglet :
+              l'en-tête et la barre d'onglets restent en place. */}
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+            {/* ── Informations ──────────────────────────────────────────── */}
+            <TabsContent value="info" className="flex flex-col gap-7">
+              <FieldGroup className="gap-5">
+                <Field data-invalid={Boolean(err("name")) || undefined}>
+                  <FieldLabel htmlFor={cf("name")}>
+                    {t("modules.tickets.category.name")}
+                  </FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <EmojiPicker
+                      value={category.emoji}
+                      onChange={(v) => onChange({ emoji: v })}
+                      guildId={guildId}
+                    />
+                    <Input
+                      id={cf("name")}
+                      value={category.name}
+                      maxLength={TICKET_TEXT_LIMITS.name}
+                      aria-invalid={Boolean(err("name"))}
+                      onChange={(e) => onChange({ name: e.target.value })}
+                      className="max-w-xs"
+                    />
+                  </div>
+                  <FieldDescription>
+                    {t("modules.tickets.category.nameDescription")}
+                  </FieldDescription>
+                  <FieldError errors={err("name") ? [{ message: err("name") }] : undefined} />
+                </Field>
 
-          <Field>
-            <FieldLabel>{t("modules.tickets.category.deniedRoles")}</FieldLabel>
-            <RolePicker
-              value={category.denied_role_ids}
-              roles={assignableRoles}
-              onChange={(v) => onChange({ denied_role_ids: v })}
-              addLabel={t("modules.tickets.category.addRole")}
-              tone="danger"
-            />
-            <FieldDescription>
-              {t("modules.tickets.category.deniedRolesDescription")}
-            </FieldDescription>
-          </Field>
-        </FieldGroup>
-      </Section>
+                {/* Le style de bouton et la description de l'option ne
+                    coexistent pas : l'un ne se voit qu'en boutons, l'autre
+                    qu'en menu déroulant. */}
+                {panel.style === "buttons" ? (
+                  <Field>
+                    <FieldLabel>{t("modules.tickets.category.buttonStyle")}</FieldLabel>
+                    <SegmentedControl
+                      value={category.button_style}
+                      onChange={(button_style) => onChange({ button_style })}
+                      options={TICKET_BUTTON_STYLES.map((style) => ({
+                        value: style,
+                        label: t(`modules.tickets.buttonStyles.${style}`),
+                        dot: DISCORD_BUTTON_COLORS[style],
+                      }))}
+                    />
+                  </Field>
+                ) : (
+                  <Field data-invalid={Boolean(err("description")) || undefined}>
+                    <FieldLabel htmlFor={cf("description")}>
+                      {t("modules.tickets.category.description")}
+                    </FieldLabel>
+                    <Input
+                      id={cf("description")}
+                      value={category.description ?? ""}
+                      maxLength={TICKET_TEXT_LIMITS.categoryDescription}
+                      aria-invalid={Boolean(err("description"))}
+                      onChange={(e) => onChange({ description: e.target.value || null })}
+                      className="max-w-md"
+                    />
+                    <FieldDescription>
+                      {t("modules.tickets.category.descriptionHint")}
+                    </FieldDescription>
+                    <FieldError
+                      errors={err("description") ? [{ message: err("description") }] : undefined}
+                    />
+                  </Field>
+                )}
+              </FieldGroup>
 
-      <Separator />
+              <Subsection title={t("modules.tickets.category.sections.channel")}>
+                <FieldGroup className="grid gap-5 sm:grid-cols-2">
+                  <Field data-invalid={Boolean(err("discord_category_id")) || undefined}>
+                    <FieldLabel>{t("modules.tickets.category.discordCategory")}</FieldLabel>
+                    <ChannelPicker
+                      value={category.discord_category_id}
+                      channels={parents}
+                      onChange={(v) => onChange({ discord_category_id: v })}
+                      placeholder={t("modules.tickets.category.selectDiscordCategory")}
+                      clearLabel={t("modules.tickets.category.noParent")}
+                      invalid={Boolean(err("discord_category_id"))}
+                    />
+                    <FieldDescription>
+                      {t("modules.tickets.category.discordCategoryDescription")}
+                    </FieldDescription>
+                    <FieldError
+                      errors={
+                        err("discord_category_id")
+                          ? [{ message: err("discord_category_id") }]
+                          : undefined
+                      }
+                    />
+                  </Field>
 
-      {/* ── 4. À l'ouverture ───────────────────────────────────────────── */}
-      <Section title={t("modules.tickets.category.sections.onOpen")}>
-        <FieldGroup className="gap-5">
-          <Field>
-            <FieldLabel>{t("modules.tickets.category.pingRoles")}</FieldLabel>
-            <RolePicker
-              value={category.ping_role_ids}
-              roles={assignableRoles}
-              onChange={(v) => onChange({ ping_role_ids: v })}
-              addLabel={t("modules.tickets.category.addRole")}
-            />
-            <FieldDescription>
-              {t("modules.tickets.category.pingRolesDescription")}
-            </FieldDescription>
-          </Field>
+                  {/* Deux champs courts qui parlent du même salon : même ligne. */}
+                  <div className="flex items-start gap-4">
+                    <Field data-invalid={Boolean(err("name_format")) || undefined}>
+                      <FieldLabel htmlFor={cf("name_format")}>
+                        {t("modules.tickets.category.nameFormat")}
+                      </FieldLabel>
+                      <Input
+                        id={cf("name_format")}
+                        value={category.name_format}
+                        maxLength={TICKET_TEXT_LIMITS.nameFormat}
+                        aria-invalid={Boolean(err("name_format"))}
+                        onChange={(e) => onChange({ name_format: e.target.value })}
+                        className="font-mono text-sm"
+                      />
+                      <FieldDescription>
+                        {t("modules.tickets.category.nameFormatDescription")}
+                      </FieldDescription>
+                      <FieldError
+                        errors={err("name_format") ? [{ message: err("name_format") }] : undefined}
+                      />
+                    </Field>
 
-          <SwitchRow
-            label={t("modules.tickets.category.pingStaffRoles")}
-            description={t("modules.tickets.category.pingStaffRolesDescription")}
-            checked={category.ping_staff_roles}
-            onCheckedChange={(v) => onChange({ ping_staff_roles: v })}
-          />
-        </FieldGroup>
-      </Section>
+                    <Field
+                      className="w-auto"
+                      data-invalid={Boolean(err("max_open_per_user")) || undefined}
+                    >
+                      <FieldLabel htmlFor={cf("max_open_per_user")} className="whitespace-nowrap">
+                        {t("modules.tickets.category.maxOpenPerUser")}
+                      </FieldLabel>
+                      <Input
+                        id={cf("max_open_per_user")}
+                        type="number"
+                        min={TICKET_OPEN_PER_USER.min}
+                        max={TICKET_OPEN_PER_USER.max}
+                        value={category.max_open_per_user}
+                        aria-invalid={Boolean(err("max_open_per_user"))}
+                        onChange={(e) => onChange({ max_open_per_user: Number(e.target.value) })}
+                        className="w-20"
+                      />
+                      <FieldError
+                        errors={
+                          err("max_open_per_user")
+                            ? [{ message: err("max_open_per_user") }]
+                            : undefined
+                        }
+                      />
+                    </Field>
+                  </div>
+                </FieldGroup>
+              </Subsection>
+            </TabsContent>
 
-      <Separator />
+            {/* ── Permissions ───────────────────────────────────────────── */}
+            <TabsContent value="permissions" className="flex flex-col gap-7">
+              <Subsection
+                title={t("modules.tickets.category.sections.access")}
+                description={t("modules.tickets.category.sections.accessHint")}
+              >
+                <FieldGroup className="grid gap-5 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel>{t("modules.tickets.category.allowedRoles")}</FieldLabel>
+                    <RoleMultiPicker
+                      value={category.allowed_role_ids}
+                      roles={assignableRoles}
+                      onChange={(v) => onChange({ allowed_role_ids: v })}
+                      addLabel={t("modules.tickets.category.addRole")}
+                    />
+                    <FieldDescription>
+                      {category.allowed_role_ids.length === 0
+                        ? t("modules.tickets.category.allowedRolesEveryone")
+                        : t("modules.tickets.category.allowedRolesRestricted")}
+                    </FieldDescription>
+                  </Field>
 
-      {/* ── 5. Messages ────────────────────────────────────────────────── */}
-      <Section
-        title={t("modules.tickets.category.sections.messages")}
-        description={t("modules.tickets.leaveEmptyForDefault")}
-      >
-        <FieldGroup className="gap-5">
-          <Field data-invalid={Boolean(err("open_message")) || undefined}>
-            <FieldLabel>{t("modules.tickets.category.openMessage")}</FieldLabel>
-            <MessageEditor
-              value={category.open_message ?? ""}
-              // Vidé → `null`, jamais `""` : `null` laisse le bot écrire son
-              // message, déjà traduit dans la langue du serveur.
-              onChange={(v) => onChange({ open_message: v === "" ? null : v })}
-              variables={[...TICKET_PLACEHOLDERS]}
-              guildId={guildId}
-              maxLength={TICKET_TEXT_LIMITS.message}
-              placeholder={t("modules.tickets.channel.default_open_message")}
-              minHeight={140}
-            />
-            <FieldDescription>{t("modules.tickets.category.separatorHint")}</FieldDescription>
-            <FieldError
-              errors={err("open_message") ? [{ message: err("open_message") }] : undefined}
-            />
-          </Field>
+                  <Field>
+                    <FieldLabel>{t("modules.tickets.category.deniedRoles")}</FieldLabel>
+                    <RoleMultiPicker
+                      value={category.denied_role_ids}
+                      roles={assignableRoles}
+                      onChange={(v) => onChange({ denied_role_ids: v })}
+                      addLabel={t("modules.tickets.category.addRole")}
+                      tone="danger"
+                    />
+                    <FieldDescription>
+                      {t("modules.tickets.category.deniedRolesDescription")}
+                    </FieldDescription>
+                  </Field>
+                </FieldGroup>
+              </Subsection>
 
-          <Field data-invalid={Boolean(err("close_message")) || undefined}>
-            <FieldLabel>{t("modules.tickets.category.closeMessage")}</FieldLabel>
-            <MessageEditor
-              value={category.close_message ?? ""}
-              onChange={(v) => onChange({ close_message: v === "" ? null : v })}
-              variables={[...TICKET_PLACEHOLDERS]}
-              guildId={guildId}
-              maxLength={TICKET_TEXT_LIMITS.message}
-              placeholder={t("modules.tickets.channel.default_close_message")}
-              minHeight={120}
-            />
-            <FieldError
-              errors={err("close_message") ? [{ message: err("close_message") }] : undefined}
-            />
-          </Field>
+              <Subsection title={t("modules.tickets.category.sections.onOpen")}>
+                <FieldGroup className="gap-5">
+                  <Field>
+                    <FieldLabel>{t("modules.tickets.category.pingRoles")}</FieldLabel>
+                    <RoleMultiPicker
+                      value={category.ping_role_ids}
+                      roles={assignableRoles}
+                      onChange={(v) => onChange({ ping_role_ids: v })}
+                      addLabel={t("modules.tickets.category.addRole")}
+                    />
+                    <FieldDescription>
+                      {t("modules.tickets.category.pingRolesDescription")}
+                    </FieldDescription>
+                  </Field>
 
-          <ServerLanguageNote guildId={guildId} />
-        </FieldGroup>
-      </Section>
+                  <SwitchRow
+                    label={t("modules.tickets.category.pingStaffRoles")}
+                    description={t("modules.tickets.category.pingStaffRolesDescription")}
+                    checked={category.ping_staff_roles}
+                    onCheckedChange={(v) => onChange({ ping_staff_roles: v })}
+                  />
+                </FieldGroup>
+              </Subsection>
 
-      <Separator />
-
-      {/* ── 6. Avancé ──────────────────────────────────────────────────── */}
-      <AdvancedSettings
-        category={category}
-        roles={assignableRoles}
-        onChange={onChange}
-        error={err("buttons")}
-      />
-
-      <Separator />
-
-      <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={onDelete}
-        >
-          <Trash2Icon data-icon="inline-start" />
-          {t("modules.tickets.category.delete")}
-        </Button>
-        {openTickets > 0 && (
-          <span className="text-xs text-muted-foreground">
-            {t("modules.tickets.category.openTickets", { count: openTickets })}
-          </span>
-        )}
-      </div>
-    </div>
-  )
-}
-
-// ─── Réglages avancés ─────────────────────────────────────────────────────────
-
-function AdvancedSettings({
-  category,
-  roles,
-  onChange,
-  error,
-}: {
-  category: TicketCategory
-  roles: Role[]
-  onChange: (changes: Partial<TicketCategory>) => void
-  error?: string
-}) {
-  const { t } = useTranslation()
-  const [open, setOpen] = useState(false)
-
-  return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex w-full items-center gap-2 text-sm font-semibold">
-        <SlidersHorizontalIcon className="size-4 text-muted-foreground" />
-        {t("modules.tickets.category.sections.advanced")}
-        <ChevronDownIcon
-          className={cn(
-            "size-4 text-muted-foreground transition-transform",
-            open && "rotate-180"
-          )}
-        />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="flex flex-col gap-8 pt-6">
-        <Section title={t("modules.tickets.category.sections.claim")}>
-          <FieldGroup className="gap-5">
-            <SwitchRow
-              label={t("modules.tickets.category.claimEnabled")}
-              description={t("modules.tickets.category.claimEnabledDescription")}
-              checked={category.claim_enabled}
-              onCheckedChange={(v) => onChange({ claim_enabled: v })}
-            />
-            {category.claim_enabled && (
-              <SwitchRow
-                label={t("modules.tickets.category.claimLock")}
-                description={t("modules.tickets.category.claimLockDescription")}
-                checked={category.claim_lock}
-                onCheckedChange={(v) => onChange({ claim_lock: v })}
+              <PermissionsEditor
+                permissions={category.permissions}
+                roles={assignableRoles}
+                onChange={(permissions) => onChange({ permissions })}
               />
+            </TabsContent>
+
+            {/* ── Messages ──────────────────────────────────────────────── */}
+            <TabsContent value="messages" className="flex flex-col gap-5">
+              <p className="text-sm text-muted-foreground">
+                {t("modules.tickets.leaveEmptyForDefault")}
+              </p>
+
+              <FieldGroup className="gap-5">
+                <Field data-invalid={Boolean(err("open_message")) || undefined}>
+                  <FieldLabel>{t("modules.tickets.category.openMessage")}</FieldLabel>
+                  <MessageEditor
+                    value={category.open_message ?? ""}
+                    // Vidé → `null`, jamais `""` : `null` laisse le bot écrire
+                    // son message, déjà traduit dans la langue du serveur.
+                    onChange={(v) => onChange({ open_message: v === "" ? null : v })}
+                    variables={[...TICKET_PLACEHOLDERS]}
+                    guildId={guildId}
+                    maxLength={TICKET_TEXT_LIMITS.message}
+                    placeholder={t("modules.tickets.channel.default_open_message")}
+                    minHeight={140}
+                  />
+                  <FieldDescription>{t("modules.tickets.category.separatorHint")}</FieldDescription>
+                  <FieldError
+                    errors={err("open_message") ? [{ message: err("open_message") }] : undefined}
+                  />
+                </Field>
+
+                <Field data-invalid={Boolean(err("close_message")) || undefined}>
+                  <FieldLabel>{t("modules.tickets.category.closeMessage")}</FieldLabel>
+                  <MessageEditor
+                    value={category.close_message ?? ""}
+                    onChange={(v) => onChange({ close_message: v === "" ? null : v })}
+                    variables={[...TICKET_PLACEHOLDERS]}
+                    guildId={guildId}
+                    maxLength={TICKET_TEXT_LIMITS.message}
+                    placeholder={t("modules.tickets.channel.default_close_message")}
+                    minHeight={120}
+                  />
+                  <FieldError
+                    errors={err("close_message") ? [{ message: err("close_message") }] : undefined}
+                  />
+                </Field>
+              </FieldGroup>
+
+              <ServerLanguageNote guildId={guildId} />
+            </TabsContent>
+
+            {/* ── Avancé ────────────────────────────────────────────────── */}
+            <TabsContent value="advanced" className="flex flex-col gap-7">
+              <Subsection title={t("modules.tickets.category.sections.claim")}>
+                <FieldGroup className="gap-5">
+                  <SwitchRow
+                    label={t("modules.tickets.category.claimEnabled")}
+                    description={t("modules.tickets.category.claimEnabledDescription")}
+                    checked={category.claim_enabled}
+                    onCheckedChange={(v) => onChange({ claim_enabled: v })}
+                  />
+                  {category.claim_enabled && (
+                    <SwitchRow
+                      label={t("modules.tickets.category.claimLock")}
+                      description={t("modules.tickets.category.claimLockDescription")}
+                      checked={category.claim_lock}
+                      onCheckedChange={(v) => onChange({ claim_lock: v })}
+                    />
+                  )}
+                </FieldGroup>
+              </Subsection>
+
+              <ButtonsEditor
+                value={category.buttons}
+                onChange={(buttons) => onChange({ buttons })}
+                error={err("buttons")}
+              />
+            </TabsContent>
+          </div>
+        </Tabs>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t px-6 py-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2Icon data-icon="inline-start" />
+            {t("modules.tickets.category.delete")}
+          </Button>
+          <div className="flex items-center gap-3">
+            {openTickets > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {t("modules.tickets.category.openTickets", { count: openTickets })}
+              </span>
             )}
-          </FieldGroup>
-        </Section>
-
-        <ButtonsEditor
-          value={category.buttons}
-          onChange={(buttons) => onChange({ buttons })}
-          error={error}
-        />
-
-        <PermissionsEditor
-          permissions={category.permissions}
-          roles={roles}
-          onChange={(permissions) => onChange({ permissions })}
-        />
-      </CollapsibleContent>
-    </Collapsible>
+            <Button type="button" onClick={onClose}>
+              {t("modules.tickets.category.done")}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -506,7 +511,7 @@ function ButtonsEditor({
   const checked = value ?? []
 
   return (
-    <Section
+    <Subsection
       title={t("modules.tickets.category.sections.buttons")}
       description={t("modules.tickets.category.sections.buttonsHint")}
     >
@@ -525,9 +530,7 @@ function ButtonsEditor({
                   checked={checked.includes(button)}
                   onCheckedChange={(v) =>
                     onChange(
-                      v === true
-                        ? [...checked, button]
-                        : checked.filter((b) => b !== button)
+                      v === true ? [...checked, button] : checked.filter((b) => b !== button)
                     )
                   }
                   className="mt-0.5"
@@ -559,15 +562,16 @@ function ButtonsEditor({
         </div>
       )}
       {error && <p className="text-sm text-destructive">{error}</p>}
-    </Section>
+    </Subsection>
   )
 }
 
 // ─── Permissions par rôle ─────────────────────────────────────────────────────
 
 /**
- * 9 permissions par rôle : les aligner en cases dans la page noierait le reste.
- * Une ligne par rôle, le détail dans un popover, et `admin` qui coche tout.
+ * Dix permissions par rôle : les aligner en cases dans la modale noierait le
+ * reste. Une ligne par rôle, le détail dans un popover, et `admin` qui coche
+ * tout — seul `["admin"]` part alors au backend.
  */
 function PermissionsEditor({
   permissions,
@@ -593,21 +597,18 @@ function PermissionsEditor({
   }
 
   return (
-    <Section
+    <Subsection
       title={t("modules.tickets.permissions.title")}
       description={t("modules.tickets.permissions.description")}
     >
       {entries.length > 0 && (
-        <List>
+        <List className="rounded-lg border">
           {entries.map(([roleId, perms]) => {
             const role = roles.find((r) => r.id === roleId)
             const isAdmin = perms.includes("admin")
             return (
-              <div key={roleId} className="flex items-center gap-3 bg-card p-3">
-                <span
-                  className="size-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: role ? roleColorToHex(role.color) : "#99aab5" }}
-                />
+              <div key={roleId} className="flex items-center gap-3 p-3">
+                <RoleDot color={role ? roleColorToHex(role.color) : DEFAULT_ROLE_COLOR} />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">
                   {role?.name ?? roleId}
                 </span>
@@ -634,6 +635,8 @@ function PermissionsEditor({
                           >
                             <Checkbox
                               className="mt-0.5"
+                              // `admin` implique les autres : elles s'affichent
+                              // cochées, mais ne partent pas dans le corps.
                               checked={isAdmin || perms.includes(permission)}
                               disabled={locked}
                               onCheckedChange={(v) =>
@@ -663,9 +666,9 @@ function PermissionsEditor({
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  aria-label={t("modules.tickets.pickers.removeRole")}
-                  className="size-8 p-0 text-muted-foreground"
+                  size="icon-xs"
+                  aria-label={t("pickers.removeRole", { name: role?.name ?? roleId })}
+                  className="text-muted-foreground"
                   onClick={() => removeRole(roleId)}
                 >
                   <XIcon />
@@ -686,9 +689,9 @@ function PermissionsEditor({
           </PopoverTrigger>
           <PopoverContent align="start" className="w-64 p-0">
             <Command>
-              <CommandInput placeholder={t("modules.tickets.pickers.searchRole")} />
+              <CommandInput placeholder={t("pickers.searchRole")} />
               <CommandList>
-                <CommandEmpty>{t("modules.tickets.pickers.noRole")}</CommandEmpty>
+                <CommandEmpty>{t("pickers.noRole")}</CommandEmpty>
                 <CommandGroup>
                   {available.map((role) => (
                     <CommandItem
@@ -699,10 +702,7 @@ function PermissionsEditor({
                         setAddOpen(false)
                       }}
                     >
-                      <span
-                        className="size-2 shrink-0 rounded-full"
-                        style={{ backgroundColor: roleColorToHex(role.color) }}
-                      />
+                      <RoleDot color={roleColorToHex(role.color)} />
                       <span className="truncate">{role.name}</span>
                     </CommandItem>
                   ))}
@@ -712,6 +712,6 @@ function PermissionsEditor({
           </PopoverContent>
         </Popover>
       )}
-    </Section>
+    </Subsection>
   )
 }

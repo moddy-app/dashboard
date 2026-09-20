@@ -7,9 +7,9 @@ import {
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react"
+import { ChannelPicker, RoleMultiPicker } from "@/components/discord-pickers"
 import { cn } from "@/lib/utils"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Field as UiField,
@@ -17,16 +17,6 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { roleColorToHex } from "@/types/api"
 import type { Channel, Role } from "@/types/api"
 import type { TicketsApplyFeedback, TicketsApplyLevel } from "@/lib/tickets"
 
@@ -35,9 +25,6 @@ import type { TicketsApplyFeedback, TicketsApplyLevel } from "@/lib/tickets"
 
 /** Sentinelle du sélecteur : Radix Select refuse une valeur vide. */
 export const NONE = "__none__"
-
-/** Couleur de repli d'un rôle inconnu — celle de Discord pour « pas de couleur ». */
-const DEFAULT_ROLE_COLOR = "#99aab5"
 
 // ─── Champ ────────────────────────────────────────────────────────────────────
 
@@ -120,73 +107,56 @@ export function ToggleField({
 
 // ─── Sélecteurs ───────────────────────────────────────────────────────────────
 
+/**
+ * Compatibilité : `ChannelSelect` n'est plus qu'un nom d'emprunt pour le
+ * sélecteur commun du dashboard (`ChannelPicker`), qui sait chercher. Les
+ * appelants historiques passent encore `emptyLabel` et `prefix` — le premier
+ * est rendu par le sélecteur lui-même, le second n'a plus lieu d'être (le type
+ * de salon est dit par son icône).
+ */
 export function ChannelSelect({
   value,
   channels,
   onChange,
   placeholder,
-  emptyLabel,
   clearLabel,
-  prefix = "# ",
   invalid = false,
+  disabled,
 }: {
   value: string | null
   channels: Channel[]
   onChange: (value: string | null) => void
   placeholder: string
-  emptyLabel: string
+  emptyLabel?: string
   /** Option de remise à zéro — un panneau sans salon est un brouillon valide. */
   clearLabel: string
   prefix?: string
   invalid?: boolean
+  disabled?: boolean
 }) {
-  const known = value !== null && channels.some((c) => c.id === value)
-
   return (
-    <Select value={value ?? NONE} onValueChange={(v) => onChange(v === NONE ? null : v)}>
-      <SelectTrigger className="w-full" aria-invalid={invalid || undefined}>
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          <SelectItem value={NONE}>{clearLabel}</SelectItem>
-          {/* Un nœud qui n'est pas un item casse la navigation au clavier du
-              Select : la liste vide s'annonce donc par un libellé de groupe. */}
-          {channels.length === 0 && <SelectLabel>{emptyLabel}</SelectLabel>}
-          {channels.map((c) => (
-            <SelectItem key={c.id} value={c.id}>
-              {prefix}
-              {c.name}
-            </SelectItem>
-          ))}
-          {/* Valeur enregistrée absente de la liste (salon supprimé, mauvais
-              type) : gardée visible plutôt que de retomber sur le placeholder. */}
-          {value && !known && (
-            <SelectItem value={value} disabled>
-              {prefix}
-              {value}
-            </SelectItem>
-          )}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  )
-}
-
-/** Pastille de couleur d'un rôle Discord — la couleur vient du serveur. */
-export function RoleDot({ color }: { color: string }) {
-  return (
-    <span
-      className="size-2 shrink-0 rounded-full"
-      style={{ backgroundColor: color }}
-      aria-hidden
+    <ChannelPicker
+      value={value}
+      channels={channels}
+      onChange={onChange}
+      placeholder={placeholder}
+      clearLabel={clearLabel}
+      invalid={invalid}
+      disabled={disabled}
     />
   )
 }
 
+// `RoleDot` vit avec les sélecteurs communs : une seule définition dans le dépôt.
+export { RoleDot } from "@/components/discord-pickers"
+
 /**
  * Liste de rôles éditable (chips + ajout). Sert aux trois listes d'une
  * catégorie : `allowed_role_ids`, `denied_role_ids` et `ping_role_ids`.
+ */
+/**
+ * Compatibilité : `RoleChips` délègue au sélecteur de rôles commun du
+ * dashboard, qui sait chercher parmi plusieurs dizaines de rôles.
  */
 export function RoleChips({
   value,
@@ -203,73 +173,20 @@ export function RoleChips({
   emptyLabel: string
   tone?: "neutral" | "danger"
 }) {
-  const available = roles.filter((r) => !value.includes(r.id))
-
   return (
-    <div className="flex flex-col gap-2">
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {value.map((id) => {
-            const role = roles.find((r) => r.id === id)
-            // La couleur d'un rôle appartient au serveur Discord : elle ne peut
-            // pas venir d'un token du thème, d'où le style inline.
-            const color = role ? roleColorToHex(role.color) : DEFAULT_ROLE_COLOR
-            return (
-              <Badge
-                key={id}
-                variant="outline"
-                className={cn("gap-1 rounded-full py-1 pr-1 pl-3 text-sm")}
-                style={tone === "danger" ? undefined : { borderColor: color, color }}
-              >
-                {tone === "danger" && <RoleDot color={DEFAULT_ROLE_COLOR} />}
-                @{role?.name ?? id}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon-xs"
-                  className="rounded-full hover:bg-transparent hover:opacity-70"
-                  onClick={() => onChange(value.filter((r) => r !== id))}
-                  aria-label={`${role?.name ?? id}`}
-                >
-                  <XIcon />
-                </Button>
-              </Badge>
-            )
-          })}
-        </div>
-      )}
-      {available.length > 0 ? (
-        <Select value="" onValueChange={(roleId) => onChange([...value, roleId])}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder={addLabel} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {available.map((role) => (
-                <SelectItem key={role.id} value={role.id}>
-                  <span className="flex items-center gap-2">
-                    <RoleDot color={roleColorToHex(role.color)} />
-                    {role.name}
-                  </span>
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      ) : (
-        value.length === 0 && <p className="text-sm text-muted-foreground">{emptyLabel}</p>
-      )}
-    </div>
+    <RoleMultiPicker
+      value={value}
+      roles={roles}
+      onChange={onChange}
+      addLabel={addLabel}
+      emptyLabel={emptyLabel}
+      tone={tone}
+    />
   )
 }
 
 // ─── Encarts ──────────────────────────────────────────────────────────────────
 
-/**
- * Le ton d'un encart. Les quatre niveaux du module vivent **ici et nulle part
- * ailleurs** : c'est la seule table de couleurs de l'écran, comme
- * `SANCTION_LEVEL_HUE` l'est pour les infractions.
- */
 const NOTICE_TONE: Record<
   TicketsApplyLevel,
   { box: string; icon: string; Icon: typeof InfoIcon }

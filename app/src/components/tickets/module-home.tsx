@@ -72,7 +72,7 @@ export function ModuleHome({
         )
       }
     >
-      <List>
+      <List className="-mx-6 border-y">
         {panels.map((panel) => {
           const channel = panel.channel_id
             ? channels.find((c) => c.id === panel.channel_id)
