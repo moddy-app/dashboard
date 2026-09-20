@@ -9,7 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChannelSelect, Field, Notice } from "@/components/tickets/fields"
+import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
+import { ChannelSelect, Field, Notice, ToggleField } from "@/components/tickets/fields"
 import { panelChannels, retentionShrinks, settingsFieldKey } from "@/lib/tickets"
 import {
   TICKET_RETENTION_PRESETS,
@@ -46,146 +47,150 @@ export function TicketsSettingsPanel({
   const shrinking = retentionShrinks(savedSettings.transcript_retention_days, days)
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       {/* ── Journal ──────────────────────────────────────────────────────── */}
-      <Field
-        label={t("modules.tickets.settings.logChannel")}
-        description={t("modules.tickets.settings.logChannelDescription")}
-        error={err("log_channel_id")}
-      >
-        <ChannelSelect
-          value={settings.log_channel_id}
-          channels={panelChannels(channels)}
-          onChange={(value) => onChange({ log_channel_id: value })}
-          placeholder={t("modules.tickets.settings.selectLogChannel")}
-          emptyLabel={t("modules.tickets.settings.noTextChannel")}
-          clearLabel={t("modules.tickets.settings.noLogChannel")}
-        />
-      </Field>
+      <FieldSet>
+        <FieldLegend variant="label">{t("modules.tickets.settings.journalSection")}</FieldLegend>
+        <FieldGroup>
+          <Field
+            label={t("modules.tickets.settings.logChannel")}
+            description={t("modules.tickets.settings.logChannelDescription")}
+            error={err("log_channel_id")}
+          >
+            <ChannelSelect
+              value={settings.log_channel_id}
+              channels={panelChannels(channels)}
+              onChange={(value) => onChange({ log_channel_id: value })}
+              placeholder={t("modules.tickets.settings.selectLogChannel")}
+              emptyLabel={t("modules.tickets.settings.noTextChannel")}
+              clearLabel={t("modules.tickets.settings.noLogChannel")}
+            />
+          </Field>
+        </FieldGroup>
+      </FieldSet>
 
       {/* ── Archives ─────────────────────────────────────────────────────── */}
-      <ToggleCard
-        label={t("modules.tickets.settings.transcripts")}
-        description={t("modules.tickets.settings.transcriptsDescription")}
-        checked={settings.transcripts_enabled}
-        onCheckedChange={(value) => onChange({ transcripts_enabled: value })}
-      />
+      <FieldSet>
+        <FieldLegend variant="label">{t("modules.tickets.settings.archivesSection")}</FieldLegend>
+        <FieldGroup>
+          <ToggleField
+            label={t("modules.tickets.settings.transcripts")}
+            description={t("modules.tickets.settings.transcriptsDescription")}
+            checked={settings.transcripts_enabled}
+          >
+            <Switch
+              checked={settings.transcripts_enabled}
+              onCheckedChange={(value) => onChange({ transcripts_enabled: value })}
+            />
+          </ToggleField>
 
-      {settings.transcripts_enabled && (
-        <Field
-          label={t("modules.tickets.settings.retention")}
-          description={t("modules.tickets.settings.retentionDescription")}
-          error={err("transcript_retention_days")}
-        >
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Select
-              value={isPreset ? String(days) : CUSTOM}
-              onValueChange={(value) => {
-                if (value === CUSTOM) return
-                onChange({ transcript_retention_days: Number(value) })
-              }}
+          {settings.transcripts_enabled && (
+            <Field
+              label={t("modules.tickets.settings.retention")}
+              description={t("modules.tickets.settings.retentionDescription")}
+              error={err("transcript_retention_days")}
             >
-              <SelectTrigger className="w-full sm:w-56">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {TICKET_RETENTION_PRESETS.map((preset) => (
-                  <SelectItem key={preset} value={String(preset)}>
-                    {preset === 0
-                      ? t("modules.tickets.settings.retentionUnlimited")
-                      : t("modules.tickets.settings.retentionDays", { count: preset })}
-                  </SelectItem>
-                ))}
-                <SelectItem value={CUSTOM}>
-                  {t("modules.tickets.settings.retentionCustom")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Select
+                  value={isPreset ? String(days) : CUSTOM}
+                  onValueChange={(value) => {
+                    if (value === CUSTOM) return
+                    onChange({ transcript_retention_days: Number(value) })
+                  }}
+                >
+                  <SelectTrigger className="w-full sm:w-56">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {TICKET_RETENTION_PRESETS.map((preset) => (
+                      <SelectItem key={preset} value={String(preset)}>
+                        {preset === 0
+                          ? t("modules.tickets.settings.retentionUnlimited")
+                          : t("modules.tickets.settings.retentionDays", { count: preset })}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={CUSTOM}>
+                      {t("modules.tickets.settings.retentionCustom")}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
 
-            {!isPreset && (
-              <Input
-                type="number"
-                min={TICKET_RETENTION_RANGE.min}
-                max={TICKET_RETENTION_RANGE.max}
-                value={days}
-                onChange={(e) =>
-                  onChange({ transcript_retention_days: Math.trunc(Number(e.target.value)) })
-                }
-                aria-invalid={Boolean(err("transcript_retention_days"))}
-                className="w-full sm:w-32"
-              />
-            )}
-          </div>
-        </Field>
-      )}
+                {!isPreset && (
+                  <Input
+                    type="number"
+                    min={TICKET_RETENTION_RANGE.min}
+                    max={TICKET_RETENTION_RANGE.max}
+                    value={days}
+                    onChange={(e) =>
+                      onChange({ transcript_retention_days: Math.trunc(Number(e.target.value)) })
+                    }
+                    aria-invalid={Boolean(err("transcript_retention_days"))}
+                    className="w-full sm:w-32"
+                  />
+                )}
+              </div>
+            </Field>
+          )}
 
-      {/* Abaisser la rétention **supprime des conversations** : le bot efface à
-          sa prochaine purge quotidienne, et ce n'est pas réversible. L'avertir
-          ici, en plus de la confirmation à l'enregistrement, évite la surprise
-          au moment où il est déjà trop tard. */}
-      {shrinking && (
-        <Notice
-          level="warning"
-          title={t("modules.tickets.settings.retentionWarningTitle")}
-        >
-          {t("modules.tickets.settings.retentionWarningDescription", { days })}
-        </Notice>
-      )}
+          {/* Abaisser la rétention **supprime des conversations** : le bot efface à
+              sa prochaine purge quotidienne, et ce n'est pas réversible. L'avertir
+              ici, en plus de la confirmation à l'enregistrement, évite la surprise
+              au moment où il est déjà trop tard. */}
+          {shrinking && (
+            <Notice
+              level="warning"
+              title={t("modules.tickets.settings.retentionWarningTitle")}
+            >
+              {t("modules.tickets.settings.retentionWarningDescription", { days })}
+            </Notice>
+          )}
+        </FieldGroup>
+      </FieldSet>
 
-      {/* ── Fermeture et avis ────────────────────────────────────────────── */}
-      <ToggleCard
-        label={t("modules.tickets.settings.closureDetection")}
-        description={t("modules.tickets.settings.closureDetectionDescription")}
-        checked={settings.closure_detection_enabled}
-        onCheckedChange={(value) => onChange({ closure_detection_enabled: value })}
-        icon={<SparklesIcon className="size-4 text-muted-foreground" />}
-      />
+      {/* ── Fermeture ────────────────────────────────────────────────────── */}
+      <FieldSet>
+        <FieldLegend variant="label">{t("modules.tickets.settings.closureSection")}</FieldLegend>
+        <FieldGroup>
+          <ToggleField
+            label={t("modules.tickets.settings.closureDetection")}
+            description={t("modules.tickets.settings.closureDetectionDescription")}
+            checked={settings.closure_detection_enabled}
+            icon={<SparklesIcon className="size-4" />}
+          >
+            <Switch
+              checked={settings.closure_detection_enabled}
+              onCheckedChange={(value) => onChange({ closure_detection_enabled: value })}
+            />
+          </ToggleField>
 
-      <ToggleCard
-        label={t("modules.tickets.settings.rating")}
-        description={t("modules.tickets.settings.ratingDescription")}
-        checked={settings.rating_enabled}
-        onCheckedChange={(value) => onChange({ rating_enabled: value })}
-      />
+          <ToggleField
+            label={t("modules.tickets.settings.rating")}
+            description={t("modules.tickets.settings.ratingDescription")}
+            checked={settings.rating_enabled}
+          >
+            <Switch
+              checked={settings.rating_enabled}
+              onCheckedChange={(value) => onChange({ rating_enabled: value })}
+            />
+          </ToggleField>
 
-      <ToggleCard
-        label={t("modules.tickets.settings.keepChannelOnClose")}
-        description={t("modules.tickets.settings.keepChannelOnCloseDescription")}
-        checked={settings.keep_channel_on_close}
-        onCheckedChange={(value) => onChange({ keep_channel_on_close: value })}
-      />
+          <ToggleField
+            label={t("modules.tickets.settings.keepChannelOnClose")}
+            description={t("modules.tickets.settings.keepChannelOnCloseDescription")}
+            checked={settings.keep_channel_on_close}
+          >
+            <Switch
+              checked={settings.keep_channel_on_close}
+              onCheckedChange={(value) => onChange({ keep_channel_on_close: value })}
+            />
+          </ToggleField>
+        </FieldGroup>
+      </FieldSet>
 
       <p className="flex items-start gap-2 text-xs text-muted-foreground">
         <ClockIcon className="mt-0.5 size-3.5 shrink-0" />
         {t("modules.tickets.settings.purgeHint")}
       </p>
-    </div>
-  )
-}
-
-function ToggleCard({
-  label,
-  description,
-  checked,
-  onCheckedChange,
-  icon,
-}: {
-  label: string
-  description: string
-  checked: boolean
-  onCheckedChange: (value: boolean) => void
-  icon?: React.ReactNode
-}) {
-  return (
-    <div className="flex items-start justify-between gap-4 rounded-lg border p-3.5">
-      <div className="flex min-w-0 gap-2">
-        {icon && <span className="mt-0.5 shrink-0">{icon}</span>}
-        <div className="min-w-0">
-          <p className="text-sm font-medium">{label}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} className="shrink-0" />
     </div>
   )
 }

@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
   CheckCircle2Icon,
-  ClockIcon,
-  LoaderIcon,
+  LayoutPanelTopIcon,
   PlusIcon,
+  SettingsIcon,
+  StarIcon,
   TicketIcon,
-  Trash2Icon,
   XIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -22,13 +22,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorPage } from "@/components/error-state"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ApplyNotice, Notice } from "@/components/tickets/fields"
 import { CategoryDialog } from "@/components/tickets/category-dialog"
-import { PanelCard } from "@/components/tickets/panel-card"
+import { PanelsTab } from "@/components/tickets/panels-tab"
 import { RatingsPanel } from "@/components/tickets/ratings-panel"
 import { TicketExplorer } from "@/components/tickets/ticket-explorer"
 import { TicketsSettingsPanel } from "@/components/tickets/settings-panel"
@@ -39,6 +40,7 @@ import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
 import { sanctionBlockedError } from "@/lib/sanctions"
+import { cn } from "@/lib/utils"
 import {
   canAddPanel,
   createTicketCategory,
@@ -91,6 +93,18 @@ export function TicketsPage() {
   }
 
   return <TicketsForm />
+}
+
+/** Fait défiler jusqu'au champ fautif après un blocage local ou un 422. */
+function scrollToField(fieldId: string) {
+  // Un double `requestAnimationFrame` laisse le temps à React de committer un
+  // éventuel changement d'état (ouvrir le panneau fautif) avant de chercher le
+  // nœud dans le DOM — un seul passage arrive parfois trop tôt.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      document.getElementById(fieldId)?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  })
 }
 
 function TicketsForm() {
@@ -314,6 +328,14 @@ function TicketsForm() {
       toast.error(t("modules.saveError"), {
         description: t("modules.tickets.validation.blocked", { count: issues.length }),
       })
+      // Fait apparaître (ouvre le panneau au besoin) puis défile jusqu'au
+      // premier champ fautif — sans quoi le blocage n'a aucun visage.
+      const firstField = issues.find((i) => i.field)?.field
+      if (firstField) {
+        const panelMatch = /^p:([^.]+)\./.exec(firstField)
+        if (panelMatch) setOpenPanelId(panelMatch[1])
+        scrollToField(firstField)
+      }
       return
     }
 
@@ -358,6 +380,12 @@ function TicketsForm() {
         toast.error(t("modules.saveError"), {
           description: mapped.global[0] ?? t("modules.tickets.validation.fieldErrors"),
         })
+        const firstField = Object.keys(mapped.fields)[0]
+        if (firstField) {
+          const panelMatch = /^p:([^.]+)\./.exec(firstField)
+          if (panelMatch) setOpenPanelId(panelMatch[1])
+          scrollToField(firstField)
+        }
         return
       }
       handleSaveError(e, { title: t("modules.saveError") })
@@ -430,6 +458,7 @@ function TicketsForm() {
   const isActive = panels.some((p) => p.enabled && Boolean(p.channel_id))
   const editingPanel = editing ? panels.find((p) => p.id === editing.panelId) : undefined
   const editingCategory = editingPanel?.categories.find((c) => c.id === editing?.categoryId)
+  const canAdd = canAddPanel(panels, limits)
 
   return (
     <div className="flex w-full flex-col gap-6 pb-24">
@@ -459,14 +488,10 @@ function TicketsForm() {
         )}
       </div>
 
-      {/* Tickets orphelins — supprimer une catégorie ne ferme pas ses tickets. */}
-      {orphanCount > 0 && (
-        <Notice level="warning" title={t("modules.tickets.orphans.title", { count: orphanCount })}>
-          {t("modules.tickets.orphans.description")}
-        </Notice>
-      )}
-
-      {/* Une sauvegarde est déjà en vol (peut-être depuis un autre onglet). */}
+      {/* Seuls les deux bandeaux qui portent sur la **dernière écriture** restent
+          en tête de page : un conflit 409 et l'accusé du bot. Les autres
+          (orphelins, validation) sont redescendus dans l'onglet Panneaux, seul
+          endroit où ils ont un sens. */}
       {conflict && (
         <Notice
           level="warning"
@@ -484,139 +509,134 @@ function TicketsForm() {
 
       {feedback && <ApplyNotice feedback={feedback} onDismiss={() => setFeedback(null)} />}
 
-      {globalIssues.length > 0 && (
-        <Notice level="error" title={t("modules.tickets.validation.title")}>
-          <ul className="list-disc space-y-0.5 pl-4">
-            {globalIssues.map((message) => (
-              <li key={message}>{message}</li>
-            ))}
-          </ul>
-        </Notice>
-      )}
-
-      <Tabs defaultValue="settings">
+      <Tabs defaultValue="panels">
         {/* Quatre onglets sur un petit écran : la liste défile pour elle seule
             plutôt que d'élargir la page. */}
         <div className="-mx-1 overflow-x-auto px-1 scrollbar-none">
           <TabsList>
-            <TabsTrigger value="settings">{t("modules.tickets.tabs.settings")}</TabsTrigger>
-            <TabsTrigger value="general">{t("modules.tickets.tabs.general")}</TabsTrigger>
-            <TabsTrigger value="tickets">{t("modules.tickets.tabs.tickets")}</TabsTrigger>
-            <TabsTrigger value="ratings">{t("modules.tickets.tabs.ratings")}</TabsTrigger>
+            <TabsTrigger value="panels">
+              <LayoutPanelTopIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.panels")}
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <SettingsIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.settings")}
+            </TabsTrigger>
+            <TabsTrigger value="tickets">
+              <TicketIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.tickets")}
+            </TabsTrigger>
+            <TabsTrigger value="ratings">
+              <StarIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.ratings")}
+            </TabsTrigger>
           </TabsList>
         </div>
 
-        {/* ── Configuration ────────────────────────────────────────────── */}
-        <TabsContent value="settings" className="flex flex-col gap-4 pt-4">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-muted-foreground">
-              {limits
-                ? t("modules.tickets.panelQuota", {
-                    count: panels.length,
-                    max: limits.max_panels,
-                  })
-                : t("modules.tickets.panelQuotaUnknown")}
-            </p>
-            {limits && !limits.premium && (
-              <Badge variant="secondary">{t("modules.tickets.freePlan")}</Badge>
-            )}
-          </div>
-
-          {panels.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center">
-              <TicketIcon className="size-6 text-muted-foreground" />
-              <p className="text-sm font-medium">{t("modules.tickets.empty.title")}</p>
-              <p className="text-xs text-muted-foreground">{t("modules.tickets.empty.description")}</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {panels.map((panel) => (
-                <PanelCard
-                  key={panel.id}
-                  panel={panel}
-                  guildId={guildId}
-                  channels={channels}
-                  limits={limits}
-                  errors={fieldErrors}
-                  isOpen={openPanelId === panel.id}
-                  onToggle={(open) => setOpenPanelId(open ? panel.id : null)}
-                  onChange={(changes) => patchPanel(panel.id, changes)}
-                  onDelete={() => removePanel(panel.id)}
-                  onAddCategory={() => addCategory(panel.id)}
-                  onEditCategory={(category) =>
-                    setEditing({ panelId: panel.id, categoryId: category.id })
-                  }
-                  onDeleteCategory={(category) =>
-                    setPendingDelete({ panelId: panel.id, category })
-                  }
-                  openTicketCounts={openTicketCounts}
-                />
-              ))}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addPanel}
-              disabled={!canAddPanel(panels, limits)}
-              className="w-fit"
+        {/* ── Panneaux ────────────────────────────────────────────────── */}
+        <TabsContent value="panels" className="pt-4">
+          <Card>
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <CardTitle className="text-base">{t("modules.tickets.cards.panels.title")}</CardTitle>
+                <CardDescription>{t("modules.tickets.cards.panels.description")}</CardDescription>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                onClick={addPanel}
+                disabled={!canAdd}
+                className="w-full shrink-0 sm:w-auto"
+              >
+                <PlusIcon data-icon="inline-start" />
+                {t("modules.tickets.addPanel")}
+              </Button>
+            </CardHeader>
+            {/* La réponse du `PUT` **écrase** l'état local (elle porte les
+                `message_id` frais) : ce qui serait tapé pendant l'appel (~25 s)
+                serait donc perdu en silence. On gèle l'onglet le temps de la
+                requête plutôt que de laisser croire qu'on peut continuer à
+                éditer. */}
+            <CardContent
+              aria-busy={isSaving}
+              inert={isSaving ? true : undefined}
+              className={cn("flex flex-col gap-5", isSaving && "pointer-events-none opacity-60")}
             >
-              <PlusIcon className="size-4" />
-              {t("modules.tickets.addPanel")}
-            </Button>
-            {!canAddPanel(panels, limits) && limits && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {t("modules.tickets.panelCapReached", { max: limits.max_panels })}
-              </p>
-            )}
-          </div>
-
-          <p className="flex items-start gap-2 text-xs text-muted-foreground">
-            <ClockIcon className="mt-0.5 size-3.5 shrink-0" />
-            {t("modules.tickets.saveDurationHint")}
-          </p>
-
-          {isConfigured && (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-fit text-destructive hover:text-destructive"
-              onClick={() => setConfirmDisable(true)}
-              disabled={isSaving || isDisabling}
-            >
-              {isDisabling ? (
-                <LoaderIcon className="size-4 animate-spin" />
-              ) : (
-                <Trash2Icon className="size-4" />
-              )}
-              {t("modules.disable")}
-            </Button>
-          )}
+              <PanelsTab
+                panels={panels}
+                guildId={guildId}
+                channels={channels}
+                limits={limits}
+                errors={fieldErrors}
+                openPanelId={openPanelId}
+                onTogglePanel={(panelId, open) => setOpenPanelId(open ? panelId : null)}
+                onChangePanel={patchPanel}
+                onDeletePanel={removePanel}
+                onAddPanel={addPanel}
+                onAddCategory={addCategory}
+                onEditCategory={(panelId, category) => setEditing({ panelId, categoryId: category.id })}
+                onDeleteCategory={(panelId, category) => setPendingDelete({ panelId, category })}
+                openTicketCounts={openTicketCounts}
+                orphanCount={orphanCount}
+                globalIssues={globalIssues}
+                isConfigured={isConfigured}
+                isSaving={isSaving}
+                isDisabling={isDisabling}
+                onRequestDisable={() => setConfirmDisable(true)}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Réglages du module ──────────────────────────────────────── */}
-        <TabsContent value="general" className="pt-4">
-          <TicketsSettingsPanel
-            settings={settings}
-            savedSettings={savedSettings}
-            channels={channels}
-            errors={fieldErrors}
-            onChange={(changes) => setSettings((prev) => ({ ...prev, ...changes }))}
-          />
+        <TabsContent value="settings" className="pt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("modules.tickets.cards.settings.title")}</CardTitle>
+              <CardDescription>{t("modules.tickets.cards.settings.description")}</CardDescription>
+            </CardHeader>
+            <CardContent
+              aria-busy={isSaving}
+              inert={isSaving ? true : undefined}
+              className={cn("flex flex-col gap-5", isSaving && "pointer-events-none opacity-60")}
+            >
+              <TicketsSettingsPanel
+                settings={settings}
+                savedSettings={savedSettings}
+                channels={channels}
+                errors={fieldErrors}
+                onChange={(changes) => setSettings((prev) => ({ ...prev, ...changes }))}
+              />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Tickets réels + archives (lecture seule) ─────────────────── */}
         {/* Un seul onglet : un ticket fermé s'ouvre directement sur sa
             transcription, il n'y a plus d'onglet « Archives » séparé. */}
         <TabsContent value="tickets" className="pt-4">
-          <TicketExplorer guildId={guildId} panels={savedPanels} settings={savedSettings} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("modules.tickets.cards.tickets.title")}</CardTitle>
+              <CardDescription>{t("modules.tickets.cards.tickets.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <TicketExplorer guildId={guildId} panels={savedPanels} settings={savedSettings} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Avis ─────────────────────────────────────────────────────── */}
         <TabsContent value="ratings" className="pt-4">
-          <RatingsPanel guildId={guildId} panels={savedPanels} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">{t("modules.tickets.cards.ratings.title")}</CardTitle>
+              <CardDescription>{t("modules.tickets.cards.ratings.description")}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-5">
+              <RatingsPanel guildId={guildId} panels={savedPanels} />
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
@@ -658,7 +678,7 @@ function TicketsForm() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("modules.tickets.cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
               onClick={() => {
                 if (pendingDelete) removeCategory(pendingDelete.panelId, pendingDelete.category.id)
                 setPendingDelete(null)
@@ -680,10 +700,7 @@ function TicketsForm() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("modules.tickets.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDisable}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction variant="destructive" onClick={handleDisable}>
               {t("modules.disable")}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -708,10 +725,7 @@ function TicketsForm() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("modules.tickets.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={handleSave}
-            >
+            <AlertDialogAction variant="destructive" onClick={handleSave}>
               {t("modules.tickets.settings.confirmRetentionAction")}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -2,26 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import {
-  ArrowUpRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ListFilterIcon,
   RefreshCwIcon,
   StarIcon,
-  ThumbsDownIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import {
   Table,
   TableBody,
@@ -31,19 +24,24 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { NONE, Notice } from "@/components/tickets/fields"
+import { Notice } from "@/components/tickets/fields"
+import { Dot, ListRow, MiniAvatar, RelativeTime, RowAvatar } from "@/components/tickets/row-primitives"
+import { ToolbarIconButton } from "@/components/tickets/filter-primitives"
+import { RatingFilterChips, RatingAddFilterMenu } from "@/components/tickets/rating-filter-bar"
+import {
+  RATING_FILTER_KEYS,
+  ratingFilterValuesToApi,
+  ratingWindowDays,
+  type RatingFilterKey,
+  type RatingFilterValues,
+} from "@/components/tickets/rating-filters"
 import { useUserProfile } from "@/hooks/useProfile"
 import { cn } from "@/lib/utils"
 import { logger } from "@/lib/logger"
 import { isNegativeScore } from "@/lib/transcripts"
 import { getTicketRatings, getTicketRatingsSummary } from "@/services/tickets"
-import { TICKET_RATING_TRIGGERS, TICKET_SCORE_KEYS } from "@/types/transcripts"
-import type {
-  TicketRating,
-  TicketRatingTrigger,
-  TicketRatingsSummary,
-  TicketStaffRating,
-} from "@/types/transcripts"
+import { TICKET_SCORE_KEYS } from "@/types/transcripts"
+import type { TicketRating, TicketRatingsSummary, TicketStaffRating } from "@/types/transcripts"
 import type { TicketPanel } from "@/types/api"
 
 // Notes de satisfaction. Trois règles de lecture, portées par le code plutôt que
@@ -60,19 +58,17 @@ import type { TicketPanel } from "@/types/api"
 //    travail de quelqu'un.
 
 const PAGE_SIZE = 25
-const WINDOWS = [7, 30, 90, 365] as const
 
 export function RatingsPanel({ guildId, panels }: { guildId: string; panels: TicketPanel[] }) {
   const { t } = useTranslation()
 
-  const [days, setDays] = useState<number>(30)
   const [summary, setSummary] = useState<TicketRatingsSummary | null>(null)
   const [ratings, setRatings] = useState<TicketRating[]>([])
   const [total, setTotal] = useState(0)
   const [offset, setOffset] = useState(0)
-  const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [trigger, setTrigger] = useState<TicketRatingTrigger | null>(null)
-  const [negativeOnly, setNegativeOnly] = useState(false)
+  const [activeKeys, setActiveKeys] = useState<RatingFilterKey[]>([])
+  const [values, setValues] = useState<RatingFilterValues>({})
+  const [pendingKey, setPendingKey] = useState<RatingFilterKey | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -81,21 +77,18 @@ export function RatingsPanel({ guildId, panels }: { guildId: string; panels: Tic
     [panels]
   )
 
+  // `window` pilote aussi le résumé du serveur (`getTicketRatingsSummary`) :
+  // le changer doit recharger le résumé **et** la liste, d'où le seul
+  // `useCallback` qui porte les deux appels.
   const load = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
+      const days = ratingWindowDays(values)
+      const filters = ratingFilterValuesToApi(values)
       const [summaryData, list] = await Promise.all([
         getTicketRatingsSummary(guildId, days),
-        getTicketRatings(guildId, {
-          days,
-          category_id: categoryId ?? undefined,
-          trigger: trigger ?? undefined,
-          // `max_score=2` est la vue qui compte : les tickets mal vécus.
-          max_score: negativeOnly ? 2 : undefined,
-          limit: PAGE_SIZE,
-          offset,
-        }),
+        getTicketRatings(guildId, { ...filters, limit: PAGE_SIZE, offset }),
       ])
       setSummary(summaryData)
       setRatings(list.ratings)
@@ -106,41 +99,67 @@ export function RatingsPanel({ guildId, panels }: { guildId: string; panels: Tic
     } finally {
       setIsLoading(false)
     }
-  }, [guildId, days, categoryId, trigger, negativeOnly, offset])
+  }, [guildId, values, offset])
 
   useEffect(() => {
     load()
   }, [load])
 
+  const addFilter = (key: RatingFilterKey) => {
+    setActiveKeys((prev) => [...prev, key])
+    setPendingKey(key)
+  }
+
+  const removeFilter = useCallback((key: RatingFilterKey) => {
+    setActiveKeys((prev) => prev.filter((k) => k !== key))
+    setValues((prev) => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+    setOffset(0)
+  }, [])
+
+  const changeFilter = (patch: RatingFilterValues) => {
+    setValues((prev) => ({ ...prev, ...patch }))
+    setOffset(0)
+  }
+
   const page = Math.floor(offset / PAGE_SIZE) + 1
   const pages = Math.max(Math.ceil(total / PAGE_SIZE), 1)
+  const addableKeys = RATING_FILTER_KEYS.filter((k) => !activeKeys.includes(k))
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Fenêtre d'observation + rafraîchissement */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Select
-          value={String(days)}
-          onValueChange={(v) => {
-            setDays(Number(v))
-            setOffset(0)
-          }}
-        >
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {WINDOWS.map((value) => (
-              <SelectItem key={value} value={String(value)}>
-                {t("modules.tickets.ratings.window", { days: value })}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button variant="outline" size="sm" onClick={load} disabled={isLoading}>
-          <RefreshCwIcon data-icon="inline-start" className={cn(isLoading && "animate-spin")} />
-          {t("modules.tickets.filters.refresh")}
-        </Button>
+      {/* Barre d'outils — même motif que `case-list.tsx` : rafraîchir + menu de
+          filtres en boutons icône, puis la rangée de chips actifs. */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <ToolbarIconButton label={t("cases.toolbar.refresh")} onClick={load}>
+            <RefreshCwIcon className={cn("size-4", isLoading && "animate-spin")} />
+          </ToolbarIconButton>
+          <RatingAddFilterMenu keys={addableKeys} onAdd={addFilter}>
+            <span>
+              <ToolbarIconButton
+                label={t("cases.toolbar.filter")}
+                active={activeKeys.length > 0}
+              >
+                <ListFilterIcon className="size-4" />
+              </ToolbarIconButton>
+            </span>
+          </RatingAddFilterMenu>
+        </div>
+        <RatingFilterChips
+          activeKeys={activeKeys}
+          values={values}
+          categories={categories}
+          availableKeys={RATING_FILTER_KEYS}
+          pendingKey={pendingKey}
+          onChange={changeFilter}
+          onRemove={removeFilter}
+          onAdd={addFilter}
+          showAddButton={false}
+        />
       </div>
 
       {error && (
@@ -161,63 +180,7 @@ export function RatingsPanel({ guildId, panels }: { guildId: string; panels: Tic
 
       {/* ── Notes détaillées ─────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-          <h3 className="mr-auto text-sm font-semibold">
-            {t("modules.tickets.ratings.listTitle")}
-          </h3>
-
-          <Button
-            variant={negativeOnly ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              setNegativeOnly((v) => !v)
-              setOffset(0)
-            }}
-          >
-            <ThumbsDownIcon data-icon="inline-start" />
-            {t("modules.tickets.ratings.negativeOnly")}
-          </Button>
-
-          <Select
-            value={trigger ?? NONE}
-            onValueChange={(v) => {
-              setTrigger(v === NONE ? null : (v as TicketRatingTrigger))
-              setOffset(0)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder={t("modules.tickets.ratings.allTriggers")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NONE}>{t("modules.tickets.ratings.allTriggers")}</SelectItem>
-              {TICKET_RATING_TRIGGERS.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {t(`modules.tickets.ratings.triggers.${value}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={categoryId ?? NONE}
-            onValueChange={(v) => {
-              setCategoryId(v === NONE ? null : v)
-              setOffset(0)
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-56">
-              <SelectValue placeholder={t("modules.tickets.filters.allCategories")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={NONE}>{t("modules.tickets.filters.allCategories")}</SelectItem>
-              {categories.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.panelName} · {c.name || c.id}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <h3 className="text-sm font-semibold">{t("modules.tickets.ratings.listTitle")}</h3>
 
         {isLoading && ratings.length === 0 ? (
           <div className="flex flex-col gap-2">
@@ -225,12 +188,14 @@ export function RatingsPanel({ guildId, panels }: { guildId: string; panels: Tic
             <Skeleton className="h-16 rounded-xl" />
           </div>
         ) : ratings.length === 0 ? (
-          <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center">
-            <StarIcon className="size-6 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {t("modules.tickets.ratings.empty")}
-            </p>
-          </div>
+          <Empty className="rounded-xl border border-dashed">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <StarIcon />
+              </EmptyMedia>
+              <EmptyTitle>{t("modules.tickets.ratings.empty")}</EmptyTitle>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <div className="divide-y rounded-xl border">
             {ratings.map((rating) => (
@@ -279,16 +244,20 @@ function SummaryCard({ summary }: { summary: TicketRatingsSummary }) {
 
   if (ratings === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-10 text-center">
-        <StarIcon className="size-6 text-muted-foreground" />
-        <p className="text-sm font-medium">{t("modules.tickets.ratings.noneTitle")}</p>
-        <p className="max-w-md text-xs text-muted-foreground">
-          {t("modules.tickets.ratings.noneDescription")}
-        </p>
-      </div>
+      <Empty className="rounded-xl border border-dashed">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <StarIcon />
+          </EmptyMedia>
+          <EmptyTitle>{t("modules.tickets.ratings.noneTitle")}</EmptyTitle>
+          <EmptyDescription>{t("modules.tickets.ratings.noneDescription")}</EmptyDescription>
+        </EmptyHeader>
+      </Empty>
     )
   }
 
+  // Pas de `Card` ici : l'onglet en est déjà une, et son titre est déjà « Avis »
+  // — un cadre dans un cadre avec le même mot deux fois.
   return (
     <div className="grid gap-4 rounded-xl border p-4 sm:grid-cols-3">
       <div className="flex flex-col gap-1">
@@ -306,9 +275,9 @@ function SummaryCard({ summary }: { summary: TicketRatingsSummary }) {
         <p className="text-2xl font-semibold tabular-nums">
           {/* `null` quand personne n'a noté — un `0` se lirait comme « tout le
               monde déteste ». */}
-          {average === null ? "—" : average.toLocaleString(i18n.language, {
-            maximumFractionDigits: 2,
-          })}
+          {average === null
+            ? "—"
+            : average.toLocaleString(i18n.language, { maximumFractionDigits: 2 })}
         </p>
         {negative > 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
@@ -364,6 +333,7 @@ function StaffTable({ rows }: { rows: TicketStaffRating[] }) {
             </TableRow>
           </TableHeader>
           <TableBody>
+            {/* `by_staff` arrive classé par volume — ne jamais le re-trier ici. */}
             {rows.map((row) => (
               <StaffRow key={row.staff_id} row={row} />
             ))}
@@ -377,12 +347,14 @@ function StaffTable({ rows }: { rows: TicketStaffRating[] }) {
 function StaffRow({ row }: { row: TicketStaffRating }) {
   const { t, i18n } = useTranslation()
   const profile = useUserProfile(row.staff_id)
+  const name = profile.data?.display_name ?? row.staff_id
 
   return (
     <TableRow>
       <TableCell className="max-w-[12rem] truncate font-medium">
         <span className="flex items-center gap-2">
-          <span className="truncate">{profile.data?.display_name ?? row.staff_id}</span>
+          <MiniAvatar url={profile.data?.avatar_url} name={name} />
+          <span className="truncate">{name}</span>
           {row.low_sample && (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -396,6 +368,8 @@ function StaffRow({ row }: { row: TicketStaffRating }) {
           )}
         </span>
       </TableCell>
+      {/* `handled` vient des archives, pas de la table `tickets` : une ligne
+          `ratings: 0, handled > 0` reste affichée telle quelle. */}
       <TableCell className="text-right tabular-nums">{row.handled}</TableCell>
       <TableCell className="text-right tabular-nums">{row.ratings}</TableCell>
       <TableCell className="text-right tabular-nums">
@@ -420,12 +394,25 @@ function StaffRow({ row }: { row: TicketStaffRating }) {
 function RatingRow({ rating }: { rating: TicketRating }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  // `rated_staff_id: null` est « personne en particulier » — une vraie
+  // réponse, pas une donnée manquante. `useUserProfile` accepte `null` et
+  // retombe alors simplement sur un profil vide.
   const staff = useUserProfile(rating.rated_staff_id)
+  const staffName = rating.rated_staff_id
+    ? (staff.data?.display_name ?? rating.rated_staff_id)
+    : t("modules.tickets.ratings.noStaff")
+
+  // `transcript_key: null` = l'archive a été purgée par la rétention : la
+  // note lui survit, la ligne n'est alors plus cliquable.
+  const canOpen = !!rating.transcript_key
+  const onOpen = canOpen ? () => navigate(`/transcripts/${rating.transcript_key}`) : undefined
 
   return (
-    <div className="flex flex-col gap-2 p-3 sm:flex-row sm:items-start sm:gap-4">
+    <ListRow onClick={onOpen}>
+      <RowAvatar url={rating.rated_staff_id ? staff.data?.avatar_url : null} name={staffName} />
+
       <div className="min-w-0 flex-1">
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
           <Badge
             variant="secondary"
             className={cn(
@@ -443,45 +430,27 @@ function RatingRow({ rating }: { rating: TicketRating }) {
         </p>
 
         {rating.comment && (
-          <p className="mt-1.5 text-sm leading-relaxed wrap-break-word">“{rating.comment}”</p>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground wrap-break-word">
+            “{rating.comment}”
+          </p>
         )}
 
         <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
           <span>
-            {/* `null` = « personne en particulier », une réponse réelle — pas
-                une donnée manquante. */}
             {rating.rated_staff_id
-              ? t("modules.tickets.ratings.aboutStaff", {
-                  name: staff.data?.display_name ?? rating.rated_staff_id,
-                })
+              ? t("modules.tickets.ratings.aboutStaff", { name: staffName })
               : t("modules.tickets.ratings.noStaff")}
           </span>
-          <span aria-hidden>·</span>
+          <Dot />
           <span>{t(`modules.tickets.ratings.triggers.${rating.trigger}`)}</span>
-          <span aria-hidden>·</span>
-          <span className="tabular-nums">
-            {new Date(rating.created_at).toLocaleDateString(i18n.language, {
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })}
-          </span>
+          <Dot />
+          <RelativeTime iso={rating.created_at} locale={i18n.language} />
         </p>
       </div>
 
-      {/* `transcript_key: null` = l'archive a été purgée par la rétention : la
-          note lui survit, le lien disparaît. */}
-      {rating.transcript_key && (
-        <Button
-          variant="outline"
-          size="sm"
-          className="shrink-0"
-          onClick={() => navigate(`/transcripts/${rating.transcript_key}`)}
-        >
-          {t("modules.tickets.ratings.openTranscript")}
-          <ArrowUpRightIcon data-icon="inline-end" />
-        </Button>
+      {canOpen && (
+        <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       )}
-    </div>
+    </ListRow>
   )
 }

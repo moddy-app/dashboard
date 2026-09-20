@@ -8,10 +8,21 @@ import {
   XIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Field as UiField,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
@@ -25,35 +36,85 @@ import type { TicketsApplyFeedback, TicketsApplyLevel } from "@/lib/tickets"
 /** Sentinelle du sélecteur : Radix Select refuse une valeur vide. */
 export const NONE = "__none__"
 
+/** Couleur de repli d'un rôle inconnu — celle de Discord pour « pas de couleur ». */
+const DEFAULT_ROLE_COLOR = "#99aab5"
+
 // ─── Champ ────────────────────────────────────────────────────────────────────
 
+/**
+ * Enveloppe le `Field` de shadcn pour garder deux choses propres au module :
+ * le `hint` aligné à droite du libellé (compteur de caractères, quota) et
+ * l'ancre `id`, qui permet à la page de faire défiler jusqu'au premier champ
+ * fautif après un 422.
+ *
+ * Contrairement à l'ancienne version, **description et erreur cohabitent** :
+ * faire disparaître l'aide au moment précis où l'on se trompe est le pire
+ * moment pour la retirer.
+ */
 export function Field({
   label,
   description,
   error,
   hint,
+  fieldId,
   children,
 }: {
   label: string
-  description?: string
+  description?: ReactNode
   error?: string
   /** Compteur de caractères, quota… affiché à droite du libellé. */
   hint?: ReactNode
+  /** Ancre de défilement (voir `panelFieldKey` / `categoryFieldKey`). */
+  fieldId?: string
   children: ReactNode
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <UiField id={fieldId} data-invalid={error ? true : undefined} className="scroll-mt-24">
       <div className="flex items-center justify-between gap-2">
-        <label className="text-sm font-medium">{label}</label>
-        {hint && <span className="text-xs text-muted-foreground tabular-nums">{hint}</span>}
+        <FieldLabel className="text-sm font-medium">{label}</FieldLabel>
+        {hint && <span className="text-xs tabular-nums text-muted-foreground">{hint}</span>}
       </div>
       {children}
-      {error ? (
-        <p className="text-xs text-destructive">{error}</p>
-      ) : (
-        description && <p className="text-xs text-muted-foreground">{description}</p>
-      )}
-    </div>
+      {description && <FieldDescription>{description}</FieldDescription>}
+      {error && <FieldError>{error}</FieldError>}
+    </UiField>
+  )
+}
+
+/**
+ * Interrupteur avec libellé et description — le motif « un réglage par ligne »
+ * du module. C'est le `Field` horizontal de shadcn, pas une carte maison.
+ */
+export function ToggleField({
+  label,
+  description,
+  checked,
+  icon,
+  children,
+}: {
+  label: string
+  description?: ReactNode
+  checked?: boolean
+  icon?: ReactNode
+  /** L'interrupteur lui-même (`Switch`), passé par l'appelant. */
+  children: ReactNode
+}) {
+  return (
+    // `data-checked` est posé ici, à la main : Radix ne l'expose pas (il n'écrit
+    // que `data-state` sur l'interrupteur), et c'est le conteneur — pas
+    // l'interrupteur — qu'on veut souligner quand le réglage est actif.
+    <UiField
+      orientation="horizontal"
+      data-checked={checked ? "true" : "false"}
+      className="rounded-lg border p-3.5 transition-colors data-[checked=true]:border-primary/30"
+    >
+      {icon && <span className="mt-0.5 shrink-0 text-muted-foreground">{icon}</span>}
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <FieldLabel className="text-sm font-medium">{label}</FieldLabel>
+        {description && <FieldDescription>{description}</FieldDescription>}
+      </div>
+      {children}
+    </UiField>
   )
 }
 
@@ -67,6 +128,7 @@ export function ChannelSelect({
   emptyLabel,
   clearLabel,
   prefix = "# ",
+  invalid = false,
 }: {
   value: string | null
   channels: Channel[]
@@ -76,38 +138,49 @@ export function ChannelSelect({
   /** Option de remise à zéro — un panneau sans salon est un brouillon valide. */
   clearLabel: string
   prefix?: string
+  invalid?: boolean
 }) {
   const known = value !== null && channels.some((c) => c.id === value)
 
   return (
     <Select value={value ?? NONE} onValueChange={(v) => onChange(v === NONE ? null : v)}>
-      <SelectTrigger className="w-full">
+      <SelectTrigger className="w-full" aria-invalid={invalid || undefined}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value={NONE}>{clearLabel}</SelectItem>
-        {channels.length === 0 && (
-          <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-            <AlertCircleIcon className="size-4" />
-            {emptyLabel}
-          </div>
-        )}
-        {channels.map((c) => (
-          <SelectItem key={c.id} value={c.id}>
-            {prefix}
-            {c.name}
-          </SelectItem>
-        ))}
-        {/* Valeur enregistrée absente de la liste (salon supprimé, mauvais
-            type) : gardée visible plutôt que de retomber sur le placeholder. */}
-        {value && !known && (
-          <SelectItem value={value} disabled>
-            {prefix}
-            {value}
-          </SelectItem>
-        )}
+        <SelectGroup>
+          <SelectItem value={NONE}>{clearLabel}</SelectItem>
+          {/* Un nœud qui n'est pas un item casse la navigation au clavier du
+              Select : la liste vide s'annonce donc par un libellé de groupe. */}
+          {channels.length === 0 && <SelectLabel>{emptyLabel}</SelectLabel>}
+          {channels.map((c) => (
+            <SelectItem key={c.id} value={c.id}>
+              {prefix}
+              {c.name}
+            </SelectItem>
+          ))}
+          {/* Valeur enregistrée absente de la liste (salon supprimé, mauvais
+              type) : gardée visible plutôt que de retomber sur le placeholder. */}
+          {value && !known && (
+            <SelectItem value={value} disabled>
+              {prefix}
+              {value}
+            </SelectItem>
+          )}
+        </SelectGroup>
       </SelectContent>
     </Select>
+  )
+}
+
+/** Pastille de couleur d'un rôle Discord — la couleur vient du serveur. */
+export function RoleDot({ color }: { color: string }) {
+  return (
+    <span
+      className="size-2 shrink-0 rounded-full"
+      style={{ backgroundColor: color }}
+      aria-hidden
+    />
   )
 }
 
@@ -138,25 +211,29 @@ export function RoleChips({
         <div className="flex flex-wrap gap-2">
           {value.map((id) => {
             const role = roles.find((r) => r.id === id)
-            const color = tone === "danger" ? undefined : role ? roleColorToHex(role.color) : "#99aab5"
+            // La couleur d'un rôle appartient au serveur Discord : elle ne peut
+            // pas venir d'un token du thème, d'où le style inline.
+            const color = role ? roleColorToHex(role.color) : DEFAULT_ROLE_COLOR
             return (
-              <span
+              <Badge
                 key={id}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium",
-                  tone === "danger" && "border-destructive/40 text-destructive"
-                )}
+                variant="outline"
+                className={cn("gap-1 rounded-full py-1 pr-1 pl-3 text-sm")}
                 style={tone === "danger" ? undefined : { borderColor: color, color }}
               >
+                {tone === "danger" && <RoleDot color={DEFAULT_ROLE_COLOR} />}
                 @{role?.name ?? id}
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  className="rounded-full hover:bg-transparent hover:opacity-70"
                   onClick={() => onChange(value.filter((r) => r !== id))}
-                  className="ml-0.5 rounded-full transition-opacity hover:opacity-70"
+                  aria-label={`${role?.name ?? id}`}
                 >
-                  <XIcon className="size-3" />
-                </button>
-              </span>
+                  <XIcon />
+                </Button>
+              </Badge>
             )
           })}
         </div>
@@ -167,21 +244,20 @@ export function RoleChips({
             <SelectValue placeholder={addLabel} />
           </SelectTrigger>
           <SelectContent>
-            {available.map((role) => (
-              <SelectItem key={role.id} value={role.id}>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: roleColorToHex(role.color) }}
-                  />
-                  {role.name}
-                </div>
-              </SelectItem>
-            ))}
+            <SelectGroup>
+              {available.map((role) => (
+                <SelectItem key={role.id} value={role.id}>
+                  <span className="flex items-center gap-2">
+                    <RoleDot color={roleColorToHex(role.color)} />
+                    {role.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectGroup>
           </SelectContent>
         </Select>
       ) : (
-        value.length === 0 && <p className="text-xs text-muted-foreground">{emptyLabel}</p>
+        value.length === 0 && <p className="text-sm text-muted-foreground">{emptyLabel}</p>
       )}
     </div>
   )
@@ -189,7 +265,12 @@ export function RoleChips({
 
 // ─── Encarts ──────────────────────────────────────────────────────────────────
 
-const NOTICE_STYLES: Record<
+/**
+ * Le ton d'un encart. Les quatre niveaux du module vivent **ici et nulle part
+ * ailleurs** : c'est la seule table de couleurs de l'écran, comme
+ * `SANCTION_LEVEL_HUE` l'est pour les infractions.
+ */
+const NOTICE_TONE: Record<
   TicketsApplyLevel,
   { box: string; icon: string; Icon: typeof InfoIcon }
 > = {
@@ -228,27 +309,29 @@ export function Notice({
   action?: ReactNode
   onDismiss?: () => void
 }) {
-  const { Icon, box, icon } = NOTICE_STYLES[level]
+  const { t } = useTranslation()
+  const { Icon, box, icon } = NOTICE_TONE[level]
+
   return (
-    <div className={cn("flex items-start gap-3 rounded-xl border p-4", box)}>
-      <Icon className={cn("mt-0.5 size-4 shrink-0", icon)} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{title}</p>
-        {children && (
-          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{children}</div>
-        )}
-        {action && <div className="mt-2">{action}</div>}
-      </div>
+    <Alert className={cn(box, onDismiss && "pr-12")}>
+      <Icon className={icon} />
+      <AlertTitle>{title}</AlertTitle>
+      {children && <AlertDescription>{children}</AlertDescription>}
+      {action && <div className="col-start-2 mt-2">{action}</div>}
       {onDismiss && (
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-        >
-          <XIcon className="size-3.5" />
-        </button>
+        <AlertAction>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-xs"
+            onClick={onDismiss}
+            aria-label={t("common.dismiss")}
+          >
+            <XIcon />
+          </Button>
+        </AlertAction>
       )}
-    </div>
+    </Alert>
   )
 }
 
@@ -267,7 +350,7 @@ export function ApplyNotice({
   return (
     <Notice level={feedback.level} title={t(feedback.key, feedback.params)} onDismiss={onDismiss}>
       {feedback.problems.length > 0 && (
-        <ul className="list-disc space-y-0.5 pl-4">
+        <ul className="flex list-disc flex-col gap-0.5 pl-4">
           {feedback.problems.map((p) => (
             <li key={p.key}>{t(p.key, p.params)}</li>
           ))}

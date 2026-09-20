@@ -1251,10 +1251,10 @@
       "statusActive": "Actif",
       "statusInactive": "Inactif",
       "tabs": {
-        "settings": "Panneaux",
+        "settings": "Réglages",
         "tickets": "Tickets",
-        "general": "Réglages",
-        "ratings": "Avis"
+        "ratings": "Avis",
+        "panels": "Panneaux"
       },
       "panelQuota": "{{count}} panneaux sur {{max}}",
       "panelQuotaUnknown": "Quotas indisponibles — l'enregistrement reste possible.",
@@ -1346,7 +1346,14 @@
         "idHint": "id {{id}} — conservé pour toujours, c'est ce qui relie le panneau à son message.",
         "delete": "Supprimer ce panneau",
         "default_title": "Besoin d'aide ?",
-        "default_description": "Choisissez une catégorie ci-dessous pour ouvrir un ticket. Un salon privé sera créé pour vous."
+        "default_description": "Choisissez une catégorie ci-dessous pour ouvrir un ticket. Un salon privé sera créé pour vous.",
+        "sections": {
+          "publication": "Publication",
+          "appearance": "Apparence",
+          "categories": "Catégories"
+        },
+        "errorsCount_one": "{{count}} erreur",
+        "errorsCount_other": "{{count}} erreurs"
       },
       "leaveEmptyForDefault": "Laissez vide pour le texte de Moddy, traduit dans la langue du serveur et amélioré au fil des versions.",
       "category": {
@@ -1408,7 +1415,10 @@
         "confirmDeleteTitle": "Supprimer « {{name}} » ?",
         "confirmDeleteDescription": "La catégorie disparaît du panneau à la prochaine sauvegarde.",
         "confirmDeleteOpen_one": "{{count}} ticket ouvert utilise cette catégorie. Il restera ouvert mais deviendra inutilisable — déplacez-le d'abord avec /ticket move dans son salon.",
-        "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move dans leurs salons."
+        "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move dans leurs salons.",
+        "tabHasErrors": "Cet onglet contient un champ invalide",
+        "inPanel": "Dans le panneau « {{name}} »",
+        "edit": "Modifier la catégorie"
       },
       "buttonStyles": {
         "primary": "Blurple",
@@ -1488,7 +1498,8 @@
             "label": "Avis",
             "description": "Lire les avis laissés sur les tickets de cette catégorie."
           }
-        }
+        },
+        "removeRole": "Retirer le rôle"
       },
       "states": {
         "open": "Ouvert",
@@ -1559,7 +1570,10 @@
         "ratingDescription": "À la fermeture, l'auteur du ticket se voit proposer cinq appréciations et un commentaire facultatif.",
         "keepChannelOnClose": "Conserver le ticket après fermeture",
         "keepChannelOnCloseDescription": "Le salon Discord n'est jamais supprimé à la fermeture, dans un cas comme dans l'autre. Activé, le ticket fermé reste visible dans les vues du dashboard jusqu'à la suppression du salon ; désactivé, il en disparaît immédiatement. Les archives ne sont pas concernées.",
-        "purgeHint": "La conservation est appliquée par le bot, une fois par jour — un changement n'est pas instantané."
+        "purgeHint": "La conservation est appliquée par le bot, une fois par jour — un changement n'est pas instantané.",
+        "journalSection": "Journal",
+        "archivesSection": "Archives",
+        "closureSection": "Fermeture"
       },
       "transcripts": {
         "disabledTitle": "L'archivage est désactivé",
@@ -1695,6 +1709,32 @@
           "close_request": "A accepté une demande de fermeture",
           "self_close": "A fermé le ticket lui-même",
           "dm_button": "Est revenu depuis le DM"
+        },
+        "filters": {
+          "window": "Période",
+          "score": "Appréciation",
+          "trigger": "Moment",
+          "category": "Catégorie",
+          "staff": "Agent",
+          "staffPlaceholder": "ID Discord"
+        }
+      },
+      "cards": {
+        "panels": {
+          "title": "Panneaux",
+          "description": "Chaque panneau est un message publié par Moddy dans un salon. Les membres cliquent dessus, ou sur une de ses catégories, pour ouvrir un ticket."
+        },
+        "settings": {
+          "title": "Réglages",
+          "description": "La façon dont Moddy journalise, archive et ferme les tickets sur ce serveur."
+        },
+        "tickets": {
+          "title": "Tickets",
+          "description": "Tickets en cours et archives fermées, en lecture seule — rien ici ne peut être modifié depuis le dashboard."
+        },
+        "ratings": {
+          "title": "Avis",
+          "description": "Notes de satisfaction laissées à la fermeture d'un ticket."
         }
       }
     }

@@ -1251,10 +1251,10 @@
       "statusActive": "Active",
       "statusInactive": "Inactive",
       "tabs": {
-        "settings": "Panels",
+        "settings": "Settings",
         "tickets": "Tickets",
-        "general": "Settings",
-        "ratings": "Feedback"
+        "ratings": "Feedback",
+        "panels": "Panels"
       },
       "panelQuota": "{{count}} of {{max}} panels used",
       "panelQuotaUnknown": "Quotas unavailable — saving is still allowed.",
@@ -1346,7 +1346,14 @@
         "idHint": "id {{id}} — kept forever so the bot can match this panel to its message.",
         "delete": "Delete this panel",
         "default_title": "Need help?",
-        "default_description": "Pick a category below to open a ticket. A private channel will be created for you."
+        "default_description": "Pick a category below to open a ticket. A private channel will be created for you.",
+        "sections": {
+          "publication": "Publication",
+          "appearance": "Appearance",
+          "categories": "Categories"
+        },
+        "errorsCount_one": "{{count}} error",
+        "errorsCount_other": "{{count}} errors"
       },
       "leaveEmptyForDefault": "Leave empty for Moddy's own text, translated into the server's language and improved from one version to the next.",
       "category": {
@@ -1408,7 +1415,10 @@
         "confirmDeleteTitle": "Delete '{{name}}'?",
         "confirmDeleteDescription": "The category disappears from the panel on the next save.",
         "confirmDeleteOpen_one": "{{count}} open ticket uses this category. It stays open but becomes unusable — move it first with /ticket move in its channel.",
-        "confirmDeleteOpen_other": "{{count}} open tickets use this category. They stay open but become unusable — move them first with /ticket move in their channels."
+        "confirmDeleteOpen_other": "{{count}} open tickets use this category. They stay open but become unusable — move them first with /ticket move in their channels.",
+        "tabHasErrors": "This tab has an invalid field",
+        "inPanel": "In panel “{{name}}”",
+        "edit": "Edit category"
       },
       "buttonStyles": {
         "primary": "Blurple",
@@ -1488,7 +1498,8 @@
             "label": "Feedback",
             "description": "Read the ratings left on this category's tickets."
           }
-        }
+        },
+        "removeRole": "Remove role"
       },
       "states": {
         "open": "Open",
@@ -1559,7 +1570,10 @@
         "ratingDescription": "When a ticket closes, the author is offered five appreciations and an optional comment.",
         "keepChannelOnClose": "Keep the ticket after closing",
         "keepChannelOnCloseDescription": "The Discord channel is never deleted on close, either way. Enabled, the closed ticket stays visible in the dashboard views until the channel itself is deleted; disabled, it disappears from them right away. Archives are unaffected.",
-        "purgeHint": "Retention is applied by the bot, once a day — a change does not take effect instantly."
+        "purgeHint": "Retention is applied by the bot, once a day — a change does not take effect instantly.",
+        "journalSection": "Log",
+        "archivesSection": "Archives",
+        "closureSection": "Closing"
       },
       "transcripts": {
         "disabledTitle": "Archiving is off",
@@ -1695,6 +1709,32 @@
           "close_request": "Accepted a closing request",
           "self_close": "Closed the ticket themselves",
           "dm_button": "Came back from the DM"
+        },
+        "filters": {
+          "window": "Period",
+          "score": "Rating",
+          "trigger": "Moment",
+          "category": "Category",
+          "staff": "Agent",
+          "staffPlaceholder": "Discord ID"
+        }
+      },
+      "cards": {
+        "panels": {
+          "title": "Panels",
+          "description": "Each panel is a message Moddy posts in a channel. Members click it, or one of its categories, to open a ticket."
+        },
+        "settings": {
+          "title": "Settings",
+          "description": "How Moddy logs, archives, and closes tickets across this server."
+        },
+        "tickets": {
+          "title": "Tickets",
+          "description": "Live tickets and closed archives, read-only — nothing here can be edited from the dashboard."
+        },
+        "ratings": {
+          "title": "Feedback",
+          "description": "Satisfaction ratings left when a ticket closes."
         }
       }
     }
