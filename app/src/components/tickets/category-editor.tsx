@@ -126,8 +126,11 @@ export function CategoryEditor({
       {/* Grande modale : une catégorie porte quatre familles de réglages, les
           serrer dans une colonne étroite obligerait à défiler pour chacune. */}
       <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl">
-        <DialogHeader className="border-b px-6 py-4">
-          <div className="flex items-start justify-between gap-4 pr-6">
+        {/* `pt-6` : l'en-tête d'une modale respire autant que son contenu, et le
+            bouton de fermeture (posé en `top-4 right-4` par `DialogContent`) a
+            besoin de sa place à droite de l'interrupteur. */}
+        <DialogHeader className="border-b px-6 pt-6 pb-4">
+          <div className="flex items-start justify-between gap-4 pr-9">
             <div className="min-w-0">
               <DialogTitle className="flex items-center gap-2 truncate">
                 {category.emoji && <EmojiView value={category.emoji} />}
@@ -176,8 +179,12 @@ export function CategoryEditor({
               l'en-tête et la barre d'onglets restent en place. */}
           <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
             {/* ── Informations ──────────────────────────────────────────── */}
-            <TabsContent value="info" className="flex flex-col gap-7">
-              <FieldGroup className="gap-5">
+            <TabsContent value="info" className="flex flex-col">
+              <Subsection
+                title={t("modules.tickets.category.sections.button")}
+                description={t("modules.tickets.category.sections.buttonHint")}
+              >
+                <FieldGroup className="gap-5">
                 <Field data-invalid={Boolean(err("name")) || undefined}>
                   <FieldLabel htmlFor={cf("name")}>
                     {t("modules.tickets.category.name")}
@@ -240,7 +247,8 @@ export function CategoryEditor({
                     />
                   </Field>
                 )}
-              </FieldGroup>
+                </FieldGroup>
+              </Subsection>
 
               <Subsection title={t("modules.tickets.category.sections.channel")}>
                 <FieldGroup className="grid gap-5 sm:grid-cols-2">
@@ -319,7 +327,7 @@ export function CategoryEditor({
             </TabsContent>
 
             {/* ── Permissions ───────────────────────────────────────────── */}
-            <TabsContent value="permissions" className="flex flex-col gap-7">
+            <TabsContent value="permissions" className="flex flex-col">
               <Subsection
                 title={t("modules.tickets.category.sections.access")}
                 description={t("modules.tickets.category.sections.accessHint")}
@@ -388,12 +396,12 @@ export function CategoryEditor({
             </TabsContent>
 
             {/* ── Messages ──────────────────────────────────────────────── */}
-            <TabsContent value="messages" className="flex flex-col gap-5">
-              <p className="text-sm text-muted-foreground">
-                {t("modules.tickets.leaveEmptyForDefault")}
-              </p>
-
-              <FieldGroup className="gap-5">
+            <TabsContent value="messages" className="flex flex-col">
+              <Subsection
+                title={t("modules.tickets.category.sections.messages")}
+                description={t("modules.tickets.leaveEmptyForDefault")}
+              >
+                <FieldGroup className="gap-5">
                 <Field data-invalid={Boolean(err("open_message")) || undefined}>
                   <FieldLabel>{t("modules.tickets.category.openMessage")}</FieldLabel>
                   <MessageEditor
@@ -428,13 +436,14 @@ export function CategoryEditor({
                     errors={err("close_message") ? [{ message: err("close_message") }] : undefined}
                   />
                 </Field>
-              </FieldGroup>
+                </FieldGroup>
 
-              <ServerLanguageNote guildId={guildId} />
+                <ServerLanguageNote guildId={guildId} />
+              </Subsection>
             </TabsContent>
 
             {/* ── Avancé ────────────────────────────────────────────────── */}
-            <TabsContent value="advanced" className="flex flex-col gap-7">
+            <TabsContent value="advanced" className="flex flex-col">
               <Subsection title={t("modules.tickets.category.sections.claim")}>
                 <FieldGroup className="gap-5">
                   <SwitchRow

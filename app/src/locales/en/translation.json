@@ -1406,7 +1406,10 @@
           "onOpen": "On open",
           "claim": "Claiming",
           "buttons": "Ticket channel buttons",
-          "buttonsHint": "The buttons shown at the top of an open ticket."
+          "buttonsHint": "The buttons shown at the top of an open ticket.",
+          "button": "The button",
+          "buttonHint": "What a member reads on the panel.",
+          "messages": "Bot messages"
         },
         "noParentShort": "No Discord category",
         "allowedRolesEveryone": "No role: everyone can open a ticket.",

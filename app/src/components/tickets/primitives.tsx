@@ -101,22 +101,36 @@ export function Section({
   )
 }
 
-/** Sous-bloc titré — pour l'intérieur d'une modale, où une carte serait lourde. */
+/**
+ * Sous-bloc titré — pour l'intérieur d'une modale, où une carte serait lourde.
+ *
+ * Le titre est volontairement **plus gros que les libellés de champ** : quand
+ * les deux ont la même taille et la même graisse, on ne voit plus ce qui est
+ * une section et ce qui est un champ, et l'écran se lit comme une liste plate.
+ * Le filet au-dessus fait le reste du travail de séparation.
+ */
 export function Subsection({
   title,
   description,
   children,
+  className,
 }: {
   title: string
   description?: string
   children: ReactNode
+  className?: string
 }) {
   return (
-    <section className="flex flex-col gap-4">
+    <section
+      className={cn(
+        "flex flex-col gap-4 border-t pt-7 first:border-t-0 first:pt-0",
+        className
+      )}
+    >
       <div>
-        <h3 className="text-sm font-medium">{title}</h3>
+        <h3 className="text-base font-semibold tracking-tight">{title}</h3>
         {description && (
-          <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {children}

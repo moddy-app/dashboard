@@ -1406,7 +1406,10 @@
           "onOpen": "À l'ouverture",
           "claim": "Prise en charge",
           "buttons": "Boutons du salon",
-          "buttonsHint": "Les boutons affichés en haut d'un ticket ouvert."
+          "buttonsHint": "Les boutons affichés en haut d'un ticket ouvert.",
+          "button": "Le bouton",
+          "buttonHint": "Ce qu'un membre lit sur le panneau.",
+          "messages": "Messages du bot"
         },
         "noParentShort": "Aucune catégorie Discord",
         "allowedRolesEveryone": "Aucun rôle : tout le monde peut ouvrir un ticket.",
