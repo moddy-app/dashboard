@@ -197,7 +197,7 @@ export function CategoryEditor({
 
           {/* Une seule zone de défilement, celle du contenu de l'onglet :
               l'en-tête et la barre d'onglets restent en place. */}
-          <div className="min-h-0 flex-1 overflow-y-auto bg-muted/40 px-6 py-5">
+          <div className="min-h-0 flex-1 overflow-y-auto bg-muted px-6 py-5">
             {/* ── Informations ──────────────────────────────────────────── */}
             <TabsContent value="info" className="flex flex-col gap-4">
               <Section

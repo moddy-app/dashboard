@@ -75,6 +75,10 @@ export function ScreenHeader({
  * Bloc thématique d'un écran : un titre, éventuellement une phrase, du contenu.
  * Une carte par bloc — c'est elle qui donne sa largeur et son assise au
  * formulaire, plutôt que du texte flottant sur une page vide.
+ *
+ * La bordure est explicite : la carte du projet ne porte qu'un `ring` à 10 %
+ * d'opacité, invisible dès que la carte est blanche sur fond blanc — on croit
+ * alors voir un simple filet de séparation.
  */
 export function Section({
   title,
@@ -90,7 +94,7 @@ export function Section({
   className?: string
 }) {
   return (
-    <Card className={className}>
+    <Card className={cn("border border-border", className)}>
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
