@@ -1247,36 +1247,32 @@
     },
     "tickets": {
       "name": "Tickets",
-      "description": "Panels your members click to open a private ticket channel, and the categories behind each button.",
+      "description": "The panels your members click to open a private channel.",
       "statusActive": "Active",
       "statusInactive": "Inactive",
       "tabs": {
-        "settings": "Settings",
+        "settings": "Panels",
         "tickets": "Tickets",
         "ratings": "Feedback",
         "panels": "Panels"
       },
-      "panelQuota": "{{count}} of {{max}} panels used",
-      "panelQuotaUnknown": "Quotas unavailable — saving is still allowed.",
-      "freePlan": "Free plan",
-      "addPanel": "Add a panel",
+      "addPanel": "New panel",
       "panelCapReached": "Your plan allows {{max}} panels.",
-      "saveDurationHint": "Saving can take up to 25 seconds: the bot reposts every panel in Discord before the dashboard gets an answer.",
       "cancel": "Cancel",
       "confirmDisableTitle": "Disable tickets?",
-      "confirmDisableDescription": "Every panel message is removed from Discord and the settings are deleted. Open tickets are NOT closed and their channels are kept — only the panels disappear.",
+      "confirmDisableDescription": "Panels are removed from Discord and the configuration is deleted. Open tickets are not closed and their channels are kept.",
       "empty": {
         "title": "No panel yet",
-        "description": "A panel is a message posted by Moddy. Each of its categories is a button (or a menu option) that opens a ticket."
+        "description": "Create a panel: Moddy posts it in a channel, and each of its categories becomes a button that opens a ticket."
       },
       "orphans": {
         "title_one": "{{count}} orphan ticket",
         "title_other": "{{count}} orphan tickets",
-        "description": "These tickets are still open but their category no longer exists in the configuration. The bot answers “category gone” to any action inside them — move them with /ticket move."
+        "description": "Their category no longer exists in the configuration. Move them with /ticket move."
       },
       "conflict": {
         "title": "A save is already running",
-        "description": "Another save is in flight for this server, possibly from another tab. Wait a few seconds before trying again.",
+        "description": "Another save is in flight for this server, possibly from another tab.",
         "retry": "Try again"
       },
       "validation": {
@@ -1314,111 +1310,118 @@
       "panel": {
         "untitled": "Untitled panel",
         "defaultName": "Panel {{index}}",
-        "noChannel": "No channel — draft",
-        "noChannelOption": "No channel (draft)",
-        "categoryCount_one": "{{count}}/{{max}} category",
-        "categoryCount_other": "{{count}}/{{max}} categories",
+        "noChannel": "No channel",
+        "noChannelOption": "No channel",
+        "categoryCount_one": "{{count}} of {{max}} category",
+        "categoryCount_other": "{{count}} of {{max}} categories",
         "disabled": "Disabled",
         "enabledLabel": "Enable this panel",
         "name": "Panel name",
-        "nameDescription": "Internal name, also used as the panel title when you leave the title empty.",
+        "nameDescription": "Internal name, also used as the title if you leave the title empty.",
         "channel": "Channel",
-        "channelDescription": "Where Moddy posts the panel. A panel without a channel is a valid draft.",
+        "channelDescription": "Where Moddy posts the panel.",
         "title": "Title",
-        "titleDescription": "Shown at the top of the panel message.",
         "description": "Description",
-        "descriptionHint": "The body of the panel message. Discord markdown is supported.",
-        "style": "Style",
-        "styleDescription": "Buttons show one button per category; a menu fits more of them.",
+        "style": "Category layout",
         "styles": {
           "buttons": "Buttons",
-          "select": "Dropdown menu"
+          "select": "Dropdown"
         },
-        "accentColor": "Accent colour",
-        "accentColorDescription": "The coloured bar next to the panel. Reset to let the bot pick.",
+        "accentColor": "Accent color",
         "resetColor": "Reset",
-        "placeholder": "Menu placeholder",
-        "placeholderDescription": "The greyed-out text shown before a member opens the menu.",
+        "placeholder": "Menu text",
+        "placeholderDescription": "The grey text shown before a member opens the menu.",
         "categories": "Categories",
-        "noCategories": "No category yet — a panel without categories opens nothing.",
-        "addCategory": "Add a category",
+        "noCategories": "No category",
+        "addCategory": "New category",
         "categoryCapReached": "{{max}} categories max on this panel.",
-        "idHint": "id {{id}} — kept forever so the bot can match this panel to its message.",
         "delete": "Delete this panel",
         "default_title": "Need help?",
         "default_description": "Pick a category below to open a ticket. A private channel will be created for you.",
         "sections": {
-          "publication": "Publication",
+          "publication": "Publishing",
           "appearance": "Appearance",
-          "categories": "Categories"
+          "categories": "Categories",
+          "publicationHint": "A panel without a channel still saves — it just isn't posted.",
+          "message": "Posted message",
+          "layout": "Layout"
         },
         "errorsCount_one": "{{count}} error",
-        "errorsCount_other": "{{count}} errors"
+        "errorsCount_other": "{{count}} errors",
+        "subtitle": "Where this panel is posted, what it shows and what it offers.",
+        "draft": "Draft",
+        "enabled": "Enabled",
+        "styleHint": {
+          "buttons": "One button per category, up to {{max}}.",
+          "select": "Every category in a single menu, up to {{max}}."
+        },
+        "categoriesHint": "Each category is a button on the panel and a kind of ticket.",
+        "noCategoriesHint": "A panel without a category opens nothing.",
+        "confirmDeleteTitle": "Delete “{{name}}”?",
+        "confirmDeleteDescription": "The panel and its categories are dropped on the next save, and its message is removed from Discord."
       },
-      "leaveEmptyForDefault": "Leave empty for Moddy's own text, translated into the server's language and improved from one version to the next.",
+      "leaveEmptyForDefault": "Leave empty for Moddy's own text, translated into the server language.",
       "category": {
         "untitled": "Untitled category",
         "defaultName": "Category {{index}}",
-        "dialogDescription": "Everything about the tickets opened from this button: where they land, who sees them and what the bot writes.",
-        "tabs": {
-          "general": "General",
-          "access": "Access",
-          "messages": "Messages",
-          "buttons": "Buttons"
-        },
         "name": "Name",
-        "nameDescription": "Shown on the button or the menu option.",
-        "emoji": "Emoji",
-        "emojiDescription": "Unicode emoji or a custom emoji of this server.",
-        "buttonStyle": "Button colour",
-        "buttonStyleDescription": "Discord's button styles.",
+        "nameDescription": "Shown on the button or menu option, next to the emoji.",
+        "buttonStyle": "Button color",
         "description": "Option description",
-        "descriptionHint": "Second line of the menu option (dropdown panels only).",
+        "descriptionHint": "Second line of the option, in the dropdown.",
         "discordCategory": "Discord category",
-        "discordCategoryDescription": "Where ticket channels are created. Leaving it empty is a valid draft.",
-        "selectDiscordCategory": "Select a category",
-        "noDiscordCategory": "No Discord category on this server",
+        "discordCategoryDescription": "Where ticket channels are created.",
+        "selectDiscordCategory": "Pick a category",
         "noParent": "No category",
         "nameFormat": "Channel name",
-        "nameFormatDescription": "Format of the ticket channel, e.g. ticket-{number}.",
-        "maxOpenPerUser": "Open tickets per member",
-        "maxOpenPerUserDescription": "How many tickets one member may keep open in this category.",
+        "nameFormatDescription": "{number} is replaced by the ticket number.",
+        "maxOpenPerUser": "Max per member",
+        "maxOpenPerUserDescription": "Tickets open at once.",
         "claimEnabled": "Allow claiming",
-        "claimEnabledDescription": "Staff can take a ticket in charge, so everyone knows who handles it.",
+        "claimEnabledDescription": "Staff can claim a ticket, so everyone knows who is handling it.",
         "claimLock": "Lock on claim",
-        "claimLockDescription": "Once claimed, only the claimer, admin roles, the author and manually added members can write. Everyone else keeps reading.",
-        "allowedRoles": "Roles allowed to open",
-        "allowedRolesDescription": "Empty means everyone can open a ticket — it is not “nobody”.",
+        "claimLockDescription": "Only the claimer, admin roles, the author and manually added members can write afterwards. Everyone else keeps reading.",
+        "allowedRoles": "Allowed roles",
         "deniedRoles": "Denied roles",
-        "deniedRolesDescription": "Always wins, even over an allowed role and over a server administrator.",
-        "pingRoles": "Roles to ping",
-        "pingRolesDescription": "Pinged when a ticket is opened in this category.",
+        "deniedRolesDescription": "Always wins, over an allowed role and over an administrator.",
+        "pingRoles": "Mentioned roles",
+        "pingRolesDescription": "Mentioned in the channel when the ticket opens.",
         "addRole": "Add a role",
-        "noRole": "No role available.",
-        "pingStaffRoles": "Ping staff roles",
-        "pingStaffRolesDescription": "Also ping the roles that carry ticket permissions below.",
+        "pingStaffRoles": "Also mention staff",
+        "pingStaffRolesDescription": "Roles holding the “View” permission on this category.",
         "openMessage": "Opening message",
-        "openMessageDescription": "The whole message: the bot adds nothing around it — no title, no meta line.",
         "closeMessage": "Closing message",
-        "closeMessageDescription": "Posted in the channel when the ticket is closed.",
-        "usingDefault": "Using the bot's default message.",
-        "separatorHint": "A line containing only --- becomes a real separator. Click a placeholder to insert it.",
-        "customizeButtons": "Customise the buttons",
-        "customizeButtonsDescription": "Off, the bot picks its defaults. On, you choose exactly which buttons appear.",
-        "noButtonsWarning": "No button at all: everything will go through the /ticket commands.",
-        "buttonsOrderHint": "The order is decided by the bot — reordering here would change nothing.",
-        "done": "Done",
-        "openTickets_one": "{{count}} open ticket",
-        "openTickets_other": "{{count}} open tickets",
-        "noOpenTickets": "No open ticket",
-        "delete": "Delete",
-        "confirmDeleteTitle": "Delete '{{name}}'?",
-        "confirmDeleteDescription": "The category disappears from the panel on the next save.",
-        "confirmDeleteOpen_one": "{{count}} open ticket uses this category. It stays open but becomes unusable — move it first with /ticket move in its channel.",
-        "confirmDeleteOpen_other": "{{count}} open tickets use this category. They stay open but become unusable — move them first with /ticket move in their channels.",
+        "separatorHint": "A line containing only --- becomes a separator.",
+        "customizeButtons": "Pick the buttons myself",
+        "noButtonsWarning": "No button: everything goes through the /ticket commands.",
+        "openTickets_one": "{{count}} ticket still open here",
+        "openTickets_other": "{{count}} tickets still open here",
+        "delete": "Delete this category",
+        "confirmDeleteTitle": "Delete “{{name}}”?",
+        "confirmDeleteDescription": "The category is dropped from the panel on the next save.",
+        "confirmDeleteOpen_one": "{{count}} open ticket uses this category. It stays open but becomes unusable — move it first with /ticket move.",
+        "confirmDeleteOpen_other": "{{count}} open tickets use this category. They stay open but become unusable — move them first with /ticket move.",
         "tabHasErrors": "This tab has an invalid field",
         "inPanel": "In panel “{{name}}”",
-        "edit": "Edit category"
+        "edit": "Edit category",
+        "subtitle": "The button, and what happens when a member clicks it.",
+        "enabledLabel": "Enable this category",
+        "sections": {
+          "identity": "The button",
+          "identityHint": "What a member reads on the panel.",
+          "channel": "The channel created",
+          "access": "Who can open",
+          "accessHint": "Denied roles always win, even over an administrator.",
+          "onOpen": "On open",
+          "messages": "Bot messages",
+          "advanced": "Advanced settings",
+          "claim": "Claiming",
+          "buttons": "Ticket channel buttons",
+          "buttonsHint": "The buttons shown at the top of an open ticket."
+        },
+        "noParentShort": "No Discord category",
+        "allowedRolesEveryone": "No role: everyone can open a ticket.",
+        "allowedRolesRestricted": "Only these roles can open a ticket."
       },
       "buttonStyles": {
         "primary": "Blurple",
@@ -1455,7 +1458,6 @@
       "permissions": {
         "title": "Role permissions",
         "description": "Per role and per category. The ticket author and manually added members only get “View”.",
-        "empty": "No role has specific permissions on this category yet.",
         "addRole": "Add a role",
         "items": {
           "view": {
@@ -1499,7 +1501,9 @@
             "description": "Read the ratings left on this category's tickets."
           }
         },
-        "removeRole": "Remove role"
+        "removeRole": "Remove role",
+        "count_one": "{{count}} permission",
+        "count_other": "{{count}} permissions"
       },
       "states": {
         "open": "Open",
@@ -1533,7 +1537,7 @@
         "noPanel": "No panels configured."
       },
       "list": {
-        "empty": "No ticket matches these filters.",
+        "empty": "No ticket",
         "orphan": "Category gone",
         "closeRequested": "Close requested",
         "pagination": "Page {{page}} of {{pages}} — {{total}} tickets",
@@ -1720,10 +1724,6 @@
         }
       },
       "cards": {
-        "panels": {
-          "title": "Panels",
-          "description": "Each panel is a message Moddy posts in a channel. Members click it, or one of its categories, to open a ticket."
-        },
         "settings": {
           "title": "Settings",
           "description": "How Moddy logs, archives, and closes tickets across this server."
@@ -1736,6 +1736,16 @@
           "title": "Feedback",
           "description": "Satisfaction ratings left when a ticket closes."
         }
+      },
+      "panelsTitle": "Panels",
+      "panelsHint": "A panel is a message posted by Moddy. Open one to set its channel, its text and its categories.",
+      "deleteAction": "Delete",
+      "pickers": {
+        "searchChannel": "Search a channel…",
+        "noChannel": "No channel found.",
+        "searchRole": "Search a role…",
+        "noRole": "No role found.",
+        "removeRole": "Remove this role"
       }
     }
   },
@@ -2940,5 +2950,15 @@
       "everyone": "Mass mention",
       "command": "Command"
     }
+  },
+  "emojiPicker": {
+    "label": "Pick an emoji",
+    "search": "Search…",
+    "guild": "Server",
+    "standard": "Standard",
+    "noGuildEmoji": "This server has no custom emoji.",
+    "noMatch": "No emoji found.",
+    "usePasted": "Use this emoji",
+    "clear": "Remove emoji"
   }
 }

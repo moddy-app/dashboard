@@ -1247,36 +1247,32 @@
     },
     "tickets": {
       "name": "Tickets",
-      "description": "Les panneaux sur lesquels vos membres cliquent pour ouvrir un salon privé, et les catégories derrière chaque bouton.",
+      "description": "Les panneaux sur lesquels vos membres cliquent pour ouvrir un salon privé.",
       "statusActive": "Actif",
       "statusInactive": "Inactif",
       "tabs": {
-        "settings": "Réglages",
+        "settings": "Panneaux",
         "tickets": "Tickets",
         "ratings": "Avis",
         "panels": "Panneaux"
       },
-      "panelQuota": "{{count}} panneaux sur {{max}}",
-      "panelQuotaUnknown": "Quotas indisponibles — l'enregistrement reste possible.",
-      "freePlan": "Offre gratuite",
-      "addPanel": "Ajouter un panneau",
-      "panelCapReached": "Votre offre autorise {{max}} panneaux.",
-      "saveDurationHint": "La sauvegarde peut prendre jusqu'à 25 secondes : le bot republie chaque panneau dans Discord avant que le dashboard reçoive une réponse.",
+      "addPanel": "Nouveau panneau",
+      "panelCapReached": "{{max}} panneaux maximum avec votre offre.",
       "cancel": "Annuler",
       "confirmDisableTitle": "Désactiver les tickets ?",
-      "confirmDisableDescription": "Tous les messages de panneau sont retirés de Discord et la configuration est supprimée. Les tickets ouverts ne sont PAS fermés et leurs salons sont conservés — seuls les panneaux disparaissent.",
+      "confirmDisableDescription": "Les panneaux sont retirés de Discord et la configuration est supprimée. Les tickets ouverts ne sont pas fermés et leurs salons sont conservés.",
       "empty": {
         "title": "Aucun panneau",
-        "description": "Un panneau est un message posté par Moddy. Chacune de ses catégories est un bouton (ou une option de menu) qui ouvre un ticket."
+        "description": "Créez un panneau : Moddy le publie dans un salon, et chacune de ses catégories devient un bouton qui ouvre un ticket."
       },
       "orphans": {
         "title_one": "{{count}} ticket orphelin",
         "title_other": "{{count}} tickets orphelins",
-        "description": "Ces tickets sont encore ouverts mais leur catégorie n'existe plus dans la configuration. Le bot répond « catégorie disparue » à toute action dedans — déplacez-les avec /ticket move."
+        "description": "Leur catégorie n'existe plus dans la configuration. Déplacez-les avec /ticket move."
       },
       "conflict": {
         "title": "Une sauvegarde est déjà en cours",
-        "description": "Une autre sauvegarde est en vol pour ce serveur, peut-être depuis un autre onglet. Attendez quelques secondes avant de réessayer.",
+        "description": "Une autre sauvegarde est en vol pour ce serveur, peut-être depuis un autre onglet.",
         "retry": "Réessayer"
       },
       "validation": {
@@ -1314,111 +1310,118 @@
       "panel": {
         "untitled": "Panneau sans nom",
         "defaultName": "Panneau {{index}}",
-        "noChannel": "Aucun salon — brouillon",
-        "noChannelOption": "Aucun salon (brouillon)",
-        "categoryCount_one": "{{count}}/{{max}} catégorie",
-        "categoryCount_other": "{{count}}/{{max}} catégories",
+        "noChannel": "Aucun salon",
+        "noChannelOption": "Aucun salon",
+        "categoryCount_one": "{{count}} catégorie sur {{max}}",
+        "categoryCount_other": "{{count}} catégories sur {{max}}",
         "disabled": "Désactivé",
         "enabledLabel": "Activer ce panneau",
         "name": "Nom du panneau",
-        "nameDescription": "Nom interne, utilisé aussi comme titre du panneau si vous laissez le titre vide.",
+        "nameDescription": "Nom interne, repris comme titre si vous laissez le titre vide.",
         "channel": "Salon",
-        "channelDescription": "Là où Moddy publie le panneau. Un panneau sans salon est un brouillon valide.",
+        "channelDescription": "Là où Moddy publie le panneau.",
         "title": "Titre",
-        "titleDescription": "Affiché en haut du message de panneau.",
         "description": "Description",
-        "descriptionHint": "Le corps du message de panneau. Le markdown Discord est supporté.",
-        "style": "Style",
-        "styleDescription": "Les boutons affichent une catégorie chacun ; un menu en contient davantage.",
+        "style": "Affichage des catégories",
         "styles": {
           "buttons": "Boutons",
           "select": "Menu déroulant"
         },
         "accentColor": "Couleur d'accent",
-        "accentColorDescription": "La barre colorée du panneau. Réinitialisez pour laisser le bot choisir.",
         "resetColor": "Réinitialiser",
         "placeholder": "Texte du menu",
         "placeholderDescription": "Le texte gris affiché avant qu'un membre ouvre le menu.",
         "categories": "Catégories",
-        "noCategories": "Aucune catégorie — un panneau sans catégorie n'ouvre rien.",
-        "addCategory": "Ajouter une catégorie",
+        "noCategories": "Aucune catégorie",
+        "addCategory": "Nouvelle catégorie",
         "categoryCapReached": "{{max}} catégories maximum sur ce panneau.",
-        "idHint": "id {{id}} — conservé pour toujours, c'est ce qui relie le panneau à son message.",
         "delete": "Supprimer ce panneau",
         "default_title": "Besoin d'aide ?",
         "default_description": "Choisissez une catégorie ci-dessous pour ouvrir un ticket. Un salon privé sera créé pour vous.",
         "sections": {
           "publication": "Publication",
           "appearance": "Apparence",
-          "categories": "Catégories"
+          "categories": "Catégories",
+          "publicationHint": "Un panneau sans salon reste enregistrable : il n'est simplement pas publié.",
+          "message": "Message publié",
+          "layout": "Présentation"
         },
         "errorsCount_one": "{{count}} erreur",
-        "errorsCount_other": "{{count}} erreurs"
+        "errorsCount_other": "{{count}} erreurs",
+        "subtitle": "Où ce panneau est publié, ce qu'il affiche et ce qu'il propose.",
+        "draft": "Brouillon",
+        "enabled": "Activé",
+        "styleHint": {
+          "buttons": "Une catégorie par bouton, jusqu'à {{max}}.",
+          "select": "Toutes les catégories dans un menu, jusqu'à {{max}}."
+        },
+        "categoriesHint": "Chaque catégorie est un bouton du panneau et un type de ticket.",
+        "noCategoriesHint": "Un panneau sans catégorie n'ouvre aucun ticket.",
+        "confirmDeleteTitle": "Supprimer « {{name}} » ?",
+        "confirmDeleteDescription": "Le panneau et ses catégories disparaissent à la prochaine sauvegarde, et son message est retiré de Discord."
       },
-      "leaveEmptyForDefault": "Laissez vide pour le texte de Moddy, traduit dans la langue du serveur et amélioré au fil des versions.",
+      "leaveEmptyForDefault": "Laissez vide pour le texte de Moddy, traduit dans la langue du serveur.",
       "category": {
         "untitled": "Catégorie sans nom",
         "defaultName": "Catégorie {{index}}",
-        "dialogDescription": "Tout ce qui concerne les tickets ouverts depuis ce bouton : où ils atterrissent, qui les voit et ce que le bot y écrit.",
-        "tabs": {
-          "general": "Général",
-          "access": "Accès",
-          "messages": "Messages",
-          "buttons": "Boutons"
-        },
         "name": "Nom",
-        "nameDescription": "Affiché sur le bouton ou l'option de menu.",
-        "emoji": "Émoji",
-        "emojiDescription": "Émoji Unicode ou émoji personnalisé de ce serveur.",
+        "nameDescription": "Affiché sur le bouton ou l'option de menu, avec l'émoji choisi.",
         "buttonStyle": "Couleur du bouton",
-        "buttonStyleDescription": "Les styles de bouton de Discord.",
         "description": "Description de l'option",
-        "descriptionHint": "Deuxième ligne de l'option (panneaux en menu déroulant uniquement).",
+        "descriptionHint": "Deuxième ligne de l'option, dans le menu déroulant.",
         "discordCategory": "Catégorie Discord",
-        "discordCategoryDescription": "Là où les salons de ticket sont créés. La laisser vide reste un brouillon valide.",
+        "discordCategoryDescription": "Là où les salons de ticket sont créés.",
         "selectDiscordCategory": "Choisir une catégorie",
-        "noDiscordCategory": "Aucune catégorie Discord sur ce serveur",
         "noParent": "Aucune catégorie",
         "nameFormat": "Nom du salon",
-        "nameFormatDescription": "Format du salon de ticket, par exemple ticket-{number}.",
-        "maxOpenPerUser": "Tickets ouverts par membre",
-        "maxOpenPerUserDescription": "Combien de tickets un membre peut garder ouverts dans cette catégorie.",
+        "nameFormatDescription": "{number} est remplacé par le numéro du ticket.",
+        "maxOpenPerUser": "Max. par membre",
+        "maxOpenPerUserDescription": "Tickets ouverts simultanément.",
         "claimEnabled": "Autoriser la prise en charge",
-        "claimEnabledDescription": "Le staff peut prendre un ticket en charge, pour que chacun sache qui s'en occupe.",
+        "claimEnabledDescription": "Le staff peut s'attribuer un ticket, pour que chacun sache qui s'en occupe.",
         "claimLock": "Verrouiller à la prise en charge",
-        "claimLockDescription": "Une fois pris en charge, seuls le claimeur, les rôles admin, l'auteur et les membres ajoutés à la main écrivent. Les autres continuent de lire.",
-        "allowedRoles": "Rôles autorisés à ouvrir",
-        "allowedRolesDescription": "Vide signifie que tout le monde peut ouvrir un ticket — ce n'est pas « personne ».",
+        "claimLockDescription": "Seuls le claimeur, les rôles admin, l'auteur et les membres ajoutés à la main écrivent ensuite. Les autres continuent de lire.",
+        "allowedRoles": "Rôles autorisés",
         "deniedRoles": "Rôles interdits",
-        "deniedRolesDescription": "Gagne toujours, y compris sur un rôle autorisé et sur un administrateur du serveur.",
-        "pingRoles": "Rôles à mentionner",
-        "pingRolesDescription": "Mentionnés à l'ouverture d'un ticket dans cette catégorie.",
+        "deniedRolesDescription": "Gagne toujours, y compris sur un rôle autorisé et sur un administrateur.",
+        "pingRoles": "Rôles mentionnés",
+        "pingRolesDescription": "Mentionnés dans le salon à l'ouverture du ticket.",
         "addRole": "Ajouter un rôle",
-        "noRole": "Aucun rôle disponible.",
-        "pingStaffRoles": "Mentionner les rôles du staff",
-        "pingStaffRolesDescription": "Mentionner aussi les rôles qui portent les permissions de ticket ci-dessous.",
+        "pingStaffRoles": "Mentionner aussi le staff",
+        "pingStaffRolesDescription": "Les rôles qui ont la permission « Voir » sur cette catégorie.",
         "openMessage": "Message d'ouverture",
-        "openMessageDescription": "Le message entier : le bot n'ajoute plus rien autour — ni titre, ni ligne de métadonnées.",
         "closeMessage": "Message de fermeture",
-        "closeMessageDescription": "Posté dans le salon quand le ticket est fermé.",
-        "usingDefault": "Message par défaut du bot utilisé.",
-        "separatorHint": "Une ligne contenant uniquement --- devient un vrai séparateur. Cliquez un placeholder pour l'insérer.",
-        "customizeButtons": "Personnaliser les boutons",
-        "customizeButtonsDescription": "Désactivé, le bot pose ses boutons par défaut. Activé, vous choisissez exactement lesquels apparaîtront.",
+        "separatorHint": "Une ligne contenant uniquement --- devient un séparateur.",
+        "customizeButtons": "Choisir les boutons moi-même",
         "noButtonsWarning": "Aucun bouton : tout passera par les commandes /ticket.",
-        "buttonsOrderHint": "L'ordre est décidé par le bot — le changer ici ne servirait à rien.",
-        "done": "Terminé",
-        "openTickets_one": "{{count}} ticket ouvert",
-        "openTickets_other": "{{count}} tickets ouverts",
-        "noOpenTickets": "Aucun ticket ouvert",
-        "delete": "Supprimer",
+        "openTickets_one": "{{count}} ticket encore ouvert ici",
+        "openTickets_other": "{{count}} tickets encore ouverts ici",
+        "delete": "Supprimer cette catégorie",
         "confirmDeleteTitle": "Supprimer « {{name}} » ?",
         "confirmDeleteDescription": "La catégorie disparaît du panneau à la prochaine sauvegarde.",
-        "confirmDeleteOpen_one": "{{count}} ticket ouvert utilise cette catégorie. Il restera ouvert mais deviendra inutilisable — déplacez-le d'abord avec /ticket move dans son salon.",
-        "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move dans leurs salons.",
+        "confirmDeleteOpen_one": "{{count}} ticket ouvert utilise cette catégorie. Il restera ouvert mais deviendra inutilisable — déplacez-le d'abord avec /ticket move.",
+        "confirmDeleteOpen_other": "{{count}} tickets ouverts utilisent cette catégorie. Ils resteront ouverts mais deviendront inutilisables — déplacez-les d'abord avec /ticket move.",
         "tabHasErrors": "Cet onglet contient un champ invalide",
         "inPanel": "Dans le panneau « {{name}} »",
-        "edit": "Modifier la catégorie"
+        "edit": "Modifier la catégorie",
+        "subtitle": "Le bouton, et ce qui se passe quand un membre clique dessus.",
+        "enabledLabel": "Activer cette catégorie",
+        "sections": {
+          "identity": "Le bouton",
+          "identityHint": "Ce qu'un membre lit sur le panneau.",
+          "channel": "Le salon créé",
+          "access": "Qui peut ouvrir",
+          "accessHint": "Les rôles interdits gagnent toujours, même sur un administrateur.",
+          "onOpen": "À l'ouverture",
+          "messages": "Messages du bot",
+          "advanced": "Réglages avancés",
+          "claim": "Prise en charge",
+          "buttons": "Boutons du salon",
+          "buttonsHint": "Les boutons affichés en haut d'un ticket ouvert."
+        },
+        "noParentShort": "Aucune catégorie Discord",
+        "allowedRolesEveryone": "Aucun rôle : tout le monde peut ouvrir un ticket.",
+        "allowedRolesRestricted": "Seuls ces rôles peuvent ouvrir un ticket."
       },
       "buttonStyles": {
         "primary": "Blurple",
@@ -1455,7 +1458,6 @@
       "permissions": {
         "title": "Permissions par rôle",
         "description": "Par rôle et par catégorie. L'auteur du ticket et les membres ajoutés à la main n'obtiennent que « Voir ».",
-        "empty": "Aucun rôle n'a encore de permission sur cette catégorie.",
         "addRole": "Ajouter un rôle",
         "items": {
           "view": {
@@ -1499,7 +1501,9 @@
             "description": "Lire les avis laissés sur les tickets de cette catégorie."
           }
         },
-        "removeRole": "Retirer le rôle"
+        "removeRole": "Retirer le rôle",
+        "count_one": "{{count}} permission",
+        "count_other": "{{count}} permissions"
       },
       "states": {
         "open": "Ouvert",
@@ -1533,7 +1537,7 @@
         "noPanel": "Aucun panneau configuré."
       },
       "list": {
-        "empty": "Aucun ticket ne correspond à ces filtres.",
+        "empty": "Aucun ticket",
         "orphan": "Catégorie disparue",
         "closeRequested": "Fermeture demandée",
         "pagination": "Page {{page}} sur {{pages}} — {{total}} tickets",
@@ -1720,10 +1724,6 @@
         }
       },
       "cards": {
-        "panels": {
-          "title": "Panneaux",
-          "description": "Chaque panneau est un message publié par Moddy dans un salon. Les membres cliquent dessus, ou sur une de ses catégories, pour ouvrir un ticket."
-        },
         "settings": {
           "title": "Réglages",
           "description": "La façon dont Moddy journalise, archive et ferme les tickets sur ce serveur."
@@ -1736,6 +1736,16 @@
           "title": "Avis",
           "description": "Notes de satisfaction laissées à la fermeture d'un ticket."
         }
+      },
+      "panelsTitle": "Panneaux",
+      "panelsHint": "Un panneau est un message posté par Moddy. Ouvrez-le pour régler son salon, son texte et ses catégories.",
+      "deleteAction": "Supprimer",
+      "pickers": {
+        "searchChannel": "Rechercher un salon…",
+        "noChannel": "Aucun salon trouvé.",
+        "searchRole": "Rechercher un rôle…",
+        "noRole": "Aucun rôle trouvé.",
+        "removeRole": "Retirer ce rôle"
       }
     }
   },
@@ -2940,5 +2950,15 @@
       "everyone": "Mention de masse",
       "command": "Commande"
     }
+  },
+  "emojiPicker": {
+    "label": "Choisir un émoji",
+    "search": "Rechercher…",
+    "guild": "Serveur",
+    "standard": "Standard",
+    "noGuildEmoji": "Ce serveur n'a aucun émoji personnalisé.",
+    "noMatch": "Aucun émoji trouvé.",
+    "usePasted": "Utiliser cet émoji",
+    "clear": "Retirer l'émoji"
   }
 }

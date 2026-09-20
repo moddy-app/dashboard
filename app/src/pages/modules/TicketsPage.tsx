@@ -2,13 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import {
-  CheckCircle2Icon,
   LayoutPanelTopIcon,
-  PlusIcon,
+  LoaderIcon,
   SettingsIcon,
   StarIcon,
   TicketIcon,
-  XIcon,
+  Trash2Icon,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,14 +21,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorPage } from "@/components/error-state"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ApplyNotice, Notice } from "@/components/tickets/fields"
-import { CategoryDialog } from "@/components/tickets/category-dialog"
-import { PanelsTab } from "@/components/tickets/panels-tab"
+import { CategoryEditor } from "@/components/tickets/category-editor"
+import { ModuleHome } from "@/components/tickets/module-home"
+import { PanelEditor } from "@/components/tickets/panel-editor"
 import { RatingsPanel } from "@/components/tickets/ratings-panel"
 import { TicketExplorer } from "@/components/tickets/ticket-explorer"
 import { TicketsSettingsPanel } from "@/components/tickets/settings-panel"
@@ -42,7 +41,6 @@ import { logger } from "@/lib/logger"
 import { sanctionBlockedError } from "@/lib/sanctions"
 import { cn } from "@/lib/utils"
 import {
-  canAddPanel,
   createTicketCategory,
   createTicketPanel,
   isSaveConflict,
@@ -73,6 +71,20 @@ import type {
 } from "@/types/api"
 
 const MODULE_ID = "tickets"
+
+/**
+ * La configuration se parcourt en **trois niveaux** — module (liste des
+ * panneaux), panneau, catégorie — qui partagent un seul brouillon et une seule
+ * sauvegarde : la config tickets reste un document unique.
+ *
+ * La navigation entre niveaux est **locale, jamais routée** : `UnsavedBar` pose
+ * un `useBlocker` sur les changements d'URL, une route par niveau ferait donc
+ * surgir l'avertissement « modifications non enregistrées » à chaque descente.
+ */
+type View =
+  | { level: "home" }
+  | { level: "panel"; panelId: string }
+  | { level: "category"; panelId: string; categoryId: string }
 
 /**
  * Garde de chargement : le formulaire attend les salons et les rôles du serveur.
@@ -133,10 +145,11 @@ function TicketsForm() {
   const [isSaving, setIsSaving] = useState(false)
   const [isDisabling, setIsDisabling] = useState(false)
   const [confirmDisable, setConfirmDisable] = useState(false)
-  const [openPanelId, setOpenPanelId] = useState<string | null>(null)
-  const [editing, setEditing] = useState<{ panelId: string; categoryId: string } | null>(null)
+  const [view, setView] = useState<View>({ level: "home" })
   const [pendingDelete, setPendingDelete] = useState<
-    { panelId: string; category: TicketCategory } | null
+    | { kind: "panel"; panel: TicketPanel }
+    | { kind: "category"; panelId: string; category: TicketCategory }
+    | null
   >(null)
   const [apiErrors, setApiErrors] = useState<{ fields: Record<string, string>; global: string[] }>({
     fields: {},
@@ -226,7 +239,9 @@ function TicketsForm() {
         t("modules.tickets.panel.defaultName", { index: prev.length + 1 }),
         prev
       )
-      setOpenPanelId(panel.id)
+      // On descend directement dans le nouveau panneau : une ligne vide en
+      // liste ne dit rien de ce qu'il reste à faire.
+      setView({ level: "panel", panelId: panel.id })
       return [...prev, panel]
     })
   }, [t])
@@ -241,7 +256,7 @@ function TicketsForm() {
             t("modules.tickets.category.defaultName", { index: p.categories.length + 1 }),
             takenIds
           )
-          setEditing({ panelId, categoryId: category.id })
+          setView({ level: "category", panelId, categoryId: category.id })
           return { ...p, categories: [...p.categories, category] }
         })
       })
@@ -251,6 +266,7 @@ function TicketsForm() {
 
   const removePanel = useCallback((panelId: string) => {
     setPanels((prev) => prev.filter((p) => p.id !== panelId))
+    setView({ level: "home" })
   }, [])
 
   const removeCategory = useCallback((panelId: string, categoryId: string) => {
@@ -261,6 +277,7 @@ function TicketsForm() {
           : p
       )
     )
+    setView({ level: "panel", panelId })
   }, [])
 
   // ── Validation ────────────────────────────────────────────────────────────
@@ -305,6 +322,23 @@ function TicketsForm() {
 
   // ── Sauvegarde ────────────────────────────────────────────────────────────
 
+  /**
+   * Amène un champ fautif à l'écran : le champ vit peut-être deux niveaux plus
+   * bas, il faut donc ouvrir son panneau (ou sa catégorie) avant de défiler.
+   */
+  const revealField = useCallback((field: string | null | undefined) => {
+    if (!field) return
+    const match = /^p:([^.]+)(?:\.c:([^.]+))?/.exec(field)
+    if (match) {
+      setView(
+        match[2]
+          ? { level: "category", panelId: match[1], categoryId: match[2] }
+          : { level: "panel", panelId: match[1] }
+      )
+    }
+    scrollToField(field)
+  }, [])
+
   const handleSave = useCallback(async () => {
     // Une seule requête en vol : le backend n'en accepte qu'une par serveur, et
     // deux sauvegardes qui se croisent s'écrasent (last-writer-wins côté bot).
@@ -330,12 +364,7 @@ function TicketsForm() {
       })
       // Fait apparaître (ouvre le panneau au besoin) puis défile jusqu'au
       // premier champ fautif — sans quoi le blocage n'a aucun visage.
-      const firstField = issues.find((i) => i.field)?.field
-      if (firstField) {
-        const panelMatch = /^p:([^.]+)\./.exec(firstField)
-        if (panelMatch) setOpenPanelId(panelMatch[1])
-        scrollToField(firstField)
-      }
+      revealField(issues.find((i) => i.field)?.field)
       return
     }
 
@@ -380,12 +409,7 @@ function TicketsForm() {
         toast.error(t("modules.saveError"), {
           description: mapped.global[0] ?? t("modules.tickets.validation.fieldErrors"),
         })
-        const firstField = Object.keys(mapped.fields)[0]
-        if (firstField) {
-          const panelMatch = /^p:([^.]+)\./.exec(firstField)
-          if (panelMatch) setOpenPanelId(panelMatch[1])
-          scrollToField(firstField)
-        }
+        revealField(Object.keys(mapped.fields)[0])
         return
       }
       handleSaveError(e, { title: t("modules.saveError") })
@@ -393,7 +417,7 @@ function TicketsForm() {
       savingRef.current = false
       setIsSaving(false)
     }
-  }, [guildId, panels, settings, issues, isConfigured, gates, syncModule, loadSideData, t])
+  }, [guildId, panels, settings, issues, isConfigured, gates, syncModule, loadSideData, revealField, t])
 
   /**
    * Point d'entrée du bouton « enregistrer ». Abaisser `transcript_retention_days`
@@ -425,6 +449,7 @@ function TicketsForm() {
       setSettings(TICKET_SETTINGS_DEFAULTS)
       setIsConfigured(false)
       setApiErrors({ fields: {}, global: [] })
+      setView({ level: "home" })
       syncModule(MODULE_ID, null)
       const result = ticketsApplyFeedback(apply)
       setFeedback(result)
@@ -456,203 +481,15 @@ function TicketsForm() {
   }
 
   const isActive = panels.some((p) => p.enabled && Boolean(p.channel_id))
-  const editingPanel = editing ? panels.find((p) => p.id === editing.panelId) : undefined
-  const editingCategory = editingPanel?.categories.find((c) => c.id === editing?.categoryId)
-  const canAdd = canAddPanel(panels, limits)
+  // Un panneau ou une catégorie supprimé ailleurs ramène au niveau du dessus.
+  const activePanel = view.level === "home" ? undefined : panels.find((p) => p.id === view.panelId)
+  const activeCategory =
+    view.level === "category"
+      ? activePanel?.categories.find((c) => c.id === view.categoryId)
+      : undefined
 
-  return (
-    <div className="flex w-full flex-col gap-6 pb-24">
-      {/* En-tête */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950">
-            <TicketIcon className="size-5 text-indigo-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold leading-none">{t("modules.tickets.name")}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("modules.tickets.description")}
-            </p>
-          </div>
-        </div>
-        {isActive ? (
-          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-            <CheckCircle2Icon className="mr-1 size-3" />
-            {t("modules.tickets.statusActive")}
-          </Badge>
-        ) : (
-          <Badge variant="secondary">
-            <XIcon className="mr-1 size-3" />
-            {t("modules.tickets.statusInactive")}
-          </Badge>
-        )}
-      </div>
-
-      {/* Seuls les deux bandeaux qui portent sur la **dernière écriture** restent
-          en tête de page : un conflit 409 et l'accusé du bot. Les autres
-          (orphelins, validation) sont redescendus dans l'onglet Panneaux, seul
-          endroit où ils ont un sens. */}
-      {conflict && (
-        <Notice
-          level="warning"
-          title={t("modules.tickets.conflict.title")}
-          onDismiss={() => setConflict(false)}
-          action={
-            <Button size="sm" variant="outline" onClick={handleSave} disabled={isSaving}>
-              {t("modules.tickets.conflict.retry")}
-            </Button>
-          }
-        >
-          {t("modules.tickets.conflict.description")}
-        </Notice>
-      )}
-
-      {feedback && <ApplyNotice feedback={feedback} onDismiss={() => setFeedback(null)} />}
-
-      <Tabs defaultValue="panels">
-        {/* Quatre onglets sur un petit écran : la liste défile pour elle seule
-            plutôt que d'élargir la page. */}
-        <div className="-mx-1 overflow-x-auto px-1 scrollbar-none">
-          <TabsList>
-            <TabsTrigger value="panels">
-              <LayoutPanelTopIcon data-icon="inline-start" />
-              {t("modules.tickets.tabs.panels")}
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <SettingsIcon data-icon="inline-start" />
-              {t("modules.tickets.tabs.settings")}
-            </TabsTrigger>
-            <TabsTrigger value="tickets">
-              <TicketIcon data-icon="inline-start" />
-              {t("modules.tickets.tabs.tickets")}
-            </TabsTrigger>
-            <TabsTrigger value="ratings">
-              <StarIcon data-icon="inline-start" />
-              {t("modules.tickets.tabs.ratings")}
-            </TabsTrigger>
-          </TabsList>
-        </div>
-
-        {/* ── Panneaux ────────────────────────────────────────────────── */}
-        <TabsContent value="panels" className="pt-4">
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <CardTitle className="text-base">{t("modules.tickets.cards.panels.title")}</CardTitle>
-                <CardDescription>{t("modules.tickets.cards.panels.description")}</CardDescription>
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                onClick={addPanel}
-                disabled={!canAdd}
-                className="w-full shrink-0 sm:w-auto"
-              >
-                <PlusIcon data-icon="inline-start" />
-                {t("modules.tickets.addPanel")}
-              </Button>
-            </CardHeader>
-            {/* La réponse du `PUT` **écrase** l'état local (elle porte les
-                `message_id` frais) : ce qui serait tapé pendant l'appel (~25 s)
-                serait donc perdu en silence. On gèle l'onglet le temps de la
-                requête plutôt que de laisser croire qu'on peut continuer à
-                éditer. */}
-            <CardContent
-              aria-busy={isSaving}
-              inert={isSaving ? true : undefined}
-              className={cn("flex flex-col gap-5", isSaving && "pointer-events-none opacity-60")}
-            >
-              <PanelsTab
-                panels={panels}
-                guildId={guildId}
-                channels={channels}
-                limits={limits}
-                errors={fieldErrors}
-                openPanelId={openPanelId}
-                onTogglePanel={(panelId, open) => setOpenPanelId(open ? panelId : null)}
-                onChangePanel={patchPanel}
-                onDeletePanel={removePanel}
-                onAddPanel={addPanel}
-                onAddCategory={addCategory}
-                onEditCategory={(panelId, category) => setEditing({ panelId, categoryId: category.id })}
-                onDeleteCategory={(panelId, category) => setPendingDelete({ panelId, category })}
-                openTicketCounts={openTicketCounts}
-                orphanCount={orphanCount}
-                globalIssues={globalIssues}
-                isConfigured={isConfigured}
-                isSaving={isSaving}
-                isDisabling={isDisabling}
-                onRequestDisable={() => setConfirmDisable(true)}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── Réglages du module ──────────────────────────────────────── */}
-        <TabsContent value="settings" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("modules.tickets.cards.settings.title")}</CardTitle>
-              <CardDescription>{t("modules.tickets.cards.settings.description")}</CardDescription>
-            </CardHeader>
-            <CardContent
-              aria-busy={isSaving}
-              inert={isSaving ? true : undefined}
-              className={cn("flex flex-col gap-5", isSaving && "pointer-events-none opacity-60")}
-            >
-              <TicketsSettingsPanel
-                settings={settings}
-                savedSettings={savedSettings}
-                channels={channels}
-                errors={fieldErrors}
-                onChange={(changes) => setSettings((prev) => ({ ...prev, ...changes }))}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── Tickets réels + archives (lecture seule) ─────────────────── */}
-        {/* Un seul onglet : un ticket fermé s'ouvre directement sur sa
-            transcription, il n'y a plus d'onglet « Archives » séparé. */}
-        <TabsContent value="tickets" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("modules.tickets.cards.tickets.title")}</CardTitle>
-              <CardDescription>{t("modules.tickets.cards.tickets.description")}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <TicketExplorer guildId={guildId} panels={savedPanels} settings={savedSettings} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ── Avis ─────────────────────────────────────────────────────── */}
-        <TabsContent value="ratings" className="pt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t("modules.tickets.cards.ratings.title")}</CardTitle>
-              <CardDescription>{t("modules.tickets.cards.ratings.description")}</CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-5">
-              <RatingsPanel guildId={guildId} panels={savedPanels} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {editingPanel && editingCategory && (
-        <CategoryDialog
-          panel={editingPanel}
-          category={editingCategory}
-          guildId={guildId}
-          channels={channels}
-          roles={roles}
-          errors={fieldErrors}
-          onChange={(changes) => patchCategory(editingPanel.id, editingCategory.id, changes)}
-          onClose={() => setEditing(null)}
-        />
-      )}
-
+  const dialogs = (
+    <>
       {/* Supprimer une catégorie ne ferme pas ses tickets ouverts : ils
           restent, et le bot répond « catégorie disparue » à toute action. */}
       <AlertDialog
@@ -662,17 +499,23 @@ function TicketsForm() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {t("modules.tickets.category.confirmDeleteTitle", {
-                name: pendingDelete?.category.name || pendingDelete?.category.id,
-              })}
+              {pendingDelete?.kind === "panel"
+                ? t("modules.tickets.panel.confirmDeleteTitle", {
+                    name: pendingDelete.panel.name || t("modules.tickets.panel.untitled"),
+                  })
+                : t("modules.tickets.category.confirmDeleteTitle", {
+                    name: pendingDelete?.category.name || t("modules.tickets.category.untitled"),
+                  })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingDelete &&
-              openTicketsForCategory(openTickets, pendingDelete.category.id).length > 0
-                ? t("modules.tickets.category.confirmDeleteOpen", {
-                    count: openTicketsForCategory(openTickets, pendingDelete.category.id).length,
-                  })
-                : t("modules.tickets.category.confirmDeleteDescription")}
+              {pendingDelete?.kind === "panel"
+                ? t("modules.tickets.panel.confirmDeleteDescription")
+                : pendingDelete &&
+                    openTicketsForCategory(openTickets, pendingDelete.category.id).length > 0
+                  ? t("modules.tickets.category.confirmDeleteOpen", {
+                      count: openTicketsForCategory(openTickets, pendingDelete.category.id).length,
+                    })
+                  : t("modules.tickets.category.confirmDeleteDescription")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -680,11 +523,13 @@ function TicketsForm() {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                if (pendingDelete) removeCategory(pendingDelete.panelId, pendingDelete.category.id)
+                if (pendingDelete?.kind === "panel") removePanel(pendingDelete.panel.id)
+                else if (pendingDelete)
+                  removeCategory(pendingDelete.panelId, pendingDelete.category.id)
                 setPendingDelete(null)
               }}
             >
-              {t("modules.tickets.category.delete")}
+              {t("modules.tickets.deleteAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -731,13 +576,249 @@ function TicketsForm() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
       <UnsavedBar
         isDirty={isDirty}
         isSaving={isSaving}
         onSave={requestSave}
         onDiscard={handleDiscard}
       />
+    </>
+  )
+
+  const notices = (
+    <>
+      {/* Les deux bandeaux qui portent sur la **dernière écriture** : un conflit
+          409 et l'accusé du bot. Ils suivent quel que soit le niveau ouvert. */}
+      {conflict && (
+        <Notice
+          level="warning"
+          title={t("modules.tickets.conflict.title")}
+          onDismiss={() => setConflict(false)}
+          action={
+            <Button size="sm" variant="outline" onClick={handleSave} disabled={isSaving}>
+              {t("modules.tickets.conflict.retry")}
+            </Button>
+          }
+        >
+          {t("modules.tickets.conflict.description")}
+        </Notice>
+      )}
+
+      {feedback && <ApplyNotice feedback={feedback} onDismiss={() => setFeedback(null)} />}
+    </>
+  )
+
+  // La réponse du `PUT` **écrase** l'état local (elle porte les `message_id`
+  // frais) : ce qui serait tapé pendant l'appel serait perdu en silence. On gèle
+  // donc l'édition le temps de la requête.
+  const frozen = {
+    "aria-busy": isSaving,
+    inert: isSaving ? true : undefined,
+    className: cn("flex w-full flex-col gap-6", isSaving && "pointer-events-none opacity-60"),
+  }
+
+  // ── Niveau 2 : une catégorie ────────────────────────────────────────────
+  if (view.level === "category" && activePanel && activeCategory) {
+    return (
+      <div className="flex w-full flex-col gap-6 pb-24">
+        {notices}
+        <div {...frozen}>
+          <CategoryEditor
+            panel={activePanel}
+            category={activeCategory}
+            guildId={guildId}
+            channels={channels}
+            roles={roles}
+            errors={fieldErrors}
+            openTickets={openTicketCounts[activeCategory.id] ?? 0}
+            onChange={(changes) => patchCategory(activePanel.id, activeCategory.id, changes)}
+            onDelete={() =>
+              setPendingDelete({
+                kind: "category",
+                panelId: activePanel.id,
+                category: activeCategory,
+              })
+            }
+            onBack={() => setView({ level: "panel", panelId: activePanel.id })}
+          />
+        </div>
+        {dialogs}
+      </div>
+    )
+  }
+
+  // ── Niveau 1 : un panneau ───────────────────────────────────────────────
+  if (view.level === "panel" && activePanel) {
+    return (
+      <div className="flex w-full flex-col gap-6 pb-24">
+        {notices}
+        <div {...frozen}>
+          <PanelEditor
+            panel={activePanel}
+            guildId={guildId}
+            channels={channels}
+            limits={limits}
+            errors={fieldErrors}
+            onChange={(changes) => patchPanel(activePanel.id, changes)}
+            onDelete={() => setPendingDelete({ kind: "panel", panel: activePanel })}
+            onBack={() => setView({ level: "home" })}
+            onOpenCategory={(category) =>
+              setView({ level: "category", panelId: activePanel.id, categoryId: category.id })
+            }
+            onAddCategory={() => addCategory(activePanel.id)}
+            onToggleCategory={(category, enabled) =>
+              patchCategory(activePanel.id, category.id, { enabled })
+            }
+          />
+        </div>
+        {dialogs}
+      </div>
+    )
+  }
+
+  // ── Niveau 0 : le module ────────────────────────────────────────────────
+  return (
+    <div className="flex w-full flex-col gap-6 pb-24">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{t("modules.tickets.name")}</h1>
+          <p className="mt-1 text-sm text-muted-foreground">{t("modules.tickets.description")}</p>
+        </div>
+        <Badge variant={isActive ? "default" : "secondary"}>
+          {isActive ? t("modules.tickets.statusActive") : t("modules.tickets.statusInactive")}
+        </Badge>
+      </div>
+
+      {notices}
+
+      <Tabs defaultValue="panels">
+        {/* Quatre onglets sur un petit écran : la liste défile pour elle seule
+            plutôt que d'élargir la page. */}
+        <div className="-mx-1 overflow-x-auto px-1 scrollbar-none">
+          <TabsList>
+            <TabsTrigger value="panels">
+              <LayoutPanelTopIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.panels")}
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <SettingsIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.settings")}
+            </TabsTrigger>
+            <TabsTrigger value="tickets">
+              <TicketIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.tickets")}
+            </TabsTrigger>
+            <TabsTrigger value="ratings">
+              <StarIcon data-icon="inline-start" />
+              {t("modules.tickets.tabs.ratings")}
+            </TabsTrigger>
+          </TabsList>
+        </div>
+
+        {/* ── Panneaux ────────────────────────────────────────────────── */}
+        <TabsContent value="panels" className="pt-6">
+          <div {...frozen} className={cn(frozen.className, "max-w-3xl gap-8")}>
+            {/* Supprimer une catégorie ne ferme pas ses tickets : ils restent
+                ouverts, et le bot répond « catégorie disparue » dedans. */}
+            {orphanCount > 0 && (
+              <Notice
+                level="warning"
+                title={t("modules.tickets.orphans.title", { count: orphanCount })}
+              >
+                {t("modules.tickets.orphans.description")}
+              </Notice>
+            )}
+
+            {globalIssues.length > 0 && (
+              <Notice level="error" title={t("modules.tickets.validation.title")}>
+                <ul className="flex list-disc flex-col gap-0.5 pl-4">
+                  {globalIssues.map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+              </Notice>
+            )}
+
+            <ModuleHome
+              panels={panels}
+              channels={channels}
+              limits={limits}
+              onOpenPanel={(panel) => setView({ level: "panel", panelId: panel.id })}
+              onAddPanel={addPanel}
+              onTogglePanel={(panel, enabled) => patchPanel(panel.id, { enabled })}
+            />
+
+            {isConfigured && (
+              <div className="border-t pt-6">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={() => setConfirmDisable(true)}
+                  disabled={isSaving || isDisabling}
+                >
+                  {isDisabling ? (
+                    <LoaderIcon data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <Trash2Icon data-icon="inline-start" />
+                  )}
+                  {t("modules.disable")}
+                </Button>
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ── Réglages du module ──────────────────────────────────────── */}
+        <TabsContent value="settings" className="pt-6">
+          <div {...frozen} className={cn(frozen.className, "max-w-3xl")}>
+            <TabHeader
+              title={t("modules.tickets.cards.settings.title")}
+              description={t("modules.tickets.cards.settings.description")}
+            />
+            <TicketsSettingsPanel
+              settings={settings}
+              savedSettings={savedSettings}
+              channels={channels}
+              errors={fieldErrors}
+              onChange={(changes) => setSettings((prev) => ({ ...prev, ...changes }))}
+            />
+          </div>
+        </TabsContent>
+
+        {/* ── Tickets réels + archives (lecture seule) ─────────────────── */}
+        {/* Un seul onglet : un ticket fermé s'ouvre directement sur sa
+            transcription, il n'y a plus d'onglet « Archives » séparé. */}
+        <TabsContent value="tickets" className="flex flex-col gap-6 pt-6">
+          <TabHeader
+            title={t("modules.tickets.cards.tickets.title")}
+            description={t("modules.tickets.cards.tickets.description")}
+          />
+          <TicketExplorer guildId={guildId} panels={savedPanels} settings={savedSettings} />
+        </TabsContent>
+
+        {/* ── Avis ─────────────────────────────────────────────────────── */}
+        <TabsContent value="ratings" className="flex flex-col gap-6 pt-6">
+          <TabHeader
+            title={t("modules.tickets.cards.ratings.title")}
+            description={t("modules.tickets.cards.ratings.description")}
+          />
+          <RatingsPanel guildId={guildId} panels={savedPanels} />
+        </TabsContent>
+      </Tabs>
+
+      {dialogs}
+    </div>
+  )
+}
+
+/** Intitulé d'un onglet — un titre et une phrase, sans cadre autour. */
+function TabHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <h2 className="text-sm font-semibold">{title}</h2>
+      <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
     </div>
   )
 }

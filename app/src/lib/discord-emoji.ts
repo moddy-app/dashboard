@@ -35,3 +35,13 @@ export function parseEmojiToken(value: string): ParsedEmoji | null {
   if (!match) return null
   return { animated: match[1] === 'a', name: match[2], id: match[3] }
 }
+
+/** Forme stockée d'un émoji de serveur, telle que Discord l'attend. */
+export function customEmojiToken(emoji: { id: string; name: string; animated?: boolean }): string {
+  return `<${emoji.animated ? 'a' : ''}:${emoji.name}:${emoji.id}>`
+}
+
+/** Vrai pour un caractère émoji Unicode (⭐, 🔥, 🇫🇷…) — pas un jeton custom. */
+export function isUnicodeEmoji(value: string): boolean {
+  return /\p{Extended_Pictographic}|\p{Regional_Indicator}/u.test(value)
+}
