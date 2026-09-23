@@ -1697,6 +1697,248 @@
           "dm_button": "Est revenu depuis le DM"
         }
       }
+    },
+    "rolePicker": {
+      "empty": "Aucun rôle trouvé"
+    },
+    "member_applications": {
+      "name": "Candidatures",
+      "description": "Examinez les demandes d'adhésion Discord dans un salon de l'équipe.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "tabs": {
+        "config": "Réglages",
+        "applications": "Candidatures",
+        "stats": "Statistiques"
+      },
+      "configTitle": "Cartes d'examen",
+      "configDescription": "Moddy poste une carte par candidature, avec les boutons Accepter et Refuser. Toutes les décisions se prennent dans Discord.",
+      "channel": "Salon d'examen",
+      "channelDescription": "Salon texte ou annonces où les cartes sont postées. Le module est actif dès qu'un salon est choisi ; « Aucun salon » le met en pause.",
+      "noChannel": "Aucun salon",
+      "pingRoles": "Rôles à mentionner",
+      "pingRolesDescription": "Mentionnés à l'arrivée d'une nouvelle candidature.",
+      "reviewerRoles": "Rôles examinateurs",
+      "reviewerRolesDescription": "Peuvent accepter ou refuser, en plus des membres qui ont la permission Expulser des membres.",
+      "addRole": "Ajouter un rôle…",
+      "rejectionReasons": "Motifs de refus",
+      "rejectionReasonsDescription": "Proposés au moment de refuser depuis la carte. Pas de doublon, majuscules comprises.",
+      "rejectionReasonsVisible": "Le candidat voit le motif choisi. Rédigez-le pour lui.",
+      "rejectionReasonLabel": "Motif {{index}}",
+      "rejectionReasonPlaceholder": "ex. Réponses incomplètes",
+      "addReason": "Ajouter un motif",
+      "removeReason": "Retirer ce motif",
+      "applyDelayHint": "Moddy prend les modifications en compte en deux minutes environ.",
+      "delete": "Supprimer la configuration",
+      "deleted": "Module Candidatures désactivé et réinitialisé.",
+      "confirmDeleteTitle": "Supprimer la configuration ?",
+      "confirmDeleteDescription": "Salon, rôles et motifs sont effacés et le module s'arrête. Les candidatures passées restent consultables jusqu'à leur expiration.",
+      "saved": "Réglages des candidatures enregistrés.",
+      "savedDelay": "Moddy les appliquera d'ici deux minutes environ.",
+      "readOnlyHint": "Les décisions se prennent dans Discord, depuis les cartes d'examen. Cette vue est en lecture seule.",
+      "decidedInDiscord": "Décidée dans Discord",
+      "status": {
+        "SUBMITTED": "En attente",
+        "APPROVED": "Acceptée",
+        "REJECTED": "Refusée",
+        "WITHDRAWN": "Retirée"
+      },
+      "statusFilter": {
+        "SUBMITTED": "En attente",
+        "APPROVED": "Acceptées",
+        "REJECTED": "Refusées",
+        "WITHDRAWN": "Retirées",
+        "all": "Toutes"
+      },
+      "list": {
+        "filterLabel": "Filtrer par statut",
+        "refresh": "Actualiser",
+        "loadMore": "Charger plus",
+        "count": "{{shown}} sur {{total}}",
+        "submitted": "Candidature {{when}}",
+        "empty": {
+          "SUBMITTED": "Aucune candidature en attente",
+          "APPROVED": "Aucune candidature acceptée",
+          "REJECTED": "Aucune candidature refusée",
+          "WITHDRAWN": "Aucune candidature retirée",
+          "all": "Aucune candidature pour l'instant"
+        },
+        "emptyDescription": "Les candidatures sont supprimées au bout de 180 jours."
+      },
+      "detail": {
+        "snapshotHint": "Nom et avatar tels qu'au moment de la candidature.",
+        "submittedAt": "Envoyée",
+        "reviewedBy": "Examinée par",
+        "reviewedAt": "Examinée",
+        "unknownReviewer": "Inconnu",
+        "rejectionReason": "Motif montré au candidat",
+        "withdrawnHint": "Discord a supprimé la demande, en général parce que le candidat l'a retirée.",
+        "cardPendingTitle": "Carte pas encore postée",
+        "cardPending": "Moddy n'a pas pu poster la carte d'examen. Il va réessayer.",
+        "cardPendingShort": "Carte en attente",
+        "responses": "Réponses",
+        "noResponses": "Aucune réponse.",
+        "untitledQuestion": "Question",
+        "termsAccepted": "A accepté le règlement",
+        "termsNotAccepted": "N'a pas accepté le règlement",
+        "unknownAnswer": "Réponse inconnue",
+        "emptyAnswer": "Pas de réponse",
+        "openCard": "Ouvrir la carte dans Discord",
+        "decideInDiscord": "Acceptez ou refusez depuis la carte, dans Discord."
+      },
+      "stats": {
+        "emptyTitle": "Pas encore de statistiques",
+        "emptyDescription": "Les chiffres apparaissent dès les premières candidatures.",
+        "originTitle": "Où se prennent les décisions",
+        "originDescription": "Avec les boutons de Moddy, ou directement dans les réglages des membres de Discord.",
+        "originModdy_one": "{{count}} avec Moddy",
+        "originModdy_other": "{{count}} avec Moddy",
+        "originDiscord_one": "{{count}} dans Discord",
+        "originDiscord_other": "{{count}} dans Discord",
+        "reviewersTitle": "Examinateurs",
+        "reviewersDescription": "Seules les décisions dont l'examinateur est connu sont comptées.",
+        "noReviewers": "Aucun examinateur connu pour l'instant.",
+        "approvedCount_one": "{{count}} acceptée",
+        "approvedCount_other": "{{count}} acceptées",
+        "rejectedCount_one": "{{count}} refusée",
+        "rejectedCount_other": "{{count}} refusées",
+        "totalCount_one": "{{count}} au total",
+        "totalCount_other": "{{count}} au total"
+      },
+      "diagnostics": {
+        "manualApprovalDisabledTitle": "Les candidatures ne sont pas activées dans Discord",
+        "manualApprovalDisabled": "Activez-les dans Paramètres du serveur → Accès (Adhésion). Sans ce réglage, Moddy ne reçoit aucune candidature.",
+        "missingKickMembersTitle": "Permission manquante",
+        "missingKickMembers": "Moddy a besoin de la permission Expulser des membres pour accepter ou refuser les candidatures.",
+        "channelDeletedTitle": "Salon d'examen supprimé",
+        "channelDeleted": "Le salon choisi n'existe plus. Choisissez-en un autre.",
+        "channelUnsupportedTitle": "Salon non pris en charge",
+        "channelUnsupported": "Ce salon n'est pas un salon texte.",
+        "channelMissingPermissionsTitle": "Moddy ne peut pas écrire dans ce salon",
+        "channelMissingPermissions": "Permissions manquantes : {{permissions}}."
+      },
+      "errors": {
+        "fixFields": "Corrigez les champs signalés.",
+        "discordCheckTitle": "Discord a refusé cette configuration",
+        "tooManyRoles": "{{max}} rôles au maximum.",
+        "duplicateRole": "Ce rôle figure deux fois.",
+        "everyoneRole": "@everyone ne peut pas être utilisé ici.",
+        "tooManyReasons": "{{max}} motifs au maximum.",
+        "reasonEmpty": "Un motif ne peut pas être vide.",
+        "reasonTooLong": "{{max}} caractères au maximum par motif.",
+        "reasonDuplicate": "Ce motif figure déjà dans la liste (majuscules comprises)."
+      }
+    },
+    "bump_reminder": {
+      "name": "Rappels de bump",
+      "description": "Soyez prévenu quand votre serveur peut de nouveau être bumpé sur les annuaires.",
+      "statusActive": "Actif",
+      "statusInactive": "Inactif",
+      "remindersTitle": "Rappels",
+      "remindersDescription": "Jusqu'à {{max}} rappel(s) par annuaire.",
+      "premiumHint": "{{max}} rappels par annuaire avec Premium.",
+      "premiumCta": "Découvrir Moddy Max",
+      "add": "Ajouter un rappel",
+      "edit": "Modifier",
+      "remove": "Retirer",
+      "paused": "En pause",
+      "unsaved": "Non enregistré",
+      "noChannel": "Aucun salon",
+      "intervalDefault": "{{interval}} (délai de l'annuaire)",
+      "intervalCustom": "{{interval}}",
+      "emptyTitle": "Aucun rappel",
+      "emptyDescription": "Ajoutez un annuaire et le salon où vous bumpez.",
+      "deleteAll": "Supprimer tous les rappels",
+      "deleted": "Tous les rappels de bump ont été supprimés.",
+      "confirmDeleteTitle": "Supprimer tous les rappels ?",
+      "confirmDeleteDescription": "Tous les rappels sont retirés et Moddy efface les comptes à rebours du serveur. C'est irréversible.",
+      "saved": "Rappels de bump enregistrés.",
+      "overQuotaTitle": "Trop de rappels pour votre offre",
+      "overQuota": "{{directories}} : {{max}} rappel(s) par annuaire sur ce serveur. Retirez ceux en trop pour pouvoir enregistrer.",
+      "overQuotaBadge": "Hors quota",
+      "pingModes": {
+        "auto": {
+          "label": "Toujours",
+          "short": "Bumper toujours mentionné",
+          "description": "La personne qui a bumpé est toujours mentionnée dans le rappel."
+        },
+        "button": {
+          "label": "Sur demande",
+          "short": "Bumper mentionné sur demande",
+          "description": "La personne qui a bumpé n'est mentionnée que si elle clique sur « Me rappeler »."
+        },
+        "never": {
+          "label": "Jamais",
+          "short": "Bumper jamais mentionné",
+          "description": "La personne qui a bumpé n'est jamais mentionnée."
+        }
+      },
+      "fields": {
+        "bot": "Annuaire",
+        "botPlaceholder": "Choisir un annuaire",
+        "channel": "Salon",
+        "channelDescription": "À la fois le salon où le /bump est tapé et celui où le rappel est posté. Salons texte ou annonces uniquement.",
+        "roles": "Rôles à mentionner",
+        "rolesPlaceholder": "Ajouter un rôle…",
+        "rolesDescription": "Mentionnés dans le rappel.",
+        "pingMode": "Mentionner la personne qui a bumpé",
+        "interval": "Délai du rappel",
+        "hours": "h",
+        "minutes": "min",
+        "intervalDescription": "Laissez vide pour utiliser le délai de l'annuaire ({{default}}).",
+        "intervalDescriptionNoDirectory": "Laissez vide pour utiliser le délai de l'annuaire.",
+        "intervalAnnounced": "Si l'annuaire annonce lui-même l'heure du prochain bump, c'est cette heure-là qui compte.",
+        "enabled": "Actif",
+        "enabledDescription": "Un rappel en pause est conservé mais jamais envoyé.",
+        "botFull": "Les annuaires grisés ont déjà {{max}} rappel(s)."
+      },
+      "dialog": {
+        "addTitle": "Ajouter un rappel",
+        "editTitle": "Modifier le rappel",
+        "description": "Les modifications s'enregistrent avec la barre d'enregistrement.",
+        "add": "Ajouter",
+        "apply": "Appliquer"
+      },
+      "live": {
+        "title": "Prochains bumps",
+        "description": "Une ligne par annuaire : un bump réarme tous ses rappels.",
+        "refresh": "Actualiser",
+        "scheduled": "Prochain bump dans {{time}}",
+        "due": "Rappel en cours d'envoi",
+        "sent": "Bump disponible !",
+        "neverBumped": "Aucun bump détecté pour l'instant",
+        "lastBumpBy": "Dernier bump par",
+        "lastBumpOn": "le {{date}}",
+        "lastBump": "Dernier bump le {{date}}",
+        "optIn": "Rappel demandé",
+        "emptyTitle": "Aucun compte à rebours",
+        "emptyDescription": "Les comptes à rebours apparaissent après le premier bump dans un salon configuré.",
+        "badge": {
+          "scheduled": "Programmé",
+          "due": "Envoi",
+          "sent": "Disponible"
+        }
+      },
+      "diagnostics": {
+        "channelDeleted": "Le salon a été supprimé.",
+        "channelUnsupported": "Ce salon n'est pas un salon texte.",
+        "channelMissingPermissions": "Moddy ne peut pas écrire dans ce salon.",
+        "missingRoles": "Ces rôles n'existent plus : {{roles}}.",
+        "unnotifiedRoles": "Non mentionnable : {{roles}}. La mention s'affichera mais ne notifiera personne. Rendez le rôle mentionnable, ou donnez à Moddy « Mentionner @everyone, @here et tous les rôles » dans ce salon."
+      },
+      "errors": {
+        "fixReminders": "Corrigez les rappels signalés.",
+        "serverTitle": "Discord a refusé cette configuration",
+        "rowInvalid": "Ce rappel est incomplet ou en conflit avec un autre.",
+        "directoryRequired": "Choisissez un annuaire.",
+        "channelRequired": "Choisissez un salon.",
+        "tooManyRoles": "{{max}} rôles au maximum.",
+        "duplicateRole": "Ce rôle figure deux fois.",
+        "everyoneRole": "@everyone ne peut pas être mentionné ici.",
+        "intervalRange": "Entre {{min}} et {{max}}.",
+        "duplicateTarget": "Cet annuaire a déjà un rappel dans ce salon.",
+        "quota": "{{max}} rappel(s) au maximum pour cet annuaire."
+      }
     }
   },
   "staff": {
@@ -2047,7 +2289,8 @@
     "empty": "(vide)",
     "clear": "Effacer",
     "cancel": "Annuler",
-    "dismiss": "Fermer"
+    "dismiss": "Fermer",
+    "avatarAlt": "Avatar de {{name}}"
   },
   "verified": {
     "official": "Serveur officiel de Moddy",

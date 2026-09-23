@@ -26,6 +26,8 @@ import { BotCustomizationPage } from "@/pages/modules/BotCustomizationPage"
 import { AltGuardPage } from "@/pages/modules/AltGuardPage"
 import { LogsPage } from "@/pages/modules/LogsPage"
 import { TicketsPage } from "@/pages/modules/TicketsPage"
+import { MemberApplicationsPage } from "@/pages/modules/MemberApplicationsPage"
+import { BumpReminderPage } from "@/pages/modules/BumpReminderPage"
 import { TranscriptPage } from "@/pages/TranscriptPage"
 import { StaffPage } from "@/pages/StaffPage"
 import { PremiumPage } from "@/pages/PremiumPage"
@@ -69,6 +71,8 @@ const router = createBrowserRouter([
       { path: "servers/:guildId/modules/altguard", element: <AltGuardPage /> },
       { path: "servers/:guildId/modules/logs", element: <LogsPage /> },
       { path: "servers/:guildId/modules/tickets", element: <TicketsPage /> },
+      { path: "servers/:guildId/modules/member_applications", element: <MemberApplicationsPage /> },
+      { path: "servers/:guildId/modules/bump_reminder", element: <BumpReminderPage /> },
       { path: "staff", element: <StaffPage /> },
       { path: "premium", element: <PremiumPage /> },
       { path: "billing", element: <BillingRedirectPage /> },
