@@ -59,7 +59,6 @@ export const FALLBACK_MEMBER_APPLICATIONS_LIMITS: MemberApplicationsLimits = {
 /** Formulaire vierge. Après un `DELETE` la config vaut `{}` : même écran. */
 export function emptyMemberApplicationsConfig(): MemberApplicationsConfig {
   return {
-    enabled: false,
     channel_id: null,
     ping_role_ids: [],
     reviewer_role_ids: [],
@@ -67,11 +66,13 @@ export function emptyMemberApplicationsConfig(): MemberApplicationsConfig {
   }
 }
 
-/** Toute clé absente prend sa valeur par défaut. */
+/**
+ * Toute clé absente prend sa valeur par défaut. Un éventuel `enabled` reçu est
+ * ignoré : l'activité ne dépend que du salon.
+ */
 export function normalizeMemberApplicationsConfig(raw: unknown): MemberApplicationsConfig {
   const r = asRecord(raw)
   return {
-    enabled: r.enabled === true,
     channel_id: asSnowflake(r.channel_id),
     ping_role_ids: asSnowflakes(r.ping_role_ids),
     reviewer_role_ids: asSnowflakes(r.reviewer_role_ids),
@@ -83,12 +84,12 @@ export function normalizeMemberApplicationsConfig(raw: unknown): MemberApplicati
 
 /**
  * Corps du `PUT` : **l'objet complet**, toujours — un champ omis reprendrait sa
- * valeur par défaut. Les motifs sont rognés comme le fait le backend, les
+ * valeur par défaut — mais **jamais la clé `enabled`** : le module est actif
+ * dès qu'un salon est configuré. Les motifs sont rognés comme le fait le backend, les
  * lignes restées vides sont retirées (un motif vide serait un 422).
  */
 export function serializeMemberApplicationsConfig(config: MemberApplicationsConfig): MemberApplicationsConfig {
   return {
-    enabled: config.enabled,
     channel_id: config.channel_id || null,
     ping_role_ids: [...config.ping_role_ids],
     reviewer_role_ids: [...config.reviewer_role_ids],
@@ -104,11 +105,10 @@ export function isSameMemberApplicationsConfig(
     JSON.stringify(serializeMemberApplicationsConfig(b))
 }
 
-/** Le module ne tourne que si `enabled` **et** un salon est choisi. */
+/** Actif dès qu'un salon est configuré — il n'y a pas d'interrupteur. */
 export function isMemberApplicationsActive(config: unknown): boolean {
   if (!config) return false
-  const c = normalizeMemberApplicationsConfig(config)
-  return c.enabled && c.channel_id !== null
+  return normalizeMemberApplicationsConfig(config).channel_id !== null
 }
 
 // ─── Sélecteurs ───────────────────────────────────────────────────────────────
@@ -157,10 +157,6 @@ export function validateMemberApplications(
   guildId: string | null
 ): MemberApplicationsIssue[] {
   const issues: MemberApplicationsIssue[] = []
-
-  if (config.enabled && !config.channel_id) {
-    issues.push({ field: 'channel_id', key: 'channelRequired' })
-  }
 
   const roleLists: [MemberApplicationsField, string[], number][] = [
     ['ping_role_ids', config.ping_role_ids, limits.ping_roles],

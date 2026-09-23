@@ -4,10 +4,12 @@
 // décider d'une candidature, tout se tranche dans Discord (boutons de la carte
 // d'examen). Les snowflakes restent des chaînes de bout en bout.
 
+/**
+ * Config éditable. **Pas de clé `enabled`** : le module est actif dès qu'un
+ * salon est configuré — le dashboard n'écrit jamais cette clé.
+ */
 export interface MemberApplicationsConfig {
-  /** Vrai interrupteur, stocké. Le module ne tourne que s'il y a aussi un salon. */
-  enabled: boolean
-  /** Salon des cartes d'examen — texte ou annonces. */
+  /** Salon des cartes d'examen — texte ou annonces. `null` = module inactif. */
   channel_id: string | null
   ping_role_ids: string[]
   /** En plus des membres qui ont « Expulser des membres ». */
@@ -34,7 +36,7 @@ export interface MemberApplicationsChannelCheck {
 export interface MemberApplicationsDiagnostics {
   guild_id: string
   enabled: boolean
-  /** `enabled && channel_id`, calculé côté serveur. */
+  /** Calculé côté serveur. */
   active: boolean
   /** Réglage Discord « Adhésion ». `null` = inconnu (Discord n'a pas répondu). */
   manual_approval_enabled: boolean | null

@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/card"
 import {
   Field,
-  FieldContent,
   FieldDescription,
   FieldError,
   FieldGroup,
@@ -52,7 +51,6 @@ import {
 } from "@/components/ui/input-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ErrorPage } from "@/components/error-state"
 import { ChannelPicker, RoleMultiPicker } from "@/components/module-pickers"
@@ -244,7 +242,7 @@ function MemberApplicationsView() {
       return
     }
 
-    logger.event("module:member_applications", "Save", { enabled: draft.enabled })
+    logger.event("module:member_applications", "Save", { hasChannel: draft.channel_id !== null })
     setIsSaving(true)
     setFieldErrors({})
     setServerError(null)
@@ -331,9 +329,9 @@ function MemberApplicationsView() {
     )
   }
 
-  // L'état affiché est celui **en base** : un brouillon non enregistré ne
-  // fait rien tourner.
-  const isActive = saved.enabled && saved.channel_id !== null
+  // Pas d'interrupteur : actif dès qu'un salon est configuré **en base** — un
+  // brouillon non enregistré ne fait rien tourner.
+  const isActive = saved.channel_id !== null
   const notices = memberApplicationsNotices(diagnostics)
 
   return (
@@ -389,18 +387,6 @@ function MemberApplicationsView() {
             </CardHeader>
             <CardContent>
               <FieldGroup>
-                <Field orientation="horizontal">
-                  <FieldContent>
-                    <FieldLabel htmlFor="ma-enabled">{t(`${E}.enabled`)}</FieldLabel>
-                    <FieldDescription>{t(`${E}.enabledDescription`)}</FieldDescription>
-                  </FieldContent>
-                  <Switch
-                    id="ma-enabled"
-                    checked={draft.enabled}
-                    onCheckedChange={(enabled) => patch({ enabled })}
-                  />
-                </Field>
-
                 <Field data-invalid={fieldErrors.channel_id ? true : undefined}>
                   <FieldLabel htmlFor="ma-channel">{t(`${E}.channel`)}</FieldLabel>
                   <ChannelPicker

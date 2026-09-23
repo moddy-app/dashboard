@@ -35,9 +35,10 @@ export async function getMemberApplicationsConfig(
 
 /**
  * `PUT` avec l'**objet complet** — `PUT` comme `PATCH` remplacent tout.
- * Quand `enabled` est vrai, le backend vérifie en plus la permission
+ * Quand un salon est configuré, le backend vérifie en plus la permission
  * « Expulser des membres », l'accès au salon et l'existence des rôles (422
- * lisible sinon). Aucun accusé à attendre : le bot relit la config en ~2 min.
+ * lisible sinon). Sans salon, aucune vérification : on peut toujours retirer
+ * un salon supprimé. Aucun accusé à attendre : le bot relit la config en ~2 min.
  */
 export async function saveMemberApplicationsConfig(
   guildId: string,

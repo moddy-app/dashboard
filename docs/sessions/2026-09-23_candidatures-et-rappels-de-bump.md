@@ -52,7 +52,7 @@ Consigne : suivre à la lettre le skill `app/.agents/skills/shadcn/SKILL.md` et 
 
 ### Candidatures
 
-- `enabled` est un vrai interrupteur, mais le module n'est **actif** qu'avec un salon : le badge d'en-tête et la vue d'ensemble testent `enabled && channel_id`, sur la config **enregistrée**.
+- **Pas d'interrupteur** (retiré à la demande en fin de session) : la clé `enabled` n'est plus ni affichée ni écrite. Le module est actif dès qu'un salon est configuré ; « Aucun salon » le met en pause. Le badge d'en-tête et la vue d'ensemble testent `channel_id !== null` sur la config **enregistrée**.
 - `PUT` avec l'objet complet ; les motifs sont rognés et les lignes vides retirées avant envoi.
 - Limites lues dans `/diagnostics` → `limits` ; repli codé seulement si l'appel échoue.
 - Deux formes de `422` : Pydantic (rattaché au champ) ou texte Discord (encart + toast, affiché tel quel).
