@@ -24,6 +24,8 @@ import {
   PaletteIcon,
   PuzzleIcon,
   TicketIcon,
+  UserPlusIcon,
+  RocketIcon,
   SettingsIcon,
   SparkleIcon,
 } from "lucide-react"
@@ -206,6 +208,18 @@ export function AppSidebar({
             url: `/servers/${selectedGuildId}/modules/tickets`,
             icon: TicketIcon,
             isActive: location.pathname === `/servers/${selectedGuildId}/modules/tickets`,
+          },
+          {
+            title: t("modules.member_applications.name"),
+            url: `/servers/${selectedGuildId}/modules/member_applications`,
+            icon: UserPlusIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/member_applications`,
+          },
+          {
+            title: t("modules.bump_reminder.name"),
+            url: `/servers/${selectedGuildId}/modules/bump_reminder`,
+            icon: RocketIcon,
+            isActive: location.pathname === `/servers/${selectedGuildId}/modules/bump_reminder`,
           },
           {
             title: t("modules.logs.name"),

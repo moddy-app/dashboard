@@ -146,6 +146,8 @@ export type ModuleId =
   | 'bot_customization'
   | 'altguard'
   | 'logs'
+  | 'member_applications'
+  | 'bump_reminder'
 
 export interface StarboardConfig {
   channel_id: string

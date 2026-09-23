@@ -1697,6 +1697,251 @@
           "dm_button": "Came back from the DM"
         }
       }
+    },
+    "rolePicker": {
+      "empty": "No roles found"
+    },
+    "member_applications": {
+      "name": "Applications",
+      "description": "Review join applications from Discord in a staff channel.",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "tabs": {
+        "config": "Settings",
+        "applications": "Applications",
+        "stats": "Statistics"
+      },
+      "configTitle": "Review cards",
+      "configDescription": "Moddy posts one card per application, with Accept and Reject buttons. Every decision is made in Discord.",
+      "enabled": "Enable the module",
+      "enabledDescription": "The module only runs once a channel is selected.",
+      "channel": "Review channel",
+      "channelDescription": "Text or announcement channel where application cards are posted. Moddy needs to see it and send messages there.",
+      "noChannel": "No channel",
+      "pingRoles": "Roles to ping",
+      "pingRolesDescription": "Mentioned when a new application arrives.",
+      "reviewerRoles": "Reviewer roles",
+      "reviewerRolesDescription": "Can accept or reject, in addition to members who have the Kick Members permission.",
+      "addRole": "Add a role…",
+      "rejectionReasons": "Rejection reasons",
+      "rejectionReasonsDescription": "Offered when rejecting from the card. Duplicates are not allowed, regardless of case.",
+      "rejectionReasonsVisible": "The applicant sees the reason you pick. Write it for them.",
+      "rejectionReasonLabel": "Reason {{index}}",
+      "rejectionReasonPlaceholder": "e.g. Incomplete answers",
+      "addReason": "Add a reason",
+      "removeReason": "Remove this reason",
+      "applyDelayHint": "Moddy picks up changes within about two minutes.",
+      "delete": "Delete configuration",
+      "deleted": "Applications module disabled and reset.",
+      "confirmDeleteTitle": "Delete the configuration?",
+      "confirmDeleteDescription": "The module is turned off and its settings (channel, roles, reasons) are erased. Past applications stay visible until they expire.",
+      "saved": "Applications settings saved.",
+      "savedDelay": "Moddy will apply them within about two minutes.",
+      "readOnlyHint": "Decisions are made in Discord, from the review cards. This view is read-only.",
+      "decidedInDiscord": "Decided in Discord",
+      "status": {
+        "SUBMITTED": "Pending",
+        "APPROVED": "Accepted",
+        "REJECTED": "Rejected",
+        "WITHDRAWN": "Withdrawn"
+      },
+      "statusFilter": {
+        "SUBMITTED": "Pending",
+        "APPROVED": "Accepted",
+        "REJECTED": "Rejected",
+        "WITHDRAWN": "Withdrawn",
+        "all": "All"
+      },
+      "list": {
+        "filterLabel": "Filter by status",
+        "refresh": "Refresh",
+        "loadMore": "Load more",
+        "count": "{{shown}} of {{total}}",
+        "submitted": "Applied {{when}}",
+        "empty": {
+          "SUBMITTED": "No pending applications",
+          "APPROVED": "No accepted applications",
+          "REJECTED": "No rejected applications",
+          "WITHDRAWN": "No withdrawn applications",
+          "all": "No applications yet"
+        },
+        "emptyDescription": "Applications are deleted after 180 days."
+      },
+      "detail": {
+        "snapshotHint": "Name and avatar as they were when the application was sent.",
+        "submittedAt": "Applied",
+        "reviewedBy": "Reviewed by",
+        "reviewedAt": "Reviewed",
+        "unknownReviewer": "Unknown",
+        "rejectionReason": "Reason shown to the applicant",
+        "withdrawnHint": "Discord deleted the request, usually because the applicant withdrew it.",
+        "cardPendingTitle": "Card not posted yet",
+        "cardPending": "Moddy couldn't post the review card. It will try again.",
+        "cardPendingShort": "Card pending",
+        "responses": "Answers",
+        "noResponses": "No answers.",
+        "untitledQuestion": "Question",
+        "termsAccepted": "Accepted the rules",
+        "termsNotAccepted": "Did not accept the rules",
+        "unknownAnswer": "Unknown answer",
+        "emptyAnswer": "No answer",
+        "openCard": "Open the card in Discord",
+        "decideInDiscord": "Accept or reject from the card in Discord."
+      },
+      "stats": {
+        "emptyTitle": "No statistics yet",
+        "emptyDescription": "Figures appear once the first applications come in.",
+        "originTitle": "Where decisions are made",
+        "originDescription": "With Moddy's buttons, or directly in Discord's member settings.",
+        "originModdy_one": "{{count}} with Moddy",
+        "originModdy_other": "{{count}} with Moddy",
+        "originDiscord_one": "{{count}} in Discord",
+        "originDiscord_other": "{{count}} in Discord",
+        "reviewersTitle": "Reviewers",
+        "reviewersDescription": "Only decisions whose reviewer is known are counted.",
+        "noReviewers": "No known reviewer yet.",
+        "approvedCount_one": "{{count}} accepted",
+        "approvedCount_other": "{{count}} accepted",
+        "rejectedCount_one": "{{count}} rejected",
+        "rejectedCount_other": "{{count}} rejected",
+        "totalCount_one": "{{count}} total",
+        "totalCount_other": "{{count}} total"
+      },
+      "diagnostics": {
+        "manualApprovalDisabledTitle": "Applications aren't turned on in Discord",
+        "manualApprovalDisabled": "Turn them on in Server Settings → Access (Membership). Without this setting, Moddy receives no applications.",
+        "missingKickMembersTitle": "Missing permission",
+        "missingKickMembers": "Moddy needs the Kick Members permission to accept or reject applications.",
+        "channelDeletedTitle": "Review channel deleted",
+        "channelDeleted": "The selected channel no longer exists. Pick another one.",
+        "channelUnsupportedTitle": "Unsupported channel",
+        "channelUnsupported": "This channel isn't a text channel.",
+        "channelMissingPermissionsTitle": "Moddy can't write in this channel",
+        "channelMissingPermissions": "Missing permissions: {{permissions}}."
+      },
+      "errors": {
+        "fixFields": "Fix the highlighted fields.",
+        "discordCheckTitle": "Discord refused this configuration",
+        "channelRequired": "Pick a channel to enable the module.",
+        "tooManyRoles": "{{max}} roles at most.",
+        "duplicateRole": "This role is listed twice.",
+        "everyoneRole": "@everyone can't be used here.",
+        "tooManyReasons": "{{max}} reasons at most.",
+        "reasonEmpty": "A reason can't be empty.",
+        "reasonTooLong": "{{max}} characters at most per reason.",
+        "reasonDuplicate": "This reason is already listed (case doesn't matter)."
+      }
+    },
+    "bump_reminder": {
+      "name": "Bump reminders",
+      "description": "Get reminded when your server can be bumped again on server listings.",
+      "statusActive": "Active",
+      "statusInactive": "Inactive",
+      "remindersTitle": "Reminders",
+      "remindersDescription": "Up to {{max}} reminder(s) per listing site.",
+      "premiumHint": "{{max}} reminders per listing site with Premium.",
+      "premiumCta": "Discover Moddy Max",
+      "add": "Add a reminder",
+      "edit": "Edit",
+      "remove": "Remove",
+      "paused": "Paused",
+      "unsaved": "Not saved",
+      "noChannel": "No channel",
+      "intervalDefault": "{{interval}} (site default)",
+      "intervalCustom": "{{interval}}",
+      "emptyTitle": "No reminders",
+      "emptyDescription": "Add a listing site and the channel where you bump.",
+      "deleteAll": "Delete all reminders",
+      "deleted": "All bump reminders deleted.",
+      "confirmDeleteTitle": "Delete every reminder?",
+      "confirmDeleteDescription": "All reminders are removed and Moddy clears this server's countdowns. This can't be undone.",
+      "saved": "Bump reminders saved.",
+      "overQuotaTitle": "Too many reminders for your plan",
+      "overQuota": "{{directories}}: {{max}} reminder(s) per listing site on this server. Remove the extra ones to save again.",
+      "overQuotaBadge": "Over quota",
+      "pingModes": {
+        "auto": {
+          "label": "Always",
+          "short": "Bumper always mentioned",
+          "description": "The person who bumped is always mentioned in the reminder."
+        },
+        "button": {
+          "label": "On request",
+          "short": "Bumper mentioned on request",
+          "description": "The person who bumped is mentioned only if they click “Remind me”."
+        },
+        "never": {
+          "label": "Never",
+          "short": "Bumper never mentioned",
+          "description": "The person who bumped is never mentioned."
+        }
+      },
+      "fields": {
+        "bot": "Listing site",
+        "botPlaceholder": "Pick a listing site",
+        "channel": "Channel",
+        "channelDescription": "Both the channel where /bump is typed and the one where the reminder is posted. Text or announcement channels only.",
+        "roles": "Roles to mention",
+        "rolesPlaceholder": "Add a role…",
+        "rolesDescription": "Mentioned in the reminder.",
+        "pingMode": "Mention the person who bumped",
+        "interval": "Reminder delay",
+        "hours": "h",
+        "minutes": "min",
+        "intervalDescription": "Leave empty to use the listing site's delay ({{default}}).",
+        "intervalDescriptionNoDirectory": "Leave empty to use the listing site's delay.",
+        "intervalAnnounced": "If the listing site announces the next bump time itself, that time takes precedence.",
+        "enabled": "Active",
+        "enabledDescription": "A paused reminder is kept but never sent.",
+        "botFull": "Greyed-out listing sites already have {{max}} reminder(s)."
+      },
+      "dialog": {
+        "addTitle": "Add a reminder",
+        "editTitle": "Edit the reminder",
+        "description": "Changes are saved with the save bar.",
+        "add": "Add",
+        "apply": "Apply"
+      },
+      "live": {
+        "title": "Next bumps",
+        "description": "One line per listing site: a bump resets all of its reminders.",
+        "refresh": "Refresh",
+        "scheduled": "Next bump in {{time}}",
+        "due": "Reminder being sent",
+        "sent": "Bump available!",
+        "neverBumped": "No bump detected yet",
+        "lastBumpBy": "Last bump by",
+        "lastBumpOn": "on {{date}}",
+        "lastBump": "Last bump on {{date}}",
+        "optIn": "Reminder requested",
+        "emptyTitle": "No countdown",
+        "emptyDescription": "Countdowns appear after the first bump in a configured channel.",
+        "badge": {
+          "scheduled": "Scheduled",
+          "due": "Sending",
+          "sent": "Available"
+        }
+      },
+      "diagnostics": {
+        "channelDeleted": "The channel was deleted.",
+        "channelUnsupported": "This channel isn't a text channel.",
+        "channelMissingPermissions": "Moddy can't write in this channel.",
+        "missingRoles": "These roles no longer exist: {{roles}}.",
+        "unnotifiedRoles": "Not mentionable: {{roles}}. The mention will show but won't notify anyone. Make the role mentionable, or give Moddy “Mention @everyone, @here and All Roles” in this channel."
+      },
+      "errors": {
+        "fixReminders": "Fix the highlighted reminders.",
+        "serverTitle": "Discord refused this configuration",
+        "rowInvalid": "This reminder is incomplete or conflicts with another one.",
+        "directoryRequired": "Pick a listing site.",
+        "channelRequired": "Pick a channel.",
+        "tooManyRoles": "{{max}} roles at most.",
+        "duplicateRole": "This role is listed twice.",
+        "everyoneRole": "@everyone can't be mentioned here.",
+        "intervalRange": "Between {{min}} and {{max}}.",
+        "duplicateTarget": "This listing site already has a reminder in this channel.",
+        "quota": "{{max}} reminder(s) at most for this listing site."
+      }
     }
   },
   "staff": {
@@ -2047,7 +2292,8 @@
     "empty": "(empty)",
     "clear": "Clear",
     "cancel": "Cancel",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "avatarAlt": "{{name}}'s avatar"
   },
   "verified": {
     "official": "Official Moddy server",

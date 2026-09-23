@@ -24,6 +24,8 @@ import {
   LinkIcon,
   PaletteIcon,
   TicketIcon,
+  UserPlusIcon,
+  RocketIcon,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -63,6 +65,8 @@ import { isBotCustomizationActive } from "@/lib/bot-customization"
 import { isAltGuardActive } from "@/lib/altguard"
 import { isLogsActive } from "@/lib/logs"
 import { isTicketsActive } from "@/lib/tickets"
+import { isMemberApplicationsActive } from "@/lib/member-applications"
+import { isBumpReminderActive } from "@/lib/bump-reminder"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -101,6 +105,12 @@ function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boo
   // tickets non plus : il tourne dès qu'un panneau activé est rattaché à un
   // salon (`enabled` est calculé côté serveur, jamais stocké).
   if (id === 'tickets') return isTicketsActive(config as TicketsConfig)
+  // member_applications a un vrai interrupteur, mais il ne tourne qu'avec un
+  // salon : `enabled` seul ne suffit pas.
+  if (id === 'member_applications') return isMemberApplicationsActive(config)
+  // bump_reminder n'a pas d'interrupteur général : actif dès qu'un rappel
+  // actif est rattaché à un salon.
+  if (id === 'bump_reminder') return isBumpReminderActive(config)
   return true
 }
 
@@ -287,6 +297,8 @@ export function GuildOverviewPage() {
     { id: 'altguard', icon: ShieldCheckIcon },
     { id: 'logs', icon: FileClockIcon },
     { id: 'tickets', icon: TicketIcon },
+    { id: 'member_applications', icon: UserPlusIcon },
+    { id: 'bump_reminder', icon: RocketIcon },
   ]
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null
