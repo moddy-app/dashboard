@@ -409,20 +409,26 @@
       "checkUnavailableSaveDescription": "Rien n'a été enregistré. Réessaie dans un instant.",
       "retry": "Réessayer",
       "featuresTitle": "Détecteurs",
-      "featuresDescription": "Ce que l'IA surveille, et qui y échappe.",
-      "noFeatures": "Aucun détecteur disponible.",
+      "featuresDescription": "Ce que Moddy surveille. Chaque détecteur s'active indépendamment des autres.",
       "features": {
         "genericDescription": "Détecteur pris en charge par la modération IA.",
         "content": {
-          "name": "Contenu des messages",
-          "description": "Analyse les messages et sanctionne insultes, menaces, harcèlement, arnaques et compagnie."
+          "name": "Analyse des messages",
+          "description": "L'IA lit le texte des messages et sanctionne insultes, menaces, harcèlement, arnaques et compagnie."
+        },
+        "image_nsfw": {
+          "name": "Images explicites",
+          "description": "Repère les images à caractère sexuel ou choquant. Les salons soumis à une limite d'âge ne sont jamais analysés."
+        },
+        "image_scam": {
+          "name": "Captures d'arnaque",
+          "description": "Repère les captures d'écran de fausses offres crypto, de faux concours et autres arnaques."
         }
       },
       "exemptRoles": "Rôles exemptés",
-      "exemptRolesHint": "Les membres ayant l'un de ces rôles ne sont jamais modérés par ce détecteur.",
+      "exemptRolesHint": "Les membres ayant l'un de ces rôles ne sont jamais modérés.",
       "exemptChannels": "Salons exemptés",
       "exemptChannelsHint": "Ces salons sont ignorés, ainsi que les fils qu'ils contiennent.",
-      "exemptLimitReached": "Limite de {{max}} entrées atteinte.",
       "addRole": "Ajouter un rôle",
       "addChannel": "Ajouter un salon",
       "statusRunning": "Actif",
@@ -431,13 +437,25 @@
         "missing_notify_channel": "Aucun salon d'alertes : le module ne tourne pas.",
         "no_feature_enabled": "Aucun détecteur activé.",
         "dry_run": "Mode simulation : aucune sanction n'est appliquée.",
-        "unknown": "Avertissement de configuration : {{code}}"
+        "unknown": "Avertissement de configuration : {{code}}",
+        "blocked_by_global_sanction": "Ce serveur est sous sanction globale : la modération IA est coupée."
       },
       "reset": "Réinitialiser le module",
       "resetSuccess": "Configuration de la modération IA réinitialisée.",
       "confirmResetTitle": "Réinitialiser la modération IA ?",
       "confirmResetDescription": "Toute la configuration du module est supprimée, y compris les indications et les exemptions. Cette action est irréversible.",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "advanced": "Réglages avancés",
+      "scanAll": "Lire toutes les images",
+      "scanAllDescription": "Par défaut, Moddy ne lit le texte que des images jugées risquées. Activé, il lit celui de toutes les images.",
+      "scanAllWarning": "Chaque image lue consomme le quota de 300 lectures par jour et par serveur : sur un serveur actif, il s'épuise vite.",
+      "exemptionsTitle": "Exemptions",
+      "exemptionsDescription": "Ces rôles et ces salons échappent aux trois détecteurs.",
+      "exemptCount": "{{count}} / {{max}}",
+      "exemptionsDivergedTitle": "Les détecteurs n'ont pas tous les mêmes exemptions",
+      "exemptionsDivergedDescription": "La configuration a été modifiée ailleurs et chaque détecteur a sa propre liste. Tu vois ici leur union ; rien ne change tant que tu ne modifies pas la liste ou ne cliques pas sur « Unifier ».",
+      "exemptionsUnify": "Unifier",
+      "formErrorTitle": "Enregistrement refusé"
     },
     "social_notifications": {
       "name": "Notifications sociales",
@@ -1939,6 +1957,9 @@
         "duplicateTarget": "Cet annuaire a déjà un rappel dans ce salon.",
         "quota": "{{max}} rappel(s) au maximum pour cet annuaire."
       }
+    },
+    "channelPicker": {
+      "empty": "Aucun salon trouvé"
     }
   },
   "staff": {

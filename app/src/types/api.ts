@@ -315,13 +315,24 @@ export interface SocialSubscribeResult {
 
 export type AutomodMaxAction = 'warn' | 'mute' | 'ban'
 
-/** Un détecteur. `features` est une map ouverte : seul `content` existe
- *  aujourd'hui, mais les suivants auront la même forme → rendu générique. */
+/**
+ * Un détecteur. `features` porte trois blocs connus — `content` (texte),
+ * `image_nsfw` (images explicites) et `image_scam` (captures d'arnaque) —,
+ * tous de cette forme. Un id inconnu du backend est refusé en `422`.
+ */
 export interface AutomodFeature {
   enabled: boolean
   /** Snowflakes en chaînes — ne jamais passer par Number() (> 2^53). */
   exempt_roles: string[]
   exempt_channels: string[]
+  /**
+   * `image_scam` seulement : OCR de **toutes** les images plutôt que des
+   * seules images jugées risquées (quota de 300 lectures / jour / serveur).
+   * Ignoré sur les autres blocs. Champ ops : renvoyé tel que lu.
+   */
+  scan_all?: boolean
+  /** Clés ajoutées plus tard côté backend, renvoyées telles quelles. */
+  [key: string]: unknown
 }
 
 /**
@@ -352,6 +363,7 @@ export type AutomodWarning =
   | 'missing_notify_channel'
   | 'no_feature_enabled'
   | 'dry_run'
+  | 'blocked_by_global_sanction'
   | (string & {})
 
 /** État *réel* du module : `running` ≠ `enabled` (voir GET /status). */
@@ -362,8 +374,11 @@ export interface AutomodAiStatus {
   enabled: boolean
   dry_run: boolean
   notify_channel_id: string | null
+  /** Détecteurs actifs, dans l'ordre `content`, `image_nsfw`, `image_scam`. */
   active_features: string[]
   warnings: AutomodWarning[]
+  /** Serveur sous sanction globale « limité » : toute écriture renvoie un `403`. */
+  blocked_by_global_sanction?: boolean
 }
 
 /** Réponse du contrôle anti-injection des indications. */

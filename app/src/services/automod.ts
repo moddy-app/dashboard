@@ -1,4 +1,5 @@
 import { api, ApiError } from '@/lib/auth'
+import { AUTOMOD_FEATURE_IDS, defaultAutomodFeature, normalizeAutomodConfig } from '@/lib/automod'
 import type {
   AutomodAiConfig,
   AutomodAiStatus,
@@ -24,21 +25,20 @@ export function defaultAutomodConfig(): AutomodAiConfig {
     max_action: 'ban',
     categories_desactivees: [],
     dry_run: false,
-    features: {
-      content: { enabled: false, exempt_roles: [], exempt_channels: [] },
-    },
+    features: Object.fromEntries(AUTOMOD_FEATURE_IDS.map((id) => [id, defaultAutomodFeature(id)])),
   }
 }
 
 /**
  * Config actuelle. Un 404 signifie « jamais configuré » — ce n'est pas une
- * erreur : on retourne `null` et l'appelant part des défauts.
+ * erreur : on retourne `null` et l'appelant part des défauts. Une ancienne
+ * config sans blocs d'image est complétée (`normalizeAutomodConfig`).
  */
 export async function getAutomodConfig(
   guildId: string | number
 ): Promise<AutomodAiConfig | null> {
   try {
-    return (await api(BASE(guildId))) as AutomodAiConfig
+    return normalizeAutomodConfig((await api(BASE(guildId))) as AutomodAiConfig)
   } catch (e) {
     if (e instanceof ApiError && e.isNotFound) return null
     throw e
@@ -49,7 +49,8 @@ export async function getAutomodConfig(
  * Sauvegarde. Le corps **remplace** la config : toujours envoyer l'objet
  * complet dérivé de celui reçu (sinon on écrase `categories_desactivees` et
  * tout champ que ce front ne connaît pas encore).
- * La réponse est la config telle que persistée → ré-hydrater le formulaire avec.
+ * La réponse est la config telle que persistée (normalisée : trois blocs,
+ * doublons d'exemptions retirés) → elle **remplace** l'état local.
  */
 export async function saveAutomodConfig(
   guildId: string | number,
@@ -64,10 +65,11 @@ export async function saveAutomodConfig(
     langue_serveur?: unknown
   }
   void _dead
-  return (await api(BASE(guildId), {
+  const saved = (await api(BASE(guildId), {
     method: 'PUT',
     body: JSON.stringify(body),
   })) as AutomodAiConfig
+  return normalizeAutomodConfig(saved)
 }
 
 /** Supprime la config du module (bouton « Réinitialiser »). */
