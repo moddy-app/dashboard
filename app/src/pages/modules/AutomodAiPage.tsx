@@ -4,16 +4,20 @@ import { toast } from "sonner"
 import {
   AlertCircleIcon,
   CheckCircle2Icon,
+  ChevronDownIcon,
   FlaskConicalIcon,
   LoaderIcon,
+  LockIcon,
   RotateCcwIcon,
   SparklesIcon,
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { ChannelMultiPicker, RoleMultiPicker } from "@/components/module-pickers"
 import { ServerLanguageNote } from "@/components/server-language-note"
 import { ErrorPage } from "@/components/error-state"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,6 +44,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldSet,
+  FieldTitle,
+} from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
@@ -47,10 +63,16 @@ import { Textarea } from "@/components/ui/textarea"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
-import { useSanctionGates } from "@/contexts/SanctionContext"
+import { useSanctionGates, useSanctions } from "@/contexts/SanctionContext"
 import { sanctionBlockedError } from "@/lib/sanctions"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
+import {
+  SCAN_ALL_FEATURE,
+  applyExemptions,
+  orderedFeatureIds,
+  sharedExemptions,
+} from "@/lib/automod"
 import {
   EXEMPT_MAX,
   INDICATIONS_MAX,
@@ -61,7 +83,7 @@ import {
   getAutomodStatus,
   saveAutomodConfig,
 } from "@/services/automod"
-import { CHANNEL_TYPES, roleColorToHex } from "@/types/api"
+import { CHANNEL_TYPES } from "@/types/api"
 import type {
   AutomodAiConfig,
   AutomodAiStatus,
@@ -86,7 +108,9 @@ type CheckState =
   | { kind: "unavailable" }
 
 /** Champs de formulaire susceptibles de porter une erreur renvoyée par le PUT. */
-type FieldErrors = Partial<Record<"notify_channel_id" | "indications" | "severity" | "max_action" | "features", string>>
+type FieldErrors = Partial<
+  Record<"notify_channel_id" | "indications" | "severity" | "max_action" | "features" | "exemptions", string>
+>
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -96,8 +120,9 @@ function isSameConfig(a: AutomodAiConfig, b: AutomodAiConfig): boolean {
 
 /**
  * Mappe les erreurs de validation d'un 422 sur les champs du formulaire.
- * `loc` peut être `["severity"]` comme `["body", "features", "content"]` : on
- * retient le premier segment qui correspond à un champ connu.
+ * `loc` peut être `["severity"]` comme `["body", "features", "content",
+ * "exempt_roles"]` : on retient le premier segment qui correspond à un champ
+ * connu, et une exemption en trop (> 25 sur un bloc) va sous la liste commune.
  */
 function mapValidationErrors(error: ApiError): FieldErrors {
   const fields: FieldErrors = {}
@@ -109,10 +134,37 @@ function mapValidationErrors(error: ApiError): FieldErrors {
     "features",
   ]
   for (const issue of error.validationIssues) {
-    const target = issue.loc?.find((part) => known.includes(part as keyof FieldErrors))
+    const loc = issue.loc ?? []
+    if (loc.includes("exempt_roles") || loc.includes("exempt_channels")) {
+      fields.exemptions = issue.msg
+      continue
+    }
+    const target = loc.find((part) => known.includes(part as keyof FieldErrors))
     if (target) fields[target as keyof FieldErrors] = issue.msg
   }
   return fields
+}
+
+/**
+ * Rattache un 422 en **chaîne** (sans `loc`) à ce qui l'a causé :
+ * - « Salon d'alertes invalide » → le salon d'alertes ;
+ * - « Fonctionnalité inconnue » / « Catégorie inconnue » → encart global, rien
+ *   dans le formulaire ne les pilote ;
+ * - sinon, si les consignes ont changé, c'est le contrôle anti-injection
+ *   rejoué à l'enregistrement : sa raison va sous le champ.
+ */
+function mapStringError(message: string, indicationsChanged: boolean): {
+  fields: FieldErrors
+  form: string | null
+} {
+  if (/salon d'alertes|alert channel|notify_channel/i.test(message)) {
+    return { fields: { notify_channel_id: message }, form: null }
+  }
+  if (/fonctionnalit[ée] inconnue|cat[ée]gorie inconnue|unknown (feature|category)/i.test(message)) {
+    return { fields: {}, form: message }
+  }
+  if (indicationsChanged) return { fields: { indications: message }, form: null }
+  return { fields: {}, form: message }
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -140,7 +192,7 @@ export function AutomodAiPage() {
 
 function AutomodAiForm() {
   const { t } = useTranslation()
-  const { selectedGuildId, channels } = useGuildContext()
+  const { selectedGuildId, channels, roles } = useGuildContext()
 
   const [savedConfig, setSavedConfig] = useState<AutomodAiConfig | null>(null)
   const [draft, setDraft] = useState<AutomodAiConfig | null>(null)
@@ -151,6 +203,8 @@ function AutomodAiForm() {
   const [isResetting, setIsResetting] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  /** 422 qui ne se rattache à aucun champ (id de détecteur ou catégorie inconnus). */
+  const [formError, setFormError] = useState<string | null>(null)
   const [check, setCheck] = useState<CheckState>({ kind: "idle" })
 
   const textChannels = useMemo(
@@ -160,6 +214,20 @@ function AutomodAiForm() {
       ),
     [channels]
   )
+
+  // Exemptions : salons texte, annonces et forums (les fils suivent leur
+  // parent) ; rôles hors `@everyone`.
+  const exemptableChannels = useMemo(
+    () =>
+      channels.filter(
+        (c) =>
+          c.type === CHANNEL_TYPES.TEXT ||
+          c.type === CHANNEL_TYPES.ANNOUNCEMENT ||
+          c.type === CHANNEL_TYPES.FORUM
+      ),
+    [channels]
+  )
+  const exemptableRoles = useMemo(() => roles.filter((r) => r.name !== "@everyone"), [roles])
 
   // ── Chargement ────────────────────────────────────────────────────────────
 
@@ -274,9 +342,24 @@ function AutomodAiForm() {
     })
   }, [])
 
+  /** Une seule liste dans l'UI, recopiée sur tous les blocs (comme le panneau du bot). */
+  const patchExemptions = useCallback((changes: { roles?: string[]; channels?: string[] }) => {
+    setDraft((prev) => (prev ? { ...prev, features: applyExemptions(prev.features, changes) } : prev))
+    setFieldErrors((prev) => ({ ...prev, exemptions: undefined }))
+  }, [])
+
   // ── Sauvegarde ────────────────────────────────────────────────────────────
 
   const gates = useSanctionGates(selectedGuildId)
+  const { isExempt } = useSanctions()
+  // Deux sources pour le même verrou : le statut de sanction du serveur (déjà
+  // connu du contexte) et `/status`, qui le dit aussi. Le staff n'est jamais
+  // bloqué — l'API ne le bloque pas non plus.
+  const blockedByStatus =
+    !isExempt &&
+    (status?.blocked_by_global_sanction === true ||
+      status?.warnings.includes("blocked_by_global_sanction") === true)
+  const readOnly = !gates.canWriteAutomod || blockedByStatus
   const isDirty = Boolean(savedConfig && draft && !isSameConfig(savedConfig, draft))
 
   // Annotation explicite : le corps se référence lui-même (bouton « Réessayer »
@@ -303,6 +386,7 @@ function AutomodAiForm() {
     logger.event("module:automod_ai", "Save", { enabled: draft.enabled, dry_run: draft.dry_run })
     setIsSaving(true)
     setFieldErrors({})
+    setFormError(null)
     try {
       // On envoie l'objet complet issu de celui reçu : `categories_desactivees`
       // et tout champ inconnu de ce front sont préservés.
@@ -326,26 +410,33 @@ function AutomodAiForm() {
         }
         if (e.status === 422) {
           const mapped = mapValidationErrors(e)
-          // Détail en chaîne (ex. « Salon d'alertes invalide ») : pas de `loc`,
-          // on le rattache au salon d'alertes, seul champ concerné côté backend.
-          if (Object.keys(mapped).length === 0) {
-            setFieldErrors({ notify_channel_id: e.message })
-          } else {
+          if (Object.keys(mapped).length > 0) {
             setFieldErrors(mapped)
+          } else {
+            const { fields, form } = mapStringError(
+              e.message,
+              draft.indications !== (savedConfig?.indications ?? "")
+            )
+            setFieldErrors(fields)
+            setFormError(form)
           }
         }
       }
       handleSaveError(e, { title: t("modules.saveError") })
+      // 403 `automod_ai_blocked` : le serveur vient d'être sanctionné — `/status`
+      // le dit et fait passer le formulaire en lecture seule.
+      if (e instanceof ApiError && e.isForbidden) await loadStatus()
     } finally {
       setIsSaving(false)
     }
-  }, [selectedGuildId, draft, t, loadStatus, gates])
+  }, [selectedGuildId, draft, savedConfig, t, loadStatus, gates])
 
   const handleDiscard = useCallback(() => {
     if (!savedConfig) return
     logger.event("module:automod_ai", "Discard")
     setDraft(structuredClone(savedConfig))
     setFieldErrors({})
+    setFormError(null)
     setCheck({ kind: "idle" })
   }, [savedConfig])
 
@@ -359,6 +450,7 @@ function AutomodAiForm() {
       setSavedConfig(fresh)
       setDraft(structuredClone(fresh))
       setFieldErrors({})
+      setFormError(null)
       setCheck({ kind: "idle" })
       toast.success(t("modules.automod_ai.resetSuccess"))
       logger.success("module:automod_ai", "Config reset")
@@ -388,7 +480,8 @@ function AutomodAiForm() {
     )
   }
 
-  const featureIds = Object.keys(draft.features)
+  const featureIds = orderedFeatureIds(draft.features)
+  const exemptions = sharedExemptions(draft.features)
 
   return (
     <div className="flex flex-col gap-6 w-full pb-24">
@@ -408,9 +501,30 @@ function AutomodAiForm() {
         <StatusBadges status={status} />
       </div>
 
+      {/* Sanction globale : le bandeau de la page couvre le cas connu du
+          contexte ; celui-ci couvre le cas que seul `/status` a vu. */}
+      {blockedByStatus && gates.canWriteAutomod && (
+        <Alert variant="destructive">
+          <LockIcon />
+          <AlertTitle>{t("violations.banner.automodBlockedTitle")}</AlertTitle>
+          <AlertDescription>{t("violations.banner.automodBlockedDescription")}</AlertDescription>
+        </Alert>
+      )}
+
       {/* Avertissements de configuration (calculés côté backend) */}
       <StatusWarnings status={status} />
 
+      {formError && (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertTitle>{t("modules.automod_ai.formErrorTitle")}</AlertTitle>
+          <AlertDescription>{formError}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* En lecture seule, `disabled` sur le fieldset désactive tous les
+          contrôles natifs d'un coup (Switch, Select, Checkbox, boutons). */}
+      <fieldset disabled={readOnly} className="contents">
       {/* Général */}
       <Card>
         <CardHeader>
@@ -541,6 +655,7 @@ function AutomodAiForm() {
                 step={1}
                 value={[draft.severity]}
                 onValueChange={([v]) => patch({ severity: v })}
+                disabled={readOnly}
                 className="w-full"
               />
               <div className="flex justify-between mt-2 text-xs text-muted-foreground">
@@ -632,27 +747,117 @@ function AutomodAiForm() {
         </CardContent>
       </Card>
 
-      {/* Détecteurs (map ouverte — rendu générique) */}
+      {/* Détecteurs — chacun s'active indépendamment */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t("modules.automod_ai.featuresTitle")}</CardTitle>
           <CardDescription>{t("modules.automod_ai.featuresDescription")}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {featureIds.length === 0 && (
-            <p className="text-sm text-muted-foreground">{t("modules.automod_ai.noFeatures")}</p>
-          )}
-          {featureIds.map((id) => (
-            <FeatureCard
-              key={id}
-              featureId={id}
-              feature={draft.features[id]}
-              onChange={(changes) => patchFeature(id, changes)}
+        <CardContent>
+          <FieldSet>
+            <FieldGroup className="gap-3">
+              {featureIds.map((id) => (
+                <FeatureChoice
+                  key={id}
+                  featureId={id}
+                  feature={draft.features[id]}
+                  onChange={(changes) => patchFeature(id, changes)}
+                />
+              ))}
+            </FieldGroup>
+            {fieldErrors.features && <FieldError>{fieldErrors.features}</FieldError>}
+          </FieldSet>
+
+          {/* `scan_all` : champ ops, placé sous « Captures d'arnaque » dans une
+              section repliée, avec son coût. Renvoyé tel que lu sinon. */}
+          {draft.features[SCAN_ALL_FEATURE] && (
+            <ScanAllSetting
+              checked={draft.features[SCAN_ALL_FEATURE].scan_all === true}
+              onChange={(v) => patchFeature(SCAN_ALL_FEATURE, { scan_all: v })}
             />
-          ))}
-          {fieldErrors.features && (
-            <p className="text-xs text-destructive">{fieldErrors.features}</p>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Exemptions — une seule liste, recopiée sur les trois blocs */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t("modules.automod_ai.exemptionsTitle")}</CardTitle>
+          <CardDescription>{t("modules.automod_ai.exemptionsDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-5">
+          {exemptions.diverged && (
+            <Alert>
+              <TriangleAlertIcon />
+              <AlertTitle>{t("modules.automod_ai.exemptionsDivergedTitle")}</AlertTitle>
+              <AlertDescription>{t("modules.automod_ai.exemptionsDivergedDescription")}</AlertDescription>
+              {!readOnly && (
+                <AlertAction>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      patchExemptions({ roles: exemptions.roles, channels: exemptions.channels })
+                    }
+                  >
+                    {t("modules.automod_ai.exemptionsUnify")}
+                  </Button>
+                </AlertAction>
+              )}
+            </Alert>
+          )}
+          <FieldGroup>
+            <Field data-invalid={fieldErrors.exemptions ? true : undefined}>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="automod-exempt-roles">
+                  {t("modules.automod_ai.exemptRoles")}
+                </FieldLabel>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {t("modules.automod_ai.exemptCount", {
+                    count: exemptions.roles.length,
+                    max: EXEMPT_MAX,
+                  })}
+                </span>
+              </div>
+              <RoleMultiPicker
+                id="automod-exempt-roles"
+                value={exemptions.roles}
+                roles={exemptableRoles}
+                onChange={(roles) => patchExemptions({ roles })}
+                max={EXEMPT_MAX}
+                placeholder={t("modules.automod_ai.addRole")}
+                invalid={Boolean(fieldErrors.exemptions)}
+                disabled={readOnly}
+              />
+              <FieldDescription>{t("modules.automod_ai.exemptRolesHint")}</FieldDescription>
+            </Field>
+            <Field data-invalid={fieldErrors.exemptions ? true : undefined}>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="automod-exempt-channels">
+                  {t("modules.automod_ai.exemptChannels")}
+                </FieldLabel>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {t("modules.automod_ai.exemptCount", {
+                    count: exemptions.channels.length,
+                    max: EXEMPT_MAX,
+                  })}
+                </span>
+              </div>
+              <ChannelMultiPicker
+                id="automod-exempt-channels"
+                value={exemptions.channels}
+                channels={exemptableChannels}
+                onChange={(channels) => patchExemptions({ channels })}
+                max={EXEMPT_MAX}
+                placeholder={t("modules.automod_ai.addChannel")}
+                invalid={Boolean(fieldErrors.exemptions)}
+                disabled={readOnly}
+              />
+              <FieldDescription>{t("modules.automod_ai.exemptChannelsHint")}</FieldDescription>
+              {fieldErrors.exemptions && <FieldError>{fieldErrors.exemptions}</FieldError>}
+            </Field>
+          </FieldGroup>
         </CardContent>
       </Card>
 
@@ -671,6 +876,7 @@ function AutomodAiForm() {
         )}
         {t("modules.automod_ai.reset")}
       </Button>
+      </fieldset>
 
       <AlertDialog open={confirmReset} onOpenChange={(open) => !open && setConfirmReset(false)}>
         <AlertDialogContent>
@@ -693,7 +899,7 @@ function AutomodAiForm() {
       </AlertDialog>
 
       <UnsavedBar
-        isDirty={isDirty}
+        isDirty={isDirty && !readOnly}
         isSaving={isSaving}
         onSave={handleSave}
         onDiscard={handleDiscard}
@@ -735,11 +941,13 @@ function StatusBadges({ status }: { status: AutomodAiStatus | null }) {
 /** Avertissements renvoyés par `/status`, traduits et hiérarchisés. */
 function StatusWarnings({ status }: { status: AutomodAiStatus | null }) {
   const { t } = useTranslation()
-  if (!status || status.warnings.length === 0) return null
+  // La sanction globale a déjà son bandeau : on ne la dit pas deux fois.
+  const warnings = status?.warnings.filter((w) => w !== "blocked_by_global_sanction") ?? []
+  if (warnings.length === 0) return null
 
   return (
     <div className="flex flex-col gap-2">
-      {status.warnings.map((warning) => {
+      {warnings.map((warning) => {
         // `missing_notify_channel` est la mauvaise config n°1 : elle empêche le
         // module de tourner → traitée visuellement comme une erreur.
         const isBlocking = warning === "missing_notify_channel"
@@ -811,184 +1019,83 @@ function IndicationsCheckHint({ check }: { check: CheckState }) {
 
 // ─── Détecteur ────────────────────────────────────────────────────────────────
 
-interface FeatureCardProps {
+interface FeatureChoiceProps {
   featureId: string
   feature: AutomodFeature
   onChange: (changes: Partial<AutomodFeature>) => void
 }
 
 /**
- * Rendu générique d'un détecteur : les prochaines features (anti-link,
- * anti-spam…) auront la même forme `{enabled, exempt_roles, exempt_channels}`
- * et s'afficheront sans code supplémentaire — les libellés retombent sur l'id.
+ * Une case par détecteur (`features.<id>.enabled`), indépendante des autres.
+ * Un id sans traduction retombe sur l'id lui-même plutôt que sur un vide.
  */
-function FeatureCard({ featureId, feature, onChange }: FeatureCardProps) {
+function FeatureChoice({ featureId, feature, onChange }: FeatureChoiceProps) {
   const { t } = useTranslation()
-  const { channels, roles } = useGuildContext()
-
-  const textChannels = channels.filter(
-    (c) =>
-      c.type === CHANNEL_TYPES.TEXT ||
-      c.type === CHANNEL_TYPES.ANNOUNCEMENT ||
-      c.type === CHANNEL_TYPES.FORUM
-  )
-  const manageableRoles = roles.filter((r) => r.name !== "@everyone")
-
-  const exemptRoles = feature.exempt_roles ?? []
-  const exemptChannels = feature.exempt_channels ?? []
-
-  const availableRoles = manageableRoles.filter((r) => !exemptRoles.includes(r.id))
-  const availableChannels = textChannels.filter((c) => !exemptChannels.includes(c.id))
+  const inputId = `automod-feature-${featureId}`
 
   return (
-    <div className="rounded-lg border">
-      <div className="flex items-center justify-between gap-4 p-3.5">
-        <div className="min-w-0">
-          <p className="text-sm font-medium">
+    <FieldLabel htmlFor={inputId}>
+      <Field orientation="horizontal">
+        <FieldContent>
+          <FieldTitle>
             {t(`modules.automod_ai.features.${featureId}.name`, { defaultValue: featureId })}
-          </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          </FieldTitle>
+          <FieldDescription>
             {t(`modules.automod_ai.features.${featureId}.description`, {
               defaultValue: t("modules.automod_ai.features.genericDescription"),
             })}
-          </p>
-        </div>
-        <Switch checked={feature.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
-      </div>
+          </FieldDescription>
+        </FieldContent>
+        <Checkbox
+          id={inputId}
+          checked={feature.enabled}
+          onCheckedChange={(v) => onChange({ enabled: v === true })}
+        />
+      </Field>
+    </FieldLabel>
+  )
+}
 
-      {feature.enabled && (
-        <div className="flex flex-col gap-5 border-t p-3.5">
-          {/* Rôles exemptés */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">{t("modules.automod_ai.exemptRoles")}</label>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {exemptRoles.length} / {EXEMPT_MAX}
-              </span>
-            </div>
-            {exemptRoles.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {exemptRoles.map((id) => {
-                  const role = roles.find((r) => r.id === id)
-                  const color = role ? roleColorToHex(role.color) : "#99aab5"
-                  return (
-                    <span
-                      key={id}
-                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium border"
-                      style={{ borderColor: color, color }}
-                    >
-                      @{role?.name ?? id}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onChange({ exempt_roles: exemptRoles.filter((r) => r !== id) })
-                        }
-                        className="ml-0.5 rounded-full hover:opacity-70 transition-opacity"
-                      >
-                        <XIcon className="size-3" />
-                      </button>
-                    </span>
-                  )
-                })}
-              </div>
-            )}
-            {exemptRoles.length >= EXEMPT_MAX ? (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {t("modules.automod_ai.exemptLimitReached", { max: EXEMPT_MAX })}
-              </p>
-            ) : (
-              availableRoles.length > 0 && (
-                <Select
-                  value=""
-                  onValueChange={(roleId) => onChange({ exempt_roles: [...exemptRoles, roleId] })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("modules.automod_ai.addRole")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableRoles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="size-2 rounded-full"
-                            style={{ backgroundColor: roleColorToHex(role.color) }}
-                          />
-                          {role.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )
-            )}
-            <p className="text-xs text-muted-foreground">
-              {t("modules.automod_ai.exemptRolesHint")}
-            </p>
-          </div>
+// ─── Lecture de toutes les images (image_scam.scan_all) ───────────────────────
 
-          {/* Salons exemptés */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium">{t("modules.automod_ai.exemptChannels")}</label>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {exemptChannels.length} / {EXEMPT_MAX}
-              </span>
-            </div>
-            {exemptChannels.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {exemptChannels.map((id) => {
-                  const channel = channels.find((c) => c.id === id)
-                  return (
-                    <span
-                      key={id}
-                      className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium"
-                    >
-                      # {channel?.name ?? id}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          onChange({ exempt_channels: exemptChannels.filter((c) => c !== id) })
-                        }
-                        className="ml-0.5 rounded-full text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        <XIcon className="size-3" />
-                      </button>
-                    </span>
-                  )
-                })}
-              </div>
-            )}
-            {exemptChannels.length >= EXEMPT_MAX ? (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                {t("modules.automod_ai.exemptLimitReached", { max: EXEMPT_MAX })}
-              </p>
-            ) : (
-              availableChannels.length > 0 && (
-                <Select
-                  value=""
-                  onValueChange={(channelId) =>
-                    onChange({ exempt_channels: [...exemptChannels, channelId] })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={t("modules.automod_ai.addChannel")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableChannels.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        # {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )
-            )}
-            <p className="text-xs text-muted-foreground">
-              {t("modules.automod_ai.exemptChannelsHint")}
-            </p>
-          </div>
-        </div>
-      )}
-    </div>
+function ScanAllSetting({
+  checked,
+  onChange,
+}: {
+  checked: boolean
+  onChange: (value: boolean) => void
+}) {
+  const { t } = useTranslation()
+  // Ouvert d'office si le réglage est déjà actif : un coût en cours ne se cache pas.
+  const [open, setOpen] = useState(checked)
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="mt-4">
+      <CollapsibleTrigger asChild>
+        <Button type="button" variant="ghost" size="sm" className="-ml-2">
+          <ChevronDownIcon
+            data-icon="inline-start"
+            className={cn("transition-transform", open && "rotate-180")}
+          />
+          {t("modules.automod_ai.advanced")}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="flex flex-col gap-3 pt-2">
+        <p className="text-xs font-medium text-muted-foreground">
+          {t("modules.automod_ai.features.image_scam.name")}
+        </p>
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldLabel htmlFor="automod-scan-all">{t("modules.automod_ai.scanAll")}</FieldLabel>
+            <FieldDescription>{t("modules.automod_ai.scanAllDescription")}</FieldDescription>
+          </FieldContent>
+          <Switch id="automod-scan-all" checked={checked} onCheckedChange={onChange} />
+        </Field>
+        <Alert>
+          <TriangleAlertIcon />
+          <AlertDescription>{t("modules.automod_ai.scanAllWarning")}</AlertDescription>
+        </Alert>
+      </CollapsibleContent>
+    </Collapsible>
   )
 }

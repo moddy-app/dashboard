@@ -409,20 +409,26 @@
       "checkUnavailableSaveDescription": "Nothing was saved. Try again in a moment.",
       "retry": "Retry",
       "featuresTitle": "Detectors",
-      "featuresDescription": "What the AI watches, and who is exempt from it.",
-      "noFeatures": "No detector available.",
+      "featuresDescription": "What Moddy watches. Each detector can be turned on independently.",
       "features": {
         "genericDescription": "Detector handled by the AI moderation.",
         "content": {
-          "name": "Message content",
-          "description": "Analyses messages and acts on insults, threats, harassment, scams and more."
+          "name": "Message analysis",
+          "description": "The AI reads message text and acts on insults, threats, harassment, scams and more."
+        },
+        "image_nsfw": {
+          "name": "Explicit images",
+          "description": "Spots sexual or shocking images. Age-restricted channels are never scanned."
+        },
+        "image_scam": {
+          "name": "Scam screenshots",
+          "description": "Spots screenshots of fake crypto offers, fake giveaways and other scams."
         }
       },
       "exemptRoles": "Exempt roles",
-      "exemptRolesHint": "Members with one of these roles are never moderated by this detector.",
+      "exemptRolesHint": "Members with one of these roles are never moderated.",
       "exemptChannels": "Exempt channels",
       "exemptChannelsHint": "These channels are ignored, along with the threads they contain.",
-      "exemptLimitReached": "Limit of {{max}} entries reached.",
       "addRole": "Add a role",
       "addChannel": "Add a channel",
       "statusRunning": "Running",
@@ -431,13 +437,25 @@
         "missing_notify_channel": "No alert channel: the module is not running.",
         "no_feature_enabled": "No detector enabled.",
         "dry_run": "Simulation mode: no sanction is applied.",
-        "unknown": "Configuration warning: {{code}}"
+        "unknown": "Configuration warning: {{code}}",
+        "blocked_by_global_sanction": "This server is under a global sanction: AI moderation is switched off."
       },
       "reset": "Reset module",
       "resetSuccess": "AI moderation configuration reset.",
       "confirmResetTitle": "Reset AI moderation?",
       "confirmResetDescription": "The whole configuration of the module is deleted, including guidelines and exemptions. This cannot be undone.",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "advanced": "Advanced settings",
+      "scanAll": "Read every image",
+      "scanAllDescription": "By default, Moddy only reads the text of images that look risky. When on, it reads the text of every image.",
+      "scanAllWarning": "Every image read counts towards the quota of 300 reads per day and per server: on an active server, it runs out fast.",
+      "exemptionsTitle": "Exemptions",
+      "exemptionsDescription": "These roles and channels are exempt from all three detectors.",
+      "exemptCount": "{{count}} / {{max}}",
+      "exemptionsDivergedTitle": "Detectors don't all have the same exemptions",
+      "exemptionsDivergedDescription": "The configuration was changed elsewhere and each detector has its own list. You're seeing their union; nothing changes until you edit the list or click “Unify”.",
+      "exemptionsUnify": "Unify",
+      "formErrorTitle": "Save rejected"
     },
     "social_notifications": {
       "name": "Social Notifications",
@@ -1939,6 +1957,9 @@
         "duplicateTarget": "This listing site already has a reminder in this channel.",
         "quota": "{{max}} reminder(s) at most for this listing site."
       }
+    },
+    "channelPicker": {
+      "empty": "No channels found"
     }
   },
   "staff": {

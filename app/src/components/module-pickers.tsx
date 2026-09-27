@@ -196,3 +196,87 @@ export function RoleMultiPicker({
     </Combobox>
   )
 }
+
+interface ChannelMultiPickerProps {
+  id?: string
+  value: string[]
+  channels: Channel[]
+  onChange: (value: string[]) => void
+  /** Au-delà, les salons non choisis sont désactivés. */
+  max: number
+  placeholder: string
+  invalid?: boolean
+  disabled?: boolean
+}
+
+/**
+ * Multi-sélection de salons, jumelle de `RoleMultiPicker`. Un salon supprimé
+ * reste affiché (par son id) et retirable.
+ */
+export function ChannelMultiPicker({
+  id,
+  value,
+  channels,
+  onChange,
+  max,
+  placeholder,
+  invalid,
+  disabled,
+}: ChannelMultiPickerProps) {
+  const { t } = useTranslation()
+  const anchor = useComboboxAnchor()
+  const byId = React.useMemo(() => new Map(channels.map((c) => [c.id, c])), [channels])
+  const items = React.useMemo(
+    () => [...channels.map((c) => c.id), ...value.filter((v) => !byId.has(v))],
+    [channels, value, byId]
+  )
+  const label = React.useCallback(
+    (channelId: string) => byId.get(channelId)?.name ?? channelId,
+    [byId]
+  )
+  const isFull = value.length >= max
+
+  return (
+    <Combobox
+      multiple
+      autoHighlight
+      items={items}
+      value={value}
+      onValueChange={(next: string[]) => onChange(next.slice(0, max))}
+      itemToStringLabel={label}
+      disabled={disabled}
+    >
+      <ComboboxChips ref={anchor} className="w-full">
+        <ComboboxValue>
+          {(values: string[]) => (
+            <React.Fragment>
+              {values.map((channelId) => (
+                <ComboboxChip key={channelId}># {label(channelId)}</ComboboxChip>
+              ))}
+              <ComboboxChipsInput
+                id={id}
+                aria-invalid={invalid || undefined}
+                placeholder={values.length === 0 ? placeholder : undefined}
+                disabled={disabled || isFull}
+              />
+            </React.Fragment>
+          )}
+        </ComboboxValue>
+      </ComboboxChips>
+      <ComboboxContent anchor={anchor}>
+        <ComboboxEmpty>{t("modules.channelPicker.empty")}</ComboboxEmpty>
+        <ComboboxList>
+          {(channelId: string) => (
+            <ComboboxItem
+              key={channelId}
+              value={channelId}
+              disabled={!byId.has(channelId) || (isFull && !value.includes(channelId))}
+            >
+              <span className="truncate"># {label(channelId)}</span>
+            </ComboboxItem>
+          )}
+        </ComboboxList>
+      </ComboboxContent>
+    </Combobox>
+  )
+}
