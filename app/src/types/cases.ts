@@ -151,9 +151,9 @@ export interface EvidenceMessageLink {
   author_type: AuthorType | null
   author_id: string | null
   kind: 'message_link'
-  jump_url: string
+  jump_url?: string | null
   channel_id: string
-  message_id: string
+  message_id?: string | null
   content: string
   message_author_id: string | null
   message_author_name: string | null

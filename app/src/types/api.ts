@@ -441,42 +441,95 @@ export interface AutomodInfractionCheck {
   code?: string
 }
 
+/** Libellé multilingue : clés `fr`, `en-US`, `es-ES`, `pt-BR`, `de` (toujours complètes, sauf mention). */
+export type AutomodLocalized = Record<string, string>
+
+export type AutomodInfractionFamily = 'message' | 'image' | 'profile'
+
 export interface AutomodCatalogInfraction {
   id: string
-  family: 'message' | 'image' | 'profile'
+  family: AutomodInfractionFamily
+  name: AutomodLocalized
+  description: AutomodLocalized
+  /** Planchers du réglage Moddy (ajustés selon sévérité et historique). */
   default_crans: AutomodCrans
+  /** Informatif : pas de clémence d'ancienneté dès la gravité haute. */
   sensitive: boolean
+  /** Informatif : ban immédiat, sans plafond de confiance ni clémence. */
   ban_on_sight: boolean
+  /** Infractions de profil : actions permises (ids de `profile_actions`). */
   profile_actions?: string[]
   default_action_profil?: string
   [key: string]: unknown
+}
+
+export interface AutomodCatalogFamily {
+  id: AutomodInfractionFamily | 'custom' | (string & {})
+  name: AutomodLocalized
+}
+
+export interface AutomodCatalogGravity {
+  id: AutomodGravity
+  name: AutomodLocalized
+  label: AutomodLocalized
+  description: AutomodLocalized
 }
 
 export interface AutomodCatalogLadderStep {
   cran: number
   action: 'delete' | 'warn' | 'mute' | 'ban'
   duration_hours: number | null
+  name: AutomodLocalized
+}
+
+export interface AutomodCatalogProfileAction {
+  id: AutomodProfileAction | (string & {})
+  name: AutomodLocalized
+  description: AutomodLocalized
+}
+
+export interface AutomodCatalogFeature {
+  id: string
+  name: AutomodLocalized
+  /** Seul libellé nullable du catalogue (`profile`). */
+  description: AutomodLocalized | null
 }
 
 export interface AutomodCatalogTemplate {
   id: string
-  nom: { fr: string; 'en-US': string }
-  description: { fr: string; 'en-US': string }
+  nom: AutomodLocalized
+  description: AutomodLocalized
   exemples: string[]
   mots_cles: string[]
 }
 
-/** Catalogue du module : source de vérité (infractions, échelle, limites, modèles). */
+export interface AutomodCatalogPreset {
+  id: 'light' | 'balanced' | 'strict' | (string & {})
+  name: AutomodLocalized
+  description: AutomodLocalized
+  /** Détecteurs activés par ce niveau. */
+  features: string[]
+  severity: number
+  sanctions: Record<string, AutomodSanction>
+  /** Config complète obtenue en partant d'un serveur vierge. */
+  config: AutomodAiConfig
+}
+
+/** Catalogue du module : source de vérité (infractions, échelle, limites, modèles). Statique. */
 export interface AutomodCatalog {
   infractions: AutomodCatalogInfraction[]
-  custom_infraction: { id_prefix: string; default_crans: AutomodCrans }
-  // TODO: forme non confirmée côté backend.
-  gravities: unknown[]
+  custom_infraction: {
+    id_prefix: string
+    family: 'custom'
+    name: AutomodLocalized
+    description: AutomodLocalized
+    default_crans: AutomodCrans
+  }
+  families: AutomodCatalogFamily[]
+  gravities: AutomodCatalogGravity[]
   cran_ladder: AutomodCatalogLadderStep[]
-  // TODO: forme non confirmée côté backend.
-  profile_actions: unknown[]
-  // TODO: forme non confirmée côté backend.
-  features: unknown[]
+  profile_actions: AutomodCatalogProfileAction[]
+  features: AutomodCatalogFeature[]
   limits: {
     infractions_perso: number
     nom: number
@@ -491,8 +544,7 @@ export interface AutomodCatalog {
     [key: string]: unknown
   }
   templates: AutomodCatalogTemplate[]
-  // TODO: forme non confirmée côté backend.
-  presets: unknown[]
+  presets: AutomodCatalogPreset[]
   [key: string]: unknown
 }
 

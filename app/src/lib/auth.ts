@@ -49,10 +49,17 @@ export class ApiError extends Error {
    * pour pouvoir rattacher chaque erreur à son champ de formulaire.
    */
   detail: unknown
-  constructor(status: number, message: string, detail?: unknown) {
+  /**
+   * Corps JSON complet de l'erreur, quand il est un objet. Certains endpoints
+   * y ajoutent des champs à côté de `error` (`code`, `infraction_id`, `index`…)
+   * que `detail` ne garde pas.
+   */
+  body: Record<string, unknown> | null
+  constructor(status: number, message: string, detail?: unknown, body?: Record<string, unknown> | null) {
     super(message)
     this.status = status
     this.detail = detail ?? message
+    this.body = body ?? null
   }
   get isUnauthorized() { return this.status === 401 }
   get isForbidden() { return this.status === 403 }
@@ -134,7 +141,11 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
     const detail = (error as { error?: unknown }).error
     const message = formatApiError(detail, response.status)
     logger.error('api', `← ${method} ${path} ${response.status} ${duration}ms`, detail ?? message)
-    throw new ApiError(response.status, message, detail)
+    const body =
+      typeof error === 'object' && error !== null && !Array.isArray(error)
+        ? (error as Record<string, unknown>)
+        : null
+    throw new ApiError(response.status, message, detail, body)
   }
 
   const text = await response.text()

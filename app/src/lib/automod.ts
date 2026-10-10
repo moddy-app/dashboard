@@ -1,8 +1,15 @@
+import type { ApiError } from '@/lib/auth'
 import type {
   AutomodAiConfig,
+  AutomodCatalog,
+  AutomodCatalogInfraction,
+  AutomodCatalogTemplate,
   AutomodCrans,
+  AutomodCustomInfraction,
   AutomodFeature,
   AutomodGravity,
+  AutomodLocalized,
+  AutomodMaxAction,
   AutomodProfileAction,
   AutomodSanction,
 } from '@/types/api'
@@ -238,4 +245,188 @@ export function setSanction(
   const { [key]: _old, ...rest } = config.sanctions ?? {}
   void _old
   return { ...config, sanctions: entry === null ? rest : { ...rest, [key]: entry } }
+}
+
+// ─── Libellés du catalogue ────────────────────────────────────────────────────
+
+/** Clé de langue du catalogue : `fr` si la langue commence par fr, sinon `en-US`. */
+export function localizedKey(lang: string): 'fr' | 'en-US' {
+  return lang.toLowerCase().startsWith('fr') ? 'fr' : 'en-US'
+}
+
+/**
+ * Libellé dans la langue de l'UI : `fr` ou `en-US`, puis repli sur `en-US`,
+ * puis sur la première valeur disponible. Jamais `undefined`.
+ */
+export function pickLocalized(l: AutomodLocalized | null | undefined, lang: string): string {
+  if (!l) return ''
+  const preferred = l[localizedKey(lang)]
+  if (preferred) return preferred
+  if (l['en-US']) return l['en-US']
+  return Object.values(l).find((v) => typeof v === 'string' && v !== '') ?? ''
+}
+
+// ─── Barème : lecture et écriture minimale ────────────────────────────────────
+
+/** Cran maximal atteignable selon `max_action` : warn → 1, mute → 6, ban → 7. */
+export const MAX_ACTION_CRAN: Record<AutomodMaxAction, number> = { warn: 1, mute: 6, ban: 7 }
+
+export const BAN_CRAN = 7
+
+/** Familles dans l'ordre d'affichage ; `custom` en dernier. */
+export const FAMILY_ORDER = ['message', 'image', 'profile', 'custom'] as const
+
+/** Clé `sanctions` d'une infraction du catalogue (son id tel quel). */
+export function sanctionKeyOf(infraction: Pick<AutomodCatalogInfraction, 'id'>): string {
+  return infraction.id
+}
+
+/** Cran effectif après plafonnement par `max_action`. */
+export function cappedCran(cran: number, maxAction: AutomodMaxAction): number {
+  return Math.min(cran, MAX_ACTION_CRAN[maxAction] ?? BAN_CRAN)
+}
+
+/** Réglage effectif d'une infraction de profil : le choix, sinon le défaut du catalogue. */
+export function effectiveProfileAction(
+  entry: AutomodSanction | undefined,
+  infraction: Pick<AutomodCatalogInfraction, 'profile_actions' | 'default_action_profil'>
+): string | undefined {
+  const allowed = infraction.profile_actions
+  if (!allowed || allowed.length === 0) return undefined
+  const chosen = entry?.action_profil
+  if (chosen && allowed.includes(chosen)) return chosen
+  return infraction.default_action_profil ?? allowed[0]
+}
+
+/**
+ * Applique des changements à une entrée de `sanctions` en n'écrivant que le
+ * strict nécessaire : `enabled: true`, `mode: 'auto'`, `recidive: true` et une
+ * `action_profil` égale au défaut sont des valeurs par défaut → on retire la
+ * clé. En mode `auto`, `crans` / `recidive` n'ont pas de sens et sont retirés.
+ * Les champs inconnus de l'entrée reçue sont conservés. Entrée vide → `null`
+ * (clé supprimée : retour au réglage Moddy).
+ *
+ * `crans` fournis à `perso` : si l'entrée n'en a pas encore, on amorce avec
+ * `seedCrans` (les `default_crans` du catalogue).
+ */
+export function applySanctionChanges(
+  entry: AutomodSanction | undefined,
+  changes: Partial<AutomodSanction>,
+  opts: { seedCrans: AutomodCrans; defaultProfileAction?: string }
+): AutomodSanction | null {
+  const next: AutomodSanction = { ...(entry ?? {}), ...changes }
+  if (next.enabled !== false) delete next.enabled
+  if (next.mode !== 'perso') {
+    delete next.mode
+    delete next.crans
+    delete next.recidive
+  } else {
+    next.crans = { ...opts.seedCrans, ...(next.crans ?? {}) }
+    if (next.recidive !== false) delete next.recidive
+  }
+  if (
+    next.action_profil === undefined ||
+    (opts.defaultProfileAction !== undefined && next.action_profil === opts.defaultProfileAction)
+  ) {
+    delete next.action_profil
+  }
+  return Object.keys(next).length === 0 ? null : next
+}
+
+/** Crans par défaut d'une infraction (catalogue) ou d'une perso (`custom_infraction`). */
+export function defaultCransFor(catalog: AutomodCatalog | null, key: string): AutomodCrans {
+  if (key.startsWith(CUSTOM_INFRACTION_PREFIX)) {
+    return catalog?.custom_infraction.default_crans ?? DEFAULT_CUSTOM_CRANS
+  }
+  return catalog?.infractions.find((i) => i.id === key)?.default_crans ?? DEFAULT_CUSTOM_CRANS
+}
+
+// ─── Infractions personnalisées ───────────────────────────────────────────────
+
+/** Infraction pré-remplie depuis un modèle, dans la langue de l'UI. */
+export function infractionFromTemplate(
+  template: AutomodCatalogTemplate,
+  id: string,
+  lang: string
+): AutomodCustomInfraction {
+  return {
+    id,
+    nom: pickLocalized(template.nom, lang),
+    description: pickLocalized(template.description, lang),
+    exemples: [...template.exemples],
+    mots_cles: [...template.mots_cles],
+    modele: template.id,
+  }
+}
+
+export function blankInfraction(id: string): AutomodCustomInfraction {
+  return { id, nom: '', description: '', exemples: [], mots_cles: [], modele: null }
+}
+
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>
+    return `{${Object.keys(obj)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${stableStringify(obj[k])}`)
+      .join(',')}}`
+  }
+  return JSON.stringify(value) ?? 'null'
+}
+
+/** Comparaison complète de deux infractions (ordre des clés indifférent). */
+export function isSameInfraction(a: AutomodCustomInfraction, b: AutomodCustomInfraction): boolean {
+  return stableStringify(a) === stableStringify(b)
+}
+
+/** Remplace l'infraction de même id, ou l'ajoute en fin de liste. */
+export function upsertCustomInfraction(
+  config: AutomodAiConfig,
+  infraction: AutomodCustomInfraction
+): AutomodAiConfig {
+  const list = config.infractions_perso ?? []
+  const exists = list.some((i) => i.id === infraction.id)
+  return {
+    ...config,
+    infractions_perso: exists
+      ? list.map((i) => (i.id === infraction.id ? infraction : i))
+      : [...list, infraction],
+  }
+}
+
+// ─── Erreurs du PUT ───────────────────────────────────────────────────────────
+
+/** Détails structurés d'une erreur liée aux infractions personnalisées. */
+export interface AutomodApiErrorInfo {
+  code: string
+  infractionId: string | null
+  index: number | null
+  sanctionKey: string | null
+}
+
+/**
+ * Lit les champs plats d'une erreur du PUT (`code`, `infraction_id`, `index`,
+ * `sanction_key`). `null` si le corps n'en porte pas (ancienne forme : chaîne
+ * ou tableau Pydantic).
+ */
+export function readAutomodErrorInfo(error: ApiError): AutomodApiErrorInfo | null {
+  const body = error.body
+  if (!body || typeof body.code !== 'string') return null
+  return {
+    code: body.code,
+    infractionId: typeof body.infraction_id === 'string' ? body.infraction_id : null,
+    index: typeof body.index === 'number' ? body.index : null,
+    sanctionKey: typeof body.sanction_key === 'string' ? body.sanction_key : null,
+  }
+}
+
+/** Id de l'infraction fautive : `infraction_id`, sinon l'élément à `index`. */
+export function resolveFaultyInfractionId(
+  info: AutomodApiErrorInfo,
+  sent: readonly AutomodCustomInfraction[]
+): string | null {
+  if (info.infractionId) return info.infractionId
+  if (info.index !== null) return sent[info.index]?.id ?? null
+  return null
 }

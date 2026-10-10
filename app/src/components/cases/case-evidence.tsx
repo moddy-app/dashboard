@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import {
   BotIcon,
@@ -12,6 +13,7 @@ import {
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime } from "@/lib/cases"
+import { useAutomodCategoryLabel } from "@/hooks/useAutomodCategoryLabel"
 import { getCaseEvidence } from "@/services/cases"
 import { isMessageLink } from "@/types/cases"
 import { ActionChip } from "./case-badges"
@@ -111,8 +113,9 @@ function ViewOnDiscordLink({ href }: { href: string }) {
 
 // ─── Carte automod (payload riche) ────────────────────────────────────────────
 
-function AutomodCard({ event }: { event: CaseEvent }) {
+function AutomodCard({ event, guildId }: { event: CaseEvent; guildId: string | null }) {
   const { t } = useTranslation()
+  const categoryLabel = useAutomodCategoryLabel(guildId)
   const [contextOpen, setContextOpen] = useState(false)
   const p = event.payload ?? {}
   const authorName = asString(p["author_name"])
@@ -121,7 +124,12 @@ function AutomodCard({ event }: { event: CaseEvent }) {
   const contextText = asString(p["context_text"])
   const raison = asString(p["raison"])
   const explication = asString(p["explication"])
-  const categorie = asString(p["categorie"])
+  const categorie = categoryLabel(asString(p["categorie"]), asString(p["categorie_label"]))
+  const origine = asString(p["origine"])
+  const profileOrigin =
+    origine === "profil_avatar" || origine === "profil_banniere" || origine === "profil_pseudo"
+      ? origine
+      : null
   const gravite = asString(p["gravite"])
   const confiance = asString(p["confiance"])
   const signalSource = asString(p["signal_source"])
@@ -208,7 +216,7 @@ function AutomodCard({ event }: { event: CaseEvent }) {
         </div>
       )}
 
-      {(contextText || jumpUrl) && (
+      {(contextText || jumpUrl || profileOrigin) && (
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
           {contextText && (
             <button
@@ -220,7 +228,11 @@ function AutomodCard({ event }: { event: CaseEvent }) {
               {t("cases.evidence.viewContext")}
             </button>
           )}
-          {jumpUrl && <ViewOnDiscordLink href={jumpUrl} />}
+          {jumpUrl ? (
+            <ViewOnDiscordLink href={jumpUrl} />
+          ) : (
+            profileOrigin && <MetaBadge>{t(`cases.evidence.profileOrigin.${profileOrigin}`)}</MetaBadge>
+          )}
         </div>
       )}
 
@@ -268,7 +280,7 @@ function MessageLinkCard({
             <EntityRef kind={(item.author_type ?? "moddy_staff") as EntityKind} id={item.author_id} variant="inline" />
           </span>
         )}
-        <ViewOnDiscordLink href={item.jump_url} />
+        {item.jump_url && <ViewOnDiscordLink href={item.jump_url} />}
       </div>
     </EvidenceCard>
   )
@@ -395,6 +407,10 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
   const [evidence, setEvidence] = useState<CaseEvidence[]>([])
   const [loaded, setLoaded] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
+  // Libellés de catégories : seulement dans la vue serveur (le lecteur y
+  // administre le serveur) ; ailleurs on s'en tient à l'instantané.
+  const { pathname } = useLocation()
+  const guildId = pathname.match(/^\/servers\/(\d+)\/cases\/?$/)?.[1] ?? null
 
   const automodEvents = events.filter(isAutomodEvidence)
 
@@ -458,7 +474,7 @@ export function CaseEvidenceSection({ caseRef, events }: { caseRef: string; even
 
         {/* Contexte automod (formaté comme un message cité) */}
         {automodEvents.map((e) => (
-          <AutomodCard key={e.id} event={e} />
+          <AutomodCard key={e.id} event={e} guildId={guildId} />
         ))}
       </div>
 
