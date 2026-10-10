@@ -418,11 +418,19 @@
         },
         "image_nsfw": {
           "name": "Images explicites",
-          "description": "Repère les images à caractère sexuel ou choquant. Les salons soumis à une limite d'âge ne sont jamais analysés."
+          "description": "Repère les images à caractère sexuel ou explicite. Les salons soumis à une limite d'âge ne sont jamais analysés."
+        },
+        "image_gore": {
+          "name": "Images choquantes",
+          "description": "Repère les images violentes ou gore."
         },
         "image_scam": {
           "name": "Captures d'arnaque",
           "description": "Repère les captures d'écran de fausses offres crypto, de faux concours et autres arnaques."
+        },
+        "profile": {
+          "name": "Profils des membres",
+          "description": "Vérifie l'avatar, la bannière et le pseudo des membres."
         }
       },
       "exemptRoles": "Rôles exemptés",
@@ -450,12 +458,18 @@
       "scanAllDescription": "Par défaut, Moddy ne lit le texte que des images jugées risquées. Activé, il lit celui de toutes les images.",
       "scanAllWarning": "Chaque image lue consomme le quota de 300 lectures par jour et par serveur : sur un serveur actif, il s'épuise vite.",
       "exemptionsTitle": "Exemptions",
-      "exemptionsDescription": "Ces rôles et ces salons échappent aux trois détecteurs.",
+      "exemptionsDescription": "Ces rôles et ces salons échappent à tous les détecteurs. Les profils de membres ne sont liés à aucun salon : seuls les rôles s'y appliquent.",
       "exemptCount": "{{count}} / {{max}}",
       "exemptionsDivergedTitle": "Les détecteurs n'ont pas tous les mêmes exemptions",
       "exemptionsDivergedDescription": "La configuration a été modifiée ailleurs et chaque détecteur a sa propre liste. Tu vois ici leur union ; rien ne change tant que tu ne modifies pas la liste ou ne cliques pas sur « Unifier ».",
       "exemptionsUnify": "Unifier",
-      "formErrorTitle": "Enregistrement refusé"
+      "formErrorTitle": "Enregistrement refusé",
+      "profileParts": {
+        "avatar": "Avatar",
+        "banner": "Bannière",
+        "pseudo": "Pseudo"
+      },
+      "profileBannerNote": "Les bannières ne sont vérifiées qu'à l'arrivée du membre et lors de ses autres changements de profil."
     },
     "social_notifications": {
       "name": "Notifications sociales",

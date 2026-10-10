@@ -418,11 +418,19 @@
         },
         "image_nsfw": {
           "name": "Explicit images",
-          "description": "Spots sexual or shocking images. Age-restricted channels are never scanned."
+          "description": "Spots sexual or explicit images. Age-restricted channels are never scanned."
+        },
+        "image_gore": {
+          "name": "Shocking images",
+          "description": "Spots violent or gore images."
         },
         "image_scam": {
           "name": "Scam screenshots",
           "description": "Spots screenshots of fake crypto offers, fake giveaways and other scams."
+        },
+        "profile": {
+          "name": "Member profiles",
+          "description": "Checks members' avatar, banner and display name."
         }
       },
       "exemptRoles": "Exempt roles",
@@ -450,12 +458,18 @@
       "scanAllDescription": "By default, Moddy only reads the text of images that look risky. When on, it reads the text of every image.",
       "scanAllWarning": "Every image read counts towards the quota of 300 reads per day and per server: on an active server, it runs out fast.",
       "exemptionsTitle": "Exemptions",
-      "exemptionsDescription": "These roles and channels are exempt from all three detectors.",
+      "exemptionsDescription": "These roles and channels are exempt from all detectors. Member profiles are not tied to a channel, so only roles apply to them.",
       "exemptCount": "{{count}} / {{max}}",
       "exemptionsDivergedTitle": "Detectors don't all have the same exemptions",
       "exemptionsDivergedDescription": "The configuration was changed elsewhere and each detector has its own list. You're seeing their union; nothing changes until you edit the list or click “Unify”.",
       "exemptionsUnify": "Unify",
-      "formErrorTitle": "Save rejected"
+      "formErrorTitle": "Save rejected",
+      "profileParts": {
+        "avatar": "Avatar",
+        "banner": "Banner",
+        "pseudo": "Display name"
+      },
+      "profileBannerNote": "Banners are only checked when the member joins and when their profile changes."
     },
     "social_notifications": {
       "name": "Social Notifications",

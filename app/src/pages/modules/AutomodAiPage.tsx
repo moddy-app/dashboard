@@ -68,6 +68,7 @@ import { sanctionBlockedError } from "@/lib/sanctions"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
 import {
+  PROFILE_FEATURE,
   SCAN_ALL_FEATURE,
   applyExemptions,
   orderedFeatureIds,
@@ -388,8 +389,8 @@ function AutomodAiForm() {
     setFieldErrors({})
     setFormError(null)
     try {
-      // On envoie l'objet complet issu de celui reçu : `categories_desactivees`
-      // et tout champ inconnu de ce front sont préservés.
+      // On envoie l'objet complet issu de celui reçu : tout champ inconnu de
+      // ce front est préservé.
       const saved = await saveAutomodConfig(selectedGuildId, draft)
       setSavedConfig(saved)
       setDraft(structuredClone(saved))
@@ -757,12 +758,19 @@ function AutomodAiForm() {
           <FieldSet>
             <FieldGroup className="gap-3">
               {featureIds.map((id) => (
-                <FeatureChoice
-                  key={id}
-                  featureId={id}
-                  feature={draft.features[id]}
-                  onChange={(changes) => patchFeature(id, changes)}
-                />
+                <div key={id} className="flex flex-col gap-3">
+                  <FeatureChoice
+                    featureId={id}
+                    feature={draft.features[id]}
+                    onChange={(changes) => patchFeature(id, changes)}
+                  />
+                  {id === PROFILE_FEATURE && draft.features[id].enabled && (
+                    <ProfileOptions
+                      feature={draft.features[id]}
+                      onChange={(changes) => patchFeature(id, changes)}
+                    />
+                  )}
+                </div>
               ))}
             </FieldGroup>
             {fieldErrors.features && <FieldError>{fieldErrors.features}</FieldError>}
@@ -1053,6 +1061,47 @@ function FeatureChoice({ featureId, feature, onChange }: FeatureChoiceProps) {
         />
       </Field>
     </FieldLabel>
+  )
+}
+
+// ─── Contrôles du détecteur de profils ────────────────────────────────────────
+
+const PROFILE_PARTS = ["avatar", "banner", "pseudo"] as const
+
+/**
+ * Sous-options de `profile` : avatar / bannière / pseudo
+ * (`features.profile.avatar|banner|pseudo`, vrai par défaut).
+ */
+function ProfileOptions({
+  feature,
+  onChange,
+}: {
+  feature: AutomodFeature
+  onChange: (changes: Partial<AutomodFeature>) => void
+}) {
+  const { t } = useTranslation()
+
+  return (
+    <FieldSet className="ml-3 border-l pl-4">
+      <FieldGroup className="gap-2">
+        {PROFILE_PARTS.map((part) => {
+          const inputId = `automod-profile-${part}`
+          return (
+            <Field key={part} orientation="horizontal">
+              <Checkbox
+                id={inputId}
+                checked={feature[part] !== false}
+                onCheckedChange={(v) => onChange({ [part]: v === true })}
+              />
+              <FieldLabel htmlFor={inputId} className="font-normal">
+                {t(`modules.automod_ai.profileParts.${part}`)}
+              </FieldLabel>
+            </Field>
+          )
+        })}
+      </FieldGroup>
+      <FieldDescription>{t("modules.automod_ai.profileBannerNote")}</FieldDescription>
+    </FieldSet>
   )
 }
 
