@@ -3,6 +3,7 @@ import type {
   AutomodAiConfig,
   AutomodCatalog,
   AutomodCatalogInfraction,
+  AutomodCatalogPreset,
   AutomodCatalogTemplate,
   AutomodCrans,
   AutomodCustomInfraction,
@@ -429,4 +430,64 @@ export function resolveFaultyInfractionId(
   if (info.infractionId) return info.infractionId
   if (info.index !== null) return sent[info.index]?.id ?? null
   return null
+}
+
+// ─── Assistant de configuration (niveaux Léger / Équilibré / Strict) ─────────
+
+export interface AutomodPresetOptions {
+  notifyChannelId: string | null
+  enabled: boolean
+  dryRun: boolean
+}
+
+/**
+ * Applique un niveau à une config existante — reproduit `preset_config` du bot.
+ * `preset.config` (config depuis une base vierge) n'est volontairement pas
+ * utilisé : il écraserait exemptions, indications et infractions personnalisées.
+ *
+ * Intacts : `indications`, `infractions_perso`, `max_action`,
+ * `ignore_moderators` et tout champ inconnu. Les clés de `sanctions` présentes
+ * dans N'IMPORTE QUEL niveau sont retirées avant de poser celles du niveau
+ * choisi : passer d'un niveau à un autre ne laisse aucun reliquat.
+ */
+export function applyAutomodPreset(
+  config: AutomodAiConfig,
+  preset: AutomodCatalogPreset,
+  allPresets: readonly AutomodCatalogPreset[],
+  opts: AutomodPresetOptions
+): AutomodAiConfig {
+  const features: Record<string, AutomodFeature> = { ...config.features }
+  for (const id of AUTOMOD_FEATURE_IDS) {
+    const block: AutomodFeature = {
+      ...defaultAutomodFeature(id),
+      ...structuredClone(config.features?.[id] ?? {}),
+    }
+    block.enabled = preset.features.includes(id)
+    if (id === PROFILE_FEATURE && block.enabled) {
+      block.avatar = true
+      block.banner = true
+      block.pseudo = true
+    }
+    features[id] = block
+  }
+
+  const sanctions: AutomodAiConfig['sanctions'] = { ...config.sanctions }
+  for (const p of allPresets) {
+    for (const key of Object.keys(p.sanctions ?? {})) delete sanctions[key]
+  }
+  for (const [key, value] of Object.entries(preset.sanctions ?? {})) {
+    sanctions[key] = structuredClone(value)
+  }
+
+  const next: AutomodAiConfig = {
+    ...config,
+    enabled: opts.enabled,
+    dry_run: opts.dryRun,
+    notify_channel_id: opts.notifyChannelId,
+    severity: preset.severity,
+    sanctions,
+    features,
+  }
+  delete next.categories_desactivees
+  return next
 }

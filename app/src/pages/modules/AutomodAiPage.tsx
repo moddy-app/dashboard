@@ -14,6 +14,7 @@ import { UnsavedBar } from "@/components/unsaved-bar"
 import { AutomodCustomTab } from "@/components/automod/custom-infractions-tab"
 import { AutomodProfileHoldsPanel } from "@/components/automod/profile-holds-panel"
 import { AutomodScaleTab } from "@/components/automod/scale-tab"
+import { SetupWizard } from "@/components/automod/setup-wizard"
 import { AutomodSettingsTab } from "@/components/automod/settings-tab"
 import { StatusBadges, StatusWarnings } from "@/components/automod/status-display"
 import {
@@ -176,7 +177,6 @@ function AutomodAiForm() {
   /** Infraction personnalisée ou barème refusé par le PUT. */
   const [faulty, setFaulty] = useState<FaultyInfraction | null>(null)
   const [check, setCheck] = useState<CheckState>({ kind: "idle" })
-  // TODO: l'assistant de configuration sera branché ici (ouverture seulement pour l'instant).
   const [wizardOpen, setWizardOpen] = useState(false)
   /** Ids d'infractions supprimés pendant la session : jamais réutilisés. */
   const usedInfractionIds = useRef<Set<string>>(new Set())
@@ -498,6 +498,14 @@ function AutomodAiForm() {
 
   return (
     <div className="flex flex-col gap-6 w-full pb-24">
+      <SetupWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        config={draft}
+        {...catalogProps}
+        onApply={(next) => setDraft(next)}
+      />
+
       {/* En-tête */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-4">
