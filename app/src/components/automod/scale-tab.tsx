@@ -316,7 +316,10 @@ function ScaleRow({ row, entry, catalog, maxAction, readOnly, onChange }: ScaleR
                 value={profileAction}
                 onValueChange={(v) => apply({ action_profil: v as AutomodSanction["action_profil"] })}
               >
-                <SelectTrigger className="w-full sm:w-72">
+                <SelectTrigger
+                  className="w-full sm:w-72"
+                  aria-label={t("modules.automod_ai.scale.profileAction")}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -356,6 +359,7 @@ function ScaleRow({ row, entry, catalog, maxAction, readOnly, onChange }: ScaleR
                     if (v === "perso") setOpen(true)
                   }}
                   className="w-full sm:w-fit"
+                  aria-label={t("modules.automod_ai.scale.mode")}
                 >
                   <ToggleGroupItem value="auto">{t("modules.automod_ai.scale.modeAuto")}</ToggleGroupItem>
                   <ToggleGroupItem value="perso">{t("modules.automod_ai.scale.modePerso")}</ToggleGroupItem>

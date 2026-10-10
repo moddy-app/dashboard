@@ -130,6 +130,7 @@ export function AutomodSettingsTab({
             </div>
             <Switch
               checked={draft.enabled}
+              aria-label={t("modules.automod_ai.enabled")}
               onCheckedChange={(v) => onPatch({ enabled: v })}
             />
           </div>
@@ -192,6 +193,7 @@ export function AutomodSettingsTab({
             </div>
             <Switch
               checked={draft.ignore_moderators}
+              aria-label={t("modules.automod_ai.ignoreModerators")}
               onCheckedChange={(v) => onPatch({ ignore_moderators: v })}
             />
           </div>
@@ -212,7 +214,7 @@ export function AutomodSettingsTab({
                 {t("modules.automod_ai.dryRunDescription")}
               </p>
             </div>
-            <Switch checked={draft.dry_run} onCheckedChange={(v) => onPatch({ dry_run: v })} />
+            <Switch checked={draft.dry_run} aria-label={t("modules.automod_ai.dryRun")} onCheckedChange={(v) => onPatch({ dry_run: v })} />
           </div>
 
           {/* La langue des DM et cartes de sanction suit celle du serveur — il

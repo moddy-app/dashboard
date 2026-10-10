@@ -45,7 +45,12 @@ import { handleSaveError } from "@/lib/handle-error"
 import { useSanctionGates, useSanctions } from "@/contexts/SanctionContext"
 import { sanctionBlockedError } from "@/lib/sanctions"
 import { logger } from "@/lib/logger"
-import { applyExemptions, readAutomodErrorInfo, resolveFaultyInfractionId } from "@/lib/automod"
+import {
+  applyExemptions,
+  readAutomodErrorInfo,
+  resolveFaultyInfractionId,
+  stableStringify,
+} from "@/lib/automod"
 import {
   INDICATIONS_MAX,
   checkIndications,
@@ -59,6 +64,8 @@ import type { AutomodAiConfig, AutomodAiStatus, AutomodFeature } from "@/types/a
 
 /** Délai avant de soumettre les indications au contrôle anti-injection. */
 const CHECK_DEBOUNCE_MS = 800
+
+const IDLE_CHECK: CheckState = { kind: "idle" }
 
 /** Encart global d'erreur d'enregistrement. */
 interface FormError {
@@ -77,8 +84,11 @@ interface FaultyInfraction {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+// Comparaison indifférente à l'ordre des clés : retirer puis remettre une clé de
+// `sanctions` la déplace en fin d'objet, ce qui afficherait sinon un faux
+// « non enregistré » alors que le brouillon est revenu à l'état enregistré.
 function isSameConfig(a: AutomodAiConfig, b: AutomodAiConfig): boolean {
-  return JSON.stringify(a) === JSON.stringify(b)
+  return stableStringify(a) === stableStringify(b)
 }
 
 /**
@@ -266,21 +276,19 @@ function AutomodAiForm() {
   // Identifie la requête en vol : une réponse tardive d'un texte déjà remplacé
   // ne doit pas écraser l'état du texte courant.
   const checkSeq = useRef(0)
+  // Hors de ces cas l'état affiché est « au repos », sans setState dans l'effet.
+  const needsCheck =
+    indicationsChanged && indications.trim() !== "" && indications.length <= INDICATIONS_MAX
 
   useEffect(() => {
     if (!selectedGuildId) return
     // Pas d'appel IA si le texte n'a pas bougé — activer un toggle ne coûte rien.
-    if (!indicationsChanged || indications.trim() === "") {
-      setCheck({ kind: "idle" })
-      return
-    }
-    if (indications.length > INDICATIONS_MAX) {
-      setCheck({ kind: "idle" })
-      return
-    }
+    if (!needsCheck) return
 
     const seq = ++checkSeq.current
-    setCheck({ kind: "checking" })
+    queueMicrotask(() => {
+      if (seq === checkSeq.current) setCheck({ kind: "checking" })
+    })
 
     const timer = setTimeout(async () => {
       try {
@@ -305,7 +313,7 @@ function AutomodAiForm() {
     }, CHECK_DEBOUNCE_MS)
 
     return () => clearTimeout(timer)
-  }, [selectedGuildId, indications, indicationsChanged, t])
+  }, [selectedGuildId, indications, needsCheck, t])
 
   // ── Mutations du brouillon ────────────────────────────────────────────────
 
@@ -353,9 +361,10 @@ function AutomodAiForm() {
   const readOnly = !gates.canWriteAutomod || blockedByStatus
   const isDirty = Boolean(savedConfig && draft && !isSameConfig(savedConfig, draft))
 
-  // Annotation explicite : le corps se référence lui-même (bouton « Réessayer »
-  // du toast 503), ce que l'inférence de TypeScript ne sait pas résoudre.
-  const handleSave: () => Promise<void> = useCallback(async () => {
+  // Le bouton « Réessayer » du toast 503 rappelle la DERNIÈRE version de
+  // `handleSave` (brouillon à jour), pas la fermeture qui l'a affiché.
+  const saveRef = useRef<() => Promise<void>>(async () => {})
+  const handleSave = useCallback(async () => {
     if (!selectedGuildId || !draft) return
 
     // L'automod IA suit le **serveur**, jamais l'utilisateur : un compte limité
@@ -409,7 +418,7 @@ function AutomodAiForm() {
           setFormError({ message: e.message, notSaved: true })
           toast.error(t("modules.automod_ai.checkUnavailableTitle"), {
             description: t("modules.automod_ai.checkUnavailableSaveDescription"),
-            action: { label: t("modules.automod_ai.retry"), onClick: () => void handleSave() },
+            action: { label: t("modules.automod_ai.retry"), onClick: () => void saveRef.current() },
           })
           return
         }
@@ -437,6 +446,10 @@ function AutomodAiForm() {
       setIsSaving(false)
     }
   }, [selectedGuildId, draft, savedConfig, t, loadStatus, gates])
+
+  useEffect(() => {
+    saveRef.current = handleSave
+  }, [handleSave])
 
   const handleDiscard = useCallback(() => {
     if (!savedConfig) return
@@ -499,7 +512,7 @@ function AutomodAiForm() {
   return (
     <div className="flex flex-col gap-6 w-full pb-24">
       <SetupWizard
-        open={wizardOpen}
+        open={wizardOpen && !readOnly}
         onOpenChange={setWizardOpen}
         config={draft}
         {...catalogProps}
@@ -586,7 +599,7 @@ function AutomodAiForm() {
               draft={draft}
               readOnly={readOnly}
               fieldErrors={fieldErrors}
-              check={check}
+              check={needsCheck ? check : IDLE_CHECK}
               onPatch={patch}
               onPatchFeature={patchFeature}
               onPatchExemptions={patchExemptions}
@@ -636,7 +649,7 @@ function AutomodAiForm() {
 
         {/* Lecture seule par nature : hors du fieldset, ses boutons restent actifs. */}
         <TabsContent value="profiles">
-          {selectedGuildId && <AutomodProfileHoldsPanel guildId={String(selectedGuildId)} />}
+          {selectedGuildId && <AutomodProfileHoldsPanel key={String(selectedGuildId)} guildId={String(selectedGuildId)} />}
         </TabsContent>
       </Tabs>
 

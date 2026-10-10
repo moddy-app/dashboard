@@ -77,6 +77,17 @@ export async function saveAutomodConfig(
   }
   void _dead
   void _dead2
+  // Garde-fous du contrat : le détecteur de profils n'a jamais de salons
+  // exemptés, et une clé `perso:<id>` sans infraction correspondante est un 422.
+  const ids = new Set((body.infractions_perso ?? []).map((i) => i.id))
+  body.sanctions = Object.fromEntries(
+    Object.entries(body.sanctions ?? {}).filter(
+      ([key]) => !key.startsWith('perso:') || ids.has(key.slice('perso:'.length))
+    )
+  )
+  if (body.features?.profile) {
+    body.features = { ...body.features, profile: { ...body.features.profile, exempt_channels: [] } }
+  }
   const saved = (await api(BASE(guildId), {
     method: 'PUT',
     body: JSON.stringify(body),

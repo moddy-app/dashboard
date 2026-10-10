@@ -364,7 +364,7 @@ export function blankInfraction(id: string): AutomodCustomInfraction {
   return { id, nom: '', description: '', exemples: [], mots_cles: [], modele: null }
 }
 
-function stableStringify(value: unknown): string {
+export function stableStringify(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`
   if (value && typeof value === 'object') {
     const obj = value as Record<string, unknown>

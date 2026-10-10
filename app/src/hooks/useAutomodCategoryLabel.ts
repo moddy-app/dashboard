@@ -48,6 +48,10 @@ function loadSource(guildId: string): Promise<Source | null> {
     return { catalog: catalogMap, custom: customMap }
   })
   sourceCache.set(guildId, promise)
+  // Un échec (rien de lisible) n'est pas gardé : la prochaine ouverture réessaie.
+  void promise.then((s) => {
+    if (s === null && sourceCache.get(guildId) === promise) sourceCache.delete(guildId)
+  })
   return promise
 }
 
