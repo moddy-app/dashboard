@@ -316,8 +316,9 @@ export interface SocialSubscribeResult {
 export type AutomodMaxAction = 'warn' | 'mute' | 'ban'
 
 /**
- * Un détecteur. `features` porte trois blocs connus — `content` (texte),
- * `image_nsfw` (images explicites) et `image_scam` (captures d'arnaque) —,
+ * Un détecteur. `features` porte cinq blocs connus — `content` (texte),
+ * `image_nsfw` (images explicites), `image_gore` (images choquantes),
+ * `image_scam` (captures d'arnaque) et `profile` (profils des membres) —,
  * tous de cette forme. Un id inconnu du backend est refusé en `422`.
  */
 export interface AutomodFeature {
@@ -331,6 +332,10 @@ export interface AutomodFeature {
    * Ignoré sur les autres blocs. Champ ops : renvoyé tel que lu.
    */
   scan_all?: boolean
+  /** `profile` seulement : ce qui est vérifié sur le profil d'un membre. */
+  avatar?: boolean
+  banner?: boolean
+  pseudo?: boolean
   /** Clés ajoutées plus tard côté backend, renvoyées telles quelles. */
   [key: string]: unknown
 }
@@ -339,9 +344,7 @@ export interface AutomodFeature {
  * Config du module `automod_ai`. Identique en lecture et en écriture : le PUT
  * remplace l'objet entier, on repart donc toujours de l'objet reçu.
  *
- * `categories_desactivees` est un champ ops sans sélecteur UI : il est conservé
- * tel quel et renvoyé au PUT, sinon on écraserait un réglage posé côté staff.
- * L'index signature permet de préserver aussi les champs ajoutés plus tard côté
+ * L'index signature permet de préserver les champs ajoutés plus tard côté
  * backend et inconnus de ce front.
  */
 export interface AutomodAiConfig {
@@ -353,9 +356,53 @@ export interface AutomodAiConfig {
   /** 1 (permissif) → 5 (strict) */
   severity: number
   max_action: AutomodMaxAction
-  categories_desactivees: string[]
   dry_run: boolean
+  /** Barème par infraction, indexé par id d'infraction (`perso:<id>` pour les personnalisées). Clé absente = réglage Moddy. */
+  sanctions: Record<string, AutomodSanction>
+  /** ≤ 10 infractions personnalisées. */
+  infractions_perso: AutomodCustomInfraction[]
   features: Record<string, AutomodFeature>
+  [key: string]: unknown
+}
+
+export type AutomodGravity = 'basse' | 'moyenne' | 'haute' | 'critique'
+
+/** Cran de l'échelle 0..7 par gravité. */
+export type AutomodCrans = Record<AutomodGravity, number>
+
+export type AutomodProfileAction = 'hold' | 'rename_warn' | 'alert' | 'bareme'
+
+/** Réglage de sanction d'une infraction. Tout champ absent = réglage Moddy. */
+export interface AutomodSanction {
+  /** `false` = suppression du message seule. */
+  enabled?: boolean
+  mode?: 'auto' | 'perso'
+  crans?: AutomodCrans
+  recidive?: boolean
+  action_profil?: AutomodProfileAction
+  [key: string]: unknown
+}
+
+export type AutomodCustomInfractionTemplate =
+  | 'pub_serveur'
+  | 'spoilers'
+  | 'politique_religion'
+  | 'demande_dm'
+  | 'langue'
+  | 'liens'
+
+/** Infraction personnalisée (≤ 10 par serveur). */
+export interface AutomodCustomInfraction {
+  id: string
+  /** 1..40 caractères. */
+  nom: string
+  /** 1..300 caractères. */
+  description: string
+  /** ≤ 5 × 200 caractères. */
+  exemples: string[]
+  /** ≤ 20 × 60 caractères. */
+  mots_cles: string[]
+  modele: AutomodCustomInfractionTemplate | (string & {}) | null
   [key: string]: unknown
 }
 
@@ -374,7 +421,7 @@ export interface AutomodAiStatus {
   enabled: boolean
   dry_run: boolean
   notify_channel_id: string | null
-  /** Détecteurs actifs, dans l'ordre `content`, `image_nsfw`, `image_scam`. */
+  /** Détecteurs actifs, dans l'ordre `content`, `image_nsfw`, `image_gore`, `image_scam`, `profile`. */
   active_features: string[]
   warnings: AutomodWarning[]
   /** Serveur sous sanction globale « limité » : toute écriture renvoie un `403`. */
@@ -385,6 +432,137 @@ export interface AutomodAiStatus {
 export interface AutomodIndicationsCheck {
   ok: boolean
   reason?: string
+}
+
+/** Réponse du contrôle d'une infraction personnalisée (`POST .../infractions/check`). */
+export interface AutomodInfractionCheck {
+  ok: boolean
+  reason?: string
+  code?: string
+}
+
+/** Libellé multilingue : clés `fr`, `en-US`, `es-ES`, `pt-BR`, `de` (toujours complètes, sauf mention). */
+export type AutomodLocalized = Record<string, string>
+
+export type AutomodInfractionFamily = 'message' | 'image' | 'profile'
+
+export interface AutomodCatalogInfraction {
+  id: string
+  family: AutomodInfractionFamily
+  name: AutomodLocalized
+  description: AutomodLocalized
+  /** Planchers du réglage Moddy (ajustés selon sévérité et historique). */
+  default_crans: AutomodCrans
+  /** Informatif : pas de clémence d'ancienneté dès la gravité haute. */
+  sensitive: boolean
+  /** Informatif : ban immédiat, sans plafond de confiance ni clémence. */
+  ban_on_sight: boolean
+  /** Infractions de profil : actions permises (ids de `profile_actions`). */
+  profile_actions?: string[]
+  default_action_profil?: string
+  [key: string]: unknown
+}
+
+export interface AutomodCatalogFamily {
+  id: AutomodInfractionFamily | 'custom' | (string & {})
+  name: AutomodLocalized
+}
+
+export interface AutomodCatalogGravity {
+  id: AutomodGravity
+  name: AutomodLocalized
+  label: AutomodLocalized
+  description: AutomodLocalized
+}
+
+export interface AutomodCatalogLadderStep {
+  cran: number
+  action: 'delete' | 'warn' | 'mute' | 'ban'
+  duration_hours: number | null
+  name: AutomodLocalized
+}
+
+export interface AutomodCatalogProfileAction {
+  id: AutomodProfileAction | (string & {})
+  name: AutomodLocalized
+  description: AutomodLocalized
+}
+
+export interface AutomodCatalogFeature {
+  id: string
+  name: AutomodLocalized
+  /** Seul libellé nullable du catalogue (`profile`). */
+  description: AutomodLocalized | null
+}
+
+export interface AutomodCatalogTemplate {
+  id: string
+  nom: AutomodLocalized
+  description: AutomodLocalized
+  exemples: string[]
+  mots_cles: string[]
+}
+
+export interface AutomodCatalogPreset {
+  id: 'light' | 'balanced' | 'strict' | (string & {})
+  name: AutomodLocalized
+  description: AutomodLocalized
+  /** Détecteurs activés par ce niveau. */
+  features: string[]
+  severity: number
+  sanctions: Record<string, AutomodSanction>
+  /** Config complète obtenue en partant d'un serveur vierge. */
+  config: AutomodAiConfig
+}
+
+/** Catalogue du module : source de vérité (infractions, échelle, limites, modèles). Statique. */
+export interface AutomodCatalog {
+  infractions: AutomodCatalogInfraction[]
+  custom_infraction: {
+    id_prefix: string
+    family: 'custom'
+    name: AutomodLocalized
+    description: AutomodLocalized
+    default_crans: AutomodCrans
+  }
+  families: AutomodCatalogFamily[]
+  gravities: AutomodCatalogGravity[]
+  cran_ladder: AutomodCatalogLadderStep[]
+  profile_actions: AutomodCatalogProfileAction[]
+  features: AutomodCatalogFeature[]
+  limits: {
+    infractions_perso: number
+    nom: number
+    description: number
+    exemples: number
+    exemple: number
+    mots_cles: number
+    mot_cle: number
+    indications: number
+    exemptions: number
+    perso_id_pattern: string
+    [key: string]: unknown
+  }
+  templates: AutomodCatalogTemplate[]
+  presets: AutomodCatalogPreset[]
+  [key: string]: unknown
+}
+
+/** Profil de membre retenu en attente de décision (liste des profile-holds). */
+export interface AutomodProfileHold {
+  user_id: string
+  kind: 'avatar' | 'banner' | (string & {})
+  categorie: string | null
+  case_id: string | null
+  sanction_id: string | null
+  created_at: string
+  timeout_until: string | null
+  last_checked: string | null
+}
+
+export interface AutomodProfileHolds {
+  holds: AutomodProfileHold[]
+  total: number
 }
 
 /** Budget IA quotidien (staff uniquement). */

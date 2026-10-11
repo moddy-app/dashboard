@@ -4,7 +4,11 @@ import type {
   AutomodAiConfig,
   AutomodAiStatus,
   AutomodBudget,
+  AutomodCatalog,
+  AutomodCustomInfraction,
   AutomodIndicationsCheck,
+  AutomodInfractionCheck,
+  AutomodProfileHolds,
 } from '@/types/api'
 
 const BASE = (guildId: string | number) => `/guilds/${guildId}/modules/automod_ai`
@@ -23,8 +27,9 @@ export function defaultAutomodConfig(): AutomodAiConfig {
     ignore_moderators: true,
     severity: 3,
     max_action: 'ban',
-    categories_desactivees: [],
     dry_run: false,
+    sanctions: {},
+    infractions_perso: [],
     features: Object.fromEntries(AUTOMOD_FEATURE_IDS.map((id) => [id, defaultAutomodFeature(id)])),
   }
 }
@@ -47,9 +52,9 @@ export async function getAutomodConfig(
 
 /**
  * Sauvegarde. Le corps **remplace** la config : toujours envoyer l'objet
- * complet dérivé de celui reçu (sinon on écrase `categories_desactivees` et
- * tout champ que ce front ne connaît pas encore).
- * La réponse est la config telle que persistée (normalisée : trois blocs,
+ * complet dérivé de celui reçu (sinon on écrase tout champ que ce front ne
+ * connaît pas encore).
+ * La réponse est la config telle que persistée (normalisée : cinq blocs,
  * doublons d'exemptions retirés) → elle **remplace** l'état local.
  */
 export async function saveAutomodConfig(
@@ -61,10 +66,28 @@ export async function saveAutomodConfig(
   // reconduit tout champ inconnu — sans ce retrait, une valeur héritée d'une
   // ancienne config repartirait dans le body. Pydantic l'ignorerait en
   // silence : ça semblerait marcher tout en ne réglant rien.
-  const { langue_serveur: _dead, ...body } = config as AutomodAiConfig & {
+  // Même chose pour `categories_desactivees`, supprimé côté backend.
+  const {
+    langue_serveur: _dead,
+    categories_desactivees: _dead2,
+    ...body
+  } = config as AutomodAiConfig & {
     langue_serveur?: unknown
+    categories_desactivees?: unknown
   }
   void _dead
+  void _dead2
+  // Garde-fous du contrat : le détecteur de profils n'a jamais de salons
+  // exemptés, et une clé `perso:<id>` sans infraction correspondante est un 422.
+  const ids = new Set((body.infractions_perso ?? []).map((i) => i.id))
+  body.sanctions = Object.fromEntries(
+    Object.entries(body.sanctions ?? {}).filter(
+      ([key]) => !key.startsWith('perso:') || ids.has(key.slice('perso:'.length))
+    )
+  )
+  if (body.features?.profile) {
+    body.features = { ...body.features, profile: { ...body.features.profile, exempt_channels: [] } }
+  }
   const saved = (await api(BASE(guildId), {
     method: 'PUT',
     body: JSON.stringify(body),
@@ -100,6 +123,45 @@ export async function checkIndications(
     method: 'POST',
     body: JSON.stringify({ indications }),
   })) as AutomodIndicationsCheck
+}
+
+/** Catalogue par serveur, en cache pour la session. Un échec n'est jamais mis en cache. */
+const catalogCache = new Map<string, Promise<AutomodCatalog>>()
+
+export function getAutomodCatalog(guildId: string | number): Promise<AutomodCatalog> {
+  const key = String(guildId)
+  const cached = catalogCache.get(key)
+  if (cached) return cached
+  const promise = (api(`${BASE(guildId)}/catalog`) as Promise<AutomodCatalog>).catch((e) => {
+    catalogCache.delete(key)
+    throw e
+  })
+  catalogCache.set(key, promise)
+  return promise
+}
+
+/**
+ * Contrôle d'une infraction personnalisée, sans rien sauvegarder (rejoué au
+ * PUT). Un 503 (bot injoignable) est propagé.
+ */
+export async function checkCustomInfraction(
+  guildId: string | number,
+  infraction: AutomodCustomInfraction
+): Promise<AutomodInfractionCheck> {
+  return (await api(`${BASE(guildId)}/infractions/check`, {
+    method: 'POST',
+    body: JSON.stringify({ infraction }),
+  })) as AutomodInfractionCheck
+}
+
+/** Profils retenus en attente de décision. Le chemin n'est pas sous `/modules/`. */
+export async function getProfileHolds(
+  guildId: string | number,
+  { limit = 50, offset = 0 }: { limit?: number; offset?: number } = {}
+): Promise<AutomodProfileHolds> {
+  return (await api(
+    `/guilds/${guildId}/automod-ai/profile-holds?limit=${limit}&offset=${offset}`
+  )) as AutomodProfileHolds
 }
 
 // ─── Budget IA (staff uniquement) ─────────────────────────────────────────────
