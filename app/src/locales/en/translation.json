@@ -364,7 +364,7 @@
       "delete": "Remove"
     },
     "automod_ai": {
-      "name": "AI Moderation",
+      "name": "Automod",
       "profileHolds": {
         "title": "Profiles awaiting correction",
         "intro": "These members are timed out until they fix their avatar or banner. Moddy lifts the timeout automatically once the profile is corrected. Nothing to do here.",
@@ -375,27 +375,28 @@
         "emptyDescription": "No member is currently held for an avatar or banner.",
         "errorTitle": "Could not load profiles",
         "retry": "Retry",
-        "kind": { "avatar": "Avatar", "banner": "Banner" },
-        "category": { "profil_avatar_nsfw": "Explicit avatar", "profil_avatar_choquant": "Shocking avatar" },
+        "kind": {
+          "avatar": "Avatar",
+          "banner": "Banner"
+        },
+        "category": {
+          "profil_avatar_nsfw": "Explicit avatar",
+          "profil_avatar_choquant": "Shocking avatar"
+        },
         "pending": "Awaiting correction",
         "since": "Since {{when}}",
         "lastChecked": "Last check {{when}}",
         "neverChecked": "Not checked yet",
         "viewCase": "View case"
       },
-      "description": "Let the AI read messages and act on rule breaches.",
+      "description": "Let Automod read messages and act on rule breaches.",
       "generalTitle": "General",
-      "generalDescription": "Main switch, alert channel and behaviour of the module.",
-      "enabled": "Enable AI moderation",
-      "enabledDescription": "The module only runs with an alert channel and at least one detector enabled.",
+      "generalDescription": "Module state, alert channel and behaviour.",
       "notifyChannel": "Alert channel",
       "notifyChannelDescription": "Text or announcement channel where decisions and alerts are posted. Required.",
       "noNotifyChannel": "No channel (module stopped)",
       "ignoreModerators": "Ignore moderators",
       "ignoreModeratorsDescription": "Members who can manage messages are never moderated.",
-      "dryRun": "Simulation mode",
-      "dryRunBadge": "Simulation",
-      "dryRunDescription": "The module still decides but applies nothing — SIMULATION cards are posted in the alert channel.",
       "severityTitle": "Severity & sanctions",
       "severityDescription": "How sensitive the AI is, and how far it may go.",
       "severity": "Severity",
@@ -414,22 +415,24 @@
       "maxAction_mute_desc": "Up to a temporary mute.",
       "maxAction_ban": "Ban",
       "maxAction_ban_desc": "Up to a ban for the worst cases.",
-      "indicationsTitle": "Server guidelines",
-      "indicationsDescription": "Extra instructions given to the AI, on top of the built-in rules.",
-      "indicationsPlaceholder": "e.g. No insults, even as a joke. Self-promotion is allowed in #promo only.",
-      "indicationsSafetyHint": "This text is injected verbatim into the AI prompt, so every change goes through a safety check before being saved.",
-      "indicationsTooLong": "Guidelines must be {{max}} characters or fewer.",
-      "indicationsRejectedFallback": "This text was rejected by the safety check.",
-      "checking": "Checking the text…",
-      "checkOk": "Text accepted by the safety check.",
-      "checkUnavailable": "Safety check unavailable right now — you can still try to save.",
+      "errors": {
+        "sanctions_flag_invalid": "A flag in the custom scale must be true or false.",
+        "sanctions_actions_invalid": "The actions of a custom scale must be a list.",
+        "sanctions_action_unknown": "A custom scale contains an unknown action.",
+        "sanctions_timeout_invalid": "The timeout duration must be a whole number of seconds.",
+        "sanctions_timeout_range": "The timeout duration must be between 1 minute and 28 days.",
+        "sanctions_by_gravity_invalid": "The per-severity plan of a custom scale is invalid.",
+        "module_state_invalid": "Invalid module state (expected active, paused or simulation).",
+        "automod_ai_blocked": "This server is under a global sanction: Automod settings can't be changed.",
+        "check_unavailable": "The check is unavailable right now. Try again in a moment."
+      },
       "checkUnavailableTitle": "Safety check unavailable",
       "checkUnavailableSaveDescription": "Nothing was saved. Try again in a moment.",
       "retry": "Retry",
       "featuresTitle": "Detectors",
       "featuresDescription": "What Moddy watches. Each detector can be turned on independently.",
       "features": {
-        "genericDescription": "Detector handled by the AI moderation.",
+        "genericDescription": "Detector handled by Automod.",
         "content": {
           "name": "Message analysis",
           "description": "The AI reads message text and acts on insults, threats, harassment, scams and more."
@@ -463,13 +466,14 @@
         "missing_notify_channel": "No alert channel: the module is not running.",
         "no_feature_enabled": "No detector enabled.",
         "dry_run": "Simulation mode: no sanction is applied.",
+        "simulation": "Simulation mode: no sanction is applied.",
         "unknown": "Configuration warning: {{code}}",
-        "blocked_by_global_sanction": "This server is under a global sanction: AI moderation is switched off."
+        "blocked_by_global_sanction": "This server is under a global sanction: Automod is switched off."
       },
       "reset": "Reset module",
-      "resetSuccess": "AI moderation configuration reset.",
-      "confirmResetTitle": "Reset AI moderation?",
-      "confirmResetDescription": "The whole configuration of the module is deleted, including guidelines and exemptions. This cannot be undone.",
+      "resetSuccess": "Automod configuration reset.",
+      "confirmResetTitle": "Reset Automod?",
+      "confirmResetDescription": "The whole configuration of the module is deleted, including exemptions. This cannot be undone.",
       "cancel": "Cancel",
       "advanced": "Advanced settings",
       "scanAll": "Read every image",
@@ -490,10 +494,11 @@
       "profileBannerNote": "Banners are only checked when the member joins and when their profile changes.",
       "tabs": {
         "settings": "Settings",
-        "scale": "Penalty scale",
+        "scale": "Sanctions",
         "infractions": "Custom infractions",
         "profiles": "Pending profiles",
-        "refused": "Refused by the server"
+        "refused": "Refused by the server",
+        "approvals": "Pending sanctions"
       },
       "wizard": {
         "open": "Setup assistant",
@@ -515,21 +520,23 @@
         "activation_off": "Don't enable for now",
         "activation_off_desc": "The level is configured but the module stays off.",
         "changesTitle": "What changes",
-        "keeps": "Kept: guidelines, custom infractions, exemptions, maximum action and the penalties of other types.",
-        "changes": "Changed: detectors, severity and any penalty overridden by the level.",
+        "keeps": "Kept: custom infractions, exemptions, maximum action and the alert channel if you don't pick one.",
+        "changes": "Changed: state, detectors, severity and the sanctions defined by the level.",
         "notSaved": "Nothing is saved until you click Save.",
         "previous": "Back",
         "next": "Next",
         "apply": "Apply",
         "retry": "Retry",
-        "applied": "Level applied, remember to save"
+        "applied": "Level applied, remember to save",
+        "skip": "Skip",
+        "skipHelp": "\"Skip\" applies the Balanced level in simulation."
       },
       "catalogErrorTitle": "Couldn't load the catalog",
       "catalogErrorDescription": "The infraction list and penalty ladder are unavailable right now. The other settings still work.",
       "notSavedTitle": "Nothing was saved",
       "notSavedDescription": "The server couldn't run its safety check, so your configuration was not saved. Try again in a moment.",
       "scale": {
-        "reminderTitle": "How the scale works",
+        "reminderTitle": "How sanctions work",
         "reminderMaxAction": "The maximum action ({{action}}) always applies as a ceiling, even on custom penalties.",
         "reminderSeverity": "Severity sets how sensitive detection is across the whole server, including for infractions with a custom scale.",
         "family_message": "Messages",
@@ -550,13 +557,43 @@
         "enabledLabel": "Penalties for {{name}}",
         "toggleDetails": "Show details for {{name}}",
         "profileAction": "Action on profiles",
-        "cransUnused": "The penalty steps are only used with the \"Penalty scale\" action.",
-        "autoNote": "Moddy setting: floors adjusted to the severity and the member's history.",
+        "autoNote": "Moddy's plan, adjusted to the severity and the member's history.",
         "recidive": "Escalate on repeat offences",
         "recidiveHelp": "Raises the penalty when the member has already been sanctioned for this infraction.",
-        "capped": "Capped at \"{{name}}\" by the maximum action.",
-        "banOnSightLowered": "This infraction normally leads to an immediate ban. With a step below ban, scam accounts will be treated more leniently.",
-        "reset": "Reset to Moddy's setting"
+        "banOnSightLowered": "This infraction normally leads to an immediate ban. With a plan that doesn't ban, scam accounts will be treated more leniently.",
+        "reset": "Reset to Moddy's setting",
+        "actionsLabel": "Actions",
+        "actionsHelp": "Actions stack. When a stronger one supersedes another, the weaker one is not applied.",
+        "actions": {
+          "delete": "Delete the message",
+          "warn": "Warn",
+          "timeout": "Time out",
+          "kick": "Kick",
+          "ban": "Ban"
+        },
+        "supersededBy": "Superseded by \"{{action}}\", not applied.",
+        "timeoutLabel": "Timeout duration",
+        "timeoutHelp": "Between {{min}} and {{max}}.",
+        "timeoutRange": "The duration must be between {{min}} and {{max}}.",
+        "unitDays": "Days",
+        "unitHours": "Hours",
+        "unitMinutes": "Minutes",
+        "durationDays": "{{count}} d",
+        "durationHours": "{{count}} h",
+        "durationMinutes": "{{count}} min",
+        "requireApproval": "Moderator approval",
+        "requireApprovalHelp": "A moderator approves the sanction on a Discord card before it is applied.",
+        "requireApprovalProfile": "Not available for profile infractions.",
+        "requireApprovalDeleteOnly": "Not available when the plan only deletes the message: add another action.",
+        "legacyTitle": "Per-severity plan",
+        "legacyDescription": "This plan comes from an older configuration and is read-only. Replacing it with a single list of actions erases it.",
+        "legacyReplace": "Replace with a single plan",
+        "policyTitle": "What Moddy applies",
+        "policyUnavailable": "Moddy's plan can't be shown right now.",
+        "policyMissing": "No plan reported for this infraction.",
+        "policyRecidive": "Escalates on repeat offences",
+        "policyApproval": "Moderator approval",
+        "planUnused": "The action plan is only used with the \"Penalty scale\" action."
       },
       "custom": {
         "addTitle": "Add an infraction",
@@ -595,8 +632,48 @@
         "removeKeyword": "Remove {{word}}",
         "validate": "Validate",
         "checking": "Checking...",
-        "rejectedFallback": "This infraction was rejected by the safety check.",
-        "checkUnavailable": "The safety check is unavailable right now. Try again later: the configuration couldn't be saved without it."
+        "rejectedFallback": "This infraction was rejected by the safety check."
+      },
+      "state": {
+        "title": "Module state",
+        "active": "Active",
+        "paused": "Paused",
+        "simulation": "Simulation",
+        "active_desc": "Automod runs and applies its sanctions.",
+        "paused_desc": "Settings are kept, but the module stops and its commands are hidden.",
+        "simulation_desc": "Automod runs without applying anything: decisions are only posted as simulation cards in the alert channel."
+      },
+      "blockedBadge": "Blocked by a global sanction",
+      "approvals": {
+        "infoTitle": "Decisions are taken in Discord",
+        "infoDescription": "A moderator approves or rejects each sanction on its Discord card. This list is read-only, and the content of the deleted message is never shown here: read it on the Discord card.",
+        "statusLabel": "Status",
+        "status": {
+          "pending": "Pending",
+          "approved": "Approved",
+          "rejected": "Rejected",
+          "expired": "Expired"
+        },
+        "refresh": "Refresh",
+        "loadMore": "Load more",
+        "count": "{{shown}} of {{total}}",
+        "emptyTitle": {
+          "pending": "No sanction pending",
+          "approved": "No approved sanction",
+          "rejected": "No rejected sanction",
+          "expired": "No expired sanction"
+        },
+        "emptyDescription": "Sanctions that need a moderator's approval will show up here.",
+        "errorTitle": "Could not load sanctions",
+        "unknownInfraction": "Unknown infraction",
+        "messageDeleted": "Message deleted",
+        "createdAt": "Created {{when}}",
+        "expiresAt": "expires {{when}}",
+        "resolvedAt": "Handled {{when}}",
+        "resolvedBy": " by ",
+        "applied": "Applied:",
+        "failed": "Failed:",
+        "caseRef": "Case {{ref}}"
       }
     },
     "social_notifications": {
@@ -2848,13 +2925,13 @@
       "userLimitedTitle": "Your access to Moddy is limited",
       "userLimitedDescription": "You can still adjust the modules already set up. Subscribing to Moddy Max and putting a new module into service are closed to you.",
       "guildLimitedTitle": "This server is limited",
-      "guildLimitedDescription": "Moddy keeps running on {{guild}}, but AI moderation is off there and no new module can be put into service.",
+      "guildLimitedDescription": "Moddy keeps running on {{guild}}, but Automod is off there and no new module can be put into service.",
       "guildSuspendedTitle": "This server is suspended",
       "guildSuspendedDescription": "Moddy has left {{guild}}. Its settings are no longer reachable.",
       "newModuleBlockedTitle": "This module cannot be put into service",
       "newModuleBlockedDescription": "A sanction forbids enabling a module that has never been configured. The ones already set up stay fully editable.",
-      "automodBlockedTitle": "AI moderation is off here",
-      "automodBlockedDescription": "A sanction on this server turned AI moderation off: its settings are frozen until the sanction is lifted."
+      "automodBlockedTitle": "Automod is off here",
+      "automodBlockedDescription": "A sanction on this server turned Automod off: its settings are frozen until the sanction is lifted."
     },
     "errors": {
       "default": "Action refused by a sanction",
@@ -2863,7 +2940,7 @@
       "premium_blocked_user": "Subscribing is closed while your account is sanctioned",
       "premium_blocked_guild": "This server cannot be attached to a subscription",
       "new_module_blocked": "You cannot put a new module into service",
-      "automod_ai_blocked": "AI moderation is off on this server"
+      "automod_ai_blocked": "Automod is off on this server"
     },
     "errorSubject": {
       "discord_user": "A sanction applies to your account.",

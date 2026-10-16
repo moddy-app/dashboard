@@ -3,6 +3,8 @@ import {
   AlertCircleIcon,
   CheckCircle2Icon,
   FlaskConicalIcon,
+  LockIcon,
+  PauseIcon,
   TriangleAlertIcon,
   XIcon,
 } from "lucide-react"
@@ -12,14 +14,21 @@ import type { AutomodAiStatus } from "@/types/api"
 
 // ─── Badges d'état ────────────────────────────────────────────────────────────
 
-/** Le badge se lit sur `running`, jamais sur `enabled` (trois conditions). */
+/** Le badge se lit sur `state` et `running` (état + salon d'alertes + détecteur), jamais sur un interrupteur. */
 export function StatusBadges({ status }: { status: AutomodAiStatus | null }) {
   const { t } = useTranslation()
   if (!status) return null
+  const blocked =
+    status.blocked_by_global_sanction === true || status.warnings.includes("blocked_by_global_sanction")
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      {status.running ? (
+      {status.state === "paused" ? (
+        <Badge variant="secondary">
+          <PauseIcon className="size-3 mr-1" />
+          {t("modules.automod_ai.state.paused")}
+        </Badge>
+      ) : status.running ? (
         <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
           <CheckCircle2Icon className="size-3 mr-1" />
           {t("modules.automod_ai.statusRunning")}
@@ -30,10 +39,16 @@ export function StatusBadges({ status }: { status: AutomodAiStatus | null }) {
           {t("modules.automod_ai.statusStopped")}
         </Badge>
       )}
-      {status.dry_run && (
+      {status.state === "simulation" && (
         <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
           <FlaskConicalIcon className="size-3 mr-1" />
-          {t("modules.automod_ai.dryRunBadge")}
+          {t("modules.automod_ai.state.simulation")}
+        </Badge>
+      )}
+      {blocked && (
+        <Badge variant="destructive">
+          <LockIcon className="size-3 mr-1" />
+          {t("modules.automod_ai.blockedBadge")}
         </Badge>
       )}
     </div>

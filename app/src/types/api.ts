@@ -251,8 +251,12 @@ export type SocialPlatform = 'youtube' | 'twitch' | 'bluesky' | 'rss' | 'instagr
 
 /** Config globale du module (endpoint générique des modules) */
 export interface SocialNotificationsConfig {
-  enabled: boolean
-  default_message: string | null
+  /** Ancien interrupteur : remplacé par `state` (peut être absent). */
+  enabled?: boolean
+  default_message?: string | null
+  /** Config minimale `{configured: true, state}` : peut exister sans aucun abonnement. */
+  configured?: boolean
+  state?: ModuleState
 }
 
 /** Un abonnement (ligne de la table social_subscriptions) */
@@ -316,6 +320,15 @@ export interface SocialSubscribeResult {
 export type AutomodMaxAction = 'warn' | 'mute' | 'ban'
 
 /**
+ * État générique d'un module (`guilds.data.modules.<id>.state`). `simulation`
+ * n'est gérée que par Automod : ailleurs elle se lit comme `active`.
+ */
+export type ModuleState = 'active' | 'paused' | 'simulation'
+
+/** Action cumulable d'un plan de sanction Automod. */
+export type AutomodAction = 'delete' | 'warn' | 'timeout' | 'kick' | 'ban'
+
+/**
  * Un détecteur. `features` porte cinq blocs connus — `content` (texte),
  * `image_nsfw` (images explicites), `image_gore` (images choquantes),
  * `image_scam` (captures d'arnaque) et `profile` (profils des membres) —,
@@ -348,15 +361,13 @@ export interface AutomodFeature {
  * backend et inconnus de ce front.
  */
 export interface AutomodAiConfig {
-  enabled: boolean
-  /** ≤ 3000 caractères, injecté verbatim dans le prompt IA. */
-  indications: string
+  /** Absent = `active`. Remplace les anciens `enabled` / `dry_run`. */
+  state?: ModuleState
   notify_channel_id: string | null
   ignore_moderators: boolean
   /** 1 (permissif) → 5 (strict) */
   severity: number
   max_action: AutomodMaxAction
-  dry_run: boolean
   /** Barème par infraction, indexé par id d'infraction (`perso:<id>` pour les personnalisées). Clé absente = réglage Moddy. */
   sanctions: Record<string, AutomodSanction>
   /** ≤ 10 infractions personnalisées. */
@@ -377,10 +388,68 @@ export interface AutomodSanction {
   /** `false` = suppression du message seule. */
   enabled?: boolean
   mode?: 'auto' | 'perso'
+  /** Ancien format, converti à la lecture par l'API et jamais réécrit (retiré à l'écriture). */
   crans?: AutomodCrans
+  /** Actions cumulables (mode `perso`). Liste vide = `['delete']`. */
+  actions?: AutomodAction[]
+  /** 60..2419200, seulement avec `timeout` (3600 si absent). */
+  timeout_seconds?: number
   recidive?: boolean
+  /** Un modérateur valide la sanction avant application. */
+  require_approval?: boolean
+  /** Produit par la conversion d'anciennes configs ; supprimé dès qu'on réécrit `actions`. */
+  by_gravity?: Partial<Record<AutomodGravity, AutomodGravityPlan>>
   action_profil?: AutomodProfileAction
   [key: string]: unknown
+}
+
+/** Plan propre à une gravité (conversion d'un ancien barème par crans). */
+export interface AutomodGravityPlan {
+  actions: AutomodAction[]
+  timeout_seconds?: number
+}
+
+/**
+ * Politique effective d'une infraction (`GET .../policies`), défauts de Moddy
+ * compris : ce que le bot appliquera réellement.
+ */
+export interface AutomodPolicy {
+  mode: 'auto' | 'perso'
+  enabled: boolean
+  recidive: boolean
+  require_approval: boolean
+  family: AutomodInfractionFamily | (string & {}) | null
+  by_gravity: Partial<Record<AutomodGravity, AutomodGravityPlan>>
+}
+
+/** Sanction en attente de validation par un modérateur (lecture seule). */
+export interface AutomodPendingApproval {
+  id: string
+  user_id: string
+  status: 'pending' | 'approved' | 'rejected' | 'expired' | (string & {})
+  categorie: string | null
+  gravite: AutomodGravity | (string & {}) | null
+  actions: AutomodAction[]
+  timeout_seconds: number | null
+  message_deleted: boolean
+  created_at: string
+  /** 48 h après la création. */
+  expires_at: string | null
+  resolved_at: string | null
+  resolved_by: string | null
+  /** `null` tant que non traitée. */
+  result: { applied: string[]; failed: string[]; case_ref: string | null } | null
+}
+
+export interface AutomodPendingApprovals {
+  approvals: AutomodPendingApproval[]
+  total: number
+}
+
+/** Règle de substitution du catalogue : `supersedes` remplace les actions listées. */
+export interface AutomodActionRule {
+  action: AutomodAction
+  supersedes: AutomodAction[]
 }
 
 export type AutomodCustomInfractionTemplate =
@@ -409,7 +478,7 @@ export interface AutomodCustomInfraction {
 export type AutomodWarning =
   | 'missing_notify_channel'
   | 'no_feature_enabled'
-  | 'dry_run'
+  | 'simulation'
   | 'blocked_by_global_sanction'
   | (string & {})
 
@@ -418,20 +487,13 @@ export interface AutomodAiStatus {
   guild_id: string
   module_id: string
   running: boolean
-  enabled: boolean
-  dry_run: boolean
+  state: ModuleState
   notify_channel_id: string | null
   /** Détecteurs actifs, dans l'ordre `content`, `image_nsfw`, `image_gore`, `image_scam`, `profile`. */
   active_features: string[]
   warnings: AutomodWarning[]
   /** Serveur sous sanction globale « limité » : toute écriture renvoie un `403`. */
   blocked_by_global_sanction?: boolean
-}
-
-/** Réponse du contrôle anti-injection des indications. */
-export interface AutomodIndicationsCheck {
-  ok: boolean
-  reason?: string
 }
 
 /** Réponse du contrôle d'une infraction personnalisée (`POST .../infractions/check`). */
@@ -451,8 +513,8 @@ export interface AutomodCatalogInfraction {
   family: AutomodInfractionFamily
   name: AutomodLocalized
   description: AutomodLocalized
-  /** Planchers du réglage Moddy (ajustés selon sévérité et historique). */
-  default_crans: AutomodCrans
+  /** Ancien format (planchers par cran) : absent depuis la refonte des actions. */
+  default_crans?: AutomodCrans
   /** Informatif : pas de clémence d'ancienneté dès la gravité haute. */
   sensitive: boolean
   /** Informatif : ban immédiat, sans plafond de confiance ni clémence. */
@@ -480,6 +542,12 @@ export interface AutomodCatalogLadderStep {
   action: 'delete' | 'warn' | 'mute' | 'ban'
   duration_hours: number | null
   name: AutomodLocalized
+}
+
+export interface AutomodCatalogAction {
+  id: AutomodAction | (string & {})
+  name: AutomodLocalized
+  description: AutomodLocalized | null
 }
 
 export interface AutomodCatalogProfileAction {
@@ -523,11 +591,16 @@ export interface AutomodCatalog {
     family: 'custom'
     name: AutomodLocalized
     description: AutomodLocalized
-    default_crans: AutomodCrans
+    default_crans?: AutomodCrans
   }
   families: AutomodCatalogFamily[]
   gravities: AutomodCatalogGravity[]
-  cran_ladder: AutomodCatalogLadderStep[]
+  /** Ancienne échelle de crans : absente depuis la refonte. */
+  cran_ladder?: AutomodCatalogLadderStep[]
+  /** Actions disponibles pour un plan de sanction. */
+  actions?: AutomodCatalogAction[]
+  /** Règles de substitution entre actions (ban remplace kick…). */
+  action_rules?: AutomodActionRule[]
   profile_actions: AutomodCatalogProfileAction[]
   features: AutomodCatalogFeature[]
   limits: {
@@ -538,8 +611,9 @@ export interface AutomodCatalog {
     exemple: number
     mots_cles: number
     mot_cle: number
-    indications: number
     exemptions: number
+    timeout_seconds_min?: number
+    timeout_seconds_max?: number
     perso_id_pattern: string
     [key: string]: unknown
   }

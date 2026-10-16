@@ -29,14 +29,14 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { applyAutomodPreset, pickLocalized } from "@/lib/automod"
 import { cn } from "@/lib/utils"
 import { CHANNEL_TYPES } from "@/types/api"
-import type { AutomodAiConfig, AutomodCatalog, AutomodCatalogPreset } from "@/types/api"
+import type { AutomodAiConfig, AutomodCatalog, AutomodCatalogPreset, ModuleState } from "@/types/api"
 
 type Activation = "simulation" | "live" | "off"
 
-const ACTIVATION: Record<Activation, { enabled: boolean; dryRun: boolean }> = {
-  simulation: { enabled: true, dryRun: true },
-  live: { enabled: true, dryRun: false },
-  off: { enabled: false, dryRun: true },
+const ACTIVATION: Record<Activation, { state: ModuleState }> = {
+  simulation: { state: "simulation" },
+  live: { state: "active" },
+  off: { state: "paused" },
 }
 const ACTIVATION_IDS: Activation[] = ["simulation", "live", "off"]
 const STEPS = 3
@@ -149,6 +149,21 @@ function SetupWizardContent({
     toast.success(t("modules.automod_ai.wizard.applied"))
   }
 
+  // « Passer » : niveau Équilibré du catalogue, en simulation, sans toucher au salon
+  // d'alertes déjà choisi. Rien n'est enregistré, comme pour « Appliquer ».
+  const balanced = presets.find((p) => p.id === "balanced") ?? presets[Math.floor(presets.length / 2)]
+  const skip = () => {
+    if (!balanced) return
+    onApply(
+      applyAutomodPreset(config, balanced, presets, {
+        notifyChannelId: channelId ?? config.notify_channel_id,
+        state: "simulation",
+      })
+    )
+    onOpenChange(false)
+    toast.success(t("modules.automod_ai.wizard.applied"))
+  }
+
   let body: React.ReactNode
   if (loading) {
     body = (
@@ -194,6 +209,7 @@ function SetupWizardContent({
             </p>
           </ChoiceCard>
         ))}
+        <p className="text-xs text-muted-foreground">{t("modules.automod_ai.wizard.skipHelp")}</p>
       </div>
     )
   } else if (step === 2) {
@@ -252,6 +268,11 @@ function SetupWizardContent({
       >
         {step === 1 ? t("common.cancel") : t("modules.automod_ai.wizard.previous")}
       </Button>
+      {ready && step === 1 && (
+        <Button type="button" variant="ghost" onClick={skip}>
+          {t("modules.automod_ai.wizard.skip")}
+        </Button>
+      )}
       {ready &&
         (step < STEPS ? (
           <Button type="button" disabled={!canNext} onClick={() => setStep(step + 1)}>

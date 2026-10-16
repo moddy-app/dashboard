@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ApiError } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 import { cn } from "@/lib/utils"
-import { isSameInfraction } from "@/lib/automod"
+import { automodErrorKey, isSameInfraction } from "@/lib/automod"
 import { checkCustomInfraction } from "@/services/automod"
 import type { AutomodCatalog, AutomodCustomInfraction } from "@/types/api"
 
@@ -131,10 +131,14 @@ export function CustomInfractionDialog({
         }
       } catch (e) {
         logger.warn("module:automod_ai", "Custom infraction check failed", e)
+        // 503 (`check_unavailable`) et codes connus : message traduit, jamais le code nu.
+        const key = e instanceof ApiError ? automodErrorKey(e, { check: true }) : null
         setFailure(
-          e instanceof ApiError && e.isUnavailable
+          key === "check_unavailable"
             ? { kind: "unavailable" }
-            : { kind: "error", message: e instanceof Error ? e.message : String(e) }
+            : key
+              ? { kind: "error", message: t(`modules.automod_ai.errors.${key}`) }
+              : { kind: "error", message: e instanceof Error ? e.message : String(e) }
         )
         return
       } finally {
@@ -307,7 +311,7 @@ export function CustomInfractionDialog({
             <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
             <AlertDescription>
               {failure.kind === "rejected" && failure.reason}
-              {failure.kind === "unavailable" && t("modules.automod_ai.custom.checkUnavailable")}
+              {failure.kind === "unavailable" && t("modules.automod_ai.errors.check_unavailable")}
               {failure.kind === "error" && failure.message}
             </AlertDescription>
           </Alert>
