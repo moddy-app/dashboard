@@ -35,25 +35,72 @@ Voir `docs/GLOBAL_SANCTIONS.md` (regles backend) et
 
 ### `GET /public/stats`
 
-Aucune authentification. Sert deux jauges globales écrites par le bot
-(`bot.guilds`, `bot.known_users` — voir `docs/STATS.md`), lues via
-`models.fetch_latest_gauges` et mises en cache Redis 10 minutes
-(`public:stats`) pour ne jamais taper PostgreSQL sur un endpoint public.
+Aucune authentification. Mis en cache Redis 10 minutes (`public:stats:v2`) pour
+ne jamais taper PostgreSQL sur un endpoint public ; la réponse porte
+`Cache-Control: public, max-age=600`.
 
 ```json
 {
-  "guilds": 4213,
-  "users": 812345,
-  "measured_at": "2026-09-10",
-  "updated_at": "2026-09-10T14:32:00+00:00"
+  "guilds": 72,
+  "users": 11211,
+  "commands_30d": 112,
+  "moderation_cases": 675,
+  "measured_at": "2026-09-24",
+  "updated_at": "2026-09-24T17:00:03+00:00"
 }
 ```
 
-- `guilds` / `users` : dernière valeur connue des jauges `bot.guilds` /
-  `bot.known_users` (mises à jour par le bot une fois par jour) ;
+- `guilds` : dernière valeur de la jauge `bot.guilds` (serveurs qui ont Moddy) ;
+- `users` : **membres cumulés de tous ces serveurs** (jauge `bot.members`, somme
+  des `member_count` calculée par le bot) — le chiffre « utilisateurs » habituel
+  d'un bot Discord. Une personne présente sur deux serveurs compte deux fois.
+  Ce n'est PAS le nombre de lignes de la table `users` (`bot.known_users`, les
+  seules personnes ayant déjà interagi avec Moddy), qui n'est plus exposé ici ;
+- les deux jauges sont mises à jour par le bot une fois par jour ;
+- `commands_30d` : commandes exécutées sur les 30 derniers jours UTC, tous
+  serveurs confondus (`command.used`). Pas de total « depuis toujours » : les
+  compteurs n'existent que depuis la mise en service des stats ;
+- `moderation_cases` : nombre total de dossiers de modération (table `cases`) ;
 - `measured_at` : jour (`day`) de la jauge en base ;
 - `updated_at` : horodatage de calcul de cette réponse (change au plus toutes
   les 10 minutes, durée du cache).
+
+Une valeur indisponible (table absente, bot jamais démarré) vaut `0`, jamais une 500.
+
+### `GET /public/stats/top-guilds`
+
+Aucune authentification. Les 60 plus gros serveurs qui ont Moddy, du plus
+peuplé au moins peuplé. Liste **recalculée une fois par jour** par un worker
+(`app/stats/showcase.py`) : la route ne fait que la lire dans Redis, sans jamais
+appeler Discord. `Cache-Control: public, max-age=600`.
+
+```json
+{
+  "guilds": [
+    {
+      "id": "123456789012345678",
+      "name": "Mon Serveur",
+      "icon_url": "https://cdn.discordapp.com/icons/123456789012345678/a_abc.gif?size=256",
+      "member_count": 154320
+    }
+  ],
+  "count": 60,
+  "updated_at": "2026-09-24T03:12:45+00:00"
+}
+```
+
+- `id` : snowflake **en chaîne** (un entier à 19 chiffres déborde un `Number` JS) ;
+- `icon_url` : `null` si le serveur n'a pas d'icône (afficher un avatar de
+  repli, par exemple ses initiales) ; `.gif` si l'icône est animée. Changer
+  `?size=` (puissance de 2, 16 à 4096) pour une autre taille ;
+- `member_count` : `approximate_member_count` de Discord au moment du calcul ;
+- `updated_at` : date du dernier rafraîchissement réussi, `null` si aucune
+  liste n'a encore été calculée (`guilds` vide, premier démarrage).
+
+Sont écartés : les serveurs que le bot a quittés, ceux qui portent
+`BLACKLISTED` et ceux sous une sanction globale active. Si un rafraîchissement
+échoue (Discord indisponible), la liste de la veille reste servie.
+Voir `docs/STATS.md` §5 bis.
 
 ---
 
@@ -92,7 +139,7 @@ Callback OAuth2 Discord. Echange le code, cree la session, redirige vers le dash
 1. Echange le code contre un access_token via `POST /oauth2/token`
 2. Recupere le profil Discord via `GET /users/@me`
 3. Recupere les guilds via `GET /users/@me/guilds`
-4. Filtre les guilds avec permission ADMINISTRATOR (0x8) ou owner
+4. Filtre les guilds avec permission MANAGE_GUILD (0x20), ADMINISTRATOR (0x8) ou owner
 5. Croise avec les guilds du bot (via bot token + cache Redis `moddy:bot_guilds` TTL 5min)
 6. Ne garde que les guilds ou l'utilisateur est admin ET le bot est present
 7. Verifie le statut staff dans `staff_permissions`
@@ -146,7 +193,7 @@ Remet le TTL de la session a sa valeur initiale (30 jours).
 
 ### `POST /auth/refresh-guilds`
 
-Rafraichit la liste des serveurs de l'utilisateur depuis l'API Discord. Utilise le `access_token` stocke en session, ou le `refresh_token` si le token est expire. Filtre par permission ADMINISTRATOR + presence du bot.
+Rafraichit la liste des serveurs de l'utilisateur depuis l'API Discord. Utilise le `access_token` stocke en session, ou le `refresh_token` si le token est expire. Filtre par permission MANAGE_GUILD (ou ADMINISTRATOR/owner) + presence du bot.
 
 **Auth :** session cookie
 **Reponse :**
@@ -156,9 +203,23 @@ Rafraichit la liste des serveurs de l'utilisateur depuis l'API Discord. Utilise 
   "guilds": [
     {"id": 111222333444, "name": "Mon Serveur", "icon": "abc123"},
     {"id": 555666777888, "name": "Autre Serveur", "icon": null}
-  ]
+  ],
+  "stale": false
 }
 ```
+
+`stale: true` veut dire que **Discord n'a pas pu etre interroge** (limite de debit,
+panne) et que `guilds` est la liste precedente de la session, inchangee. Ce n'est
+pas une erreur : le dashboard doit l'afficher normalement, eventuellement avec un
+discret « donnees non rafraichies », et surtout **ne pas reessayer en boucle** —
+c'est ce martelement qui entretient la limite. Une liste vide avec
+`stale: false` est, elle, une vraie reponse : ce compte n'administre aucun serveur
+ou Moddy n'y est pas.
+
+Le `refresh_token` n'est utilise que si Discord repond **401**. Un 429 ne
+declenche jamais d'echange de jeton : le quota `/oauth2/token` est celui de
+l'application entiere, donc le consommer ici empecherait tout le monde de se
+connecter.
 
 **Erreur :** `401 {"error": "Non authentifie"}` ou `401 {"error": "Session expiree"}`
 
@@ -197,6 +258,7 @@ Retourne le profil complet de l'utilisateur connecte (donnees issues de la sessi
   ],
   "is_staff": true,
   "staff_roles": ["Manager", "Dev"],
+  "verification": "VERIFIED",
   "sanction": {
     "subject_type": "discord_user",
     "subject_id": "123456789012345678",
@@ -234,6 +296,7 @@ Retourne le profil complet de l'utilisateur connecte (donnees issues de la sessi
 | `guilds` | array | Serveurs ou l'utilisateur est admin ET le bot est present |
 | `is_staff` | bool | Statut staff Moddy |
 | `staff_roles` | string[] | Roles staff Moddy (vide si non-staff) |
+| `verification` | string\|null | Badge verifie Moddy, lu dans `users.attributes` : `VERIFIED_ORG` (organisation verifiee), `VERIFIED_ORG_MEMBER` (membre d'une organisation verifiee), `VERIFIED` (compte verifie), ou `null`. Un seul, le plus fort dans cet ordre (meme priorite que le bot). L'equipe Moddy se lit dans `is_staff` |
 | `sanction` | object | Sanction globale du compte (`level` = `none`/`warn`/`limited`/`suspended`) — voir §Violations |
 
 **Note :** `GET /auth/me` reste accessible a un compte suspendu, justement pour que
@@ -337,7 +400,7 @@ Vocabulaire des sources et parametres UTM reconnus, pour construire les liens.
 
 ### `GET /guilds`
 
-Liste les serveurs accessibles par l'utilisateur connecte (ceux ou il a ADMINISTRATOR et ou le bot est present).
+Liste les serveurs accessibles par l'utilisateur connecte (ceux ou il a MANAGE_GUILD (ou ADMINISTRATOR/owner) et ou le bot est present).
 
 **Auth :** session cookie
 **Reponse :** Combine les metadonnees Discord (nom, icone) avec la config DB (attributes, data).
@@ -365,7 +428,7 @@ Liste les serveurs accessibles par l'utilisateur connecte (ceux ou il a ADMINIST
 
 Detail d'un serveur. Combine les infos Discord (via bot token) avec la config DB.
 
-**Auth :** guild_access (ADMINISTRATOR ou owner ou staff)
+**Auth :** guild_access (MANAGE_GUILD ou ADMINISTRATOR ou owner ou staff)
 **Path params :**
 
 | Param | Type | Description |
@@ -468,9 +531,19 @@ Recupere toutes les infos Discord d'un serveur en un seul appel (guild info, cha
 {
   "guild": {"id": "123456789", "name": "Mon Serveur", "icon": "abc123", "member_count": 1500, "...": "..."},
   "channels": [{"id": "999888777", "name": "general", "type": 0, "...": "..."}],
-  "roles": [{"id": "444555666", "name": "Moderateur", "color": 3447003, "...": "..."}]
+  "roles": [{"id": "444555666", "name": "Moderateur", "color": 3447003, "...": "..."}],
+  "partial": false
 }
 ```
+
+`partial: true` veut dire qu'au moins un bloc Discord n'a pas pu etre lu. Une
+liste vide signifie alors **inconnu**, pas « aucun » : ne pas vider un menu
+deroulant ni conclure a une mauvaise configuration. L'endpoint prefere repondre
+partiellement plutot que d'echouer — une page en erreur relance ses appels, donc
+entretient la limite de debit qui l'a mise en erreur.
+
+**Erreur :** `503 {"error": "Discord limite temporairement nos appels..."}` avec
+`Retry-After` quand aucune donnee, meme ancienne, n'est disponible.
 
 ---
 
@@ -719,6 +792,33 @@ un `PUT` suivant est sans effet : les cles inconnues sont ignorees.
 | `403 automod_ai_blocked` | `module_id = automod_ai` et le **serveur** est limite (une sanction d'utilisateur ne coupe pas l'automod) |
 
 `DELETE` n'est jamais bloque : desactiver un module reste possible sous sanction.
+
+---
+
+### État d'un module : `state` (actif / en pause / simulation)
+
+Clé **générique** de la config de **tout** module : `guilds.data.modules.<module_id>.state`.
+Elle fait partie de la config (se lit et s'écrit par les routes ci-dessus) mais n'est
+dans le schéma d'**aucun** module : le registre la valide à part
+(`app/modules/registry.py`), puis la remet dans la config écrite.
+
+| Valeur | Effet |
+|---|---|
+| `"active"` ou clé absente | Le module tourne (comportement d'avant) |
+| `"paused"` | La config est conservée, le module est arrêté et ses commandes sont masquées sur le serveur |
+| `"simulation"` | Le module tourne sans rien appliquer. **Seul l'Automod** (`automod_ai`) la gère ; pour les autres modules la valeur est acceptée mais compte comme `active` |
+
+- **Lecture** : une valeur inconnue compte comme `active` (une faute de frappe n'éteint jamais une modération). La clé n'est pas ajoutée quand elle est absente : « clé absente » = actif.
+- **Écriture** : une valeur autre que `active` / `paused` / `simulation` est refusée —
+  `422 {"error": "État de module invalide (active, paused ou simulation)", "code": "module_state_invalid", "field": "state", "value": "…", "allowed": ["active", "paused", "simulation"]}`.
+- **Une écriture qui ne porte pas `state` CONSERVE l'état déjà enregistré** (même règle que le bot) : sauvegarder des réglages ne relance donc jamais un module en pause, et l'état n'apparaît pas comme « supprimé » dans le diff d'une validation à blanc. **Pour changer l'état, écrire `state` explicitement.** Un `PUT` qui renvoie la config lue contient déjà la clé, donc un écran de config qui reste ouvert pendant qu'un modérateur met le module en pause depuis Discord peut le relancer : renvoyer `state` seulement quand l'utilisateur le change.
+- La notification Redis habituelle (`module_updated`) suffit : le bot recharge le module, applique l'état et resynchronise les commandes du serveur (`/ticket`, `/altguard`, `/clear-saved-roles`, `/view-saved-roles`, commandes inter-serveur ; le menu « Transcrire » reste global).
+- **Désactiver** (`DELETE`) retire la config : pour arrêter un module en gardant ses réglages, écrire `state: "paused"`.
+- Le schéma JSON de chaque module (`/schema`, `/schemas`) expose la propriété `state` (`enum`, `default`, et `x-supports-simulation`).
+- **`voice_transcription`** (sans `ModuleSpec`) : l'ancienne clé `enabled` n'existe plus. `enabled: false` se lit `state: "paused"` et la clé disparaît à la prochaine écriture.
+- **`social_notifications`** : le bot écrit lui-même la config minimale `{"configured": true, "state": …}` dès qu'un serveur ajoute un abonnement ou ouvre son panneau (pour qu'un module sans autre réglage puisse être mis en pause). Le backend reconduit `configured` à chaque sauvegarde et refuse `configured: false`. En pause, le bot n'envoie pas les publications reçues, et elles ne sont **pas** rejouées à la reprise ; les abonnements (table `social_subscriptions`) ne changent pas.
+
+Guide d'intégration front : `docs/MODULE_STATE.md`.
 
 ---
 
@@ -1148,67 +1248,182 @@ Désactive le module entier. Endpoint générique (voir `DELETE /guilds/{guild_i
 
 ---
 
-## Module — Automod AI
+## Module — Automod (`automod_ai`)
 
-Le module `automod_ai` est la modération IA de contenu. Sa config est pilotée par un `ModuleSpec` (`app/modules/specs/automod_ai.py`) : elle se lit et s'écrit par le endpoint **générique** des modules (`GET/PUT /guilds/{id}/modules/automod_ai`). Les routes dédiées ci-dessous ne couvrent que des sous-ressources propres au module (état réel, contrôle des indications, budget IA).
+Nom affiché : **Automod** (anciennement « Automod AI » — l'id `automod_ai` ne change pas). C'est la modération IA de contenu. Sa config est pilotée par un `ModuleSpec` (`app/modules/specs/automod_ai.py`) : elle se lit et s'écrit par le endpoint **générique** des modules (`GET/PUT /guilds/{id}/modules/automod_ai`). Les routes dédiées ci-dessous ne couvrent que des sous-ressources propres au module (état réel, catalogue, politique de sanction effective, contrôle des infractions personnalisées, budget IA, membres retenus pour leur profil, sanctions en attente de validation). Contrat côté bot : `docs/integration/AUTOMOD_CONFIG.md` (dépôt `moddy-app/moddy`).
 
 **Renommage (2026-08).** Le module s'appelait `automod` ; l'id est désormais `automod_ai` (un automod *classique*, à règles, prendra l'id `automod`). Le bot migre lui-même une config restée sous `data.modules.automod`. **Le backend ne lit et n'écrit que `automod_ai`** ; un `data.modules.automod` résiduel est du legacy en lecture seule.
+
+> **Changements de contrat (2026-10-16) — ce que le dashboard doit suivre.**
+>
+> | Avant | Maintenant |
+> |---|---|
+> | `enabled` + `dry_run` à la racine | **`state`** : `active` \| `paused` \| `simulation` (voir *État du module*). Le backend n'écrit plus jamais `enabled` ni `dry_run`. |
+> | `indications` (consignes libres) et `rules` | **Supprimés.** Ignorés à la lecture, retirés à la prochaine écriture. Les infractions personnalisées les remplacent. |
+> | `POST …/indications/check` | **Supprimée** (le bot répond `400 missing_infraction` à l'ancien corps). `POST …/infractions/check` reste. |
+> | `sanctions.<id>.crans` | **`actions`** (liste cumulable) + **`timeout_seconds`** (durée exacte) + `require_approval` (+ `by_gravity`). L'ancien `crans` est lu et converti, jamais réécrit. |
+> | type `violation_indications` | **Retiré** du catalogue (écarté à la lecture et à l'écriture). |
+> | `GET …/status` : `enabled`, `dry_run`, warning `dry_run` | `state`, warning **`simulation`**. |
+> | « Défaut de Moddy » affiché | `GET …/policies` donne les vraies valeurs. |
+>
+> Lecture legacy : une config stockée **sans** `state` est convertie comme le fait le bot (`effective_state`) — `enabled: false` → `paused`, sinon `dry_run: true` → `simulation`, sinon `active` ; la pause l'emporte, et si `state` est présent les anciennes clés sont ignorées. Elles disparaissent à la prochaine écriture. **Déployer le bot avant le backend.**
 
 **Structure stockée en DB** (`guilds.data.modules.automod_ai`) :
 
 ```json
 {
-  "enabled": false,
-  "indications": "",
+  "state": "simulation",
   "notify_channel_id": null,
   "ignore_moderators": true,
   "severity": 3,
   "max_action": "ban",
-  "categories_desactivees": [],
-  "dry_run": false,
+  "sanctions": {},
+  "infractions_perso": [],
   "features": {
-    "content": { "enabled": false, "exempt_roles": [], "exempt_channels": [] }
+    "content":    { "enabled": false, "exempt_roles": [], "exempt_channels": [] },
+    "image_nsfw": { "enabled": false, "exempt_roles": [], "exempt_channels": [] },
+    "image_gore": { "enabled": false, "exempt_roles": [], "exempt_channels": [] },
+    "image_scam": { "enabled": false, "exempt_roles": [], "exempt_channels": [], "scan_all": false },
+    "profile":    { "enabled": false, "exempt_roles": [], "exempt_channels": [], "avatar": true, "banner": true, "pseudo": true }
   }
 }
 ```
 
 | Champ | Type | Défaut | Notes |
 |---|---|---|---|
-| `enabled` | bool | `false` | Interrupteur principal. **Pas suffisant seul** (voir *État réel*). |
-| `indications` | string ≤ 3000 | `""` | Consignes serveur, injectées **verbatim** dans le system prompt IA → soumises au contrôle anti-injection. |
-| `notify_channel_id` | int \| null | `null` | **Obligatoire pour que le module tourne.** Salon texte/annonces où sont postées décisions, cartes shadow et alertes budget. |
+| `state` | `active`\|`paused`\|`simulation` | absent = `active` | État générique du module (voir *État du module*). **Hors schéma** du module mais présent dans sa config. Absent d'une écriture = l'état enregistré est conservé. |
+| `notify_channel_id` | int \| null | `null` | **Obligatoire pour que le module tourne.** Salon texte/annonces où sont postées décisions, cartes de simulation et alertes budget. |
 | `ignore_moderators` | bool | `true` | Ignore les membres avec `manage_messages`. |
 | `severity` | int 1–5 | `3` | Sensibilité (seuil embedding + décalage de cran du barème). |
 | `max_action` | `warn`\|`mute`\|`ban` | `ban` | Plafond dur du barème. |
-| `categories_desactivees` | string[] | `[]` | Catégories jamais sanctionnées (décision ramenée à la suppression seule). Valeurs : `insulte`, `menace`, `harcelement`, `harcelement_sexuel`, `haine_discrimination`, `incitation_automutilation`, `doxxing`, `arnaque_scam`, `violation_indications`. Champ ops (pas de sélecteur UI). |
-| `dry_run` | bool | `false` | Shadow mode : le funnel décide, **rien n'est appliqué** ; une carte SIMULATION est postée. |
-| `features.<id>.enabled` | bool | `false` | Feature de détection. Seul id connu aujourd'hui : `content`. |
+| `categories_desactivees` | string[] | — | **LEGACY, ne plus écrire.** Remplacé par `sanctions[<id>].enabled = false`. Repliée à la lecture et retirée à l'écriture. |
+| `sanctions` | objet | `{}` | Politique de sanction par infraction, clé = id du catalogue (`insulte`, `menace`, `harcelement`, `harcelement_sexuel`, `haine_discrimination`, `incitation_automutilation`, `doxxing`, `arnaque_scam`, `contenu_nsfw`, `contenu_choquant`, `profil_avatar_nsfw`, `profil_avatar_choquant`, `profil_pseudo`) ou `perso:<id>`. Entrée absente = barème de Moddy. Détail ci-dessous. |
+| `infractions_perso` | objet[] ≤ 10 | `[]` | Infractions définies par le serveur. Détail ci-dessous. |
+| `features.<id>.enabled` | bool | `false` | Feature de détection (**sans rapport** avec l'ancien `enabled` racine, qui n'existe plus). Ids connus : `content`, `image_nsfw`, `image_gore`, `image_scam`, `profile`. |
 | `features.<id>.exempt_roles` | int[] ≤ 25 | `[]` | Rôles non modérés. |
 | `features.<id>.exempt_channels` | int[] ≤ 25 | `[]` | Salons exemptés (+ threads dont le parent est listé). |
+| `features.content` | bloc | désactivé | Détecteur IA du texte des messages. |
+| `features.image_nsfw` | bloc | désactivé | Images explicites (Google SafeSearch, budget mensuel partagé). Les salons soumis à une limite d'âge sont toujours ignorés. |
+| `features.image_gore` | bloc | désactivé | Images choquantes / violentes (catégorie `contenu_choquant`), même appel SafeSearch que `image_nsfw`. Salons soumis à une limite d'âge ignorés. |
+| `features.profile` | bloc | désactivé | Modération des profils (photo, bannière, pseudo), déclenchée par les événements de membre. Compte comme une feature pour l'état réel. |
+| `features.profile.avatar` / `.banner` / `.pseudo` | bool | `true` | Quelles vérifications de profil tournent. |
+| `features.profile.exempt_roles` | int[] ≤ 25 | `[]` | Membres non vérifiés. `exempt_channels` reste `[]` (un profil n'a pas de salon). |
+| `features.image_scam` | bloc | désactivé | Captures d'arnaque (fausses offres crypto, faux concours) : hash connu → OCR → funnel IA. |
+| `features.image_scam.scan_all` | bool | `false` | OCR de **toutes** les images au lieu des seules images que les pré-règles gratuites jugent risquées. Champ ops (pas de sélecteur dans le panel du bot, qui préserve la valeur). Coûte du quota `automod_image_ocr`. N'existe **que** sur `image_scam`. |
+
+**État du module.** `state` remplace `enabled` et `dry_run` :
+
+| `state` | Effet |
+|---|---|
+| `active` (ou absent) | L'Automod tourne et applique. |
+| `paused` | La config est conservée, le module est arrêté et ses commandes masquées. |
+| `simulation` | L'ancien `dry_run` : le funnel et le barème tournent, mais **rien n'est appliqué** (ni suppression, ni sanction, ni case, ni DM) ; une carte SIMULATION avec boutons d'annotation est postée dans `notify_channel_id` à la place. |
+
+> **Exemptions.** Le panneau du bot écrit **la même** liste d'exemptions sur toutes les features (rôles seulement pour `profile`, dont `exempt_channels` vaut toujours `[]`) ; le dashboard fait pareil (une seule liste dans l'UI, recopiée sur chaque bloc) — des listes différentes seraient aplaties à la prochaine sauvegarde depuis Discord. Le backend ne l'impose pas.
+>
+> **Compatibilité (2026-09).** Chaque bloc a une valeur par défaut : une config stockée avant les features image (`content` seul) reste valide, et la prochaine écriture pose `image_nsfw` / `image_scam` désactivés. La lecture renvoie la config stockée telle quelle — un bloc absent vaut « désactivé », le dashboard prend les défauts dans `GET /guilds/{id}/modules/automod_ai/schema`.
+>
+> **Rôles protégés.** Les membres dont le rôle le plus haut est supérieur ou égal à celui du bot, ainsi que le propriétaire du serveur, ne sont jamais sanctionnés. Les dossiers créés ne reflètent que ce qui a réellement été appliqué sur Discord.
+
+**`sanctions[<id>]`** :
+
+```json
+"sanctions": {
+  "doxxing": {
+    "enabled": true,
+    "mode": "perso",
+    "actions": ["delete", "warn", "timeout"],
+    "timeout_seconds": 60780,
+    "recidive": true,
+    "require_approval": false,
+    "by_gravity": { "critique": { "actions": ["delete", "ban"], "timeout_seconds": null } }
+  },
+  "profil_avatar_nsfw": { "action_profil": "hold" }
+}
+```
+
+| Champ | Valeurs | Notes |
+|---|---|---|
+| `enabled` | bool, défaut `true` | `false` = suppression seule (interrupteur du type). |
+| `mode` | `auto` (défaut) \| `perso` | `auto` = barème de Moddy (`actions`, `timeout_seconds`, `by_gravity` ignorés) ; `perso` = les actions du serveur, qui servent de **plancher** : la récidive, les plafonds de confiance et `max_action` s'appliquent par-dessus. |
+| `actions` | liste de `delete`\|`warn`\|`timeout`\|`kick`\|`ban` | Cumulables. Les combinaisons contradictoires sont **acceptées** à l'écriture, le bot les résout au chargement : `ban` remplace `kick` ; `kick`/`ban` remplacent `timeout` et `warn` ; `delete` se combine avec tout ; `warn` + `timeout` se combinent. Liste vide = `["delete"]`. Un **kick** n'ouvre pas de dossier de sanction et n'envoie pas de MP permettant de faire appel. Sous un `max_action` inférieur à `ban`, un kick devient une exclusion de 28 jours. |
+| `timeout_seconds` | entier 60..2 419 200 \| `null` | Durée **exacte** de l'exclusion (ici 16 h 53 min), seulement avec l'action `timeout`. Absente = 3600. |
+| `recidive` | bool, défaut `true` | Mode `perso` : les récidives font monter l'ensemble de sanctions. |
+| `require_approval` | bool, défaut `false` | Un modérateur valide la sanction dans le salon d'alertes avant qu'elle soit appliquée (cartes Approuver / Refuser, 48 h). **Stocké `false`** par le backend — comme le fait le bot — pour un type de profil et pour un plan sans `warn`/`timeout`/`kick`/`ban` (ni dans le plan de base, ni dans un `by_gravity`) : une validation qui ne se produira jamais ne doit pas s'afficher. |
+| `by_gravity.<gravité>` | `{"actions": […], "timeout_seconds": …}` | Optionnel, mode `perso` : un autre plan pour une gravité (`basse`/`moyenne`/`haute`/`critique`). Produit par la conversion de l'ancien format. Un dashboard peut l'ignorer, mais **doit le supprimer s'il réécrit `actions`** (sinon l'ancien plan par gravité continue de s'appliquer par-dessus). |
+| `action_profil` | `hold` \| `rename_warn` \| `alert` \| `bareme` | **`profil_*` uniquement.** `hold` = exclusion temporaire jusqu'à correction du profil (défaut des deux photos, refusé sur `profil_pseudo`), `rename_warn` = réinitialiser le pseudo et avertir (défaut du pseudo), `alert` = alerte seulement, `bareme` = l'échelle de Moddy. |
+
+Une clé `perso:<id>` doit désigner une entrée de `infractions_perso` (sinon `422`).
+
+**Ancien format** (`mode: "perso"` + `crans: {basse, moyenne, haute, critique}`, entiers 0..7) : toujours **lu** et converti à la lecture — le plan de base est celui du cran `moyenne`, chaque gravité dont le cran donne un autre plan va dans `by_gravity`, ce qui donne exactement les mêmes sanctions que l'ancienne échelle — mais **jamais réécrit sous cette forme**. `crans` sur une entrée `auto` est ignoré (et retiré). Un `crans` invalide n'est pas converti en silence : la validation donne son code (`sanctions_crans_invalid`, `sanctions_cran_range`).
+
+**Échelle de Moddy** (mode `auto`, et plancher par défaut) : cran `0` suppression seule · `1` suppression + avertissement · `2..6` suppression + exclusion de 2 h / 12 h / 48 h / 7 j / 28 j · `7` suppression + bannissement. Chaque infraction a un cran par défaut par gravité (`default_crans`, et `default_plans` au format d'un plan, dans `GET …/catalog`).
+
+Une infraction personnalisée sans entrée de barème : crans `0/1/2/4`.
+
+**Valeurs à afficher.** Le dashboard n'écrit plus « défaut de Moddy » : les vraies valeurs — défauts de Moddy compris, par gravité — sont dans `GET …/policies` (port de `automod.infractions.effective_policy`).
+
+**`infractions_perso[]`** (≤ 10) : `id` (`[a-z0-9]{1,12}`, unique, stable, **généré aléatoirement (4 caractères suffisent) et jamais réutilisé**, même après suppression ; ne jamais changer l'`id` d'une entrée existante), `nom` (1..40), `description` (1..300, lue par l'IA), `exemples` (≤ 5 × 200, lus par l'IA), `mots_cles` (≤ 20 × 60, jamais envoyés à l'IA), `modele` (`null` ou `pub_serveur`, `spoilers`, `politique_religion`, `demande_dm`, `langue`, `liens`). Catégorie en aval : `perso:<id>`, barème par défaut 0/1/2/4. **Supprimer une infraction supprime `sanctions["perso:<id>"]` dans la même écriture.**
 
 > **IDs Discord : chaînes en JSON, entiers en base.** Un snowflake de 19 chiffres dépasse `Number.MAX_SAFE_INTEGER` — renvoyé en nombre JSON il serait silencieusement arrondi par un client JS, qui réécrirait ensuite un ID faux. L'API renvoie donc `notify_channel_id`, `exempt_roles` et `exempt_channels` en **chaînes** (`"1234567890123456789"`), et accepte en écriture aussi bien la chaîne que le nombre. Le stockage JSONB, lui, reste en entiers (c'est ce que lit le bot) : l'aller-retour `GET` → `PUT` est sans perte.
 
-`features` est une map ouverte indexée par feature id ; une clé inconnue est **rejetée** (`422 Fonctionnalité inconnue : <id>`). Le bloc `features.situation` (supprimé en 2026-08) est retiré automatiquement à la lecture et à la prochaine écriture, comme les clés legacy `rules` → `indications` et `log_channel_id` → `notify_channel_id`. **`langue_serveur` a été supprimée en 2026-08** : la langue des DM, cartes et raisons IA est celle du serveur (`GET/PUT /guilds/{id}/settings/language`). La clé est retirée à la lecture comme avant écriture, n'est plus validée, et l'erreur « Langue invalide » n'existe plus.
+`features` est une map indexée par feature id (`content`, `image_nsfw`, `image_gore`, `image_scam`, `profile`) ; une clé inconnue est **rejetée** (`422 Fonctionnalité inconnue : <id>`). Le bloc `features.situation` (supprimé en 2026-08) est retiré automatiquement à la lecture et à la prochaine écriture, comme les clés legacy `enabled` / `dry_run` (→ `state`), `indications` / `rules` (supprimées), `log_channel_id` (→ `notify_channel_id`) et `categories_desactivees` (→ `sanctions`). **`langue_serveur` a été supprimée en 2026-08** : la langue des DM, cartes et raisons IA est celle du serveur (`GET/PUT /guilds/{id}/settings/language`).
 
-**État réel du module.** `enabled` seul ne suffit pas :
+**État réel du module.** Ni `state` ni `notify_channel_id` ne suffisent seuls :
 
 ```
-running = enabled ET au moins une features[*].enabled ET notify_channel_id != null
+running = state != "paused" ET au moins une features[*].enabled ET notify_channel_id != null
 ```
+
+`features[*]` couvre `content`, `image_nsfw`, `image_gore`, `image_scam` **et** `profile` : un serveur qui n'active que l'analyse d'images, ou que les profils, tourne. En `simulation`, le module « tourne » mais n'applique rien.
 
 **Validation à l'écriture** (`PUT/PATCH /guilds/{id}/modules/automod_ai`) :
 
 | Règle | Erreur |
 |---|---|
+| `state` ∈ `active`/`paused`/`simulation` | `422 module_state_invalid` |
 | `notify_channel_id` est un salon texte/annonces du serveur | `422 Salon d'alertes invalide` (non bloquant si Discord est injoignable) |
-| `len(indications) <= 3000` | `422` |
 | `severity` ∈ 1..5, `max_action` ∈ warn/mute/ban | `422` |
 | chaque clé de `features` est un feature id connu | `422 Fonctionnalité inconnue : <id>` |
-| `indications` (si modifiées) passent le contrôle anti-injection du bot | `422` avec la raison, ou `503` si le bot est injoignable |
+| `sanctions` : voir le tableau des codes ci-dessous ; clé `perso:<id>` rattachée à une infraction existante | `422` |
+| `infractions_perso` : ≤ 10, `id` unique `[a-z0-9]{1,12}`, `nom`/`description`/`exemples`/`mots_cles` dans leurs bornes, `modele` connu | `422` |
+| `features.profile.avatar\|banner\|pseudo` booléens | `422` |
+| chaque infraction perso nouvelle ou modifiée passe le contrôle anti-injection du bot (`nom`, `description`, `exemples`) | `422` avec la raison, ou `503` si le bot est injoignable |
 
-> **Contrôle anti-injection.** `indications` étant injecté verbatim dans le system prompt, tout texte **modifié** est envoyé au bot (`POST {BOT_INTERNAL_URL}/automod/rules_check`, call type `automod_rules_check`) avant d'être persisté — le même contrôle que le panel du bot. On échoue **fermé** : si le contrôle ne peut pas tourner, la sauvegarde est refusée (`503`) plutôt que d'écrire du texte non vérifié. Le contrôle n'est rejoué que si le texte a changé (activer une feature ne relance pas d'appel IA).
+**Codes de validation des `sanctions`** — `422 Barème personnalisé invalide (<code>)`, ceux du bot mot pour mot, dans l'ordre où le bot les évalue (le premier échec est renvoyé) :
+
+| Code | Cause |
+|---|---|
+| `sanctions_invalid` | `sanctions` n'est pas un objet (`null` accepté) |
+| `sanctions_unknown_id` | clé qui n'est ni un id du catalogue ni un `perso:<[a-z0-9]{1,12}>` bien formé |
+| `sanctions_entry_invalid` | une entrée n'est pas un objet |
+| `sanctions_mode_invalid` | `mode` ∉ `auto`/`perso` |
+| `sanctions_flag_invalid` | `enabled`, `recidive` ou `require_approval` n'est pas un booléen |
+| `sanctions_crans_invalid` / `sanctions_cran_range` | ancien `crans` mal formé / hors 0..7 |
+| `sanctions_actions_invalid` | `actions` (ou celui d'un plan `by_gravity`) n'est pas une liste de chaînes |
+| `sanctions_action_unknown` | action ∉ `delete`/`warn`/`timeout`/`kick`/`ban` |
+| `sanctions_timeout_invalid` | `timeout_seconds` n'est pas un entier (booléens refusés ; `null` accepté) |
+| `sanctions_timeout_range` | `timeout_seconds` hors 60..2 419 200 |
+| `sanctions_by_gravity_invalid` | `by_gravity` n'est pas un objet indexé par gravité dont les valeurs sont des objets |
+| `sanctions_action_profil_invalid` | `action_profil` inconnue, sur un type qui n'est pas de profil, ou `hold` sur `profil_pseudo` |
+
+**Quelle infraction est fautive (2026-10).** Les erreurs `422`/`503` d'une sauvegarde qui concernent UNE infraction portent, en plus de `error`, `code`, `infraction_id` (l'`id` de l'entrée, `null` si illisible) et `index` (position dans `infractions_perso`, `null` pour une erreur de liste) :
+
+| Cas | Statut | Corps |
+|---|---|---|
+| Refus IA | `422` | `{"error": "<reason du bot>", "code": "unsafe"\|"too_long"\|"invalid_infraction", "infraction_id": "b", "index": 1}` |
+| Contrôle indisponible | `503` | `{"error": "Contrôle de sécurité des infractions personnalisées indisponible …", "code": "unavailable", "infraction_id": "b", "index": 1}` |
+| Structure (`infraction_*`, `infractions_perso_*`) | `422` | `{"error": "Infractions personnalisées invalides (infraction_nom_invalid)", "code": "infraction_nom_invalid", "infraction_id": "b", "index": 1}` — `infraction_id_duplicate` pointe la 2e occurrence |
+| `sanctions` référence un `perso:<id>` inconnu | `422` | `{"error": "Barème d'une infraction personnalisée inconnue (perso:zz)", "code": "sanction_infraction_unknown", "infraction_id": "zz", "index": null, "sanction_key": "perso:zz"}` |
+| `state` invalide | `422` | `{"error": "État de module invalide (active, paused ou simulation)", "code": "module_state_invalid", "field": "state", "allowed": […]}` |
+
+Les autres erreurs de validation (`severity`, `sanctions_*`, features…) restent `422 {"error": [<erreurs Pydantic>]}`. En cas de plusieurs infractions fautives, c'est la première dans l'ordre de la liste. Mécanisme générique : `app.errors.ExtraHTTPException(status, detail, extra={…})`, fusionné dans le corps par `http_exception_handler` sans jamais écraser `error` ; une erreur Pydantic `PydanticCustomError` dont le `ctx` porte `api_extra` est rendue de même par `service._validate`.
+
+> **Contrôle anti-injection (infractions personnalisées).** `nom`, `description` et `exemples` d'une infraction atteignent le system prompt de l'IA : toute entrée **nouvelle ou modifiée** est envoyée au bot (`POST {BOT_INTERNAL_URL}/automod/rules_check`, call type `automod_rules_check`) avant d'être persistée — le même contrôle que le panel du bot. On échoue **fermé** : si le contrôle ne peut pas tourner, la sauvegarde est refusée (`503`) plutôt que d'écrire du texte non vérifié. Le contrôle n'est rejoué que pour une entrée modifiée (activer une feature ne relance pas dix appels IA). Un modèle de Moddy laissé intact est de confiance (pas d'appel IA).
 >
-> Appel : `Authorization: Bearer {INTERNAL_API_SECRET}` (secret partagé avec le bot ; **sans lui le bot répond 401** et toute écriture des `indications` échoue en `503`), corps `{guild_id, indications, locale}` — `locale` est dérivée de la **langue du serveur** (`guilds.data.settings.language` : `fr` → `fr`, `en-US` → `en`, tout le reste → défaut du bot) pour que la raison du refus soit affichable telle quelle. Ce `locale`-là est la langue de la *réponse du contrôle*, pas un réglage du module.
+> Appel : `Authorization: Bearer {INTERNAL_API_SECRET}` (secret partagé avec le bot ; **sans lui le bot répond 401** et toute écriture d'infraction échoue en `503`), corps `{guild_id, infraction, locale}` — `locale` est dérivée de la **langue du serveur** (`fr` → `fr`, `en-US` → `en-US`, tout le reste → défaut du bot) pour que la raison du refus soit affichable telle quelle.
+>
+> **Il n'y a plus de contrôle d'un texte libre** : l'ancien corps `{"indications": …}` reçoit `400 missing_infraction` du bot, le backend ne l'envoie plus.
 >
 > Interprétation de la réponse du bot :
 >
@@ -1216,12 +1431,15 @@ running = enabled ET au moins une features[*].enabled ET notify_channel_id != nu
 > |---|---|
 > | `200 {"ok": true}` | sauvegarde |
 > | `200 {"ok": false, "code": "unsafe"\|"too_long", "reason": …}` | `422` avec `reason` |
+> | `400 {"error": "invalid_infraction", …}` | `422` (`code: invalid_infraction`) |
 > | `200 {"ok": false, "code": "unavailable", …}` | `503` — **panne du bot, pas un texte refusé** |
-> | `400`/`401`/`404`/`503` (`invalid_guild_id`, `unauthorized`, `unknown_guild`, `bot_not_ready`) | `503` |
+> | `401`/`404`/`503` (`unauthorized`, `unknown_guild`, `bot_not_ready`) | `503` |
 >
-> Le point d'attention : le bot signale sa propre indisponibilité par un **`200` avec `ok: false`**. Ne jamais déduire « texte refusé » du seul `ok: false` — sinon une panne de gateway s'affiche à l'utilisateur comme un refus de ses indications.
+> Le point d'attention : le bot signale sa propre indisponibilité par un **`200` avec `ok: false`**. Ne jamais déduire « texte refusé » du seul `ok: false`.
 
-Comme pour tout module, une écriture invalide le cache et publie `{"type": "module_updated", "guild_id": ..., "module_id": "automod_ai"}` sur `moddy:bot` — sans cet événement le bot ne relirait la config qu'au redémarrage. `PUT` et `PATCH` ont la même sémantique : le corps **remplace** la config (le dashboard envoie toujours l'objet complet, comme le bot).
+Comme pour tout module, une écriture invalide le cache et publie `{"type": "module_updated", "guild_id": ..., "module_id": "automod_ai"}` sur `moddy:bot` — sans cet événement le bot ne relirait la config qu'au redémarrage (il recharge le module, applique l'état et resynchronise les commandes). `PUT` et `PATCH` ont la même sémantique : le corps **remplace** la config (le dashboard envoie toujours l'objet complet, comme le bot) — sauf `state`, conservé s'il est omis.
+
+**Niveaux de protection (assistant du bot).** Léger / Équilibré / Strict sont de simples configs (`GET …/catalog` → `presets[].config`, produites par `preset_config(preset, channel_id, state=…, base=…)`, miroir de `automod/presets.py`). **Léger** : `content` + `image_nsfw` + `image_scam`, sévérité 2, et `sanctions.insulte = {enabled, mode: "perso", actions: ["delete"], timeout_seconds: null, recidive: true, require_approval: false, by_gravity: {haute: delete+timeout 2 h, critique: delete+timeout 12 h}}` (une insulte ordinaire est seulement supprimée, les graves sont sanctionnées). **Équilibré** (recommandé) : + `image_gore`, sévérité 3, barème par défaut. **Strict** : + `profile`, sévérité 4. L'assistant applique un niveau avec `state: "paused"` puis son dernier écran choisit `simulation` (recommandé) ou `active` ; le bouton **« Passer »** applique Équilibré en **`simulation`** (le seul état où personne ne peut être sanctionné par erreur). Un dashboard qui propose les mêmes niveaux doit produire les mêmes données (`state` par défaut du catalogue : `simulation`).
 
 ---
 
@@ -1237,9 +1455,8 @@ Comme pour tout module, une écriture invalide le cache et publie `{"type": "mod
 {
   "guild_id": "123456789",
   "module_id": "automod_ai",
+  "state": "active",
   "running": false,
-  "enabled": true,
-  "dry_run": false,
   "blocked_by_global_sanction": false,
   "notify_channel_id": null,
   "active_features": ["content"],
@@ -1247,24 +1464,163 @@ Comme pour tout module, une écriture invalide le cache et publie `{"type": "mod
 }
 ```
 
-`warnings` : `missing_notify_channel` (mauvaise config la plus fréquente), `no_feature_enabled`, `dry_run` (le module tourne mais n'applique rien), `blocked_by_global_sanction`.
+`state` est l'état **effectif** (`active`/`paused`/`simulation`), anciennes configs comprises. `enabled` et `dry_run` n'existent plus.
+
+`active_features` liste les ids activés dans l'ordre `content`, `image_nsfw`, `image_gore`, `image_scam`, `profile`.
+
+`warnings` : `missing_notify_channel` (mauvaise config la plus fréquente), `no_feature_enabled`, `simulation` (le module tourne mais n'applique rien — remplace `dry_run`), `blocked_by_global_sanction`. Un module **en pause** n'émet ni `missing_notify_channel` ni `no_feature_enabled` : la pause explique à elle seule que rien ne tourne.
 
 `blocked_by_global_sanction: true` = le serveur est sous sanction globale
-`restrict`/`ban` : l'automod IA est coupé côté bot, `running` et `enabled` sont
-donc forcés à `false` quelle que soit la config stockée, et toute écriture sur
+`restrict`/`ban` : l'automod est coupé côté bot, `running` est donc forcé à
+`false` quelle que soit la config stockée, et toute écriture sur
 `automod_ai` est refusée (`403 automod_ai_blocked`). Voir `docs/GLOBAL_SANCTIONS.md`.
 
 ---
 
-### `POST /guilds/{guild_id}/modules/automod_ai/indications/check`
+### `GET /guilds/{guild_id}/modules/automod_ai/policies`
 
-Passe un texte au contrôle anti-injection **sans rien sauvegarder** (retour immédiat dans le formulaire). Le même contrôle est rejoué à la sauvegarde : ce endpoint ne dispense de rien.
+Politique de sanction **effective** de chaque infraction du serveur — celle que le bot appliquera vraiment, **défauts de Moddy compris** (c'est ce que le dashboard affiche à la place de « défaut de Moddy »). Port de `automod.infractions.effective_policy`.
 
 **Auth :** guild_access
-**Body :** `{"indications": "pas d'insultes, même pour rire"}` — la langue de `reason` est celle du serveur (`GET /guilds/{id}/settings/language`), plus un champ du body. Un `langue_serveur` résiduel est ignoré.
+**Reponse :**
 
-**Reponse :** `{"ok": true}` ou `{"ok": false, "reason": "..."}`
-**Erreur :** `503` contrôle indisponible (bot injoignable, non authentifié, ou gateway du bot en panne)
+```json
+{
+  "guild_id": "123456789",
+  "module_id": "automod_ai",
+  "policies": {
+    "insulte": {
+      "mode": "auto",
+      "enabled": true,
+      "recidive": true,
+      "require_approval": false,
+      "family": "message",
+      "by_gravity": {
+        "basse":    {"actions": ["delete", "warn"],    "timeout_seconds": null},
+        "moyenne":  {"actions": ["delete", "warn"],    "timeout_seconds": null},
+        "haute":    {"actions": ["delete", "timeout"], "timeout_seconds": 7200},
+        "critique": {"actions": ["delete", "timeout"], "timeout_seconds": 43200}
+      }
+    },
+    "profil_avatar_nsfw": { "mode": "auto", "…": "…", "family": "profile", "action_profil": "hold", "by_gravity": {"…": "…"} },
+    "perso:k3x9": { "mode": "perso", "…": "…", "family": "custom", "by_gravity": {"…": "…"} }
+  }
+}
+```
+
+Une entrée par type du catalogue plus une par infraction personnalisée du serveur. Règles : entrée absente = barème de Moddy ; ancien `crans` converti ; **type désactivé** (`enabled: false`) = `["delete"]` seulement ; `require_approval` vaut `false` pour un type désactivé ; `actions` est toujours résolu (les conflits `kick`/`ban`… sont déjà tranchés) et `timeout_seconds` borné à 60..2 419 200 (`null` sans l'action `timeout`). `action_profil` n'est présent que sur les types `profil_*`.
+
+---
+
+### `GET /guilds/{guild_id}/modules/automod_ai/catalog`
+
+Catalogue statique (identique pour tous les serveurs, jamais lu en base) pour construire le formulaire sans en coder une copie : types d'infraction (message, image, profil) avec leurs plans par défaut, échelle de Moddy, actions possibles, modèles d'infraction personnalisée, actions de profil et bornes des champs.
+
+**Libellés (2026-10).** Tous les textes sont **les mots exacts du bot**, par locale : `{"fr": "…", "en-US": "…", "es-ES": "…", "pt-BR": "…", "de": "…"}` (toujours les 5 clés ; locale manquante côté bot = repli `en-US` puis `fr`). Ils sont dans `app/modules/automod_ai_catalog_labels.py`, **généré** depuis les locales du bot par `python scripts/sync_automod_ai_labels.py <chemin du repo bot>` (ne pas l'éditer à la main, relancer le script quand le bot change). Les libellés des gravités et des crans n'existent plus dans les locales du bot : le script reprend ceux déjà générés.
+
+| Clé | Élément |
+|---|---|
+| `infractions[]` | `{"id": "insulte", "family": "message", "name": {…}, "description": {…}, "default_crans": {"basse": 1, "moyenne": 1, "haute": 2, "critique": 3}, "default_plans": {"basse": {"actions": ["delete","warn"], "timeout_seconds": null}, …}, "sensitive": false, "ban_on_sight": false}` (+ `profile_actions: ["alert","rename_warn","bareme"]` et `default_action_profil` pour les `profil_*`). `violation_indications` n'existe plus. |
+| `custom_infraction` | `{"id_prefix": "perso:", "family": "custom", "name": {…}, "description": {…}, "default_crans": {…}, "default_plans": {…}}` |
+| `families[]` | `{"id": "message"\|"image"\|"profile"\|"custom", "name": {…}}` |
+| `gravities[]` | `{"id": "basse", "name": {"fr": "Faible", …}, "label": {"fr": "Gravité faible", …}, "description": {"fr": "Limite ou léger : …", …}}` |
+| `cran_ladder[]` | `{"cran": 4, "action": "mute", "duration_hours": 48, "actions": ["delete","timeout"], "timeout_seconds": 172800, "name": {…}}` — `action`/`duration_hours` sont l'ancienne lecture, `actions`/`timeout_seconds` le même cran au format d'un plan |
+| `actions[]` | `{"id": "delete"\|"warn"\|"timeout"\|"kick"\|"ban", "name": {…5 locales}}` |
+| `action_rules` | `{"ban_supersedes": ["kick"], "kick_or_ban_supersede": ["timeout","warn"], "empty_means": ["delete"], "kick_opens_case": false}` — les règles de conflit que le bot applique au chargement |
+| `profile_actions[]` | `{"id": "hold", "name": {…}, "description": {…}}` |
+| `features[]` | `{"id": "content", "name": {…}, "description": {…}}` ; `profile` n'a pas de description côté bot : `"description": null` |
+| `templates[]` | `{"id": "spoilers", "nom": {…5 locales}, "description": {…5 locales}, "exemples": ["…"], "mots_cles": ["…"]}` — `exemples` / `mots_cles` sont des listes de chaînes **identiques dans toutes les langues** (bilingues FR+EN, comme dans le bot) |
+| `presets[]` | `{"id": "light", "name": {…}, "description": {…}, "features": [...], "severity": 2, "sanctions": {...}, "config": {…, "state": "simulation"}}` |
+| `limits` | bornes des champs : `infractions_perso`, `nom`, `description`, `exemples`, `exemple`, `mots_cles`, `mot_cle`, `exemptions`, `perso_id_pattern`, et pour les durées `timeout_seconds_min` (60), `timeout_seconds_max` (2 419 200), `timeout_seconds_default` (3600). `indications` n'existe plus. |
+
+Les libellés sont des données : aucun placeholder `{…}` ne s'y trouve.
+
+**Auth :** guild_access
+
+### `POST /guilds/{guild_id}/modules/automod_ai/infractions/check`
+
+Passe **une** infraction personnalisée au contrôle anti-injection **sans rien sauvegarder** (retour immédiat dans le formulaire). `nom`, `description` et `exemples` atteignent le prompt de l'IA ; les mots-clés ne sont pas envoyés. Le contrôle est rejoué à la sauvegarde pour toute entrée nouvelle ou modifiée.
+
+**Auth :** guild_access
+**Body :** `{"infraction": {"id": "k3x9", "nom": "Publicité", "description": "…", "exemples": ["…"], "mots_cles": ["discord.gg/"], "modele": null}}`
+
+**Reponse :** `{"ok": true}` ou `{"ok": false, "code": "unsafe"\|"too_long"\|"invalid_infraction", "reason": "..."}` (`code` = celui du bot). Une entrée structurellement invalide répond `200 {"ok": false, "code": "invalid_infraction", "reason": "Infraction personnalisée invalide (<code>)"}` sans appel IA. Un modèle de Moddy non modifié est de confiance (`ok: true` sans appel IA).
+**Erreur :** `503` contrôle indisponible (bot injoignable, échec fermé).
+
+> `POST …/indications/check` a été **supprimée** (2026-10) avec le champ `indications`.
+
+---
+
+### `GET /guilds/{guild_id}/automod-ai/profile-holds`
+
+Membres actuellement retenus (timeout Discord) jusqu'à ce qu'ils corrigent leur photo de profil ou leur bannière. Lit la table `automod_profile_holds`, **propriété du bot** (le backend ne l'écrit jamais). Table absente (bot pas encore déployé) -> liste vide.
+
+**Auth :** guild_access (lecture, droits de gestion du serveur)
+**Query :** `limit` (1..200, défaut 50), `offset` (défaut 0). Tri : `created_at` décroissant.
+
+**Reponse :**
+
+```json
+{
+  "holds": [
+    {
+      "user_id": "123456789012345678",
+      "kind": "avatar",
+      "categorie": "profil_avatar_nsfw",
+      "case_id": "0b0f6b3e-…",
+      "sanction_id": "5c1e9a77-…",
+      "created_at": "2026-10-10T12:00:00+00:00",
+      "timeout_until": "2026-10-10T12:30:00+00:00",
+      "last_checked": null
+    }
+  ],
+  "total": 1
+}
+```
+
+`kind` : `avatar` \| `banner`. `categorie`, `case_id`, `sanction_id`, `timeout_until` et `last_checked` peuvent être `null`.
+
+---
+
+### `GET /guilds/{guild_id}/automod-ai/pending-approvals`
+
+Sanctions qui attendent la validation d'un modérateur (`sanctions[<id>].require_approval`). Lit la table `automod_pending_approvals`, **propriété du bot**. Table absente (bot pas encore déployé) -> liste vide.
+
+> **Le dashboard LISTE, il ne RÉSOUT jamais.** Il n'y a aucune route d'écriture. C'est le bot qui applique la sanction quand un modérateur clique sur la carte du salon d'alertes, avec les permissions Discord **de ce modérateur** (`ban_members` pour un bannissement, `kick_members` pour une expulsion, `moderate_members` sinon). Une décision prise avec le token du bot contournerait cette vérification, et le bot ignore les décisions attribuées à lui-même (carte « en attente » pour toujours). Une décision depuis le dashboard passerait par une tâche signée `moddy:tasks`, à coordonner avec le bot.
+
+**Auth :** guild_access (lecture, droits de gestion du serveur)
+**Query :** `status` (`pending`\|`approved`\|`rejected`\|`expired`, sans lui tout l'historique), `limit` (1..200, défaut 50), `offset` (défaut 0). Tri : `created_at` décroissant. Une demande expire après 48 h.
+
+**Reponse :**
+
+```json
+{
+  "approvals": [
+    {
+      "id": "42",
+      "user_id": "123456789012345678",
+      "status": "approved",
+      "channel_id": "223456789012345678",
+      "card_message_id": "323456789012345678",
+      "categorie": "doxxing",
+      "gravite": "haute",
+      "actions": ["delete", "warn", "timeout"],
+      "timeout_seconds": 60780,
+      "message_deleted": true,
+      "created_at": "2026-10-16T12:00:00+00:00",
+      "expires_at": "2026-10-18T12:00:00+00:00",
+      "resolved_at": "2026-10-16T12:05:00+00:00",
+      "resolved_by": "987654321098765432",
+      "result": {"applied": ["delete", "timeout"], "failed": {"warn": "hierarchy"}, "case_ref": "A7F2K9"}
+    }
+  ],
+  "total": 1
+}
+```
+
+`actions` : les sanctions **prévues**, en noms stockés (`delete`/`warn`/`timeout`/`kick`/`ban`, ordre canonique). `result` est `null` tant que la demande n'est pas traitée ; ensuite `applied` (ce qui a réellement eu lieu), `failed` (code de raison par action : `hierarchy`, `permission`, `absent`, `discord`, `unverified`, `case`) et `case_ref` (référence du dossier ouvert, `null` si aucun — un kick n'en ouvre pas). `channel_id` / `card_message_id` situent la carte (`null` avant qu'elle soit postée).
+
+> **Contenu des messages : jamais exposé.** `payload` garde le texte du message supprimé, son contexte et ses pièces jointes ; le modérateur le lit sur la carte Discord, le dashboard n'a pas à le copier. La requête ne sélectionne que `payload->'bareme'`, `payload->'decision'` et `payload->'deleted'`.
 
 ---
 
@@ -1288,7 +1644,31 @@ Soft cap quotidien d'appels IA (en « unités » ; un appel `mini` en coûte 4).
 }
 ```
 
-> Les plafonds **durs** par type d'appel (`automod_decision`, `automod_decision_mini`, `automod_confirm`, `automod_rules_check`) vivent dans `quota_limits` / `quota_overrides` (scope `guild`, `-1` = illimité) et ne sont pas exposés ici.
+> Les plafonds **durs** par type d'appel (`automod_decision`, `automod_decision_mini`, `automod_confirm`, `automod_rules_check`, `automod_image_ocr`, `automod_safesearch`, `automod_profile_safesearch`) vivent dans `quota_limits` / `quota_overrides` (scope `guild`, `-1` = illimité) et ne sont pas exposés ici. `automod_embed` n'est pas soumis à quota.
+
+**Quotas ajoutés en 2026-09** (`quota_limits`, écrits par le bot) :
+
+| Type | Utilisateur / jour | Serveur / jour | Global |
+|---|---|---|---|
+| `automod_image_ocr` | — | 300 | illimité |
+| `automod_safesearch` | — | illimité | illimité |
+| `automod_profile_safesearch` (2026-10, photos et bannières de membres) | — | illimité | illimité |
+| `ocr_command` | 10 | 100 | illimité |
+
+Le vrai plafond Google Vision n'est pas là : c'est une règle **mensuelle** du gateway, dont les compteurs Redis sont `ratelimit:google_vision:safe_search:rpmo:YYYYMM` et `ratelimit:google_vision:document_text:rpmo:YYYYMM` — mois calculé en **heure du Pacifique**, pas en UTC.
+
+**Clés Redis de l'analyse d'images** (toutes écrites par le bot ; le backend n'y touche pas) :
+
+| Clé | TTL | Contenu |
+|---|---|---|
+| `automod:img:{scam\|nsfw\|gore}:{phash}` | 30 j | Cache du résultat par image. **Contient le texte OCR de l'image** — à traiter comme le contenu d'un message, jamais à exposer. |
+| `automod:img:xp:…` | 10 min | Suivi des cross-posts (même image postée sur plusieurs salons). |
+| `automod:nsfw:share:{guild_id}:{jour}` | — | Part du budget SafeSearch consommée par le serveur. |
+| `automod:label:hour:…` | — | Plafond horaire d'entrées dans la file d'étiquetage de l'équipe Moddy. |
+| `automod:avatar:{asset}` / `automod:pseudo:…` / `automod:pseudo:allow:…` | 30 j | Verdicts des profils (images et noms jugés), partagés entre serveurs. |
+| `automod:profile:allow:…` / `automod:profile:done:…` / `automod:profile:share:{guild_id}:{jour}` | 90 j / 7 j (24 h pour un nom) / 2 j | Exceptions accordées par appel, marqueur « déjà sanctionné », part du quota SafeSearch de profils. Bot seul. |
+
+Tables de l'automod (file d'étiquetage, hash d'images, références et termes appris) : `docs/MODDY_DB.md` §25.
 
 ---
 
@@ -1296,7 +1676,7 @@ Soft cap quotidien d'appels IA (en « unités » ; un appel `mini` en coûte 4).
 
 Le module `social_notifications` poste une notification Discord dès qu'un compte social suivi (YouTube, Twitch, Bluesky, RSS ; Instagram réservé) publie du nouveau contenu. La détection est faite par le service `moddy-feeds`, auquel **seul le bot** parle. Le backend **ne touche jamais** les streams `feeds:*` ni la table `social_subscriptions` en écriture : il **délègue** chaque écriture au bot via une tâche sur `moddy:tasks`, puis attend le résultat publié par le bot sur le Pub/Sub `moddy:dashboard` (corrélé par `request_id`). La lecture des abonnements se fait directement sur la table partagée. Détails complets : `docs/SOCIAL_NOTIFICATIONS.md`.
 
-La **config globale** du module (`enabled`, `default_message`) passe par le endpoint générique des modules (`PUT /guilds/{id}/modules/social_notifications`). Les **abonnements** ci-dessous sont une sous-ressource dédiée.
+La **config globale** du module (`enabled`, `default_message`, et l'état générique `state` — voir *État d'un module* plus haut) passe par le endpoint générique des modules (`PUT /guilds/{id}/modules/social_notifications`). Le bot y écrit aussi le marqueur `configured: true` (reconduit par le backend). Les **abonnements** ci-dessous sont une sous-ressource dédiée.
 
 ### `GET /guilds/{guild_id}/modules/social_notifications/subscriptions`
 
@@ -2239,6 +2619,76 @@ est à signaler plutôt qu'à classer. `negative` compte les notes ≤ 2.
 `handled` vient des **archives**, pas de la table `tickets` : un ticket fermé
 dont le salon a été rangé compte quand même dans le travail de son agent — d'où
 des agents à `ratings: 0` et `handled > 0`, qu'il ne faut pas masquer.
+
+---
+
+## Module — Member Applications (candidatures)
+
+`member_applications` publie chaque candidature d'adhésion dans un salon de
+l'équipe (carte + boutons). Config via le endpoint **générique**
+`GET/PUT/PATCH/DELETE /guilds/{id}/modules/member_applications` ; lectures de la
+table `member_applications` (propriété du bot) en **lecture seule**. Détails
+complets : `docs/MEMBER_APPLICATIONS.md`.
+
+```json
+{
+  "enabled": true,
+  "channel_id": "123456789012345678",
+  "ping_role_ids": ["111111111111111111"],
+  "reviewer_role_ids": ["222222222222222222"],
+  "rejection_reasons": ["Compte trop récent", "Réponses incomplètes"]
+}
+```
+
+**Validation (422) :** `channel_id` obligatoire si `enabled` ; 5 `ping_role_ids`,
+10 `reviewer_role_ids`, 10 `rejection_reasons` de 100 caractères max (ni vides
+ni en double) ; si activé et Discord joignable : salon texte/annonces où le bot
+voit et écrit, rôles existants (pas `@everyone`), bot avec « Expulser des
+membres ». Écriture → `module_updated` sur `moddy:bot`. `DELETE` écrit `{}`.
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| `GET` | `/guilds/{guild_id}/modules/member_applications/applications?status=&user_id=&limit=50&offset=0` | Candidatures paginées (`status=SUBMITTED` = en attente), réponses du formulaire comprises |
+| `GET` | `/guilds/{guild_id}/modules/member_applications/applications/{request_id}` | Une candidature (404 hors du serveur) |
+| `GET` | `/guilds/{guild_id}/modules/member_applications/stats` | Totaux par statut / origine, décisions par modérateur |
+| `GET` | `/guilds/{guild_id}/modules/member_applications/diagnostics` | Feature `MEMBER_VERIFICATION_MANUAL_APPROVAL`, `kick_members`, salon |
+
+Aucune route n'accepte ni ne refuse : une décision prise avec le token du bot
+laisserait la carte « en attente » pour toujours (voir la doc dédiée).
+
+---
+
+## Module — Bump Reminder (rappels de bump)
+
+`bump_reminder` rappelle dans un salon quand le serveur peut de nouveau être
+bumpé sur un annuaire (DISBOARD, DiscordL…). Config via le endpoint
+**générique** `GET/PUT/PATCH/DELETE /guilds/{id}/modules/bump_reminder` ; lecture
+de la table `bump_reminders` (propriété du bot) en **lecture seule**. Détails
+complets : `docs/BUMP_REMINDER.md`.
+
+```json
+{
+  "version": 1,
+  "reminders": [
+    { "id": "br_a1b2c3d4", "bot": "disboard", "channel_id": "123456789012345678",
+      "role_ids": [], "ping_mode": "button", "interval": 7200, "enabled": true }
+  ]
+}
+```
+
+**Validation (422) :** annuaire connu, `channel_id` obligatoire, `interval`
+300–86 400 s (défaut = délai de l'annuaire), 5 rôles, `ping_mode` dans
+`auto`/`button`/`never`, `id` unique (`br_` + 8 hex, **généré** si absent,
+jamais modifié), pas deux entrées même annuaire + même salon, **1 rappel par
+annuaire en gratuit, 3 en premium** ; entrées actives : salon postable et rôles
+existants. Écriture → `module_updated` sur `moddy:bot` (le bot purge les lignes
+des annuaires retirés). `DELETE` écrit `{}`. `enabled` de module calculé.
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| `GET` | `/guilds/{guild_id}/modules/bump_reminder/catalog` | Annuaires, bornes, quota applicable et consommation |
+| `GET` | `/guilds/{guild_id}/modules/bump_reminder/state` | Prochain rappel par annuaire (`scheduled` / `due` / `sent` / `never_bumped`) |
+| `GET` | `/guilds/{guild_id}/modules/bump_reminder/diagnostics` | Salons, permissions, rôles non notifiables |
 
 ---
 
@@ -3937,6 +4387,50 @@ Fraicheur de la collecte et alerte sur les partitions de secours.
 `stats_counters_default` non vide = une creation de partition a ete ratee cote
 bot : les lignes y sont lisibles mais ne seront plus purgeables par `DROP`.
 C'est le seul signal d'alerte de cette page.
+
+---
+
+### `GET /staff/stats/showcase`
+
+Etat de la vitrine publique (`GET /public/stats/top-guilds`) : ce que le site
+affiche, et le compte rendu de la derniere tentative de calcul. C'est ce qui
+explique une vitrine vide sans fouiller les logs.
+
+**Auth :** staff
+**Reponse :**
+
+```json
+{
+  "published": {"count": 60, "updated_at": "2026-09-24T17:12:03+00:00"},
+  "last_run": {
+    "started_at": "2026-09-24T17:11:10+00:00",
+    "finished_at": "2026-09-24T17:12:03+00:00",
+    "outcome": "ok",
+    "published": 60,
+    "counts": {"candidates": 150, "excluded": 2, "asked": 148,
+               "gone": 31, "skipped": 0, "errors": 1}
+  }
+}
+```
+
+- `outcome` : `ok`, `aborted` (Discord gele globalement, jeton refuse, plus de
+  20 % d'appels en erreur — la liste precedente reste servie) ou `error`
+  (exception inattendue) ; `detail` en donne la raison hors `ok` ;
+- `counts.gone` : serveurs que le bot a quittes (403/404 Discord),
+  `skipped` : serveurs dont la route Discord etait gelee a ce moment-la ;
+- `last_run` vaut `null` si aucune tentative n'a eu lieu depuis 7 jours.
+
+---
+
+### `POST /staff/stats/showcase/refresh`
+
+Recalcule la vitrine tout de suite, en arriere-plan (environ une minute), au
+lieu d'attendre le prochain passage du worker.
+
+**Auth :** staff
+**Reponse :** `202 {"started": true}` — le resultat se lit ensuite sur
+`GET /staff/stats/showcase`.
+**Erreur :** `409` si un calcul tourne deja.
 
 ---
 
