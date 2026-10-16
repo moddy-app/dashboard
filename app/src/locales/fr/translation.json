@@ -423,6 +423,17 @@
       "checking": "Contrôle du texte en cours…",
       "checkOk": "Texte accepté par le contrôle de sécurité.",
       "checkUnavailable": "Contrôle de sécurité indisponible pour le moment — tu peux tout de même tenter la sauvegarde.",
+      "errors": {
+        "sanctions_flag_invalid": "Un réglage du barème personnalisé doit valoir vrai ou faux.",
+        "sanctions_actions_invalid": "Les actions d'un barème personnalisé doivent former une liste.",
+        "sanctions_action_unknown": "Un barème personnalisé contient une action inconnue.",
+        "sanctions_timeout_invalid": "La durée du timeout doit être un nombre entier de secondes.",
+        "sanctions_timeout_range": "La durée du timeout doit être comprise entre 1 minute et 28 jours.",
+        "sanctions_by_gravity_invalid": "Le plan par gravité d'un barème personnalisé est invalide.",
+        "module_state_invalid": "État de module invalide (attendu : actif, en pause ou simulation).",
+        "automod_ai_blocked": "Ce serveur est sous sanction globale : les réglages d'Automod ne peuvent pas être modifiés.",
+        "check_unavailable": "Le contrôle est indisponible pour le moment. Réessayez dans un instant."
+      },
       "checkUnavailableTitle": "Contrôle de sécurité indisponible",
       "checkUnavailableSaveDescription": "Rien n'a été enregistré. Réessaie dans un instant.",
       "retry": "Réessayer",
@@ -463,6 +474,7 @@
         "missing_notify_channel": "Aucun salon d'alertes : le module ne tourne pas.",
         "no_feature_enabled": "Aucun détecteur activé.",
         "dry_run": "Mode simulation : aucune sanction n'est appliquée.",
+        "simulation": "Mode simulation : aucune sanction n'est appliquée.",
         "unknown": "Avertissement de configuration : {{code}}",
         "blocked_by_global_sanction": "Ce serveur est sous sanction globale : la modération IA est coupée."
       },

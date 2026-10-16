@@ -1,33 +1,40 @@
 import { api, ApiError } from '@/lib/auth'
-import { AUTOMOD_FEATURE_IDS, defaultAutomodFeature, normalizeAutomodConfig } from '@/lib/automod'
+import {
+  AUTOMOD_FEATURE_IDS,
+  defaultAutomodFeature,
+  normalizeActions,
+  normalizeAutomodCatalog,
+  normalizeAutomodConfig,
+  readModuleState,
+  stripDeadConfigKeys,
+} from '@/lib/automod'
 import type {
   AutomodAiConfig,
   AutomodAiStatus,
   AutomodBudget,
   AutomodCatalog,
   AutomodCustomInfraction,
-  AutomodIndicationsCheck,
   AutomodInfractionCheck,
+  AutomodGravityPlan,
+  AutomodPendingApproval,
+  AutomodPendingApprovals,
+  AutomodPolicy,
   AutomodProfileHolds,
 } from '@/types/api'
 
 const BASE = (guildId: string | number) => `/guilds/${guildId}/modules/automod_ai`
 
-/** Longueur maximale du champ `indications` (validée aussi côté backend). */
-export const INDICATIONS_MAX = 3000
 /** Nombre maximal d'exemptions par liste et par détecteur. */
 export const EXEMPT_MAX = 25
 
 /** Config par défaut d'un serveur jamais configuré (le GET répond alors 404). */
 export function defaultAutomodConfig(): AutomodAiConfig {
   return {
-    enabled: false,
-    indications: '',
+    state: 'active',
     notify_channel_id: null,
     ignore_moderators: true,
     severity: 3,
     max_action: 'ban',
-    dry_run: false,
     sanctions: {},
     infractions_perso: [],
     features: Object.fromEntries(AUTOMOD_FEATURE_IDS.map((id) => [id, defaultAutomodFeature(id)])),
@@ -61,22 +68,21 @@ export async function saveAutomodConfig(
   guildId: string | number,
   config: AutomodAiConfig
 ): Promise<AutomodAiConfig> {
-  // `langue_serveur` est mort : la langue est un réglage du **serveur**
-  // (`PUT /guilds/{id}/settings/language`). L'index signature de la config
-  // reconduit tout champ inconnu — sans ce retrait, une valeur héritée d'une
-  // ancienne config repartirait dans le body. Pydantic l'ignorerait en
-  // silence : ça semblerait marcher tout en ne réglant rien.
-  // Même chose pour `categories_desactivees`, supprimé côté backend.
-  const {
-    langue_serveur: _dead,
-    categories_desactivees: _dead2,
-    ...body
-  } = config as AutomodAiConfig & {
-    langue_serveur?: unknown
-    categories_desactivees?: unknown
-  }
-  void _dead
-  void _dead2
+  // Clés mortes (`enabled`, `dry_run`, `indications`, `rules`,
+  // `categories_desactivees`, `langue_serveur`) : l'index signature de la config
+  // les reconduirait depuis une ancienne config. Pydantic les ignorerait en
+  // silence, mais le backend les retire à l'écriture — ne jamais les envoyer.
+  // `state` est gardé s'il est présent ; absent, le backend conserve l'état
+  // enregistré (enregistrer des réglages ne relance jamais un module en pause).
+  const body = stripDeadConfigKeys({ ...config })
+  // `crans` (ancien format) est converti à la lecture et ne se réécrit jamais.
+  body.sanctions = Object.fromEntries(
+    Object.entries(body.sanctions ?? {}).map(([key, entry]) => {
+      const { crans: _crans, ...rest } = entry
+      void _crans
+      return [key, rest]
+    })
+  )
   // Garde-fous du contrat : le détecteur de profils n'a jamais de salons
   // exemptés, et une clé `perso:<id>` sans infraction correspondante est un 422.
   const ids = new Set((body.infractions_perso ?? []).map((i) => i.id))
@@ -107,22 +113,13 @@ export async function deleteAutomodConfig(guildId: string | number): Promise<voi
 export async function getAutomodStatus(
   guildId: string | number
 ): Promise<AutomodAiStatus> {
-  return (await api(`${BASE(guildId)}/status`)) as AutomodAiStatus
-}
-
-/**
- * Contrôle anti-injection du texte, sans rien sauvegarder. Le même contrôle est
- * rejoué au PUT : un `ok: true` ici ne garantit pas la sauvegarde.
- * Un 503 (bot injoignable) est propagé — l'appelant avertit sans bloquer.
- */
-export async function checkIndications(
-  guildId: string | number,
-  indications: string
-): Promise<AutomodIndicationsCheck> {
-  return (await api(`${BASE(guildId)}/indications/check`, {
-    method: 'POST',
-    body: JSON.stringify({ indications }),
-  })) as AutomodIndicationsCheck
+  const raw = (await api(`${BASE(guildId)}/status`)) as AutomodAiStatus
+  return {
+    ...raw,
+    state: readModuleState(raw?.state),
+    active_features: Array.isArray(raw?.active_features) ? raw.active_features : [],
+    warnings: Array.isArray(raw?.warnings) ? raw.warnings : [],
+  }
 }
 
 /** Catalogue par serveur, en cache pour la session. Un échec n'est jamais mis en cache. */
@@ -132,7 +129,7 @@ export function getAutomodCatalog(guildId: string | number): Promise<AutomodCata
   const key = String(guildId)
   const cached = catalogCache.get(key)
   if (cached) return cached
-  const promise = (api(`${BASE(guildId)}/catalog`) as Promise<AutomodCatalog>).catch((e) => {
+  const promise = (api(`${BASE(guildId)}/catalog`) as Promise<AutomodCatalog>).then(normalizeAutomodCatalog).catch((e) => {
     catalogCache.delete(key)
     throw e
   })
@@ -159,9 +156,103 @@ export async function getProfileHolds(
   guildId: string | number,
   { limit = 50, offset = 0 }: { limit?: number; offset?: number } = {}
 ): Promise<AutomodProfileHolds> {
-  return (await api(
+  const raw = (await api(
     `/guilds/${guildId}/automod-ai/profile-holds?limit=${limit}&offset=${offset}`
-  )) as AutomodProfileHolds
+  )) as Partial<AutomodProfileHolds> | null
+  const holds = Array.isArray(raw?.holds) ? raw.holds : []
+  return { holds, total: typeof raw?.total === 'number' ? raw.total : holds.length }
+}
+
+// ─── Politiques effectives et sanctions en attente ────────────────────────────
+
+function normalizeGravityPlans(raw: unknown): Partial<Record<string, AutomodGravityPlan>> {
+  const plans: Partial<Record<string, AutomodGravityPlan>> = {}
+  if (!raw || typeof raw !== 'object') return plans
+  for (const [gravity, plan] of Object.entries(raw as Record<string, unknown>)) {
+    if (!plan || typeof plan !== 'object') continue
+    const p = plan as { actions?: unknown; timeout_seconds?: unknown }
+    plans[gravity] = {
+      actions: normalizeActions(p.actions),
+      ...(typeof p.timeout_seconds === 'number' && { timeout_seconds: p.timeout_seconds }),
+    }
+  }
+  return plans
+}
+
+/**
+ * Politique effective par infraction (défauts de Moddy compris), à afficher à
+ * la place de l'ancien « défaut de Moddy ». La réponse est lue sans hypothèse :
+ * objet indexé par id d'infraction, `{policies: {...}}` ou tableau d'entrées
+ * portant leur `id` — tout est ramené à `Record<id, AutomodPolicy>`.
+ */
+export async function getAutomodPolicies(
+  guildId: string | number
+): Promise<Record<string, AutomodPolicy>> {
+  const raw = (await api(`${BASE(guildId)}/policies`)) as unknown
+  let source: unknown = raw
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    const inner = (source as { policies?: unknown }).policies
+    if (inner && typeof inner === 'object') source = inner
+  }
+  const entries: [string, unknown][] = Array.isArray(source)
+    ? source.flatMap((item): [string, unknown][] => {
+        const id = (item as { id?: unknown; infraction?: unknown } | null)?.id ??
+          (item as { infraction?: unknown } | null)?.infraction
+        return typeof id === 'string' ? [[id, item]] : []
+      })
+    : source && typeof source === 'object'
+      ? Object.entries(source as Record<string, unknown>)
+      : []
+  const policies: Record<string, AutomodPolicy> = {}
+  for (const [id, value] of entries) {
+    if (!value || typeof value !== 'object') continue
+    const p = value as Record<string, unknown>
+    policies[id] = {
+      mode: p.mode === 'perso' ? 'perso' : 'auto',
+      enabled: p.enabled !== false,
+      recidive: p.recidive !== false,
+      require_approval: p.require_approval === true,
+      family: typeof p.family === 'string' ? p.family : null,
+      by_gravity: normalizeGravityPlans(p.by_gravity),
+    }
+  }
+  return policies
+}
+
+/**
+ * Sanctions en attente de validation (lecture seule : aucune route d'écriture,
+ * le modérateur décide dans Discord). Le contenu du message supprimé n'est
+ * jamais exposé. Chemin hors `/modules/`.
+ */
+export async function listAutomodPendingApprovals(
+  guildId: string | number,
+  {
+    status,
+    limit = 50,
+    offset = 0,
+  }: { status?: 'pending' | 'approved' | 'rejected' | 'expired'; limit?: number; offset?: number } = {}
+): Promise<AutomodPendingApprovals> {
+  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) })
+  if (status) query.set('status', status)
+  const raw = (await api(
+    `/guilds/${guildId}/automod-ai/pending-approvals?${query.toString()}`
+  )) as Partial<AutomodPendingApprovals> | null
+  const approvals: AutomodPendingApproval[] = (Array.isArray(raw?.approvals) ? raw.approvals : []).map(
+    (a) => ({
+      ...a,
+      actions: normalizeActions(a.actions),
+      timeout_seconds: typeof a.timeout_seconds === 'number' ? a.timeout_seconds : null,
+      message_deleted: a.message_deleted === true,
+      result: a.result
+        ? {
+            applied: Array.isArray(a.result.applied) ? a.result.applied : [],
+            failed: Array.isArray(a.result.failed) ? a.result.failed : [],
+            case_ref: a.result.case_ref ?? null,
+          }
+        : null,
+    })
+  )
+  return { approvals, total: typeof raw?.total === 'number' ? raw.total : approvals.length }
 }
 
 // ─── Budget IA (staff uniquement) ─────────────────────────────────────────────

@@ -423,6 +423,17 @@
       "checking": "Checking the text…",
       "checkOk": "Text accepted by the safety check.",
       "checkUnavailable": "Safety check unavailable right now — you can still try to save.",
+      "errors": {
+        "sanctions_flag_invalid": "A flag in the custom scale must be true or false.",
+        "sanctions_actions_invalid": "The actions of a custom scale must be a list.",
+        "sanctions_action_unknown": "A custom scale contains an unknown action.",
+        "sanctions_timeout_invalid": "The timeout duration must be a whole number of seconds.",
+        "sanctions_timeout_range": "The timeout duration must be between 1 minute and 28 days.",
+        "sanctions_by_gravity_invalid": "The per-severity plan of a custom scale is invalid.",
+        "module_state_invalid": "Invalid module state (expected active, paused or simulation).",
+        "automod_ai_blocked": "This server is under a global sanction: Automod settings can't be changed.",
+        "check_unavailable": "The check is unavailable right now. Try again in a moment."
+      },
       "checkUnavailableTitle": "Safety check unavailable",
       "checkUnavailableSaveDescription": "Nothing was saved. Try again in a moment.",
       "retry": "Retry",
@@ -463,6 +474,7 @@
         "missing_notify_channel": "No alert channel: the module is not running.",
         "no_feature_enabled": "No detector enabled.",
         "dry_run": "Simulation mode: no sanction is applied.",
+        "simulation": "Simulation mode: no sanction is applied.",
         "unknown": "Configuration warning: {{code}}",
         "blocked_by_global_sanction": "This server is under a global sanction: AI moderation is switched off."
       },

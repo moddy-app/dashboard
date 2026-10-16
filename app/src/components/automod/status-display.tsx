@@ -30,7 +30,7 @@ export function StatusBadges({ status }: { status: AutomodAiStatus | null }) {
           {t("modules.automod_ai.statusStopped")}
         </Badge>
       )}
-      {status.dry_run && (
+      {status.state === "simulation" && (
         <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800">
           <FlaskConicalIcon className="size-3 mr-1" />
           {t("modules.automod_ai.dryRunBadge")}

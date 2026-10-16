@@ -6,6 +6,7 @@ import type {
   Role,
   GuildEmoji,
   ModuleConfig,
+  ModuleState,
   GuildStats,
   GuildPremium,
   AdaptiveSlowmodeConfig,
@@ -104,6 +105,22 @@ export async function updateModule(
   })
 }
 
+/**
+ * Change l'état d'un module (`active` / `paused` / `simulation`) sans toucher
+ * à ses réglages : `PATCH` avec le seul `state`. Pour arrêter un module en
+ * gardant sa config, utiliser `paused`, pas `DELETE`.
+ */
+export async function setModuleState(
+  guildId: string | number,
+  moduleId: string,
+  state: ModuleState
+): Promise<void> {
+  await api(`/guilds/${guildId}/modules/${moduleId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ state }),
+  })
+}
+
 export async function disableModule(
   guildId: string | number,
   moduleId: string
@@ -164,7 +181,14 @@ export async function getSocialSubscriptions(
   platform?: SocialPlatform
 ): Promise<SocialSubscription[]> {
   const query = platform ? `?platform=${platform}` : ''
-  return (await api(`${SOCIAL_BASE(guildId)}/subscriptions${query}`)) as SocialSubscription[]
+  const raw = (await api(`${SOCIAL_BASE(guildId)}/subscriptions${query}`)) as
+    | SocialSubscription[]
+    | { subscriptions?: SocialSubscription[] }
+    | null
+  // Jamais autre chose qu'un tableau : une config `{configured, state}` ou un
+  // corps vide ne doivent pas faire planter les `.length` / `.map` de l'écran.
+  if (Array.isArray(raw)) return raw
+  return Array.isArray(raw?.subscriptions) ? raw.subscriptions : []
 }
 
 /**

@@ -1,5 +1,7 @@
 import type { ApiError } from '@/lib/auth'
 import type {
+  AutomodAction,
+  AutomodActionRule,
   AutomodAiConfig,
   AutomodCatalog,
   AutomodCatalogInfraction,
@@ -11,6 +13,7 @@ import type {
   AutomodGravity,
   AutomodLocalized,
   AutomodMaxAction,
+  ModuleState,
   AutomodProfileAction,
   AutomodSanction,
 } from '@/types/api'
@@ -18,6 +21,15 @@ import type {
 // Helpers purs du module `automod_ai`. Les snowflakes restent des chaînes de
 // bout en bout : aucun `Number()` ici (un id de 19 chiffres perdrait sa
 // précision).
+
+const MODULE_STATES: readonly ModuleState[] = ['active', 'paused', 'simulation']
+
+/** État d'un module : valeur inconnue ou absente = `active` (comme le backend). */
+export function readModuleState(raw: unknown): ModuleState {
+  return typeof raw === 'string' && (MODULE_STATES as readonly string[]).includes(raw)
+    ? (raw as ModuleState)
+    : 'active'
+}
 
 /**
  * Les cinq détecteurs connus, dans l'ordre du backend (celui de
@@ -137,15 +149,16 @@ export function applyExemptions(
  * Tout le reste (`scan_all`, `avatar`/`banner`/`pseudo`, champs inconnus) est
  * conservé tel quel : le `PUT` remplace la config entière.
  */
-export function normalizeAutomodConfig(config: AutomodAiConfig): AutomodAiConfig {
+export function normalizeAutomodConfig(raw: AutomodAiConfig): AutomodAiConfig {
+  const config = (raw ?? {}) as AutomodAiConfig
   const received = config.features ?? {}
   const features: Record<string, AutomodFeature> = {}
   for (const [id, feature] of Object.entries(received)) {
     features[id] = {
       ...feature,
-      enabled: feature.enabled === true,
-      exempt_roles: feature.exempt_roles ?? [],
-      exempt_channels: feature.exempt_channels ?? [],
+      enabled: feature?.enabled === true,
+      exempt_roles: Array.isArray(feature?.exempt_roles) ? feature.exempt_roles : [],
+      exempt_channels: Array.isArray(feature?.exempt_channels) ? feature.exempt_channels : [],
     }
   }
   const shared = sharedExemptions(features)
@@ -157,12 +170,85 @@ export function normalizeAutomodConfig(config: AutomodAiConfig): AutomodAiConfig
       exempt_channels: hasChannelExemptions(id) ? [...shared.channels] : [],
     }
   }
+  // Les anciens `enabled` / `dry_run` / `indications` / `rules` sont ignorés par
+  // l'API ; on les écarte aussi de l'état local pour qu'ils ne repartent jamais.
+  const cleaned: Record<string, unknown> = { ...config }
+  for (const key of DEAD_CONFIG_KEYS) delete cleaned[key]
+  const sanctions: Record<string, AutomodSanction> = {}
+  for (const [key, entry] of Object.entries(config.sanctions ?? {})) {
+    if (entry && typeof entry === 'object') sanctions[key] = entry
+  }
   return {
-    ...config,
-    sanctions: config.sanctions ?? {},
-    infractions_perso: config.infractions_perso ?? [],
+    ...(cleaned as AutomodAiConfig),
+    // `state` absent = `active` : on ne l'invente pas, une sauvegarde sans
+    // `state` conserve l'état enregistré côté backend.
+    ...(config.state !== undefined && { state: readModuleState(config.state) }),
+    sanctions,
+    infractions_perso: Array.isArray(config.infractions_perso) ? config.infractions_perso : [],
     features,
   }
+}
+
+/** Clés mortes de la config : jamais envoyées, jamais gardées dans l'état. */
+export const DEAD_CONFIG_KEYS = [
+  'enabled',
+  'dry_run',
+  'indications',
+  'rules',
+  'categories_desactivees',
+  'langue_serveur',
+] as const
+
+/** Retire les clés mortes d'un corps de requête (l'index signature les reconduirait). */
+export function stripDeadConfigKeys<T extends object>(body: T): T {
+  const next = { ...body } as Record<string, unknown>
+  for (const key of DEAD_CONFIG_KEYS) delete next[key]
+  return next as T
+}
+
+/**
+ * Complète un catalogue reçu : aucun tableau ni objet n'est jamais `undefined`
+ * (un champ retiré ou renommé côté backend ne doit pas faire planter l'écran).
+ */
+export function normalizeAutomodCatalog(raw: AutomodCatalog): AutomodCatalog {
+  const catalog = (raw ?? {}) as AutomodCatalog
+  const arr = <T,>(value: T[] | undefined): T[] => (Array.isArray(value) ? value : [])
+  return {
+    ...catalog,
+    infractions: arr(catalog.infractions),
+    families: arr(catalog.families),
+    gravities: arr(catalog.gravities),
+    profile_actions: arr(catalog.profile_actions),
+    features: arr(catalog.features),
+    templates: arr(catalog.templates),
+    presets: arr(catalog.presets).map((p) => ({
+      ...p,
+      features: arr(p.features),
+      sanctions: p.sanctions ?? {},
+    })),
+    actions: arr(catalog.actions),
+    action_rules: arr(catalog.action_rules),
+    cran_ladder: arr(catalog.cran_ladder),
+    custom_infraction: catalog.custom_infraction ?? {
+      id_prefix: CUSTOM_INFRACTION_PREFIX,
+      family: 'custom',
+      name: {},
+      description: {},
+    },
+    limits: { ...FALLBACK_LIMITS, ...(catalog.limits ?? {}) },
+  }
+}
+
+const FALLBACK_LIMITS: AutomodCatalog['limits'] = {
+  infractions_perso: 10,
+  nom: 40,
+  description: 300,
+  exemples: 5,
+  exemple: 200,
+  mots_cles: 20,
+  mot_cle: 60,
+  exemptions: 25,
+  perso_id_pattern: '^[a-z0-9]{6}$',
 }
 
 // ─── Barème et infractions personnalisées ─────────────────────────────────────
@@ -299,31 +385,122 @@ export function effectiveProfileAction(
   return infraction.default_action_profil ?? allowed[0]
 }
 
+// ─── Actions d'un plan de sanction ────────────────────────────────────────────
+
+export const AUTOMOD_ACTION_IDS: readonly AutomodAction[] = [
+  'delete',
+  'warn',
+  'timeout',
+  'kick',
+  'ban',
+]
+
+/** Durée du timeout quand `timeout_seconds` est absent. */
+export const DEFAULT_TIMEOUT_SECONDS = 3600
+/** Bornes de repli ; `catalog.limits.timeout_seconds_min/max` font foi. */
+export const FALLBACK_TIMEOUT_MIN = 60
+export const FALLBACK_TIMEOUT_MAX = 2419200
+
+/** Règles de repli : ban remplace kick ; kick et ban remplacent timeout et warn. */
+export const FALLBACK_ACTION_RULES: readonly AutomodActionRule[] = [
+  { action: 'ban', supersedes: ['kick', 'timeout', 'warn'] },
+  { action: 'kick', supersedes: ['timeout', 'warn'] },
+]
+
+function isKnownAction(value: unknown): value is AutomodAction {
+  return typeof value === 'string' && (AUTOMOD_ACTION_IDS as readonly string[]).includes(value)
+}
+
+/** Liste d'actions propre : connues seulement, sans doublon, jamais vide (vide = `['delete']`). */
+export function normalizeActions(actions: unknown): AutomodAction[] {
+  const list = Array.isArray(actions) ? actions : []
+  const clean = [...new Set(list.filter(isKnownAction))]
+  return clean.length === 0 ? ['delete'] : clean
+}
+
+/**
+ * Actions réellement appliquées après les règles de substitution du catalogue
+ * (`action_rules`, sinon les règles de repli). Les combinaisons contradictoires
+ * sont acceptées par l'API ; c'est cette fonction qui dit ce qui reste.
+ */
+export function effectiveActions(
+  actions: unknown,
+  rules: readonly AutomodActionRule[] | null | undefined = null
+): AutomodAction[] {
+  const normalized = normalizeActions(actions)
+  const active = rules && rules.length > 0 ? rules : FALLBACK_ACTION_RULES
+  const dropped = new Set<AutomodAction>()
+  for (const rule of active) {
+    if (!normalized.includes(rule.action)) continue
+    for (const other of rule.supersedes ?? []) dropped.add(other)
+  }
+  const kept = normalized.filter((a) => !dropped.has(a))
+  return kept.length === 0 ? ['delete'] : kept
+}
+
+/** Bornes du timeout, lues dans le catalogue avec repli. */
+export function timeoutBounds(catalog: AutomodCatalog | null | undefined): {
+  min: number
+  max: number
+} {
+  const min = catalog?.limits?.timeout_seconds_min
+  const max = catalog?.limits?.timeout_seconds_max
+  return {
+    min: typeof min === 'number' ? min : FALLBACK_TIMEOUT_MIN,
+    max: typeof max === 'number' ? max : FALLBACK_TIMEOUT_MAX,
+  }
+}
+
+/**
+ * « Validation par un modérateur » n'a de sens que pour une infraction de
+ * message/image (pas `profil_*`) et un plan qui fait plus que supprimer. Le
+ * backend stocke `false` sinon : l'UI désactive le réglage.
+ */
+export function canRequireApproval(infractionId: string, actions: unknown): boolean {
+  if (infractionId.startsWith('profil_')) return false
+  const list = normalizeActions(actions)
+  return !(list.length === 1 && list[0] === 'delete')
+}
+
 /**
  * Applique des changements à une entrée de `sanctions` en n'écrivant que le
  * strict nécessaire : `enabled: true`, `mode: 'auto'`, `recidive: true` et une
  * `action_profil` égale au défaut sont des valeurs par défaut → on retire la
- * clé. En mode `auto`, `crans` / `recidive` n'ont pas de sens et sont retirés.
+ * clé. En mode `auto`, `actions` / `timeout_seconds` / `recidive` /
+ * `require_approval` n'ont pas de sens et sont retirés. `crans` (ancien format,
+ * converti à la lecture) n'est jamais réécrit.
+ *
+ * Quand `actions` est écrit, `by_gravity` est supprimé (sinon l'ancien plan
+ * par gravité continuerait de primer). `timeout_seconds` ne reste qu'avec
+ * `timeout`, `require_approval` n'est écrit qu'à `true` et seulement si
+ * l'infraction (`opts.infractionId`) et le plan le permettent.
  * Les champs inconnus de l'entrée reçue sont conservés. Entrée vide → `null`
  * (clé supprimée : retour au réglage Moddy).
- *
- * `crans` fournis à `perso` : si l'entrée n'en a pas encore, on amorce avec
- * `seedCrans` (les `default_crans` du catalogue).
  */
 export function applySanctionChanges(
   entry: AutomodSanction | undefined,
   changes: Partial<AutomodSanction>,
-  opts: { seedCrans: AutomodCrans; defaultProfileAction?: string }
+  opts: { infractionId?: string; defaultProfileAction?: string } = {}
 ): AutomodSanction | null {
   const next: AutomodSanction = { ...(entry ?? {}), ...changes }
+  delete next.crans
   if (next.enabled !== false) delete next.enabled
   if (next.mode !== 'perso') {
     delete next.mode
-    delete next.crans
+    delete next.actions
+    delete next.timeout_seconds
     delete next.recidive
+    delete next.require_approval
+    delete next.by_gravity
   } else {
-    next.crans = { ...opts.seedCrans, ...(next.crans ?? {}) }
+    if (changes.actions !== undefined || next.actions !== undefined) {
+      next.actions = normalizeActions(next.actions)
+      if (changes.actions !== undefined) delete next.by_gravity
+    }
     if (next.recidive !== false) delete next.recidive
+    if (!next.actions?.includes('timeout')) delete next.timeout_seconds
+    const allowed = canRequireApproval(opts.infractionId ?? '', next.actions)
+    if (next.require_approval !== true || !allowed) delete next.require_approval
   }
   if (
     next.action_profil === undefined ||
@@ -337,9 +514,9 @@ export function applySanctionChanges(
 /** Crans par défaut d'une infraction (catalogue) ou d'une perso (`custom_infraction`). */
 export function defaultCransFor(catalog: AutomodCatalog | null, key: string): AutomodCrans {
   if (key.startsWith(CUSTOM_INFRACTION_PREFIX)) {
-    return catalog?.custom_infraction.default_crans ?? DEFAULT_CUSTOM_CRANS
+    return catalog?.custom_infraction?.default_crans ?? DEFAULT_CUSTOM_CRANS
   }
-  return catalog?.infractions.find((i) => i.id === key)?.default_crans ?? DEFAULT_CUSTOM_CRANS
+  return catalog?.infractions?.find((i) => i.id === key)?.default_crans ?? DEFAULT_CUSTOM_CRANS
 }
 
 // ─── Infractions personnalisées ───────────────────────────────────────────────
@@ -436,58 +613,89 @@ export function resolveFaultyInfractionId(
 
 export interface AutomodPresetOptions {
   notifyChannelId: string | null
-  enabled: boolean
-  dryRun: boolean
+  /** Force l'état ; sinon celui de `preset.config` (`simulation` d'après le catalogue). */
+  state?: ModuleState
 }
 
 /**
- * Applique un niveau à une config existante — reproduit `preset_config` du bot.
- * `preset.config` (config depuis une base vierge) n'est volontairement pas
- * utilisé : il écraserait exemptions, indications et infractions personnalisées.
- *
- * Intacts : `indications`, `infractions_perso`, `max_action`,
- * `ignore_moderators` et tout champ inconnu. Les clés de `sanctions` présentes
- * dans N'IMPORTE QUEL niveau sont retirées avant de poser celles du niveau
- * choisi : passer d'un niveau à un autre ne laisse aucun reliquat.
+ * Applique un niveau à une config existante. Le catalogue fait foi : la config
+ * du niveau (`preset.config`, `state: "simulation"` compris) est reprise telle
+ * quelle pour l'état, la sévérité, les détecteurs et le barème. Seuls restent
+ * ceux de la config courante les réglages que le niveau ne décide pas :
+ * `infractions_perso`, `max_action`, `ignore_moderators`, exemptions des
+ * détecteurs et champs inconnus.
  */
 export function applyAutomodPreset(
   config: AutomodAiConfig,
   preset: AutomodCatalogPreset,
-  allPresets: readonly AutomodCatalogPreset[],
+  _allPresets: readonly AutomodCatalogPreset[],
   opts: AutomodPresetOptions
 ): AutomodAiConfig {
-  const features: Record<string, AutomodFeature> = { ...config.features }
+  void _allPresets
+  const base = normalizeAutomodConfig(preset.config ?? ({} as AutomodAiConfig))
+  const features: Record<string, AutomodFeature> = {}
   for (const id of AUTOMOD_FEATURE_IDS) {
-    const block: AutomodFeature = {
-      ...defaultAutomodFeature(id),
-      ...structuredClone(config.features?.[id] ?? {}),
-    }
-    block.enabled = preset.features.includes(id)
-    if (id === PROFILE_FEATURE && block.enabled) {
+    const current = config.features?.[id] ?? defaultAutomodFeature(id)
+    const fromPreset = base.features[id]
+    const enabled = fromPreset ? fromPreset.enabled : (preset.features ?? []).includes(id)
+    const block: AutomodFeature = { ...defaultAutomodFeature(id), ...structuredClone(current), enabled }
+    if (id === PROFILE_FEATURE && enabled) {
       block.avatar = true
       block.banner = true
       block.pseudo = true
     }
     features[id] = block
   }
-
-  const sanctions: AutomodAiConfig['sanctions'] = { ...config.sanctions }
-  for (const p of allPresets) {
-    for (const key of Object.keys(p.sanctions ?? {})) delete sanctions[key]
-  }
-  for (const [key, value] of Object.entries(preset.sanctions ?? {})) {
-    sanctions[key] = structuredClone(value)
-  }
-
-  const next: AutomodAiConfig = {
+  const state = opts.state ?? (preset.config?.state !== undefined ? readModuleState(preset.config.state) : 'simulation')
+  return {
     ...config,
-    enabled: opts.enabled,
-    dry_run: opts.dryRun,
+    state,
     notify_channel_id: opts.notifyChannelId,
-    severity: preset.severity,
-    sanctions,
+    severity: typeof preset.severity === 'number' ? preset.severity : base.severity,
+    sanctions: structuredClone(Object.keys(base.sanctions).length > 0 ? base.sanctions : (preset.sanctions ?? {})),
     features,
   }
-  delete next.categories_desactivees
-  return next
+}
+
+// ─── Erreurs de validation du barème et de l'état ─────────────────────────────
+
+/** Codes `Barème personnalisé invalide (<code>)` d'un `422` sur `sanctions`. */
+export const SANCTION_ERROR_CODES = [
+  'sanctions_flag_invalid',
+  'sanctions_actions_invalid',
+  'sanctions_action_unknown',
+  'sanctions_timeout_invalid',
+  'sanctions_timeout_range',
+  'sanctions_by_gravity_invalid',
+] as const
+export type SanctionErrorCode = (typeof SANCTION_ERROR_CODES)[number]
+
+/**
+ * Clé i18n (sous `modules.automod_ai.errors.`) d'une erreur Automod connue :
+ * code de barème extrait du message `Barème personnalisé invalide (<code>)`,
+ * `module_state_invalid` (422), `automod_ai_blocked` (403, serveur sous
+ * sanction globale) ou, avec `opts.check`, `check_unavailable` (503 du contrôle
+ * anti-injection d'une infraction : l'appelant avertit sans bloquer).
+ * `null` si rien n'est reconnu — l'appelant retombe alors sur son message.
+ */
+export function automodErrorKey(error: ApiError, opts: { check?: boolean } = {}): string | null {
+  const info = readAutomodErrorInfo(error)
+  const body = error.body as { error?: unknown; code?: unknown } | null | undefined
+  const known = new Set<string>([...SANCTION_ERROR_CODES, 'module_state_invalid', 'automod_ai_blocked'])
+  if (info && known.has(info.code)) return info.code
+  const text = typeof body?.error === 'string' ? body.error : error.message
+  if (typeof text === 'string') {
+    const match = /Barème personnalisé invalide \(([a-z_]+)\)/i.exec(text)
+    if (match && known.has(match[1])) return match[1]
+    for (const code of ['module_state_invalid', 'automod_ai_blocked']) {
+      if (text.includes(code)) return code
+    }
+  }
+  if (opts.check && error.status === 503) return 'check_unavailable'
+  return null
+}
+
+/** Vrai tant que le module n'est pas en pause (`active` ou `simulation`). */
+export function isAutomodConfigRunning(config: Pick<AutomodAiConfig, 'state'>): boolean {
+  return readModuleState(config.state) !== 'paused'
 }

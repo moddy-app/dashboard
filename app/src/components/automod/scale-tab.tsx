@@ -127,7 +127,7 @@ export function AutomodScaleTab({
       family: i.family,
       name: pickLocalized(i.name, lang) || i.id,
       description: pickLocalized(i.description, lang),
-      defaults: i.default_crans,
+      defaults: i.default_crans ?? DEFAULT_CUSTOM_CRANS,
       sensitive: i.sensitive,
       banOnSight: i.ban_on_sight,
       profileActions: i.profile_actions,
@@ -224,7 +224,7 @@ function ScaleRow({ row, entry, catalog, maxAction, readOnly, onChange }: ScaleR
   const apply = (changes: Partial<AutomodSanction>) =>
     onChange(
       applySanctionChanges(entry, changes, {
-        seedCrans: row.defaults,
+        infractionId: row.key,
         defaultProfileAction: row.defaultProfileAction,
       })
     )
@@ -237,7 +237,7 @@ function ScaleRow({ row, entry, catalog, maxAction, readOnly, onChange }: ScaleR
   const usesCrans = profileAction === undefined || profileAction === "bareme"
 
   const ladderName = (cran: number) =>
-    pickLocalized(catalog.cran_ladder.find((s) => s.cran === cran)?.name, lang) || String(cran)
+    pickLocalized((catalog.cran_ladder ?? []).find((s) => s.cran === cran)?.name, lang) || String(cran)
 
   const crans: AutomodCrans = { ...row.defaults, ...(entry?.crans ?? {}) }
   const maxCran = MAX_ACTION_CRAN[maxAction]
@@ -474,7 +474,7 @@ function CranField({ gravity, value, catalog, maxCran, ladderName, onChange }: C
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {catalog.cran_ladder.map((step) => (
+            {(catalog.cran_ladder ?? []).map((step) => (
               <SelectItem key={step.cran} value={String(step.cran)}>
                 {ladderName(step.cran)}
               </SelectItem>

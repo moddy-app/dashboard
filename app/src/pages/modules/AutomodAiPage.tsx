@@ -20,7 +20,6 @@ import { StatusBadges, StatusWarnings } from "@/components/automod/status-displa
 import {
   AUTOMOD_TABS,
   type AutomodTabId,
-  type CheckState,
   type FieldErrors,
 } from "@/components/automod/automod-form"
 import { ErrorPage } from "@/components/error-state"
@@ -47,13 +46,12 @@ import { sanctionBlockedError } from "@/lib/sanctions"
 import { logger } from "@/lib/logger"
 import {
   applyExemptions,
+  automodErrorKey,
   readAutomodErrorInfo,
   resolveFaultyInfractionId,
   stableStringify,
 } from "@/lib/automod"
 import {
-  INDICATIONS_MAX,
-  checkIndications,
   defaultAutomodConfig,
   deleteAutomodConfig,
   getAutomodConfig,
@@ -61,11 +59,6 @@ import {
   saveAutomodConfig,
 } from "@/services/automod"
 import type { AutomodAiConfig, AutomodAiStatus, AutomodFeature } from "@/types/api"
-
-/** Délai avant de soumettre les indications au contrôle anti-injection. */
-const CHECK_DEBOUNCE_MS = 800
-
-const IDLE_CHECK: CheckState = { kind: "idle" }
 
 /** Encart global d'erreur d'enregistrement. */
 interface FormError {
@@ -101,7 +94,6 @@ function mapValidationErrors(error: ApiError): FieldErrors {
   const fields: FieldErrors = {}
   const known: (keyof FieldErrors)[] = [
     "notify_channel_id",
-    "indications",
     "severity",
     "max_action",
     "features",
@@ -124,10 +116,8 @@ function mapValidationErrors(error: ApiError): FieldErrors {
  * - « Fonctionnalité inconnue », « Catégorie inconnue », « Option de profil
  *   invalide », « Barème personnalisé invalide », « Infractions personnalisées
  *   invalides » → encart global, rien dans le formulaire ne les pilote ;
- * - sinon, si les consignes ont changé, c'est le contrôle anti-injection
- *   rejoué à l'enregistrement : sa raison va sous le champ.
  */
-function mapStringError(message: string, indicationsChanged: boolean): {
+function mapStringError(message: string): {
   fields: FieldErrors
   form: string | null
 } {
@@ -141,7 +131,6 @@ function mapStringError(message: string, indicationsChanged: boolean): {
   ) {
     return { fields: {}, form: message }
   }
-  if (indicationsChanged) return { fields: { indications: message }, form: null }
   return { fields: {}, form: message }
 }
 
@@ -186,7 +175,6 @@ function AutomodAiForm() {
   const [formError, setFormError] = useState<FormError | null>(null)
   /** Infraction personnalisée ou barème refusé par le PUT. */
   const [faulty, setFaulty] = useState<FaultyInfraction | null>(null)
-  const [check, setCheck] = useState<CheckState>({ kind: "idle" })
   const [wizardOpen, setWizardOpen] = useState(false)
   /** Ids d'infractions supprimés pendant la session : jamais réutilisés. */
   const usedInfractionIds = useRef<Set<string>>(new Set())
@@ -268,53 +256,6 @@ function AutomodAiForm() {
     }
   }, [selectedGuildId])
 
-  // ── Contrôle anti-injection (debounce) ────────────────────────────────────
-
-  const indications = draft?.indications ?? ""
-  const savedIndications = savedConfig?.indications ?? ""
-  const indicationsChanged = indications !== savedIndications
-  // Identifie la requête en vol : une réponse tardive d'un texte déjà remplacé
-  // ne doit pas écraser l'état du texte courant.
-  const checkSeq = useRef(0)
-  // Hors de ces cas l'état affiché est « au repos », sans setState dans l'effet.
-  const needsCheck =
-    indicationsChanged && indications.trim() !== "" && indications.length <= INDICATIONS_MAX
-
-  useEffect(() => {
-    if (!selectedGuildId) return
-    // Pas d'appel IA si le texte n'a pas bougé — activer un toggle ne coûte rien.
-    if (!needsCheck) return
-
-    const seq = ++checkSeq.current
-    queueMicrotask(() => {
-      if (seq === checkSeq.current) setCheck({ kind: "checking" })
-    })
-
-    const timer = setTimeout(async () => {
-      try {
-        const result = await checkIndications(selectedGuildId, indications)
-        if (seq !== checkSeq.current) return
-        setCheck(
-          result.ok
-            ? { kind: "ok" }
-            : { kind: "rejected", reason: result.reason ?? t("modules.automod_ai.indicationsRejectedFallback") }
-        )
-      } catch (e) {
-        if (seq !== checkSeq.current) return
-        // 503 : contrôle indisponible — on avertit sans empêcher la tentative
-        // de sauvegarde (le backend rejouera le contrôle de toute façon).
-        if (e instanceof ApiError && e.isUnavailable) {
-          setCheck({ kind: "unavailable" })
-          return
-        }
-        logger.warn("module:automod_ai", "Indications check failed", e)
-        setCheck({ kind: "idle" })
-      }
-    }, CHECK_DEBOUNCE_MS)
-
-    return () => clearTimeout(timer)
-  }, [selectedGuildId, indications, needsCheck, t])
-
   // ── Mutations du brouillon ────────────────────────────────────────────────
 
   const patch = useCallback((changes: Partial<AutomodAiConfig>) => {
@@ -378,12 +319,7 @@ function AutomodAiForm() {
       return
     }
 
-    if (draft.indications.length > INDICATIONS_MAX) {
-      setFieldErrors({ indications: t("modules.automod_ai.indicationsTooLong", { max: INDICATIONS_MAX }) })
-      return
-    }
-
-    logger.event("module:automod_ai", "Save", { enabled: draft.enabled, dry_run: draft.dry_run })
+    logger.event("module:automod_ai", "Save", { state: draft.state ?? "active" })
     setIsSaving(true)
     setFieldErrors({})
     setFormError(null)
@@ -394,7 +330,6 @@ function AutomodAiForm() {
       const saved = await saveAutomodConfig(selectedGuildId, draft)
       setSavedConfig(saved)
       setDraft(structuredClone(saved))
-      setCheck({ kind: "idle" })
       toast.success(t("modules.saved"))
       logger.success("module:automod_ai", "Saved")
       await loadStatus()
@@ -405,7 +340,15 @@ function AutomodAiForm() {
         // phrase `error` est déjà affichable ; l'infraction fautive est retrouvée
         // par son id, à défaut par sa position dans la liste envoyée.
         const info = readAutomodErrorInfo(e)
-        if (info) {
+        // Codes connus (barème, état, serveur sanctionné) : message traduit.
+        const knownKey = automodErrorKey(e)
+        const knownMessage = knownKey ? t(`modules.automod_ai.errors.${knownKey}`) : null
+        if (knownMessage) {
+          setFormError({ message: knownMessage })
+          if (knownKey?.startsWith("sanctions_")) {
+            setFaulty({ id: info?.sanctionKey ?? info?.infractionId ?? null, message: knownMessage, tab: "scale" })
+          }
+        } else if (info) {
           const faultyId = resolveFaultyInfractionId(info, draft.infractions_perso ?? [])
           setFaulty({
             id: faultyId,
@@ -422,17 +365,16 @@ function AutomodAiForm() {
           })
           return
         }
-        if (info) {
+        if (knownMessage) {
+          // déjà posé plus haut
+        } else if (info) {
           setFormError({ message: e.message })
         } else if (e.status === 422) {
           const mapped = mapValidationErrors(e)
           if (Object.keys(mapped).length > 0) {
             setFieldErrors(mapped)
           } else {
-            const { fields, form } = mapStringError(
-              e.message,
-              draft.indications !== (savedConfig?.indications ?? "")
-            )
+            const { fields, form } = mapStringError(e.message)
             setFieldErrors(fields)
             setFormError(form ? { message: form } : null)
           }
@@ -445,7 +387,7 @@ function AutomodAiForm() {
     } finally {
       setIsSaving(false)
     }
-  }, [selectedGuildId, draft, savedConfig, t, loadStatus, gates])
+  }, [selectedGuildId, draft, t, loadStatus, gates])
 
   useEffect(() => {
     saveRef.current = handleSave
@@ -458,7 +400,6 @@ function AutomodAiForm() {
     setFieldErrors({})
     setFormError(null)
     setFaulty(null)
-    setCheck({ kind: "idle" })
   }, [savedConfig])
 
   const handleReset = useCallback(async () => {
@@ -473,7 +414,6 @@ function AutomodAiForm() {
       setFieldErrors({})
       setFormError(null)
       setFaulty(null)
-      setCheck({ kind: "idle" })
       toast.success(t("modules.automod_ai.resetSuccess"))
       logger.success("module:automod_ai", "Config reset")
       await loadStatus()
@@ -599,7 +539,6 @@ function AutomodAiForm() {
               draft={draft}
               readOnly={readOnly}
               fieldErrors={fieldErrors}
-              check={needsCheck ? check : IDLE_CHECK}
               onPatch={patch}
               onPatchFeature={patchFeature}
               onPatchExemptions={patchExemptions}

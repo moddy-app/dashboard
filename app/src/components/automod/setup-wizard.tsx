@@ -29,14 +29,14 @@ import { useMediaQuery } from "@/hooks/use-media-query"
 import { applyAutomodPreset, pickLocalized } from "@/lib/automod"
 import { cn } from "@/lib/utils"
 import { CHANNEL_TYPES } from "@/types/api"
-import type { AutomodAiConfig, AutomodCatalog, AutomodCatalogPreset } from "@/types/api"
+import type { AutomodAiConfig, AutomodCatalog, AutomodCatalogPreset, ModuleState } from "@/types/api"
 
 type Activation = "simulation" | "live" | "off"
 
-const ACTIVATION: Record<Activation, { enabled: boolean; dryRun: boolean }> = {
-  simulation: { enabled: true, dryRun: true },
-  live: { enabled: true, dryRun: false },
-  off: { enabled: false, dryRun: true },
+const ACTIVATION: Record<Activation, { state: ModuleState }> = {
+  simulation: { state: "simulation" },
+  live: { state: "active" },
+  off: { state: "paused" },
 }
 const ACTIVATION_IDS: Activation[] = ["simulation", "live", "off"]
 const STEPS = 3

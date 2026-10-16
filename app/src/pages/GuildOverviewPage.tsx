@@ -52,13 +52,13 @@ import type { LucideIcon } from "lucide-react"
 import type {
   AltGuardConfig,
   LogsConfig,
-  AutomodAiConfig,
   BotCustomizationConfig,
   ModuleConfig,
   WelcomeChannelConfig,
   TicketsConfig,
   WelcomeDmConfig,
 } from "@/types/api"
+import { readModuleState } from "@/lib/automod"
 import { isWelcomeActive } from "@/lib/welcome"
 import { isWelcomeDmActive } from "@/lib/welcome-dm"
 import { isBotCustomizationActive } from "@/lib/bot-customization"
@@ -86,7 +86,10 @@ const STAT_STYLES = {
 function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boolean {
   const config = modules[id]
   if (!config) return false
-  if (id === 'automod_ai') return (config as AutomodAiConfig).enabled === true
+  // `state` générique : un module en pause garde sa config mais ne tourne pas.
+  if (readModuleState((config as { state?: unknown }).state) === 'paused') return false
+  // automod_ai : actif ou en simulation tant qu'il n'est pas en pause.
+  if (id === 'automod_ai') return true
   // welcome_channel n'a pas d'interrupteur global : il est actif dès qu'un
   // message est activé et rattaché à un salon.
   if (id === 'welcome_channel') return isWelcomeActive(config as WelcomeChannelConfig)

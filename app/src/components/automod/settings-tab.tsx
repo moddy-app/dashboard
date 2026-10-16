@@ -2,10 +2,8 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   AlertCircleIcon,
-  CheckCircle2Icon,
   ChevronDownIcon,
   FlaskConicalIcon,
-  LoaderIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 import { ChannelMultiPicker, RoleMultiPicker } from "@/components/module-pickers"
@@ -41,8 +39,8 @@ import {
 } from "@/components/ui/field"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
-import { Textarea } from "@/components/ui/textarea"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { readModuleState } from "@/lib/automod"
 import { cn } from "@/lib/utils"
 import {
   PROFILE_FEATURE,
@@ -50,12 +48,11 @@ import {
   orderedFeatureIds,
   sharedExemptions,
 } from "@/lib/automod"
-import { EXEMPT_MAX, INDICATIONS_MAX } from "@/services/automod"
+import { EXEMPT_MAX } from "@/services/automod"
 import { CHANNEL_TYPES } from "@/types/api"
 import type { AutomodAiConfig, AutomodFeature, AutomodMaxAction } from "@/types/api"
 import {
   NO_CHANNEL,
-  type CheckState,
   type FieldErrors,
 } from "@/components/automod/automod-form"
 
@@ -65,7 +62,6 @@ interface AutomodSettingsTabProps {
   draft: AutomodAiConfig
   readOnly: boolean
   fieldErrors: FieldErrors
-  check: CheckState
   onPatch: (changes: Partial<AutomodAiConfig>) => void
   onPatchFeature: (featureId: string, changes: Partial<AutomodFeature>) => void
   onPatchExemptions: (changes: { roles?: string[]; channels?: string[] }) => void
@@ -73,18 +69,18 @@ interface AutomodSettingsTabProps {
   onClearFieldError: (field: keyof FieldErrors) => void
 }
 
-/** Onglet « Réglages » : général, sévérité, indications, détecteurs, exemptions. */
+/** Onglet « Réglages » : général, sévérité, détecteurs, exemptions. */
 export function AutomodSettingsTab({
   draft,
   readOnly,
   fieldErrors,
-  check,
   onPatch,
   onPatchFeature,
   onPatchExemptions,
   onClearFieldError,
 }: AutomodSettingsTabProps) {
   const { t } = useTranslation()
+  const simulation = readModuleState(draft.state) === "simulation"
   const { selectedGuildId, channels, roles } = useGuildContext()
 
   const textChannels = useMemo(
@@ -129,9 +125,9 @@ export function AutomodSettingsTab({
               </p>
             </div>
             <Switch
-              checked={draft.enabled}
+              checked={readModuleState(draft.state) !== "paused"}
               aria-label={t("modules.automod_ai.enabled")}
-              onCheckedChange={(v) => onPatch({ enabled: v })}
+              onCheckedChange={(v) => onPatch({ state: v ? (simulation ? "simulation" : "active") : "paused" })}
             />
           </div>
 
@@ -203,7 +199,7 @@ export function AutomodSettingsTab({
             <div>
               <div className="flex items-center gap-2">
                 <p className="text-sm font-medium">{t("modules.automod_ai.dryRun")}</p>
-                {draft.dry_run && (
+                {simulation && (
                   <Badge variant="secondary" className="text-[10px] gap-1">
                     <FlaskConicalIcon className="size-3" />
                     {t("modules.automod_ai.dryRunBadge")}
@@ -214,7 +210,11 @@ export function AutomodSettingsTab({
                 {t("modules.automod_ai.dryRunDescription")}
               </p>
             </div>
-            <Switch checked={draft.dry_run} aria-label={t("modules.automod_ai.dryRun")} onCheckedChange={(v) => onPatch({ dry_run: v })} />
+            <Switch
+              checked={simulation}
+              aria-label={t("modules.automod_ai.dryRun")}
+              onCheckedChange={(v) => onPatch({ state: v ? "simulation" : "active" })}
+            />
           </div>
 
           {/* La langue des DM et cartes de sanction suit celle du serveur — il
@@ -291,49 +291,6 @@ export function AutomodSettingsTab({
               </p>
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Indications */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t("modules.automod_ai.indicationsTitle")}</CardTitle>
-          <CardDescription>{t("modules.automod_ai.indicationsDescription")}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-2">
-          <Textarea
-            value={draft.indications}
-            onChange={(e) => {
-              onPatch({ indications: e.target.value })
-              onClearFieldError("indications")
-            }}
-            placeholder={t("modules.automod_ai.indicationsPlaceholder")}
-            className={cn(
-              "min-h-40 resize-y",
-              (fieldErrors.indications || check.kind === "rejected") && "border-destructive"
-            )}
-          />
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <IndicationsCheckHint check={check} />
-              {fieldErrors.indications && (
-                <p className="text-xs text-destructive">{fieldErrors.indications}</p>
-              )}
-            </div>
-            <span
-              className={cn(
-                "text-xs tabular-nums shrink-0",
-                draft.indications.length > INDICATIONS_MAX
-                  ? "text-destructive font-medium"
-                  : "text-muted-foreground"
-              )}
-            >
-              {draft.indications.length} / {INDICATIONS_MAX}
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {t("modules.automod_ai.indicationsSafetyHint")}
-          </p>
         </CardContent>
       </Card>
 
@@ -459,45 +416,6 @@ export function AutomodSettingsTab({
       </Card>
     </div>
   )
-}
-
-// ─── Retour du contrôle anti-injection ────────────────────────────────────────
-
-function IndicationsCheckHint({ check }: { check: CheckState }) {
-  const { t } = useTranslation()
-
-  switch (check.kind) {
-    case "checking":
-      return (
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <LoaderIcon className="size-3 animate-spin" />
-          {t("modules.automod_ai.checking")}
-        </p>
-      )
-    case "ok":
-      return (
-        <p className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400">
-          <CheckCircle2Icon className="size-3" />
-          {t("modules.automod_ai.checkOk")}
-        </p>
-      )
-    case "rejected":
-      return (
-        <p className="flex items-start gap-1.5 text-xs text-destructive">
-          <AlertCircleIcon className="size-3 mt-0.5 shrink-0" />
-          <span>{check.reason}</span>
-        </p>
-      )
-    case "unavailable":
-      return (
-        <p className="flex items-start gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-          <TriangleAlertIcon className="size-3 mt-0.5 shrink-0" />
-          <span>{t("modules.automod_ai.checkUnavailable")}</span>
-        </p>
-      )
-    default:
-      return null
-  }
 }
 
 // ─── Détecteur ────────────────────────────────────────────────────────────────
