@@ -364,7 +364,7 @@
       "delete": "Supprimer"
     },
     "automod_ai": {
-      "name": "Modération IA",
+      "name": "Automod",
       "profileHolds": {
         "title": "Profils en attente de correction",
         "intro": "Ces membres sont en timeout tant qu'ils n'ont pas corrigé leur avatar ou leur bannière. Moddy lève le timeout automatiquement dès que le profil est corrigé. Rien à faire ici.",
@@ -375,27 +375,28 @@
         "emptyDescription": "Aucun membre n'est actuellement retenu pour un avatar ou une bannière.",
         "errorTitle": "Impossible de charger les profils",
         "retry": "Réessayer",
-        "kind": { "avatar": "Avatar", "banner": "Bannière" },
-        "category": { "profil_avatar_nsfw": "Avatar explicite", "profil_avatar_choquant": "Avatar choquant" },
+        "kind": {
+          "avatar": "Avatar",
+          "banner": "Bannière"
+        },
+        "category": {
+          "profil_avatar_nsfw": "Avatar explicite",
+          "profil_avatar_choquant": "Avatar choquant"
+        },
         "pending": "En attente de correction",
         "since": "Depuis {{when}}",
         "lastChecked": "Dernière vérification {{when}}",
         "neverChecked": "Pas encore vérifié",
         "viewCase": "Voir la case"
       },
-      "description": "Laisse l'IA lire les messages et sanctionner les écarts.",
+      "description": "Laisse Automod lire les messages et sanctionner les écarts.",
       "generalTitle": "Général",
-      "generalDescription": "Interrupteur principal, salon d'alertes et comportement du module.",
-      "enabled": "Activer la modération IA",
-      "enabledDescription": "Le module ne tourne qu'avec un salon d'alertes et au moins un détecteur activé.",
+      "generalDescription": "État du module, salon d'alertes et comportement.",
       "notifyChannel": "Salon d'alertes",
       "notifyChannelDescription": "Salon texte ou d'annonces où sont postées les décisions et les alertes. Obligatoire.",
       "noNotifyChannel": "Aucun salon (module à l'arrêt)",
       "ignoreModerators": "Ignorer les modérateurs",
       "ignoreModeratorsDescription": "Les membres pouvant gérer les messages ne sont jamais modérés.",
-      "dryRun": "Mode simulation",
-      "dryRunBadge": "Simulation",
-      "dryRunDescription": "Le module décide mais n'applique rien — des cartes SIMULATION sont postées dans le salon d'alertes.",
       "severityTitle": "Sévérité et sanctions",
       "severityDescription": "Sensibilité de l'IA et limite haute de ce qu'elle peut appliquer.",
       "severity": "Sévérité",
@@ -414,15 +415,6 @@
       "maxAction_mute_desc": "Jusqu'à un mute temporaire.",
       "maxAction_ban": "Bannissement",
       "maxAction_ban_desc": "Jusqu'au bannissement dans les cas les plus graves.",
-      "indicationsTitle": "Indications du serveur",
-      "indicationsDescription": "Consignes supplémentaires données à l'IA, en plus des règles intégrées.",
-      "indicationsPlaceholder": "ex. Pas d'insultes, même pour rire. L'autopromo est tolérée dans #promo uniquement.",
-      "indicationsSafetyHint": "Ce texte est injecté tel quel dans le prompt de l'IA : chaque modification passe par un contrôle de sécurité avant d'être enregistrée.",
-      "indicationsTooLong": "Les indications ne doivent pas dépasser {{max}} caractères.",
-      "indicationsRejectedFallback": "Ce texte a été refusé par le contrôle de sécurité.",
-      "checking": "Contrôle du texte en cours…",
-      "checkOk": "Texte accepté par le contrôle de sécurité.",
-      "checkUnavailable": "Contrôle de sécurité indisponible pour le moment — tu peux tout de même tenter la sauvegarde.",
       "errors": {
         "sanctions_flag_invalid": "Un réglage du barème personnalisé doit valoir vrai ou faux.",
         "sanctions_actions_invalid": "Les actions d'un barème personnalisé doivent former une liste.",
@@ -440,7 +432,7 @@
       "featuresTitle": "Détecteurs",
       "featuresDescription": "Ce que Moddy surveille. Chaque détecteur s'active indépendamment des autres.",
       "features": {
-        "genericDescription": "Détecteur pris en charge par la modération IA.",
+        "genericDescription": "Détecteur pris en charge par Automod.",
         "content": {
           "name": "Analyse des messages",
           "description": "L'IA lit le texte des messages et sanctionne insultes, menaces, harcèlement, arnaques et compagnie."
@@ -476,12 +468,12 @@
         "dry_run": "Mode simulation : aucune sanction n'est appliquée.",
         "simulation": "Mode simulation : aucune sanction n'est appliquée.",
         "unknown": "Avertissement de configuration : {{code}}",
-        "blocked_by_global_sanction": "Ce serveur est sous sanction globale : la modération IA est coupée."
+        "blocked_by_global_sanction": "Ce serveur est sous sanction globale : Automod est coupé."
       },
       "reset": "Réinitialiser le module",
-      "resetSuccess": "Configuration de la modération IA réinitialisée.",
-      "confirmResetTitle": "Réinitialiser la modération IA ?",
-      "confirmResetDescription": "Toute la configuration du module est supprimée, y compris les indications et les exemptions. Cette action est irréversible.",
+      "resetSuccess": "Configuration d'Automod réinitialisée.",
+      "confirmResetTitle": "Réinitialiser Automod ?",
+      "confirmResetDescription": "Toute la configuration du module est supprimée, y compris les exemptions. Cette action est irréversible.",
       "cancel": "Annuler",
       "advanced": "Réglages avancés",
       "scanAll": "Lire toutes les images",
@@ -502,10 +494,11 @@
       "profileBannerNote": "Les bannières ne sont vérifiées qu'à l'arrivée du membre et lors de ses autres changements de profil.",
       "tabs": {
         "settings": "Réglages",
-        "scale": "Barème",
+        "scale": "Sanctions",
         "infractions": "Infractions personnalisées",
         "profiles": "Profils en attente",
-        "refused": "Refusé par le serveur"
+        "refused": "Refusé par le serveur",
+        "approvals": "Sanctions en attente"
       },
       "wizard": {
         "open": "Assistant de configuration",
@@ -527,21 +520,23 @@
         "activation_off": "Ne pas activer pour l'instant",
         "activation_off_desc": "Le niveau est configuré mais le module reste désactivé.",
         "changesTitle": "Ce qui change",
-        "keeps": "Conservé : indications, infractions personnalisées, exemptions, action maximale et barèmes des autres types.",
-        "changes": "Modifié : détecteurs, sévérité et barèmes surchargés par le niveau.",
+        "keeps": "Conservé : infractions personnalisées, exemptions, action maximale et le salon d'alertes si tu n'en choisis pas.",
+        "changes": "Modifié : état, détecteurs, sévérité et sanctions définies par le niveau.",
         "notSaved": "Rien n'est enregistré tant que vous ne cliquez pas sur Enregistrer.",
         "previous": "Précédent",
         "next": "Suivant",
         "apply": "Appliquer",
         "retry": "Réessayer",
-        "applied": "Niveau appliqué, pensez à enregistrer"
+        "applied": "Niveau appliqué, pensez à enregistrer",
+        "skip": "Passer",
+        "skipHelp": "« Passer » applique le niveau Équilibré en simulation."
       },
       "catalogErrorTitle": "Impossible de charger le catalogue",
       "catalogErrorDescription": "La liste des infractions et l'échelle des sanctions sont indisponibles pour l'instant. Les autres réglages restent utilisables.",
       "notSavedTitle": "Rien n'a été enregistré",
       "notSavedDescription": "Le serveur n'a pas pu effectuer son contrôle de sécurité : ta configuration n'a pas été enregistrée. Réessaie dans un instant.",
       "scale": {
-        "reminderTitle": "Comment fonctionne le barème",
+        "reminderTitle": "Comment fonctionnent les sanctions",
         "reminderMaxAction": "L'action maximale ({{action}}) plafonne toujours les sanctions, y compris les barèmes personnalisés.",
         "reminderSeverity": "La sévérité règle la sensibilité de la détection pour tout le serveur, y compris pour les infractions au barème personnalisé.",
         "family_message": "Messages",
@@ -562,13 +557,43 @@
         "enabledLabel": "Sanctions pour {{name}}",
         "toggleDetails": "Afficher les détails de {{name}}",
         "profileAction": "Action sur les profils",
-        "cransUnused": "Les crans ne servent qu'avec l'action « Barème ».",
-        "autoNote": "Réglage Moddy : planchers ajustés selon la sévérité et l'historique du membre.",
+        "autoNote": "Plan de Moddy, ajusté selon la sévérité et l'historique du membre.",
         "recidive": "Aggraver en cas de récidive",
         "recidiveHelp": "Relève la sanction quand le membre a déjà été sanctionné pour cette infraction.",
-        "capped": "Plafonné à « {{name}} » par l'action maximale.",
-        "banOnSightLowered": "Cette infraction mène normalement à un bannissement immédiat. Avec un cran inférieur au bannissement, les comptes d'arnaque seront traités avec plus d'indulgence.",
-        "reset": "Revenir au réglage Moddy"
+        "banOnSightLowered": "Cette infraction mène normalement à un bannissement immédiat. Avec un plan qui ne bannit pas, les comptes d'arnaque seront traités avec plus d'indulgence.",
+        "reset": "Revenir au réglage Moddy",
+        "actionsLabel": "Actions",
+        "actionsHelp": "Les actions se cumulent. Quand une action plus forte en remplace une autre, la plus faible n'est pas appliquée.",
+        "actions": {
+          "delete": "Supprimer le message",
+          "warn": "Avertir",
+          "timeout": "Mettre en sourdine",
+          "kick": "Expulser",
+          "ban": "Bannir"
+        },
+        "supersededBy": "Remplacé par « {{action}} », non appliqué.",
+        "timeoutLabel": "Durée de la sourdine",
+        "timeoutHelp": "Entre {{min}} et {{max}}.",
+        "timeoutRange": "La durée doit être comprise entre {{min}} et {{max}}.",
+        "unitDays": "Jours",
+        "unitHours": "Heures",
+        "unitMinutes": "Minutes",
+        "durationDays": "{{count}} j",
+        "durationHours": "{{count}} h",
+        "durationMinutes": "{{count}} min",
+        "requireApproval": "Validation par un modérateur",
+        "requireApprovalHelp": "Un modérateur valide la sanction sur une carte Discord avant qu'elle ne soit appliquée.",
+        "requireApprovalProfile": "Indisponible pour les infractions de profil.",
+        "requireApprovalDeleteOnly": "Indisponible quand le plan se limite à supprimer le message : ajoute une autre action.",
+        "legacyTitle": "Plan par gravité",
+        "legacyDescription": "Ce plan vient d'une ancienne configuration et ne peut pas être modifié tel quel. Le remplacer par une liste d'actions unique l'efface.",
+        "legacyReplace": "Remplacer par un plan unique",
+        "policyTitle": "Ce que Moddy applique",
+        "policyUnavailable": "Le plan de Moddy ne peut pas être affiché pour le moment.",
+        "policyMissing": "Aucun plan reporté pour cette infraction.",
+        "policyRecidive": "Aggrave en cas de récidive",
+        "policyApproval": "Validation par un modérateur",
+        "planUnused": "Le plan d'actions ne sert qu'avec l'action « Barème »."
       },
       "custom": {
         "addTitle": "Ajouter une infraction",
@@ -607,8 +632,48 @@
         "removeKeyword": "Retirer {{word}}",
         "validate": "Valider",
         "checking": "Vérification...",
-        "rejectedFallback": "Cette infraction a été refusée par le contrôle de sécurité.",
-        "checkUnavailable": "Le contrôle de sécurité est indisponible pour l'instant. Réessaie plus tard : la configuration ne peut pas être enregistrée sans lui."
+        "rejectedFallback": "Cette infraction a été refusée par le contrôle de sécurité."
+      },
+      "state": {
+        "title": "État du module",
+        "active": "Actif",
+        "paused": "En pause",
+        "simulation": "Simulation",
+        "active_desc": "Automod tourne et applique ses sanctions.",
+        "paused_desc": "La configuration est conservée, mais le module s'arrête et ses commandes sont masquées.",
+        "simulation_desc": "Automod tourne sans rien appliquer : les décisions sont seulement postées sous forme de cartes de simulation dans le salon d'alertes."
+      },
+      "blockedBadge": "Bloqué par une sanction globale",
+      "approvals": {
+        "infoTitle": "Les décisions se prennent dans Discord",
+        "infoDescription": "Un modérateur valide ou refuse chaque sanction sur sa carte Discord. Cette liste est en lecture seule, et le contenu du message supprimé n'y est jamais affiché : à lire sur la carte Discord.",
+        "statusLabel": "Statut",
+        "status": {
+          "pending": "En attente",
+          "approved": "Validées",
+          "rejected": "Refusées",
+          "expired": "Expirées"
+        },
+        "refresh": "Actualiser",
+        "loadMore": "Charger plus",
+        "count": "{{shown}} sur {{total}}",
+        "emptyTitle": {
+          "pending": "Aucune sanction en attente",
+          "approved": "Aucune sanction validée",
+          "rejected": "Aucune sanction refusée",
+          "expired": "Aucune sanction expirée"
+        },
+        "emptyDescription": "Les sanctions qui demandent la validation d'un modérateur apparaîtront ici.",
+        "errorTitle": "Impossible de charger les sanctions",
+        "unknownInfraction": "Infraction inconnue",
+        "messageDeleted": "Message supprimé",
+        "createdAt": "Créée {{when}}",
+        "expiresAt": "expire {{when}}",
+        "resolvedAt": "Traitée {{when}}",
+        "resolvedBy": " par ",
+        "applied": "Appliquées :",
+        "failed": "Échouées :",
+        "caseRef": "Case {{ref}}"
       }
     },
     "social_notifications": {
@@ -2860,13 +2925,13 @@
       "userLimitedTitle": "Votre accès à Moddy est limité",
       "userLimitedDescription": "Vous pouvez toujours régler les modules déjà en place. Souscrire à Moddy Max et mettre en service un nouveau module vous sont fermés.",
       "guildLimitedTitle": "Ce serveur est limité",
-      "guildLimitedDescription": "Moddy continue de tourner sur {{guild}}, mais la modération par IA y est coupée et aucun nouveau module ne peut y être mis en service.",
+      "guildLimitedDescription": "Moddy continue de tourner sur {{guild}}, mais Automod y est coupé et aucun nouveau module ne peut y être mis en service.",
       "guildSuspendedTitle": "Ce serveur est suspendu",
       "guildSuspendedDescription": "Moddy a quitté {{guild}}. Sa configuration n'est plus accessible.",
       "newModuleBlockedTitle": "Ce module ne peut pas être mis en service",
       "newModuleBlockedDescription": "Une sanction interdit d'activer un module encore jamais configuré. Ceux déjà en place restent entièrement modifiables.",
-      "automodBlockedTitle": "La modération par IA est coupée ici",
-      "automodBlockedDescription": "Une sanction visant ce serveur a coupé la modération par IA : sa configuration est figée tant que la sanction n'est pas levée."
+      "automodBlockedTitle": "Automod est coupé ici",
+      "automodBlockedDescription": "Une sanction visant ce serveur a coupé Automod : sa configuration est figée tant que la sanction n'est pas levée."
     },
     "errors": {
       "default": "Action refusée par une sanction",
@@ -2875,7 +2940,7 @@
       "premium_blocked_user": "Souscription fermée tant que votre compte est sanctionné",
       "premium_blocked_guild": "Ce serveur ne peut pas être rattaché à un abonnement",
       "new_module_blocked": "Vous ne pouvez pas mettre en service un nouveau module",
-      "automod_ai_blocked": "La modération par IA est coupée sur ce serveur"
+      "automod_ai_blocked": "Automod est coupé sur ce serveur"
     },
     "errorSubject": {
       "discord_user": "Une sanction pèse sur votre compte.",

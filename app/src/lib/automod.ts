@@ -7,12 +7,10 @@ import type {
   AutomodCatalogInfraction,
   AutomodCatalogPreset,
   AutomodCatalogTemplate,
-  AutomodCrans,
   AutomodCustomInfraction,
   AutomodFeature,
   AutomodGravity,
   AutomodLocalized,
-  AutomodMaxAction,
   ModuleState,
   AutomodProfileAction,
   AutomodSanction,
@@ -228,7 +226,6 @@ export function normalizeAutomodCatalog(raw: AutomodCatalog): AutomodCatalog {
     })),
     actions: arr(catalog.actions),
     action_rules: arr(catalog.action_rules),
-    cran_ladder: arr(catalog.cran_ladder),
     custom_infraction: catalog.custom_infraction ?? {
       id_prefix: CUSTOM_INFRACTION_PREFIX,
       family: 'custom',
@@ -263,30 +260,12 @@ export function customSanctionKey(id: string): string {
 
 export const GRAVITIES: readonly AutomodGravity[] = ['basse', 'moyenne', 'haute', 'critique']
 
-/** Échelle des crans : 0 suppression seule, 1 avertissement, 2–6 mute, 7 ban. */
-export const CRAN_LADDER: readonly {
-  cran: number
-  action: 'delete' | 'warn' | 'mute' | 'ban'
-  duration_hours: number | null
-}[] = [
-  { cran: 0, action: 'delete', duration_hours: null },
-  { cran: 1, action: 'warn', duration_hours: null },
-  { cran: 2, action: 'mute', duration_hours: 2 },
-  { cran: 3, action: 'mute', duration_hours: 12 },
-  { cran: 4, action: 'mute', duration_hours: 48 },
-  { cran: 5, action: 'mute', duration_hours: 168 },
-  { cran: 6, action: 'mute', duration_hours: 672 },
-  { cran: 7, action: 'ban', duration_hours: null },
-]
-
 export const PROFILE_ACTION_IDS: readonly AutomodProfileAction[] = [
   'hold',
   'rename_warn',
   'alert',
   'bareme',
 ]
-
-export const DEFAULT_CUSTOM_CRANS: AutomodCrans = { basse: 0, moyenne: 1, haute: 2, critique: 4 }
 
 /**
  * Identifiant d'infraction personnalisée : 6 caractères `[a-z0-9]`. Jamais un
@@ -355,22 +334,12 @@ export function pickLocalized(l: AutomodLocalized | null | undefined, lang: stri
 
 // ─── Barème : lecture et écriture minimale ────────────────────────────────────
 
-/** Cran maximal atteignable selon `max_action` : warn → 1, mute → 6, ban → 7. */
-export const MAX_ACTION_CRAN: Record<AutomodMaxAction, number> = { warn: 1, mute: 6, ban: 7 }
-
-export const BAN_CRAN = 7
-
 /** Familles dans l'ordre d'affichage ; `custom` en dernier. */
 export const FAMILY_ORDER = ['message', 'image', 'profile', 'custom'] as const
 
 /** Clé `sanctions` d'une infraction du catalogue (son id tel quel). */
 export function sanctionKeyOf(infraction: Pick<AutomodCatalogInfraction, 'id'>): string {
   return infraction.id
-}
-
-/** Cran effectif après plafonnement par `max_action`. */
-export function cappedCran(cran: number, maxAction: AutomodMaxAction): number {
-  return Math.min(cran, MAX_ACTION_CRAN[maxAction] ?? BAN_CRAN)
 }
 
 /** Réglage effectif d'une infraction de profil : le choix, sinon le défaut du catalogue. */
@@ -509,14 +478,6 @@ export function applySanctionChanges(
     delete next.action_profil
   }
   return Object.keys(next).length === 0 ? null : next
-}
-
-/** Crans par défaut d'une infraction (catalogue) ou d'une perso (`custom_infraction`). */
-export function defaultCransFor(catalog: AutomodCatalog | null, key: string): AutomodCrans {
-  if (key.startsWith(CUSTOM_INFRACTION_PREFIX)) {
-    return catalog?.custom_infraction?.default_crans ?? DEFAULT_CUSTOM_CRANS
-  }
-  return catalog?.infractions?.find((i) => i.id === key)?.default_crans ?? DEFAULT_CUSTOM_CRANS
 }
 
 // ─── Infractions personnalisées ───────────────────────────────────────────────
@@ -683,6 +644,9 @@ export function automodErrorKey(error: ApiError, opts: { check?: boolean } = {})
   const body = error.body as { error?: unknown; code?: unknown } | null | undefined
   const known = new Set<string>([...SANCTION_ERROR_CODES, 'module_state_invalid', 'automod_ai_blocked'])
   if (info && known.has(info.code)) return info.code
+  // 403 de sanction : `error` est un objet `{ code, ... }`, pas une chaîne.
+  const nested = (body?.error as { code?: unknown } | null | undefined)?.code
+  if (typeof nested === 'string' && known.has(nested)) return nested
   const text = typeof body?.error === 'string' ? body.error : error.message
   if (typeof text === 'string') {
     const match = /Barème personnalisé invalide \(([a-z_]+)\)/i.exec(text)
@@ -698,4 +662,22 @@ export function automodErrorKey(error: ApiError, opts: { check?: boolean } = {})
 /** Vrai tant que le module n'est pas en pause (`active` ou `simulation`). */
 export function isAutomodConfigRunning(config: Pick<AutomodAiConfig, 'state'>): boolean {
   return readModuleState(config.state) !== 'paused'
+}
+
+// ─── Durées ───────────────────────────────────────────────────────────────────
+
+export interface DurationParts {
+  days: number
+  hours: number
+  minutes: number
+}
+
+/** Découpe des secondes en jours / heures / minutes (les secondes restantes sont ignorées). */
+export function splitDuration(seconds: number): DurationParts {
+  const total = Math.max(0, Math.floor(seconds / 60))
+  return { days: Math.floor(total / 1440), hours: Math.floor((total % 1440) / 60), minutes: total % 60 }
+}
+
+export function joinDuration(parts: DurationParts): number {
+  return (parts.days * 1440 + parts.hours * 60 + parts.minutes) * 60
 }

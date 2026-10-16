@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { AutomodCustomTab } from "@/components/automod/custom-infractions-tab"
+import { AutomodPendingApprovalsPanel } from "@/components/automod/pending-approvals-panel"
 import { AutomodProfileHoldsPanel } from "@/components/automod/profile-holds-panel"
 import { AutomodScaleTab } from "@/components/automod/scale-tab"
 import { SetupWizard } from "@/components/automod/setup-wizard"
@@ -39,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useAutomodCatalog } from "@/hooks/useAutomodCatalog"
+import { useAutomodPolicies } from "@/hooks/useAutomodPolicies"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { useSanctionGates, useSanctions } from "@/contexts/SanctionContext"
@@ -185,6 +187,7 @@ function AutomodAiForm() {
     error: catalogError,
     retry: retryCatalog,
   } = useAutomodCatalog(selectedGuildId)
+  const { policies, reload: reloadPolicies } = useAutomodPolicies(selectedGuildId)
 
   // L'onglet actif vit dans `?tab=` ; le brouillon, lui, est unique et partagé.
   const tabParam = searchParams.get("tab")
@@ -333,6 +336,7 @@ function AutomodAiForm() {
       toast.success(t("modules.saved"))
       logger.success("module:automod_ai", "Saved")
       await loadStatus()
+      reloadPolicies()
     } catch (e) {
       logger.error("module:automod_ai", "Save failed", e)
       if (e instanceof ApiError) {
@@ -387,7 +391,7 @@ function AutomodAiForm() {
     } finally {
       setIsSaving(false)
     }
-  }, [selectedGuildId, draft, t, loadStatus, gates])
+  }, [selectedGuildId, draft, t, loadStatus, reloadPolicies, gates])
 
   useEffect(() => {
     saveRef.current = handleSave
@@ -417,6 +421,7 @@ function AutomodAiForm() {
       toast.success(t("modules.automod_ai.resetSuccess"))
       logger.success("module:automod_ai", "Config reset")
       await loadStatus()
+      reloadPolicies()
     } catch (e) {
       logger.error("module:automod_ai", "Reset failed", e)
       handleSaveError(e, { title: t("modules.saveError") })
@@ -424,7 +429,7 @@ function AutomodAiForm() {
       setIsResetting(false)
       setConfirmReset(false)
     }
-  }, [selectedGuildId, t, loadStatus])
+  }, [selectedGuildId, t, loadStatus, reloadPolicies])
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
@@ -527,6 +532,7 @@ function AutomodAiForm() {
               {t("modules.automod_ai.tabs.infractions")}
               {faulty?.tab === "infractions" && <FaultyDot />}
             </TabsTrigger>
+            <TabsTrigger value="approvals">{t("modules.automod_ai.tabs.approvals")}</TabsTrigger>
             <TabsTrigger value="profiles">{t("modules.automod_ai.tabs.profiles")}</TabsTrigger>
           </TabsList>
         </div>
@@ -567,6 +573,7 @@ function AutomodAiForm() {
               draft={draft}
               readOnly={readOnly}
               onUpdate={updateDraft}
+              policies={policies}
               {...catalogProps}
             />
           </TabsContent>
@@ -586,7 +593,18 @@ function AutomodAiForm() {
           </TabsContent>
         </fieldset>
 
-        {/* Lecture seule par nature : hors du fieldset, ses boutons restent actifs. */}
+        {/* Lecture seule par nature : hors du fieldset, ses boutons restent actifs
+            (y compris sous sanction globale). */}
+        <TabsContent value="approvals">
+          {selectedGuildId && (
+            <AutomodPendingApprovalsPanel
+              key={String(selectedGuildId)}
+              guildId={String(selectedGuildId)}
+              catalog={catalog}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="profiles">
           {selectedGuildId && <AutomodProfileHoldsPanel key={String(selectedGuildId)} guildId={String(selectedGuildId)} />}
         </TabsContent>

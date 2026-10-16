@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next"
 import {
   AlertCircleIcon,
   ChevronDownIcon,
-  FlaskConicalIcon,
   TriangleAlertIcon,
 } from "lucide-react"
 import { ChannelMultiPicker, RoleMultiPicker } from "@/components/module-pickers"
@@ -39,6 +38,7 @@ import {
 } from "@/components/ui/field"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { readModuleState } from "@/lib/automod"
 import { cn } from "@/lib/utils"
@@ -50,11 +50,13 @@ import {
 } from "@/lib/automod"
 import { EXEMPT_MAX } from "@/services/automod"
 import { CHANNEL_TYPES } from "@/types/api"
-import type { AutomodAiConfig, AutomodFeature, AutomodMaxAction } from "@/types/api"
+import type { AutomodAiConfig, AutomodFeature, AutomodMaxAction, ModuleState } from "@/types/api"
 import {
   NO_CHANNEL,
   type FieldErrors,
 } from "@/components/automod/automod-form"
+
+const MODULE_STATES: ModuleState[] = ["active", "paused", "simulation"]
 
 const MAX_ACTIONS: AutomodMaxAction[] = ["warn", "mute", "ban"]
 
@@ -80,7 +82,7 @@ export function AutomodSettingsTab({
   onClearFieldError,
 }: AutomodSettingsTabProps) {
   const { t } = useTranslation()
-  const simulation = readModuleState(draft.state) === "simulation"
+  const moduleState = readModuleState(draft.state)
   const { selectedGuildId, channels, roles } = useGuildContext()
 
   const textChannels = useMemo(
@@ -116,20 +118,28 @@ export function AutomodSettingsTab({
           <CardDescription>{t("modules.automod_ai.generalDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          {/* Interrupteur principal */}
-          <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-            <div>
-              <p className="text-sm font-medium">{t("modules.automod_ai.enabled")}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {t("modules.automod_ai.enabledDescription")}
-              </p>
-            </div>
-            <Switch
-              checked={readModuleState(draft.state) !== "paused"}
-              aria-label={t("modules.automod_ai.enabled")}
-              onCheckedChange={(v) => onPatch({ state: v ? (simulation ? "simulation" : "active") : "paused" })}
-            />
-          </div>
+          {/* État du module : actif / en pause / simulation */}
+          <Field>
+            <FieldLabel>{t("modules.automod_ai.state.title")}</FieldLabel>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              value={moduleState}
+              onValueChange={(v) => {
+                if (!v || v === moduleState) return
+                onPatch({ state: v as ModuleState })
+              }}
+              className="w-full sm:w-fit"
+              aria-label={t("modules.automod_ai.state.title")}
+            >
+              {MODULE_STATES.map((id) => (
+                <ToggleGroupItem key={id} value={id}>
+                  {t(`modules.automod_ai.state.${id}`)}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            <FieldDescription>{t(`modules.automod_ai.state.${moduleState}_desc`)}</FieldDescription>
+          </Field>
 
           {/* Salon d'alertes */}
           <div className="flex flex-col gap-2">
@@ -191,29 +201,6 @@ export function AutomodSettingsTab({
               checked={draft.ignore_moderators}
               aria-label={t("modules.automod_ai.ignoreModerators")}
               onCheckedChange={(v) => onPatch({ ignore_moderators: v })}
-            />
-          </div>
-
-          {/* Mode simulation */}
-          <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium">{t("modules.automod_ai.dryRun")}</p>
-                {simulation && (
-                  <Badge variant="secondary" className="text-[10px] gap-1">
-                    <FlaskConicalIcon className="size-3" />
-                    {t("modules.automod_ai.dryRunBadge")}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {t("modules.automod_ai.dryRunDescription")}
-              </p>
-            </div>
-            <Switch
-              checked={simulation}
-              aria-label={t("modules.automod_ai.dryRun")}
-              onCheckedChange={(v) => onPatch({ state: v ? "simulation" : "active" })}
             />
           </div>
 
