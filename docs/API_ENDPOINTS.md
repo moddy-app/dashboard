@@ -520,6 +520,116 @@ Liste tous les emojis personnalises d'un serveur.
 
 ---
 
+### Membres d'un serveur (sélecteurs du dashboard)
+
+Quatre lectures pour construire un sélecteur de membre : recherche à la frappe,
+affichage des membres déjà choisis dans une config (qui ne garde que leurs ids),
+parcours page par page, et un membre précis. Tout passe par le jeton du bot,
+rien n'est écrit. Routeur `app/routers/guild_members.py`.
+
+**Auth :** guild_access (`guild_user`, comme `/channels` et `/roles`)
+
+Chaque membre a toujours la même forme :
+
+```json
+{
+  "id": "222222222222222222",
+  "username": "alice",
+  "global_name": "Alice",
+  "nick": "Ali",
+  "display_name": "Ali",
+  "avatar": "f00ba4",
+  "guild_avatar": null,
+  "avatar_url": "https://cdn.discordapp.com/avatars/222222222222222222/f00ba4.png",
+  "bot": false,
+  "role_ids": ["333333333333333333"],
+  "joined_at": "2026-01-01T00:00:00+00:00",
+  "premium_since": null,
+  "pending": false,
+  "communication_disabled_until": null
+}
+```
+
+- Tous les ids sont des **chaînes** (un snowflake dépasse `Number`).
+- `display_name` = ce que Discord affiche sur ce serveur : `nick`, sinon
+  `global_name`, sinon `username`.
+- `avatar_url` est déjà résolue : avatar de serveur > avatar du compte > avatar
+  par défaut. `.gif` si animé ; ajouter `?size=64` côté front au besoin.
+- `pending` : membre qui n'a pas encore passé le filtrage d'adhésion.
+- `communication_disabled_until` : fin d'exclusion temporaire (timeout), sinon `null`.
+
+**Erreurs communes :** `403` sans accès au serveur, `503` + `Retry-After` quand
+Discord limite nos appels (patienter, ne pas réessayer en boucle), `502` si
+Discord refuse ou répond mal.
+
+#### `GET /guilds/{guild_id}/members/search?q={texte}&limit={n}`
+
+Membres dont le **pseudo ou le surnom commence par** `q` (seule recherche que
+Discord propose : pas de « contient »). Un identifiant ou une mention collés
+(`222…`, `<@222…>`, `<@!222…>`) visent directement le membre.
+
+| Param | Type | Défaut | Description |
+|---|---|---|---|
+| `q` | string (1..100) | requis | Début du pseudo / surnom, ou id / mention |
+| `limit` | int (1..100) | `25` | Nombre maximum de résultats |
+
+```json
+{"query": "ali", "match": "name", "members": [{"id": "222222222222222222", "display_name": "Ali", "...": "..."}]}
+```
+
+`match` vaut `name` (recherche par nom) ou `id` (id / mention ; `members` vide
+si la personne n'est pas sur le serveur).
+
+**Cache :** 30 s par requête exacte, sans copie de secours. Le front doit quand
+même **temporiser la frappe** (≈ 300 ms) : chaque requête différente est un
+appel Discord.
+
+#### `GET /guilds/{guild_id}/members/resolve?ids={id1},{id2},...`
+
+Résout jusqu'à **25** ids (doublons ignorés) — typiquement les membres déjà
+sélectionnés dans une config, pour afficher leur nom et leur avatar.
+
+```json
+{
+  "members": [{"id": "222222222222222222", "...": "..."}],
+  "not_found": ["444444444444444444"],
+  "unavailable": [],
+  "partial": false
+}
+```
+
+- `not_found` : pas (ou plus) membre du serveur — à signaler, la config vise un absent.
+- `unavailable` : Discord n'a pas pu répondre pour ces ids ; **ne pas** les
+  traiter comme absents (`partial: true`). Afficher l'id brut et relire plus tard.
+
+**Cache :** 60 s par membre (clé `discord:guild:{guild_id}:member:{user_id}`,
+partagée avec le reste du backend, copie de secours comprise).
+**Erreurs :** `422` si un id n'est pas un snowflake, ou plus de 25 ids.
+
+#### `GET /guilds/{guild_id}/members?limit={n}&after={user_id}`
+
+Parcours page par page, **dans l'ordre des ids** (ordre de Discord, pas
+alphabétique — pour trouver quelqu'un, utiliser `/members/search`).
+
+| Param | Type | Défaut | Description |
+|---|---|---|---|
+| `limit` | int (1..100) | `50` | Taille de page |
+| `after` | snowflake | — | `next_after` de la page précédente |
+
+```json
+{"members": [{"id": "...", "...": "..."}], "next_after": "666666666666666666"}
+```
+
+`next_after: null` = dernière page. Demande l'intent privilégié
+`GUILD_MEMBERS` côté application (sinon `502`). **Cache :** 60 s par page.
+
+#### `GET /guilds/{guild_id}/members/{user_id}`
+
+Un membre précis, même forme que ci-dessus. **Erreur :** `404` s'il n'est pas
+(ou plus) sur le serveur. **Cache :** 60 s (même clé que `/resolve`).
+
+---
+
 ### `GET /guilds/{guild_id}/discord`
 
 Recupere toutes les infos Discord d'un serveur en un seul appel (guild info, channels, roles).
