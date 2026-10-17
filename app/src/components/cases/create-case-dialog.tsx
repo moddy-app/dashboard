@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { UserIdPicker } from "@/components/pickers"
 import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
@@ -192,7 +193,10 @@ export function CreateCaseDialog({
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium">{t("cases.form.subject")}</label>
             <div className="flex gap-2">
-              <Select value={subjectType} onValueChange={(v) => setSubjectType(v as SubjectType)}>
+              <Select value={subjectType} onValueChange={(v) => {
+                  setSubjectType(v as SubjectType)
+                  setSubjectId("")
+                }}>
                 <SelectTrigger className="w-[150px] shrink-0">
                   <SelectValue />
                 </SelectTrigger>
@@ -204,12 +208,18 @@ export function CreateCaseDialog({
                   ))}
                 </SelectContent>
               </Select>
-              <Input
-                value={subjectId}
-                onChange={(e) => setSubjectId(e.target.value)}
-                placeholder={t("cases.form.subjectIdPlaceholder")}
-                className="flex-1 font-mono"
-              />
+              <div className="min-w-0 flex-1">
+                {subjectType === "discord_user" ? (
+                  <UserIdPicker value={subjectId || null} onChange={(v) => setSubjectId(v ?? "")} />
+                ) : (
+                  <Input
+                    value={subjectId}
+                    onChange={(e) => setSubjectId(e.target.value)}
+                    placeholder={t("cases.form.subjectIdPlaceholder")}
+                    className="font-mono"
+                  />
+                )}
+              </div>
             </div>
           </div>
 

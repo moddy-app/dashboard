@@ -638,9 +638,7 @@
         "bot_timeout": "Moddy n'a pas répondu à temps. Réessayez."
       },
       "optionsTitle": "Options",
-      "colorBrand": "Couleur plateforme",
-      "colorCustom": "Personnalisée",
-      "colorPick": "Choisir une couleur",
+      "colorBrand": "Couleur de la plateforme",
       "showAvatarHint": "Affiche l'avatar du compte dans la notification.",
       "showMediaHint": "Affiche la miniature ou l'aperçu média de la publication.",
       "errorLimitFree": "Limite atteinte (1 compte par plateforme). Passez à Moddy Max pour en suivre jusqu'à 5.",
@@ -1580,12 +1578,10 @@
         "status": "Statut",
         "category": "Catégorie",
         "owner": "Auteur",
-        "ownerPlaceholder": "ID Discord",
         "noCategory": "Aucune catégorie configurée.",
         "panel": "Panneau",
         "staff": "Pris en charge par",
         "number": "Numéro de ticket",
-        "staffPlaceholder": "ID Discord",
         "numberPlaceholder": "ex. 42",
         "noPanel": "Aucun panneau configuré."
       },
@@ -2505,7 +2501,6 @@
       "date": "Date",
       "dateFrom": "Du",
       "dateTo": "Au",
-      "idPlaceholder": "ID Discord…",
       "remove": "Retirer le filtre",
       "add": "Filtrer",
       "allUsed": "Tous les filtres sont utilisés",
@@ -3193,6 +3188,12 @@
       "hex": "Couleur hexadécimale",
       "swatches": "Nuancier",
       "reset": "Couleur par défaut"
+    },
+    "user": {
+      "placeholder": "Identifiant ou mention Discord",
+      "invalid": "Saisissez un identifiant valide (17 à 20 chiffres).",
+      "notFound": "Utilisateur introuvable",
+      "clear": "Effacer l'utilisateur"
     }
   }
 }

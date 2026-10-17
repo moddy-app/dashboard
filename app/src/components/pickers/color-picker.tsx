@@ -17,6 +17,8 @@ export interface ColorPickerProps {
   swatches?: string[]
   /** Ajoute « Couleur par défaut » (`onChange(null)`). */
   allowReset?: boolean
+  /** Libellé de la couleur par défaut (valeur `null`) ; défaut : « Couleur par défaut ». */
+  resetLabel?: string
   disabled?: boolean
   id?: string
   "aria-invalid"?: boolean
@@ -28,6 +30,7 @@ export function ColorPicker({
   defaultColor = "#5865F2",
   swatches = DISCORD_SWATCHES,
   allowReset,
+  resetLabel,
   disabled,
   id,
   "aria-invalid": invalid,
@@ -35,6 +38,11 @@ export function ColorPicker({
   const { t } = useTranslation()
   const [open, setOpen] = React.useState(false)
   const shown = value ?? defaultColor
+  // La couleur par défaut (marque) ouvre le nuancier, sans doublon.
+  const allSwatches = React.useMemo(() => {
+    const first = defaultColor.toUpperCase()
+    return allowReset ? [first, ...swatches.filter((h) => h.toUpperCase() !== first)] : swatches
+  }, [allowReset, defaultColor, swatches])
   const [text, setText] = React.useState(shown.replace("#", "").toUpperCase())
 
   // Le champ suit la valeur (nuancier, roue) ; une saisie en cours reste intacte.
@@ -70,7 +78,7 @@ export function ColorPicker({
               style={{ backgroundColor: shown }}
             />
             <span className={cn("truncate tabular-nums", value === null && "text-muted-foreground")}>
-              {value === null ? t("pickers.color.default") : value.toUpperCase()}
+              {value === null ? (resetLabel ?? t("pickers.color.default")) : value.toUpperCase()}
             </span>
           </span>
           <ChevronDownIcon className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
@@ -95,7 +103,7 @@ export function ColorPicker({
           />
         </InputGroup>
         <div role="group" aria-label={t("pickers.color.swatches")} className="grid grid-cols-8 gap-1.5">
-          {swatches.map((hex) => (
+          {allSwatches.map((hex) => (
             <button
               key={hex}
               type="button"
@@ -122,7 +130,7 @@ export function ColorPicker({
               setOpen(false)
             }}
           >
-            {t("pickers.color.reset")}
+            {resetLabel ?? t("pickers.color.reset")}
           </Button>
         )}
       </PopoverContent>

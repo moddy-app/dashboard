@@ -644,6 +644,9 @@ i18n.changeLanguage('fr')
 ### Sélecteurs
 - Salon, rôle, membre, emoji, couleur : **uniquement** `src/components/pickers/*` (`ChannelPicker`/`ChannelMultiPicker`, `RolePicker`/`RoleMultiPicker`, `MemberPicker`/`MemberMultiPicker`, `EmojiPicker` avec `unicodeOnly` quand le champ refuse les émojis perso, `ColorPicker`). Popover + Command : liste bornée, recherche, clavier.
 - Jamais un `Select` sur une liste Discord (il s'ouvre pleine hauteur sans recherche), jamais `<input type="color">`, jamais une grille d'émojis en dur.
+- Identifiant d'utilisateur : **jamais d'`Input` brut** : `MemberPicker`/`MemberMultiPicker` dans un serveur, `UserIdPicker` (`pickers/user-id-picker.tsx`, accepte un id ou une mention `<@id>`, résout le profil via `useUserProfile`) sinon. Seul un sujet qui n'est pas un utilisateur Discord (serveur, service externe) garde sa saisie libre.
+- Pastilles des sélecteurs multiples : `Badge variant="outline"` + `bg-background`, jamais `secondary` (gris sur gris). Une case à cocher dans un `CommandItem` suffit : pas de `CheckIcon` en plus (`CommandItem` rend déjà sa coche via `data-checked`).
+- Choix de couleur « marque ou personnalisée » : un seul `ColorPicker` avec `defaultColor` + `allowReset` + `resetLabel` (valeur `null` = couleur par défaut, placée en tête du nuancier).
 - Couleurs : `src/lib/color.ts` (`hexToInt`, `intToHex`, `normalizeHex`) — pas de nouveau convertisseur local.
 
 ### Enregistrement

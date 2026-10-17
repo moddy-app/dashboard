@@ -148,8 +148,8 @@ export function MultiPickerShell({
         {shown.map((chip) => (
           <Badge
             key={chip.key}
-            variant="secondary"
-            className={cn("relative max-w-48 gap-1 pr-0.5", chip.muted && "text-muted-foreground")}
+            variant="outline"
+            className={cn("relative max-w-48 gap-1 bg-background pr-0.5", chip.muted && "text-muted-foreground")}
           >
             {chip.icon}
             <span className="truncate">{chip.label}</span>
@@ -165,7 +165,7 @@ export function MultiPickerShell({
           </Badge>
         ))}
         {hidden > 0 && (
-          <Badge variant="outline" className="pointer-events-none relative">
+          <Badge variant="outline" className="pointer-events-none relative bg-background">
             {t("pickers.more", { count: hidden })}
           </Badge>
         )}

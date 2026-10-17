@@ -254,6 +254,7 @@ export function TicketExplorer({
           panels={panelOptions}
           availableKeys={availableKeys}
           pendingKey={pendingKey}
+          guildId={guildId}
           onChange={changeFilter}
           onRemove={removeFilter}
           onAdd={addFilter}
