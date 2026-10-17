@@ -366,7 +366,7 @@
       "maxActionDescription": "L'IA n'appliquera jamais de sanction plus lourde.",
       "maxAction_warn": "Avertissement",
       "maxAction_warn_desc": "Suppression et avertissement uniquement.",
-      "maxAction_mute": "Mute",
+      "maxAction_mute": "Exclusion",
       "maxAction_mute_desc": "Jusqu'à un mute temporaire.",
       "maxAction_ban": "Bannissement",
       "maxAction_ban_desc": "Jusqu'au bannissement dans les cas les plus graves.",
