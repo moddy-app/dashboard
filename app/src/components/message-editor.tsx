@@ -1,14 +1,6 @@
-import { useEffect, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  BoldIcon,
-  ItalicIcon,
-  StrikethroughIcon,
-  Heading2Icon,
-  SmileIcon,
-  LinkIcon,
-  LoaderIcon,
-} from "lucide-react"
+import { BoldIcon, ItalicIcon, StrikethroughIcon, Heading2Icon, SmileIcon, LinkIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
@@ -21,8 +13,7 @@ import {
   type RichTextEditorHandle,
   type RichFormat,
 } from "@/components/rich-text-editor"
-import { getEmojis } from "@/services/guilds"
-import type { GuildEmoji } from "@/types/api"
+import { EmojiPicker } from "@/components/pickers/emoji-picker"
 import { cn } from "@/lib/utils"
 
 // Éditeur de message réutilisable (n'importe quel module) : éditeur enrichi +
@@ -57,21 +48,7 @@ export function MessageEditor({
   const { t } = useTranslation()
   const editorRef = useRef<RichTextEditorHandle>(null)
 
-  // null = en cours de chargement ; [] = chargé (éventuellement vide).
-  const [emojis, setEmojis] = useState<GuildEmoji[] | null>(guildId == null ? [] : null)
-  const [emojiOpen, setEmojiOpen] = useState(false)
   const [activeFormats, setActiveFormats] = useState<RichFormat[]>([])
-
-  useEffect(() => {
-    if (guildId == null) return
-    let active = true
-    getEmojis(guildId)
-      .then((e) => active && setEmojis(e ?? []))
-      .catch(() => active && setEmojis([]))
-    return () => {
-      active = false
-    }
-  }, [guildId])
 
   const handleToggle = (vals: string[]) => {
     const set = new Set(vals)
@@ -125,6 +102,7 @@ export function MessageEditor({
                 variant="ghost"
                 size="sm"
                 onMouseDown={(e) => e.preventDefault()}
+                aria-label={t("messageEditor.link")}
                 onClick={() => editorRef.current?.wrapSelection("[", "](https://)")}
                 className="size-8 p-0"
               >
@@ -134,64 +112,30 @@ export function MessageEditor({
             <TooltipContent>{t("messageEditor.link")}</TooltipContent>
           </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
+          <EmojiPicker
+            value={null}
+            onChange={(v) => v && editorRef.current?.insertText(v)}
+            guildId={guildId == null ? undefined : String(guildId)}
+            unicodeOnly={guildId == null}
+            align="start"
+            trigger={
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                aria-pressed={emojiOpen}
+                aria-label={t("messageEditor.emojis")}
                 onMouseDown={(e) => e.preventDefault()}
-                onClick={() => setEmojiOpen((o) => !o)}
-                className={cn("size-8 p-0", emojiOpen && "bg-accent text-accent-foreground")}
+                className="size-8 p-0"
               >
                 <SmileIcon className="size-4" />
               </Button>
-            </TooltipTrigger>
-            <TooltipContent>{t("messageEditor.emojis")}</TooltipContent>
-          </Tooltip>
+            }
+          />
 
           <span className="ml-auto pr-1 text-[11px] tabular-nums text-muted-foreground">
             {value.length}/{maxLength}
           </span>
         </div>
-
-        {/* Panneau émojis (inline → scroll OK même dans une modale) */}
-        {emojiOpen && (
-          <div className="border-b bg-muted/20 p-2">
-            {emojis === null ? (
-              <div className="flex items-center justify-center py-5">
-                <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
-              </div>
-            ) : emojis.length === 0 ? (
-              <p className="py-5 text-center text-xs text-muted-foreground">
-                {t("messageEditor.noEmojis")}
-              </p>
-            ) : (
-              <div className="grid grid-cols-8 gap-1 max-h-40 overflow-y-auto overscroll-contain">
-                {emojis.map((e) => (
-                  <button
-                    key={e.id}
-                    type="button"
-                    title={`:${e.name}:`}
-                    onMouseDown={(ev) => ev.preventDefault()}
-                    onClick={() =>
-                      editorRef.current?.insertText(`<${e.animated ? "a" : ""}:${e.name}:${e.id}>`)
-                    }
-                    className="flex items-center justify-center rounded p-1 hover:bg-accent transition-colors"
-                  >
-                    <img
-                      src={`https://cdn.discordapp.com/emojis/${e.id}.${e.animated ? "gif" : "png"}?size=32`}
-                      alt={e.name}
-                      className="size-6 object-contain"
-                      loading="lazy"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Zone de texte (l'éditeur enrichi, sans bordure propre) */}
         <RichTextEditor
@@ -220,7 +164,7 @@ export function MessageEditor({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => editorRef.current?.insertText(v)}
-              className="rounded border bg-background px-1.5 py-0.5 font-mono text-[11px] text-blue-600 dark:text-blue-400 hover:bg-accent transition-colors"
+              className="rounded border bg-background px-1.5 py-0.5 font-mono text-[11px] text-info hover:bg-accent transition-colors"
               title={t("messageEditor.insertVariable")}
             >
               {v}

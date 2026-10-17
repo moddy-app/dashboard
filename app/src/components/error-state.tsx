@@ -1,6 +1,7 @@
-import { AlertCircleIcon, WifiOffIcon, LockIcon, ServerCrashIcon, RefreshCwIcon } from "lucide-react"
+import { AlertCircleIcon, WifiOffIcon, LockIcon, ServerCrashIcon, RefreshCwIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "react-i18next"
+import { cn } from "@/lib/utils"
 
 type ErrorKind = "not_found" | "forbidden" | "network" | "server" | "api"
 
@@ -64,22 +65,22 @@ export function ErrorState({ error, onRetry, onSecondaryAction, secondaryActionL
   const config: Record<ErrorKind, Config> = {
     not_found: {
       icon: AlertCircleIcon,
-      color: "text-amber-500",
+      color: "text-warning",
       message: t("errors.notFound.description"),
     },
     forbidden: {
       icon: LockIcon,
-      color: "text-red-500",
+      color: "text-destructive",
       message: t("errors.forbidden.description"),
     },
     network: {
       icon: WifiOffIcon,
-      color: "text-blue-500",
+      color: "text-info",
       message: t("errors.network.description"),
     },
     server: {
       icon: ServerCrashIcon,
-      color: "text-red-500",
+      color: "text-destructive",
       message: t("errors.server.description"),
     },
     // Message API lisible → on l'affiche tel quel
@@ -95,19 +96,19 @@ export function ErrorState({ error, onRetry, onSecondaryAction, secondaryActionL
   return (
     <div className="flex flex-col items-center gap-4 text-center max-w-sm">
       <div className="size-11 rounded-full bg-muted flex items-center justify-center shrink-0">
-        <Icon className={`size-5 ${color}`} />
+        <Icon className={cn("size-5", color)} />
       </div>
       <p className="text-sm text-muted-foreground leading-relaxed">{message}</p>
       <div className="flex items-center gap-2 flex-wrap justify-center">
         {onRetry && (
           <Button variant="outline" size="sm" onClick={onRetry}>
-            <RefreshCwIcon className="size-4 mr-1.5" />
+            <RefreshCwIcon data-icon="inline-start" />
             {t("errors.retry")}
           </Button>
         )}
         {onSecondaryAction && secondaryActionLabel && (
           <Button variant="default" size="sm" onClick={onSecondaryAction}>
-            <RefreshCwIcon className="size-4 mr-1.5" />
+            <RefreshCwIcon data-icon="inline-start" />
             {secondaryActionLabel}
           </Button>
         )}

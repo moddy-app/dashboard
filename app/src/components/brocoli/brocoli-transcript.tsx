@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { InfoIcon, SparklesIcon, TriangleAlertIcon } from 'lucide-react'
+import { InfoIcon, SparklesIcon, TriangleAlertIcon } from '@/components/icons'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
 import { Marker, MarkerContent } from '@/components/ui/marker'
@@ -162,7 +162,7 @@ function NoticeRow({ code, message }: { code: string; message: string }) {
         'flex items-start gap-2 rounded-lg border px-3 py-2 text-xs',
         info
           ? 'border-border bg-muted/40 text-muted-foreground'
-          : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200'
+          : 'border-warning/30 bg-warning/10 text-foreground'
       )}
       role={info ? undefined : 'alert'}
     >

@@ -14,7 +14,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { ArchiveIcon, HistoryIcon, MessageSquarePlusIcon, RefreshCwIcon } from 'lucide-react'
+import { ArchiveIcon, HistoryIcon, MessageSquarePlusIcon, RefreshCwIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,

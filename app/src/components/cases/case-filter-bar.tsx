@@ -1,10 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  ChevronDownIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { ChevronDownIcon, PlusIcon, Trash2Icon } from '@/components/icons'
 import { Input } from "@/components/ui/input"
 import {
   Popover,
@@ -88,7 +84,7 @@ function StatusEditor({
           <span
             className={cn(
               "size-1.5 rounded-full",
-              s === "open" ? "bg-green-500" : "bg-muted-foreground/50"
+              s === "open" ? "bg-success" : "bg-muted-foreground/50"
             )}
           />
           {t(`cases.status.${s}`)}

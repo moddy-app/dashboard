@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { AlertTriangleIcon } from "lucide-react"
+import { AlertTriangleIcon } from '@/components/icons'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { logger } from "@/lib/logger"
 import { getStatsHealth } from "@/services/stats"

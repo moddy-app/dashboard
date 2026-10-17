@@ -107,6 +107,8 @@ export function roleColorToHex(color: number): string {
 }
 
 export interface GuildEmoji {
+  /** `false` : emoji que le serveur ne peut plus utiliser (perte de boost…). */
+  available?: boolean
   id: string
   name: string
   animated?: boolean
@@ -219,7 +221,12 @@ export const MAX_WELCOME_DMS = 3
 export const WELCOME_DM_DEFAULT_ACCENT = 0x5865f2
 
 export interface AutoRoleConfig {
-  role_ids: string[]
+  /** Rôles donnés aux membres (≤ 20). */
+  member_roles?: string[]
+  /** Rôles donnés aux bots (≤ 20). */
+  bot_roles?: string[]
+  /** Ancien format, lu comme `member_roles`. */
+  role_ids?: string[]
 }
 
 export interface AutoRestoreRolesConfig {
@@ -368,6 +375,8 @@ export interface AutomodAiConfig {
   /** 1 (permissif) → 5 (strict) */
   severity: number
   max_action: AutomodMaxAction
+  /** Les décisions humaines du serveur (appels, annotations en simulation) guident l'IA. Booléen strict, vrai par défaut. */
+  use_precedents: boolean
   /** Barème par infraction, indexé par id d'infraction (`perso:<id>` pour les personnalisées). Clé absente = réglage Moddy. */
   sanctions: Record<string, AutomodSanction>
   /** ≤ 10 infractions personnalisées. */
@@ -420,30 +429,6 @@ export interface AutomodPolicy {
   require_approval: boolean
   family: AutomodInfractionFamily | (string & {}) | null
   by_gravity: Partial<Record<AutomodGravity, AutomodGravityPlan>>
-}
-
-/** Sanction en attente de validation par un modérateur (lecture seule). */
-export interface AutomodPendingApproval {
-  id: string
-  user_id: string
-  status: 'pending' | 'approved' | 'rejected' | 'expired' | (string & {})
-  categorie: string | null
-  gravite: AutomodGravity | (string & {}) | null
-  actions: AutomodAction[]
-  timeout_seconds: number | null
-  message_deleted: boolean
-  created_at: string
-  /** 48 h après la création. */
-  expires_at: string | null
-  resolved_at: string | null
-  resolved_by: string | null
-  /** `null` tant que non traitée. */
-  result: { applied: string[]; failed: string[]; case_ref: string | null } | null
-}
-
-export interface AutomodPendingApprovals {
-  approvals: AutomodPendingApproval[]
-  total: number
 }
 
 /** Règle de substitution du catalogue : `supersedes` remplace les actions listées. */
@@ -620,23 +605,6 @@ export interface AutomodCatalog {
   templates: AutomodCatalogTemplate[]
   presets: AutomodCatalogPreset[]
   [key: string]: unknown
-}
-
-/** Profil de membre retenu en attente de décision (liste des profile-holds). */
-export interface AutomodProfileHold {
-  user_id: string
-  kind: 'avatar' | 'banner' | (string & {})
-  categorie: string | null
-  case_id: string | null
-  sanction_id: string | null
-  created_at: string
-  timeout_until: string | null
-  last_checked: string | null
-}
-
-export interface AutomodProfileHolds {
-  holds: AutomodProfileHold[]
-  total: number
 }
 
 /** Budget IA quotidien (staff uniquement). */

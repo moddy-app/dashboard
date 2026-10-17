@@ -20,14 +20,9 @@ import type {
 // bout en bout : aucun `Number()` ici (un id de 19 chiffres perdrait sa
 // précision).
 
-const MODULE_STATES: readonly ModuleState[] = ['active', 'paused', 'simulation']
-
-/** État d'un module : valeur inconnue ou absente = `active` (comme le backend). */
-export function readModuleState(raw: unknown): ModuleState {
-  return typeof raw === 'string' && (MODULE_STATES as readonly string[]).includes(raw)
-    ? (raw as ModuleState)
-    : 'active'
-}
+// `readModuleState` vit dans `lib/modules.ts` ; ré-export pour ne rien casser.
+export { readModuleState } from '@/lib/modules'
+import { readModuleState } from '@/lib/modules'
 
 /**
  * Les cinq détecteurs connus, dans l'ordre du backend (celui de
@@ -181,6 +176,8 @@ export function normalizeAutomodConfig(raw: AutomodAiConfig): AutomodAiConfig {
     // `state` absent = `active` : on ne l'invente pas, une sauvegarde sans
     // `state` conserve l'état enregistré côté backend.
     ...(config.state !== undefined && { state: readModuleState(config.state) }),
+    // Booléen strict, vrai par défaut (clé absente d'une ancienne config).
+    use_precedents: config.use_precedents !== false,
     sanctions,
     infractions_perso: Array.isArray(config.infractions_perso) ? config.infractions_perso : [],
     features,

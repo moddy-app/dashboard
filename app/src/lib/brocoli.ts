@@ -8,24 +8,7 @@
  * `src/components/brocoli/`.
  */
 
-import {
-  AlertTriangleIcon,
-  InfoIcon,
-  OctagonAlertIcon,
-  BookOpenIcon,
-  FileCogIcon,
-  FileSearch2Icon,
-  FileTextIcon,
-  HashIcon,
-  KeyRoundIcon,
-  LayoutDashboardIcon,
-  LibraryIcon,
-  ScrollTextIcon,
-  ShieldCheckIcon,
-  UserSearchIcon,
-  UsersIcon,
-  WrenchIcon,
-} from 'lucide-react'
+import { AlertTriangleIcon, InfoIcon, OctagonAlertIcon, BookOpenIcon, FileCogIcon, FileSearch2Icon, FileTextIcon, HashIcon, KeyRoundIcon, LayoutDashboardIcon, LibraryIcon, ScrollTextIcon, ShieldCheckIcon, UserSearchIcon, UsersIcon, WrenchIcon } from '@/components/icons'
 import { ACTION_TONE } from '@/lib/cases'
 import type {
   AiActionPreview,

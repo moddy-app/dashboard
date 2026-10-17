@@ -16,10 +16,7 @@ import type {
   AutomodCustomInfraction,
   AutomodInfractionCheck,
   AutomodGravityPlan,
-  AutomodPendingApproval,
-  AutomodPendingApprovals,
   AutomodPolicy,
-  AutomodProfileHolds,
 } from '@/types/api'
 
 const BASE = (guildId: string | number) => `/guilds/${guildId}/modules/automod_ai`
@@ -35,6 +32,7 @@ export function defaultAutomodConfig(): AutomodAiConfig {
     ignore_moderators: true,
     severity: 3,
     max_action: 'ban',
+    use_precedents: true,
     sanctions: {},
     infractions_perso: [],
     features: Object.fromEntries(AUTOMOD_FEATURE_IDS.map((id) => [id, defaultAutomodFeature(id)])),
@@ -75,6 +73,8 @@ export async function saveAutomodConfig(
   // `state` est gardé s'il est présent ; absent, le backend conserve l'état
   // enregistré (enregistrer des réglages ne relance jamais un module en pause).
   const body = stripDeadConfigKeys({ ...config })
+  // Toujours un booléen strict, jamais absent ni tronqué.
+  body.use_precedents = body.use_precedents !== false
   // `crans` (ancien format) est converti à la lecture et ne se réécrit jamais.
   body.sanctions = Object.fromEntries(
     Object.entries(body.sanctions ?? {}).map(([key, entry]) => {
@@ -151,18 +151,6 @@ export async function checkCustomInfraction(
   })) as AutomodInfractionCheck
 }
 
-/** Profils retenus en attente de décision. Le chemin n'est pas sous `/modules/`. */
-export async function getProfileHolds(
-  guildId: string | number,
-  { limit = 50, offset = 0 }: { limit?: number; offset?: number } = {}
-): Promise<AutomodProfileHolds> {
-  const raw = (await api(
-    `/guilds/${guildId}/automod-ai/profile-holds?limit=${limit}&offset=${offset}`
-  )) as Partial<AutomodProfileHolds> | null
-  const holds = Array.isArray(raw?.holds) ? raw.holds : []
-  return { holds, total: typeof raw?.total === 'number' ? raw.total : holds.length }
-}
-
 // ─── Politiques effectives et sanctions en attente ────────────────────────────
 
 function normalizeGravityPlans(raw: unknown): Partial<Record<string, AutomodGravityPlan>> {
@@ -217,42 +205,6 @@ export async function getAutomodPolicies(
     }
   }
   return policies
-}
-
-/**
- * Sanctions en attente de validation (lecture seule : aucune route d'écriture,
- * le modérateur décide dans Discord). Le contenu du message supprimé n'est
- * jamais exposé. Chemin hors `/modules/`.
- */
-export async function listAutomodPendingApprovals(
-  guildId: string | number,
-  {
-    status,
-    limit = 50,
-    offset = 0,
-  }: { status?: 'pending' | 'approved' | 'rejected' | 'expired'; limit?: number; offset?: number } = {}
-): Promise<AutomodPendingApprovals> {
-  const query = new URLSearchParams({ limit: String(limit), offset: String(offset) })
-  if (status) query.set('status', status)
-  const raw = (await api(
-    `/guilds/${guildId}/automod-ai/pending-approvals?${query.toString()}`
-  )) as Partial<AutomodPendingApprovals> | null
-  const approvals: AutomodPendingApproval[] = (Array.isArray(raw?.approvals) ? raw.approvals : []).map(
-    (a) => ({
-      ...a,
-      actions: normalizeActions(a.actions),
-      timeout_seconds: typeof a.timeout_seconds === 'number' ? a.timeout_seconds : null,
-      message_deleted: a.message_deleted === true,
-      result: a.result
-        ? {
-            applied: Array.isArray(a.result.applied) ? a.result.applied : [],
-            failed: Array.isArray(a.result.failed) ? a.result.failed : [],
-            case_ref: a.result.case_ref ?? null,
-          }
-        : null,
-    })
-  )
-  return { approvals, total: typeof raw?.total === 'number' ? raw.total : approvals.length }
 }
 
 // ─── Budget IA (staff uniquement) ─────────────────────────────────────────────

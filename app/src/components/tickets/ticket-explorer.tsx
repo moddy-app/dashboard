@@ -9,7 +9,6 @@ import {
   ChevronRightIcon,
   CircleDotIcon,
   ClockIcon,
-  Loader2Icon,
   MessageSquareIcon,
   RefreshCwIcon,
   ScissorsIcon,
@@ -17,7 +16,7 @@ import {
   TicketIcon,
   TriangleAlertIcon,
   UserCheckIcon,
-} from "lucide-react"
+} from "@/components/icons"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -33,6 +32,7 @@ import type { TicketState } from "@/lib/tickets"
 import { getTickets, getTicketStats, getTicketTranscripts } from "@/services/tickets"
 import type { Ticket, TicketPanel, TicketsSettings, TicketStats } from "@/types/api"
 import type { TranscriptSummary } from "@/types/transcripts"
+import { Spinner } from "@/components/ui/spinner"
 import { Notice } from "@/components/tickets/fields"
 import { TicketFilterChips } from "@/components/tickets/ticket-filter-bar"
 import {
@@ -66,9 +66,9 @@ const PAGE_SIZE = 25
 
 /** Icône + ton par état — même lecture que la pastille de salon Discord (🔴🟢🟣⚫). */
 const STATE_META: Record<TicketState, { icon: typeof CircleDotIcon; tone: string }> = {
-  open: { icon: CircleDotIcon, tone: "text-emerald-500" },
-  claimed: { icon: UserCheckIcon, tone: "text-sky-500" },
-  escalated: { icon: TriangleAlertIcon, tone: "text-purple-500" },
+  open: { icon: CircleDotIcon, tone: "text-success" },
+  claimed: { icon: UserCheckIcon, tone: "text-primary" },
+  escalated: { icon: TriangleAlertIcon, tone: "text-warning" },
   closed: { icon: CheckCircle2Icon, tone: "text-muted-foreground/70" },
 }
 
@@ -428,7 +428,7 @@ function TicketRow({
               {ticket.category.panel_name} · {ticket.category.name}
             </span>
           ) : (
-            <Badge variant="secondary" className="text-amber-600 dark:text-amber-400">
+            <Badge variant="secondary" className="text-warning">
               {t("modules.tickets.list.orphan")}
             </Badge>
           )}
@@ -463,7 +463,7 @@ function TicketRow({
         )}
         {isClosed ? (
           resolving ? (
-            <Loader2Icon className="size-4 shrink-0 animate-spin text-muted-foreground" />
+            <Spinner className="shrink-0 text-muted-foreground" />
           ) : (
             <ChevronRightIcon className="size-4 shrink-0 text-muted-foreground/60 transition-transform group-hover:translate-x-0.5" />
           )
@@ -524,7 +524,7 @@ function TranscriptRow({
           <span className="tabular-nums text-muted-foreground">#{transcript.ticket_number}</span>
           <span className="truncate">{ownerName}</span>
           {transcript.truncated && (
-            <Badge variant="secondary" className="gap-1 text-amber-600 dark:text-amber-400">
+            <Badge variant="secondary" className="gap-1 text-warning">
               <ScissorsIcon className="size-3" />
               {t("modules.tickets.transcripts.truncated")}
             </Badge>

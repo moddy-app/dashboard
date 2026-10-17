@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { CheckCircle2Icon, ClockIcon, InfoIcon, LinkIcon } from "lucide-react"
+import { CheckCircle2Icon, ClockIcon, InfoIcon, LinkIcon } from '@/components/icons'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -239,7 +239,7 @@ export function StatsAcquisitionTab({ days }: { days: number }) {
                     <TableCell className="text-right">
                       {install.confirmed ? (
                         <Badge variant="secondary" className="gap-1">
-                          <CheckCircle2Icon className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                          <CheckCircle2Icon className="size-3.5 text-success" />
                           {t("stats.installs.confirmed")}
                         </Badge>
                       ) : (

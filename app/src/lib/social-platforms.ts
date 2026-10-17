@@ -1,3 +1,4 @@
+import { intToHex as colorIntToHex } from '@/lib/color'
 import type { SocialPlatform } from '@/types/api'
 
 // ─── Métadonnées par plateforme ────────────────────────────────────────────────
@@ -87,11 +88,9 @@ export const DEFAULT_MESSAGES: Record<SocialPlatform, string> = {
 // ─── Conversion couleur ─────────────────────────────────────────────────────────
 
 /** `#FF0000` → `16711680`. */
-export function hexToInt(hex: string): number {
-  return parseInt(hex.replace('#', ''), 16)
-}
+export { hexToInt } from '@/lib/color'
 
 /** `16711680` → `#ff0000`. */
 export function intToHex(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`
+  return colorIntToHex(color).toLowerCase()
 }

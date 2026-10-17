@@ -3,15 +3,16 @@ import type { FormEvent } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Spinner } from "@/components/ui/spinner"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/module/responsive-dialog"
 import {
   Field,
   FieldContent,
@@ -38,7 +39,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DirectoryIcon } from "@/components/bump-reminder/directory-icon"
-import { ChannelPicker, RoleMultiPicker } from "@/components/module-pickers"
+import { ChannelPicker, RoleMultiPicker } from "@/components/pickers"
 import {
   formatInterval,
   hasDuplicateTarget,
@@ -67,6 +68,7 @@ export function ReminderDialog({
   guildId,
   canSubscribe,
   onOpenChange,
+  saving,
   onSubmit,
 }: {
   open: boolean
@@ -80,17 +82,18 @@ export function ReminderDialog({
   guildId: string
   canSubscribe: boolean
   onOpenChange: (open: boolean) => void
-  onSubmit: (reminder: BumpReminderDraft) => void
+  /** Écriture en cours : le bouton de validation est désactivé. */
+  saving?: boolean
+  onSubmit: (reminder: BumpReminderDraft) => void | Promise<void>
 }) {
   const { t } = useTranslation()
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{t(isNew ? `${K}.dialog.addTitle` : `${K}.dialog.editTitle`)}</DialogTitle>
-          <DialogDescription>{t(`${K}.dialog.description`)}</DialogDescription>
-        </DialogHeader>
+    <ResponsiveDialog open={open} onOpenChange={onOpenChange} className="sm:max-w-lg">
+      <ResponsiveDialogHeader>
+        <ResponsiveDialogTitle>{t(isNew ? `${K}.dialog.addTitle` : `${K}.dialog.editTitle`)}</ResponsiveDialogTitle>
+        <ResponsiveDialogDescription>{t(`${K}.dialog.description`)}</ResponsiveDialogDescription>
+      </ResponsiveDialogHeader>
         {/* Remonté à chaque ouverture : l'état local repart de `initial`. */}
         {initial && (
           <ReminderForm
@@ -104,11 +107,11 @@ export function ReminderDialog({
             guildId={guildId}
             canSubscribe={canSubscribe}
             onCancel={() => onOpenChange(false)}
+            saving={saving}
             onSubmit={onSubmit}
           />
         )}
-      </DialogContent>
-    </Dialog>
+    </ResponsiveDialog>
   )
 }
 
@@ -122,6 +125,7 @@ function ReminderForm({
   guildId,
   canSubscribe,
   onCancel,
+  saving,
   onSubmit,
 }: {
   initial: BumpReminderDraft
@@ -133,7 +137,8 @@ function ReminderForm({
   guildId: string
   canSubscribe: boolean
   onCancel: () => void
-  onSubmit: (reminder: BumpReminderDraft) => void
+  saving?: boolean
+  onSubmit: (reminder: BumpReminderDraft) => void | Promise<void>
 }) {
   const { t } = useTranslation()
   const { limits } = catalog
@@ -189,11 +194,12 @@ function ReminderForm({
     }
     setErrors(next)
     if (Object.keys(next).length > 0) return
-    onSubmit(candidate)
+    void onSubmit(candidate)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+    <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col gap-4">
+      <ResponsiveDialogBody>
       <FieldGroup>
         <Field data-invalid={errors.bot ? true : undefined}>
           <FieldLabel htmlFor="br-bot">{t(`${K}.fields.bot`)}</FieldLabel>
@@ -241,7 +247,7 @@ function ReminderForm({
             channels={channels}
             onChange={(channel_id) => patch({ channel_id })}
             placeholder={t("modules.selectChannel")}
-            invalid={Boolean(errors.channel_id)}
+            aria-invalid={Boolean(errors.channel_id) || undefined}
           />
           <FieldDescription>{t(`${K}.fields.channelDescription`)}</FieldDescription>
           <FieldError>{errors.channel_id}</FieldError>
@@ -261,9 +267,8 @@ function ReminderForm({
             max={limits.roles}
             onChange={(role_ids) => patch({ role_ids })}
             placeholder={t(`${K}.fields.rolesPlaceholder`)}
-            invalid={Boolean(errors.role_ids)}
+            aria-invalid={Boolean(errors.role_ids) || undefined}
           />
-          <FieldDescription>{t(`${K}.fields.rolesDescription`)}</FieldDescription>
           <FieldError>{errors.role_ids}</FieldError>
         </Field>
 
@@ -349,13 +354,17 @@ function ReminderForm({
           <Switch id="br-enabled" checked={draft.enabled} onCheckedChange={(enabled) => patch({ enabled })} />
         </Field>
       </FieldGroup>
+      </ResponsiveDialogBody>
 
-      <DialogFooter>
+      <ResponsiveDialogFooter>
         <Button type="button" variant="outline" onClick={onCancel}>
           {t("common.cancel")}
         </Button>
-        <Button type="submit">{t(isNew ? `${K}.dialog.add` : `${K}.dialog.apply`)}</Button>
-      </DialogFooter>
+        <Button type="submit" disabled={saving}>
+          {saving && <Spinner data-icon="inline-start" />}
+          {t(isNew ? `${K}.dialog.add` : `${K}.dialog.apply`)}
+        </Button>
+      </ResponsiveDialogFooter>
     </form>
   )
 }

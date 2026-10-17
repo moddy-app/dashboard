@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
+import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
-import { LanguagesIcon } from "lucide-react"
+import { LanguagesIcon } from '@/components/icons'
 
 interface ServerLanguageNoteProps {
   guildId: string | null
@@ -17,7 +18,7 @@ export function ServerLanguageNote({ guildId, className }: ServerLanguageNotePro
   if (!guildId) return null
   return (
     <p
-      className={`flex items-start gap-2 text-xs text-muted-foreground ${className ?? ""}`}
+      className={cn("flex items-start gap-2 text-xs text-muted-foreground", className)}
     >
       <LanguagesIcon className="size-3.5 mt-0.5 shrink-0" />
       <span>

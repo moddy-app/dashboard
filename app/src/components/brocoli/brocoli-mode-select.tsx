@@ -11,7 +11,7 @@
  */
 
 import { useTranslation } from 'react-i18next'
-import { EyeIcon, HandIcon, ZapIcon } from 'lucide-react'
+import { EyeIcon, HandIcon, ZapIcon } from '@/components/icons'
 import {
   Select,
   SelectContent,
@@ -78,7 +78,7 @@ export function BrocoliModeSelect({
                     </span>
                     {/* Dit au moment du choix, pas dans une doc ailleurs. */}
                     {mode === 'auto' && (
-                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                      <span className="text-xs font-medium text-warning">
                         {t('brocoli.mode.auto.caveat')}
                       </span>
                     )}

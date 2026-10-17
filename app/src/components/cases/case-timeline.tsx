@@ -1,14 +1,5 @@
 import { useTranslation } from "react-i18next"
-import {
-  PlusCircleIcon,
-  MinusCircleIcon,
-  TimerOffIcon,
-  RefreshCwIcon,
-  LockIcon,
-  ShieldAlertIcon,
-  MessageSquareIcon,
-  GavelIcon,
-} from "lucide-react"
+import { PlusCircleIcon, MinusCircleIcon, TimerOffIcon, RefreshCwIcon, LockIcon, ShieldAlertIcon, MessageSquareIcon, GavelIcon } from '@/components/icons'
 import {
   Message,
   MessageAvatar,
@@ -88,7 +79,7 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
             <BubbleContent
               className={cn(
                 "whitespace-pre-wrap rounded-2xl",
-                isNote && "bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100"
+                isNote && "bg-warning/10 text-foreground"
               )}
             >
               {event.content || <span className="italic opacity-70">—</span>}
@@ -96,7 +87,7 @@ function CommentEvent({ event, isNote }: { event: CaseEvent; isNote: boolean }) 
           </Bubble>
           <div className="flex shrink-0 items-center gap-1 pb-0.5">
             {isNote && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0 text-[10px] font-medium text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">
+              <span className="inline-flex items-center gap-1 rounded-full bg-warning/10 px-1.5 py-0 text-[10px] font-medium text-warning">
                 <LockIcon className="size-2.5" />
                 {t("cases.timeline.internalNote")}
               </span>
@@ -126,7 +117,7 @@ function TimelineItem({ event, caseType }: { event: CaseEvent; caseType?: CaseTy
     const status = asString(event.payload?.["status"])
     if (kind === "appeal_opened") {
       return (
-        <MarkerRow icon={GavelIcon} iconClass="text-violet-500" time={event.created_at}>
+        <MarkerRow icon={GavelIcon} iconClass="text-primary" time={event.created_at}>
           {t("cases.timeline.appealOpened", {
             route: route ? t(`cases.appealRoute.${route}`) : "",
           })}
@@ -134,7 +125,7 @@ function TimelineItem({ event, caseType }: { event: CaseEvent; caseType?: CaseTy
       )
     }
     return (
-      <MarkerRow icon={GavelIcon} iconClass="text-violet-500" time={event.created_at}>
+      <MarkerRow icon={GavelIcon} iconClass="text-primary" time={event.created_at}>
         {t("cases.timeline.appealDecision", {
           status: status ? t(`cases.appealStatus.${status}`) : "",
         })}
@@ -150,7 +141,7 @@ function TimelineItem({ event, caseType }: { event: CaseEvent; caseType?: CaseTy
     case "sanction_added": {
       const action = payloadAction(event.payload)
       return (
-        <MarkerRow icon={PlusCircleIcon} iconClass="text-red-500" time={event.created_at}>
+        <MarkerRow icon={PlusCircleIcon} iconClass="text-destructive" time={event.created_at}>
           {t("cases.timeline.sanctionAdded", {
             action: action ? t(actionLabelKey(action, caseType)) : t("cases.timeline.aSanction"),
           })}
@@ -159,7 +150,7 @@ function TimelineItem({ event, caseType }: { event: CaseEvent; caseType?: CaseTy
     }
     case "sanction_revoked":
       return (
-        <MarkerRow icon={MinusCircleIcon} iconClass="text-emerald-500" time={event.created_at}>
+        <MarkerRow icon={MinusCircleIcon} iconClass="text-success" time={event.created_at}>
           {t("cases.timeline.sanctionRevoked")}
         </MarkerRow>
       )
@@ -180,7 +171,7 @@ function TimelineItem({ event, caseType }: { event: CaseEvent; caseType?: CaseTy
       return (
         <MarkerRow
           icon={closed ? LockIcon : RefreshCwIcon}
-          iconClass={closed ? "text-muted-foreground" : "text-green-500"}
+          iconClass={closed ? "text-muted-foreground" : "text-success"}
           time={event.created_at}
         >
           {t(`cases.timeline.status_${to ?? "change"}`, {

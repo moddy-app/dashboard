@@ -15,22 +15,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar"
-import {
-  BellIcon,
-  BookOpenIcon,
-  CreditCardIcon,
-  GavelIcon,
-  InfoIcon,
-  LogOutIcon,
-  PlusIcon,
-  ServerIcon,
-  SettingsIcon,
-  ShieldAlertIcon,
-  ShieldIcon,
-  SparkleIcon,
-  SparklesIcon,
-  TicketIcon,
-} from "lucide-react"
+import { BellIcon, BookOpenIcon, CreditCardIcon, GavelIcon, InfoIcon, LogOutIcon, PlusIcon, ServerIcon, SettingsIcon, ShieldAlertIcon, ShieldIcon, SparkleIcon, SparklesIcon, TicketIcon } from '@/components/icons'
 import { useNavigate } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { getGuildIconUrl } from "@/lib/auth"

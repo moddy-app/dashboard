@@ -689,7 +689,9 @@ sanction (`new_module_blocked`) un **objet** — `ApiError` aplatit les deux.
 
 ```typescript
 interface AutoRoleConfig {
-  role_ids: number[];  // Liste des IDs de rôles à attribuer
+  member_roles: string[];  // rôles donnés aux humains (≤ 20, sans doublon)
+  bot_roles: string[];     // rôles donnés aux bots (≤ 20, sans doublon)
+  // au moins une liste non vide ; l'ancien `role_ids` n'a jamais été lu par le bot
 }
 ```
 

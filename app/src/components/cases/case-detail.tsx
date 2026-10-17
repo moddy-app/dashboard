@@ -1,22 +1,8 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  ChevronLeftIcon,
-  PlusIcon,
-  MoreHorizontalIcon,
-  PencilIcon,
-  LockIcon,
-  UnlockIcon,
-  LoaderIcon,
-  CopyIcon,
-  UserIcon,
-  UserCogIcon,
-  ShieldIcon,
-  CalendarIcon,
-  LayersIcon,
-  CheckIcon,
-} from "lucide-react"
+import { ChevronLeftIcon, PlusIcon, MoreHorizontalIcon, PencilIcon, LockIcon, UnlockIcon, CopyIcon, UserIcon, UserCogIcon, ShieldIcon, CalendarIcon, LayersIcon, CheckIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -95,7 +81,7 @@ function CopyButton({ value, label }: { value: string; label?: string }) {
           className="inline-flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           {copied ? (
-            <CheckIcon className="size-3.5 animate-in zoom-in-50 text-emerald-500 duration-200" />
+            <CheckIcon className="size-3.5 animate-in zoom-in-50 text-success duration-200" />
           ) : (
             <CopyIcon className="size-3.5" />
           )}
@@ -289,7 +275,7 @@ export function CaseDetailView({
           {backButton}
         </div>
         <div className="flex flex-col-reverse gap-6 lg:flex-row lg:items-start">
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 flex flex-col gap-4">
             <Skeleton className="h-7 w-2/3" />
             <Skeleton className="h-40 rounded-xl" />
             <Skeleton className="h-40 rounded-xl" />
@@ -505,7 +491,7 @@ export function CaseDetailView({
               {t("cases.cancel")}
             </Button>
             <Button onClick={handleSaveReason} disabled={editBusy || !reasonDraft.trim()}>
-              {editBusy && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+              {editBusy && <Spinner data-icon="inline-start" />}
               {t("cases.detail.save")}
             </Button>
           </DialogFooter>

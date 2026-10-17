@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
-import { ArrowUpRightIcon } from "lucide-react"
+import { ArrowUpRightIcon } from '@/components/icons'
 import { cn } from "@/lib/utils"
 import { LEVEL_TONE, VIOLATIONS_PATH, formatDeadline } from "@/lib/sanctions"
 import { useGuildContext } from "@/contexts/GuildContext"

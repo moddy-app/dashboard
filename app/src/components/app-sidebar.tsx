@@ -1,34 +1,23 @@
 import * as React from "react"
 import {
+  ActivityIcon,
+  AlertTriangleIcon,
   BookOpenIcon,
+  ChartLineIcon,
+  ClipboardListIcon,
   CrownIcon,
-  GaugeIcon,
   LayoutDashboardIcon,
   LifeBuoyIcon,
+  PuzzleIcon,
   RefreshCwIcon,
   SearchIcon,
-  StarIcon,
-  UsersIcon,
-  MailIcon,
-  MessageSquareIcon,
-  ActivityIcon,
-  ChartLineIcon,
-  FileClockIcon,
-  AlertTriangleIcon,
   ServerIcon,
-  ClipboardListIcon,
-  BellRingIcon,
-  ShieldAlertIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-  PaletteIcon,
-  PuzzleIcon,
-  TicketIcon,
-  UserPlusIcon,
-  RocketIcon,
   SettingsIcon,
+  ShieldAlertIcon,
   SparkleIcon,
-} from "lucide-react"
+  SparklesIcon,
+  UsersIcon,
+} from "@/components/icons"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
 
@@ -51,6 +40,7 @@ import { useGuildContext } from "@/contexts/GuildContext"
 import { useSubscription } from "@/hooks/useSubscription"
 import { useSanctions } from "@/contexts/SanctionContext"
 import { useAiStatus } from "@/hooks/useAiStatus"
+import { MODULES, getModuleStatus } from "@/lib/modules"
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   user: User | null
@@ -74,7 +64,7 @@ export function AppSidebar({
   const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
-  const { selectedGuildId, refreshGuildData } = useGuildContext()
+  const { selectedGuildId, refreshGuildData, modules } = useGuildContext()
   const subscription = useSubscription()
   const { user: sanction, isExempt } = useSanctions()
   // `enabled: false` → l'entrée Brocoli est **masquée**, pas grisée : un
@@ -119,6 +109,17 @@ export function AppSidebar({
     }
   }
 
+  // Modules du registre, dans l'ordre des groupes, avec leur statut.
+  const moduleNavItems = selectedGuildId
+    ? MODULES.map((m, i) => ({
+        title: t(m.titleKey),
+        url: m.path(selectedGuildId),
+        icon: m.icon,
+        status: getModuleStatus(m.id, modules[m.id]),
+        group: i === 0 || MODULES[i - 1].group !== m.group ? t(`modules.groups.${m.group}`) : undefined,
+      }))
+    : []
+
   // Navigation quand un serveur est sélectionné (modules disponibles uniquement)
   const guildNavItems = selectedGuildId && !isOnStaffPage
     ? [
@@ -154,86 +155,7 @@ export function AppSidebar({
           title: t("sidebar.guild.modules"),
           url: "#",
           icon: PuzzleIcon,
-          items: [
-          {
-            title: t("modules.starboard.name"),
-            url: `/servers/${selectedGuildId}/modules/starboard`,
-            icon: StarIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/starboard`,
-          },
-          {
-            title: t("modules.welcome_channel.name"),
-            url: `/servers/${selectedGuildId}/modules/welcome_channel`,
-            icon: MessageSquareIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_channel`,
-          },
-          {
-            title: t("modules.welcome_dm.name"),
-            url: `/servers/${selectedGuildId}/modules/welcome_dm`,
-            icon: MailIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/welcome_dm`,
-          },
-          {
-            title: t("modules.auto_role.name"),
-            url: `/servers/${selectedGuildId}/modules/auto_role`,
-            icon: UsersIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/auto_role`,
-          },
-          {
-            title: t("modules.adaptive_slowmode.name"),
-            url: `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
-            icon: GaugeIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/adaptive_slowmode`,
-          },
-          {
-            title: t("modules.automod_ai.name"),
-            url: `/servers/${selectedGuildId}/modules/automod_ai`,
-            icon: SparklesIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/automod_ai`,
-          },
-          {
-            title: t("modules.social_notifications.name"),
-            url: `/servers/${selectedGuildId}/modules/social_notifications`,
-            icon: BellRingIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/social_notifications`,
-          },
-          {
-            title: t("modules.altguard.name"),
-            url: `/servers/${selectedGuildId}/modules/altguard`,
-            icon: ShieldCheckIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/altguard`,
-          },
-          {
-            title: t("modules.tickets.name"),
-            url: `/servers/${selectedGuildId}/modules/tickets`,
-            icon: TicketIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/tickets`,
-          },
-          {
-            title: t("modules.member_applications.name"),
-            url: `/servers/${selectedGuildId}/modules/member_applications`,
-            icon: UserPlusIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/member_applications`,
-          },
-          {
-            title: t("modules.bump_reminder.name"),
-            url: `/servers/${selectedGuildId}/modules/bump_reminder`,
-            icon: RocketIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/bump_reminder`,
-          },
-          {
-            title: t("modules.logs.name"),
-            url: `/servers/${selectedGuildId}/modules/logs`,
-            icon: FileClockIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/logs`,
-          },
-          {
-            title: t("modules.bot_customization.name"),
-            url: `/servers/${selectedGuildId}/modules/bot_customization`,
-            icon: PaletteIcon,
-            isActive: location.pathname === `/servers/${selectedGuildId}/modules/bot_customization`,
-          },
-          ],
+          items: moduleNavItems,
         },
         {
           title: t("guildSettings.title"),
@@ -338,7 +260,7 @@ export function AppSidebar({
               tooltip={hasBilling ? t("sidebar.manageSubscription") : "Moddy Max"}
               onClick={() => navigate(hasBilling ? "/?openSettings=billing" : "/premium")}
               isActive={location.pathname === "/premium"}
-              className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-violet-950/60 data-[active=true]:bg-violet-50 data-[active=true]:text-violet-700 dark:data-[active=true]:bg-violet-950/60 dark:data-[active=true]:text-violet-300"
+              className="text-primary hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
             >
               <CrownIcon />
               <span>{hasBilling ? t("sidebar.manageSubscription") : "Moddy Max"}</span>

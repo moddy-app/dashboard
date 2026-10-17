@@ -1,21 +1,8 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  SearchIcon,
-  CircleDotIcon,
-  CheckCircle2Icon,
-  LoaderIcon,
-  RefreshCwIcon,
-  ScaleIcon,
-  ListFilterIcon,
-  CheckSquareIcon,
-  XIcon,
-  CopyIcon,
-  ArrowUpRightIcon,
-  LockIcon,
-  UnlockIcon,
-} from "lucide-react"
+import { SearchIcon, CircleDotIcon, CheckCircle2Icon, RefreshCwIcon, ScaleIcon, ListFilterIcon, CheckSquareIcon, XIcon, CopyIcon, ArrowUpRightIcon, LockIcon, UnlockIcon } from '@/components/icons'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -135,7 +122,7 @@ function CaseRow({
           }}
           className={cn(
             "group flex items-center gap-3 px-3 py-2.5 sm:px-4 cursor-pointer transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:bg-muted/50",
-            selected && "bg-blue-50/60 dark:bg-blue-950/30"
+            selected && "bg-info/10"
           )}
         >
           {massMode && (
@@ -151,7 +138,7 @@ function CaseRow({
           {/* Indicateur de statut */}
           <span className="shrink-0" title={t(`cases.status.${item.status}`)}>
             {open ? (
-              <CircleDotIcon className="size-4 text-green-500" />
+              <CircleDotIcon className="size-4 text-success" />
             ) : (
               <CheckCircle2Icon className="size-4 text-muted-foreground/60" />
             )}
@@ -543,7 +530,7 @@ export function CaseList({
           {[...Array(6)].map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3">
               <Skeleton className="size-4 rounded-full" />
-              <div className="flex-1 space-y-1.5">
+              <div className="flex-1 flex flex-col gap-1.5">
                 <Skeleton className="h-3.5 w-2/3" />
                 <Skeleton className="h-3 w-1/3" />
               </div>
@@ -555,7 +542,7 @@ export function CaseList({
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed py-12 text-center">
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" onClick={load}>
-            <RefreshCwIcon className="size-4 mr-1.5" />
+            <RefreshCwIcon data-icon="inline-start" />
             {t("errors.retry")}
           </Button>
         </div>
@@ -564,7 +551,7 @@ export function CaseList({
           {[...Array(3)].map((_, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-3">
               <Skeleton className="size-4 rounded-full" />
-              <div className="flex-1 space-y-1.5">
+              <div className="flex-1 flex flex-col gap-1.5">
                 <Skeleton className="h-3.5 w-2/3" />
                 <Skeleton className="h-3 w-1/3" />
               </div>
@@ -610,7 +597,7 @@ export function CaseList({
           {/* Sentinelle de scroll infini + indicateur */}
           {hasMore && (
             <div ref={sentinelRef} className="flex justify-center py-3">
-              <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
+              <Spinner className="text-muted-foreground" />
             </div>
           )}
         </>
@@ -635,7 +622,7 @@ export function CaseList({
               disabled={bulkBusy}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {bulkBusy && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+              {bulkBusy && <Spinner data-icon="inline-start" />}
               {t("cases.mass.close")}
             </AlertDialogAction>
           </AlertDialogFooter>

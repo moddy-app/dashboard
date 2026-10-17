@@ -1,4 +1,4 @@
-import { type LucideIcon } from 'lucide-react'
+import type { IconComponent } from '@/components/icons'
 import { ApiError } from '@/lib/auth'
 import { ACTION_TONE, SANCTION_LEVEL_HUE, SANCTION_LEVEL_ICON } from '@/lib/cases'
 import type {
@@ -73,7 +73,7 @@ export function noSanction(
  * propres aux niveaux.
  */
 export interface LevelTone {
-  icon: LucideIcon
+  icon: IconComponent
   text: string
   softBg: string
   border: string
@@ -93,7 +93,7 @@ const LEVEL_RING: Record<SanctionLevel, string> = {
 // Ton et icône viennent de `lib/cases` : `ActionChip` s'en sert aussi pour les
 // mesures d'un dossier global. Une seule source, donc jamais deux couleurs pour
 // la même idée.
-const LEVEL_ICON = SANCTION_LEVEL_ICON as Record<SanctionLevel, LucideIcon>
+const LEVEL_ICON = SANCTION_LEVEL_ICON as Record<SanctionLevel, IconComponent>
 const LEVEL_HUE = SANCTION_LEVEL_HUE as Record<SanctionLevel, keyof typeof ACTION_TONE>
 
 export const LEVEL_TONE = Object.fromEntries(

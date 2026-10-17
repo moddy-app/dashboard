@@ -1,5 +1,7 @@
 "use client"
 
+import { cn } from "@/lib/utils"
+import { Spinner } from '@/components/ui/spinner'
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useTranslation } from "react-i18next"
 import {
@@ -22,18 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  SunIcon,
-  MoonIcon,
-  MonitorIcon,
-  GlobeIcon,
-  CreditCardIcon,
-  UserIcon,
-  SparklesIcon,
-  XIcon,
-  PlusIcon,
-  LoaderIcon,
-} from "lucide-react"
+import { SunIcon, MoonIcon, MonitorIcon, GlobeIcon, CreditCardIcon, UserIcon, SparklesIcon, XIcon, PlusIcon } from '@/components/icons'
 import { useTheme } from "@/components/theme-provider"
 import { getPreferences, setPreferences, detectBrowserLanguage } from "@/lib/preferences"
 import { getAvatarUrl, getDisplayName, getGuildIconUrl, ApiError } from "@/lib/auth"
@@ -263,7 +254,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                       )}
                     </p>
                     {user.is_staff && (
-                      <Badge variant="outline" className="text-xs shrink-0 text-violet-600 border-violet-300 dark:text-violet-400 dark:border-violet-700">
+                      <Badge variant="outline" className="text-xs shrink-0 text-primary border-primary/30">
                         Staff
                       </Badge>
                     )}
@@ -292,7 +283,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="size-2 rounded-full bg-green-500 shrink-0" />
+                  <span className="size-2 rounded-full bg-success shrink-0" />
                   <span className="text-xs text-muted-foreground">{t('settings.account.connected')}</span>
                 </div>
               </div>
@@ -313,11 +304,12 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                     key={value}
                     type="button"
                     onClick={() => setTheme(value as 'light' | 'dark' | 'system')}
-                    className={`flex flex-col items-center gap-2 rounded-lg border p-3 text-sm transition-colors cursor-pointer ${
+                    className={cn(
+                      'flex flex-col items-center gap-2 rounded-lg border p-3 text-sm transition-colors cursor-pointer',
                       theme === value
                         ? 'border-primary bg-accent text-accent-foreground'
                         : 'hover:bg-accent/50'
-                    }`}
+                    )}
                   >
                     <Icon className="size-5" />
                     <span>{label}</span>
@@ -346,11 +338,12 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                       key={value}
                       type="button"
                       onClick={() => handleLangChange(value)}
-                      className={`rounded-lg border p-3 text-sm transition-colors cursor-pointer ${
+                      className={cn(
+                        'rounded-lg border p-3 text-sm transition-colors cursor-pointer',
                         isActive
                           ? 'border-primary bg-accent text-accent-foreground'
                           : 'hover:bg-accent/50'
-                      }`}
+                      )}
                     >
                       {label}
                     </button>
@@ -371,7 +364,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
               <>
                 {/* Statut abonnement */}
                 <div className="rounded-lg border p-4 flex items-center gap-3">
-                  <SparklesIcon className="size-8 text-amber-500 shrink-0" />
+                  <SparklesIcon className="size-8 text-warning shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{t('settings.billing.activeTitle')}</p>
                     {subscription.expires_at && (
@@ -436,7 +429,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                               disabled={removingServerId === server_id}
                             >
                               {removingServerId === server_id ? (
-                                <LoaderIcon className="size-3.5 animate-spin" />
+                                <Spinner className="size-3.5" />
                               ) : (
                                 <XIcon className="size-3.5" />
                               )}
@@ -448,7 +441,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                   )}
 
                   {(linkBlocked || selectedGuildBlocked) && (
-                    <p className={`text-xs ${LEVEL_TONE.limited.text}`}>
+                    <p className={cn('text-xs', LEVEL_TONE.limited.text)}>
                       {linkBlocked
                         ? t('violations.premiumBlocked')
                         : t('violations.premiumGuildBlocked')}
@@ -515,7 +508,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                         className="shrink-0"
                       >
                         {addingServer ? (
-                          <LoaderIcon className="size-4 animate-spin" />
+                          <Spinner />
                         ) : (
                           <PlusIcon className="size-4" />
                         )}
@@ -527,7 +520,7 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                 <Separator />
 
                 <Button onClick={handleOpenBilling} variant="outline" className="w-full">
-                  <CreditCardIcon className="size-4 mr-2" />
+                  <CreditCardIcon data-icon="inline-start" />
                   {t('settings.billing.manageButton')}
                 </Button>
               </>
@@ -542,21 +535,21 @@ export function SettingsDialog({ open, onOpenChange, user, defaultTab }: Setting
                   description={t('violations.premiumSuspendedDescription')}
                 />
                 <Button onClick={handleOpenBilling} variant="outline" className="w-full">
-                  <CreditCardIcon className="size-4 mr-2" />
+                  <CreditCardIcon data-icon="inline-start" />
                   {t('settings.billing.manageButton')}
                 </Button>
               </>
             ) : (
               <>
                 <div className="rounded-lg border p-4 flex items-center gap-3">
-                  <SparklesIcon className="size-8 text-amber-500 shrink-0" />
+                  <SparklesIcon className="size-8 text-warning shrink-0" />
                   <div>
                     <p className="font-medium text-sm">{t('settings.billing.title')}</p>
                     <p className="text-xs text-muted-foreground">{t('settings.billing.description')}</p>
                   </div>
                 </div>
                 <Button onClick={handleOpenBilling} className="w-full" variant="outline">
-                  <CreditCardIcon className="size-4 mr-2" />
+                  <CreditCardIcon data-icon="inline-start" />
                   {t('settings.billing.manageButton')}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">

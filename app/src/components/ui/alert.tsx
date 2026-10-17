@@ -3,7 +3,7 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const alertVariants = cva(
-  "group/alert relative grid w-full gap-0.5 rounded-lg border px-4 py-3 text-left text-sm has-data-[slot=alert-action]:relative has-data-[slot=alert-action]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
+  "group/alert relative grid w-full gap-0.5 rounded-lg border px-4 py-3 text-left text-sm has-[[data-slot=alert-action]:not([data-inline])]:pr-18 has-[>svg]:grid-cols-[auto_1fr] has-[>svg]:gap-x-2.5 *:[svg]:row-span-2 *:[svg]:translate-y-0.5 *:[svg]:text-current *:[svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -62,11 +62,22 @@ function AlertDescription({
   )
 }
 
-function AlertAction({ className, ...props }: React.ComponentProps<"div">) {
+/** `inline` : bouton à libellé, posé sous le texte plutôt qu'en coin (qu'il recouvrirait). */
+function AlertAction({
+  className,
+  inline = false,
+  ...props
+}: React.ComponentProps<"div"> & { inline?: boolean }) {
   return (
     <div
       data-slot="alert-action"
-      className={cn("absolute top-2.5 right-3", className)}
+      data-inline={inline ? "" : undefined}
+      className={cn(
+        inline
+          ? "mt-2 justify-self-start group-has-[>svg]/alert:col-start-2"
+          : "absolute top-2.5 right-3",
+        className
+      )}
       {...props}
     />
   )

@@ -1,39 +1,30 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import {
-  LoaderIcon,
-  SparklesIcon,
-  ShieldAlertIcon,
-  ShieldCheckIcon,
-  FileClockIcon,
-  UsersIcon,
-  StarIcon,
-  MailIcon,
-  MessageSquareIcon,
-  GaugeIcon,
-  BellRingIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ExternalLinkIcon,
   CrownIcon,
-  LockIcon,
-  ZapIcon,
-  RadioIcon,
   HashIcon,
   LinkIcon,
-  PaletteIcon,
-  TicketIcon,
-  UserPlusIcon,
-  RocketIcon,
-} from "lucide-react"
+  LockIcon,
+  RadioIcon,
+  ShieldAlertIcon,
+  SparklesIcon,
+  UsersIcon,
+  ZapIcon,
+} from "@/components/icons"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  Card,
-  CardContent,
-  CardTitle,
-} from "@/components/ui/card"
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ErrorPage } from "@/components/error-state"
@@ -48,141 +39,70 @@ import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
-import type { LucideIcon } from "lucide-react"
-import type {
-  AltGuardConfig,
-  LogsConfig,
-  BotCustomizationConfig,
-  ModuleConfig,
-  WelcomeChannelConfig,
-  TicketsConfig,
-  WelcomeDmConfig,
-} from "@/types/api"
-import { readModuleState } from "@/lib/automod"
-import { isWelcomeActive } from "@/lib/welcome"
-import { isWelcomeDmActive } from "@/lib/welcome-dm"
-import { isBotCustomizationActive } from "@/lib/bot-customization"
-import { isAltGuardActive } from "@/lib/altguard"
-import { isLogsActive } from "@/lib/logs"
-import { isTicketsActive } from "@/lib/tickets"
-import { isMemberApplicationsActive } from "@/lib/member-applications"
-import { isBumpReminderActive } from "@/lib/bump-reminder"
+import type { IconComponent } from "@/components/icons"
+import { ModuleStatusBadge } from "@/components/module/module-status-badge"
+import { MODULES, MODULE_GROUPS, getModuleStatus, type ModuleStatus } from "@/lib/modules"
 
-// Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
+// Classes statiques par ton (Tailwind ne peut pas générer de classes dynamiques).
 const STAT_STYLES = {
-  blue: { box: "bg-blue-100 dark:bg-blue-950", icon: "text-blue-600 dark:text-blue-400" },
-  green: { box: "bg-green-100 dark:bg-green-950", icon: "text-green-600 dark:text-green-400" },
-  orange: { box: "bg-orange-100 dark:bg-orange-950", icon: "text-orange-600 dark:text-orange-400" },
-  purple: { box: "bg-purple-100 dark:bg-purple-950", icon: "text-purple-600 dark:text-purple-400" },
+  blue: { box: "bg-info/10", icon: "text-info" },
+  green: { box: "bg-success/10", icon: "text-success" },
+  orange: { box: "bg-warning/10", icon: "text-warning" },
+  purple: { box: "bg-primary/10", icon: "text-primary" },
 } as const
-
-/**
- * Un module est « activé » dès qu'il est configuré, sauf ceux qui portent leur
- * propre interrupteur : `automod_ai` reste stocké (indications, exemptions) même
- * éteint, sa présence dans `modules` ne veut donc pas dire qu'il est actif.
- * (L'état *réel* d'automod_ai dépend en plus du salon d'alertes et des
- * détecteurs — il est affiché sur la page du module, via GET /status.)
- */
-function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boolean {
-  const config = modules[id]
-  if (!config) return false
-  // `state` générique : un module en pause garde sa config mais ne tourne pas.
-  if (readModuleState((config as { state?: unknown }).state) === 'paused') return false
-  // automod_ai : actif ou en simulation tant qu'il n'est pas en pause.
-  if (id === 'automod_ai') return true
-  // welcome_channel n'a pas d'interrupteur global : il est actif dès qu'un
-  // message est activé et rattaché à un salon.
-  if (id === 'welcome_channel') return isWelcomeActive(config as WelcomeChannelConfig)
-  // welcome_dm non plus (et il n'a même pas de salon) : actif dès qu'un message
-  // est activé.
-  if (id === 'welcome_dm') return isWelcomeDmActive(config as WelcomeDmConfig)
-  // bot_customization non plus : le bloc peut exister vide (`{}`) — il est actif
-  // dès qu'un champ (pseudo, bio, avatar, bannière, style) est renseigné.
-  if (id === 'bot_customization') return isBotCustomizationActive(config as BotCustomizationConfig)
-  // altguard non plus : il est actif dès que le salon de vérification et les
-  // deux rôles sont renseignés (`enabled` est calculé, jamais stocké).
-  if (id === 'altguard') return isAltGuardActive(config as AltGuardConfig)
-  // logs non plus : il tourne dès qu'une catégorie a un salon (`enabled` est
-  // calculé côté serveur, jamais stocké).
-  if (id === 'logs') return isLogsActive(config as LogsConfig)
-  // tickets non plus : il tourne dès qu'un panneau activé est rattaché à un
-  // salon (`enabled` est calculé côté serveur, jamais stocké).
-  if (id === 'tickets') return isTicketsActive(config as TicketsConfig)
-  // member_applications a un vrai interrupteur, mais il ne tourne qu'avec un
-  // salon : `enabled` seul ne suffit pas.
-  if (id === 'member_applications') return isMemberApplicationsActive(config)
-  // bump_reminder n'a pas d'interrupteur général : actif dès qu'un rappel
-  // actif est rattaché à un salon.
-  if (id === 'bump_reminder') return isBumpReminderActive(config)
-  return true
-}
 
 // ─── Carte module ─────────────────────────────────────────────────────────────
 
 interface ModuleCardProps {
-  moduleId: string
+  to: string
   name: string
   description: string
-  icon: LucideIcon
-  isEnabled: boolean
+  icon: IconComponent
+  status: ModuleStatus
   /** Module jamais configuré alors qu'une sanction interdit d'en activer un. */
   isLocked: boolean
-  guildId: string
-  onNavigate: (path: string) => void
 }
 
-function ModuleCard({
-  moduleId, name, description, icon: Icon,
-  isEnabled, isLocked, guildId, onNavigate,
-}: ModuleCardProps) {
+function ModuleCard({ to, name, description, icon: Icon, status, isLocked }: ModuleCardProps) {
   const { t } = useTranslation()
   return (
-    <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50 py-0"
-      onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
+    <Item
+      asChild
+      variant="outline"
+      className="h-full flex-nowrap items-start transition-colors hover:bg-accent/50"
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-2">
-            <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <Icon className="size-3.5 text-muted-foreground" />
-            </div>
-            <CardTitle className="text-sm font-medium">{name}</CardTitle>
+      <Link to={to}>
+        <ItemMedia variant="icon">
+          <Icon />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle className="w-full">
+            <span className="truncate">{name}</span>
+          </ItemTitle>
+          <ItemDescription className="line-clamp-2">{description}</ItemDescription>
+          <div className="mt-2">
+            {isLocked ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className={cn("shrink-0", LEVEL_TONE.limited.text, LEVEL_TONE.limited.border, LEVEL_TONE.limited.softBg)}
+                  >
+                    <LockIcon data-icon="inline-start" />
+                    {t("violations.locked")}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">
+                  {t("violations.banner.newModuleBlockedDescription")}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <ModuleStatusBadge status={status} />
+            )}
           </div>
-          {isEnabled ? (
-            <Badge variant="outline" className="text-xs shrink-0 text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
-              <CheckCircleIcon className="size-3 mr-1" />
-              {t('guildOverview.modules.enabled')}
-            </Badge>
-          ) : isLocked ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className={`text-xs shrink-0 ${LEVEL_TONE.limited.text} ${LEVEL_TONE.limited.border} ${LEVEL_TONE.limited.softBg}`}
-                >
-                  <LockIcon className="size-3 mr-1" />
-                  {t('violations.locked')}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-64">
-                {t('violations.banner.newModuleBlockedDescription')}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Badge variant="outline" className="text-xs shrink-0 text-muted-foreground">
-              <XCircleIcon className="size-3 mr-1" />
-              {t('guildOverview.modules.disabled')}
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-        <div className={`flex items-center gap-1 mt-2 text-xs ${isLocked ? 'text-muted-foreground' : 'text-primary'}`}>
-          <ExternalLinkIcon className="size-3" />
-          <span>{isLocked ? t('violations.viewOnly') : t('guildOverview.modules.configure')}</span>
-        </div>
-      </CardContent>
-    </Card>
+        </ItemContent>
+      </Link>
+    </Item>
   )
 }
 
@@ -190,7 +110,6 @@ function ModuleCard({
 
 export function GuildOverviewPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const {
     guildDetail,
     guilds,
@@ -263,7 +182,7 @@ export function GuildOverviewPage() {
   if (!guildDetail || !selectedGuildId) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[40vh]">
-        <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
+        <Spinner className="size-6 text-muted-foreground" />
       </div>
     )
   }
@@ -287,24 +206,14 @@ export function GuildOverviewPage() {
   // Les serveurs officiels n'affichent aucune indication premium (ni Max, ni CTA).
   const hidePremium = verifiedKind === 'official'
 
-  // Uniquement les modules disponibles — les modules en dev ne sont pas listés
-  const allModules = [
-    { id: 'starboard', icon: StarIcon },
-    { id: 'welcome_channel', icon: MessageSquareIcon },
-    { id: 'welcome_dm', icon: MailIcon },
-    { id: 'auto_role', icon: UsersIcon },
-    { id: 'adaptive_slowmode', icon: GaugeIcon },
-    { id: 'social_notifications', icon: BellRingIcon },
-    { id: 'automod_ai', icon: SparklesIcon },
-    { id: 'bot_customization', icon: PaletteIcon },
-    { id: 'altguard', icon: ShieldCheckIcon },
-    { id: 'logs', icon: FileClockIcon },
-    { id: 'tickets', icon: TicketIcon },
-    { id: 'member_applications', icon: UserPlusIcon },
-    { id: 'bump_reminder', icon: RocketIcon },
-  ]
+  const moduleStatuses = new Map(
+    MODULES.map((m) => [m.id, getModuleStatus(m.id, modules[m.id])])
+  )
+  const runningModules = [...moduleStatuses.values()].filter(
+    (st) => st === 'active' || st === 'simulation'
+  ).length
 
-  const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null
+  const boostTierLabel = boostTier > 0 ? t('guildOverview.stats.boostLevel', { level: boostTier }) : null
 
   // ── Rendu ──────────────────────────────────────────────────────────────────
 
@@ -331,14 +240,14 @@ export function GuildOverviewPage() {
               <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
               {verifiedKind && <VerifiedBadge kind={verifiedKind} className="-ml-1" />}
               {isPremium && !hidePremium && (
-                <Badge className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 text-xs">
-                  <CrownIcon className="size-3 mr-1" />
+                <Badge className="border-primary/30 bg-primary/10 text-xs text-primary">
+                  <CrownIcon data-icon="inline-start" />
                   Moddy Max
                 </Badge>
               )}
               {boostTierLabel && (
                 <Badge variant="secondary" className="text-xs">
-                  <ZapIcon className="size-3 mr-1 text-purple-500" />
+                  <ZapIcon className="size-3 mr-1 text-primary" />
                   {boostTierLabel}
                 </Badge>
               )}
@@ -368,7 +277,7 @@ export function GuildOverviewPage() {
               )}
               {boostCount > 0 && (
                 <span className="flex items-center gap-1 shrink-0">
-                  <ZapIcon className="size-3 text-purple-400" />
+                  <ZapIcon className="size-3 text-primary" />
                   {boostCount} {boostCount > 1 ? 'boosts' : 'boost'}
                 </span>
               )}
@@ -377,17 +286,17 @@ export function GuildOverviewPage() {
         </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' as const },
           { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' as const },
-          { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' as const },
-          { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' as const },
+          { label: t('guildOverview.stats.cases'), value: stats ? String(stats.open_cases) : '—', icon: ShieldAlertIcon, color: 'orange' as const },
+          { label: t('guildOverview.stats.activeModules'), value: String(runningModules), icon: HashIcon, color: 'purple' as const },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="py-0">
-            <CardContent className="flex items-center gap-4 p-6">
-              <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_STYLES[color].box}`}>
-                <Icon className={`size-5 ${STAT_STYLES[color].icon}`} />
+            <CardContent className="flex items-center gap-3 p-4">
+              <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", STAT_STYLES[color].box)}>
+                <Icon className={cn("size-5", STAT_STYLES[color].icon)} />
               </div>
               <div className="min-w-0">
                 <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
@@ -398,63 +307,62 @@ export function GuildOverviewPage() {
         ))}
       </div>
 
-      {/* ── CTA Premium ─────────────────────────────────────────────────── */}
-      {/* Sous sanction globale, la carte disparaît entièrement : proposer un
+      {/* ── Modules, par catégorie ──────────────────────────────────────── */}
+      <div className="flex flex-col gap-8">
+        {MODULE_GROUPS.map((group) => {
+          const list = MODULES.filter((m) => m.group === group)
+          if (list.length === 0) return null
+          const running = list.filter((m) => {
+            const st = moduleStatuses.get(m.id)
+            return st === "active" || st === "simulation"
+          }).length
+          return (
+            <section key={group} className="flex flex-col gap-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-base font-semibold">{t(`modules.groups.${group}`)}</h2>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {t("guildOverview.modules.running", { count: running, total: list.length })}
+                </span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {list.map((m) => (
+                  <ModuleCard
+                    key={m.id}
+                    to={m.path(selectedGuildId)}
+                    name={t(m.titleKey)}
+                    description={t(m.descriptionKey)}
+                    icon={m.icon}
+                    status={moduleStatuses.get(m.id) ?? "not_configured"}
+                    isLocked={!gates.canEnableNewModule && !modules[m.id]}
+                  />
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+
+      {/* ── CTA Premium, discret, en bas ────────────────────────────────── */}
+      {/* Sous sanction globale, la ligne disparaît entièrement : proposer un
           abonnement que le back-end refusera ensuite est une fausse promesse.
           Le bandeau de sanction, lui, dit déjà ce qui est fermé et pourquoi. */}
       {!isPremium && !hidePremium && gates.canLinkGuild && (
-        <Card className="py-0 border-violet-400/60 dark:border-violet-600/40 bg-violet-400/15 dark:bg-violet-900/25">
-          <CardContent className="flex items-center justify-between gap-4 p-6 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="size-10 rounded-xl bg-violet-400/30 dark:bg-violet-700/40 flex items-center justify-center shrink-0">
-                <CrownIcon className="size-5 text-violet-600 dark:text-violet-300" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-violet-900 dark:text-violet-100">{t('guildOverview.premium.title')}</p>
-                <p className="text-xs text-violet-700/80 dark:text-violet-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
-            >
-              {isUpgrading ? (
-                <LoaderIcon className="size-4 animate-spin" />
-              ) : (
-                <SparklesIcon className="size-4" />
-              )}
-              {t('guildOverview.premium.cta')}
+        <Item variant="muted">
+          <ItemMedia variant="icon">
+            <CrownIcon />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>{t("guildOverview.premium.title")}</ItemTitle>
+            <ItemDescription>{t("guildOverview.premium.description")}</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button size="sm" variant="outline" onClick={handleUpgrade} disabled={isUpgrading}>
+              {isUpgrading ? <Spinner data-icon="inline-start" /> : <SparklesIcon data-icon="inline-start" />}
+              {t("guildOverview.premium.cta")}
             </Button>
-          </CardContent>
-        </Card>
+          </ItemActions>
+        </Item>
       )}
-
-      {/* ── Modules ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-base font-semibold">{t('guildOverview.modules.title')}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('guildOverview.modules.description')}
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {allModules.map(({ id, icon }) => (
-            <ModuleCard
-              key={id}
-              moduleId={id}
-              name={t(`modules.${id}.name`)}
-              description={t(`modules.${id}.description`)}
-              icon={icon}
-              isEnabled={isModuleEnabled(id, modules)}
-              isLocked={!gates.canEnableNewModule && !modules[id]}
-              guildId={selectedGuildId}
-              onNavigate={navigate}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

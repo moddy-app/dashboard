@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { CopyIcon, ExternalLinkIcon, HashIcon, ServerIcon, TextIcon, UserIcon } from "lucide-react"
+import { CopyIcon, ExternalLinkIcon, HashIcon, ServerIcon, TextIcon, UserIcon } from "@/components/icons"
 import {
   ContextMenu,
   ContextMenuContent,

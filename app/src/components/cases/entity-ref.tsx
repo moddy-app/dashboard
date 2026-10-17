@@ -1,14 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  ShieldCheckIcon,
-  BotIcon,
-  Settings2Icon,
-  GlobeIcon,
-  UserIcon,
-  CopyIcon,
-  CheckIcon,
-} from "lucide-react"
+import { ShieldCheckIcon, BotIcon, Settings2Icon, GlobeIcon, UserIcon, CopyIcon, CheckIcon } from '@/components/icons'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -39,10 +31,10 @@ const SYSTEM_META: Record<
   "moddy_staff" | "automod" | "system" | "external",
   { icon: typeof BotIcon; labelKey: string; tone: string }
 > = {
-  moddy_staff: { icon: ShieldCheckIcon, labelKey: "cases.actor.moddy_staff", tone: "text-violet-500" },
-  automod: { icon: BotIcon, labelKey: "cases.actor.automod", tone: "text-sky-500" },
+  moddy_staff: { icon: ShieldCheckIcon, labelKey: "cases.actor.moddy_staff", tone: "text-primary" },
+  automod: { icon: BotIcon, labelKey: "cases.actor.automod", tone: "text-info" },
   system: { icon: Settings2Icon, labelKey: "cases.actor.system", tone: "text-muted-foreground" },
-  external: { icon: GlobeIcon, labelKey: "cases.actor.external", tone: "text-orange-500" },
+  external: { icon: GlobeIcon, labelKey: "cases.actor.external", tone: "text-warning" },
 }
 
 // ─── Utilisateur Discord ──────────────────────────────────────────────────────
@@ -263,7 +255,7 @@ export function EntityAvatar({
           className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           {copied ? (
-            <CheckIcon className="size-3.5 shrink-0 animate-in zoom-in-50 text-emerald-500 duration-200" />
+            <CheckIcon className="size-3.5 shrink-0 animate-in zoom-in-50 text-success duration-200" />
           ) : (
             <CopyIcon className="size-3.5 shrink-0" />
           )}

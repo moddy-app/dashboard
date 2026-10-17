@@ -1,3 +1,4 @@
+import { intToHex, isHexColor, normalizeHex } from '@/lib/color'
 import { ApiError } from '@/lib/auth'
 import { DEFAULT_BOT_NAME_STYLE, effectSlug } from '@/lib/discord-name-styles'
 import type {
@@ -12,23 +13,10 @@ import type {
 /** Couleur proposée par défaut quand l'utilisateur ajoute un slot vide. */
 export const DEFAULT_STYLE_COLOR = '#5865F2'
 
-const HEX_RE = /^#[0-9A-Fa-f]{6}$/
-
 /** `16711680` → `#FF0000` (lecture : le backend renvoie toujours des entiers). */
-export function intToHex(color: number): string {
-  return `#${color.toString(16).padStart(6, '0')}`.toUpperCase()
-}
+export { intToHex, normalizeHex }
 
-export function isValidHex(value: string): boolean {
-  return HEX_RE.test(value)
-}
-
-/** Tolère `ff0000` / `#ff0000` → `#FF0000` ; renvoie l'entrée telle quelle sinon. */
-export function normalizeHex(value: string): string {
-  const trimmed = value.trim()
-  const withHash = trimmed.startsWith('#') ? trimmed : `#${trimmed}`
-  return isValidHex(withHash) ? withHash.toUpperCase() : trimmed
-}
+export const isValidHex = isHexColor
 
 // ─── Style du pseudo ──────────────────────────────────────────────────────────
 

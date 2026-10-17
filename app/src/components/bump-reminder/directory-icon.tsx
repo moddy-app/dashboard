@@ -1,6 +1,5 @@
 import { useState } from "react"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Rocket01Icon } from "@hugeicons/core-free-icons"
+import { RocketLaunchIcon } from "@/components/icons"
 import { directoryIconUrl } from "@/lib/bump-reminder"
 import { cn } from "@/lib/utils"
 
@@ -15,7 +14,7 @@ export function DirectoryIcon({ bot, className }: { bot: string; className?: str
   if (!url || failed) {
     return (
       <span className={cn("flex size-6 shrink-0 items-center justify-center text-muted-foreground", className)}>
-        <HugeiconsIcon icon={Rocket01Icon} strokeWidth={2} className="size-4" />
+        <RocketLaunchIcon className="size-4" />
       </span>
     )
   }

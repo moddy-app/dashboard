@@ -1,8 +1,8 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useRef } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { LoaderIcon } from "lucide-react"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import { useSanctions } from "@/contexts/SanctionContext"
@@ -60,7 +60,7 @@ export function PremiumPage() {
 
   return (
     <div className="flex flex-1 items-center justify-center">
-      <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
+      <Spinner className="size-6 text-muted-foreground" />
     </div>
   )
 }

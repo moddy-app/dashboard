@@ -8,7 +8,7 @@ import {
 } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { Guild, User } from '@/lib/auth'
-import type { GuildDetail, Channel, Role, ModuleConfig, GuildStats, GuildPremium } from '@/types/api'
+import type { GuildDetail, ModuleState, Channel, Role, ModuleConfig, GuildStats, GuildPremium } from '@/types/api'
 import {
   getGuildDiscordData,
   getGuild,
@@ -19,6 +19,7 @@ import {
   getGuildPremium,
   updateModule as apiUpdateModule,
   disableModule as apiDisableModule,
+  setModuleState as apiSetModuleState,
 } from '@/services/guilds'
 import { ApiError, refreshGuilds as apiRefreshGuilds } from '@/lib/auth'
 import { usePremiumGuilds } from '@/hooks/usePremiumGuilds'
@@ -59,6 +60,12 @@ interface GuildContextValue {
   refreshGuildList: () => Promise<void>
   updateModule: (moduleId: string, config: Record<string, unknown>) => Promise<void>
   disableModule: (moduleId: string) => Promise<void>
+  /**
+   * Change l'état d'un module (actif / en pause / simulation) en gardant sa
+   * config : l'API remplace tout, la config est donc relue puis renvoyée en
+   * entier avec le nouveau `state`. `modules` est aligné sur la réponse.
+   */
+  setModuleState: (moduleId: string, state: ModuleState) => Promise<void>
   /**
    * Aligne l'état local sur une écriture faite hors du contexte (module ayant
    * son propre service, comme `altguard`). `null` = module supprimé. Sans ça,
@@ -318,6 +325,21 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
     [selectedGuildId]
   )
 
+  const setModuleState = useCallback(
+    async (moduleId: string, state: ModuleState) => {
+      if (!selectedGuildId) return
+      logger.event('module', `Setting ${moduleId} to ${state} for guild ${selectedGuildId}`)
+      try {
+        const saved = await apiSetModuleState(selectedGuildId, moduleId, state)
+        setModules((prev) => ({ ...prev, [moduleId]: saved as unknown as ModuleConfig }))
+      } catch (e) {
+        logger.error('module', `Failed to set state of ${moduleId}`, e)
+        throw e
+      }
+    },
+    [selectedGuildId]
+  )
+
   const syncModule = useCallback(
     (moduleId: string, config: Record<string, unknown> | null) => {
       setModules((prev) => {
@@ -359,6 +381,7 @@ export function GuildProvider({ guilds, user, children }: GuildProviderProps) {
         refreshGuildList,
         updateModule,
         disableModule,
+        setModuleState,
         syncModule,
       }}
     >

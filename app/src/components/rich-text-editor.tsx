@@ -57,9 +57,9 @@ interface RichTextEditorProps {
 
 const SYNTAX = "text-muted-foreground/50"
 const PLACEHOLDER_CLS =
-  "text-blue-600 dark:text-blue-400 font-semibold bg-blue-500/15 rounded-[3px] px-0.5"
+  "text-info font-semibold bg-info/15 rounded-[3px] px-0.5"
 const EMOJI_CLS =
-  "text-blue-600 dark:text-blue-400 font-medium bg-blue-500/10 rounded-[3px] px-1"
+  "text-info font-medium bg-info/10 rounded-[3px] px-1"
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -111,7 +111,7 @@ function inline(seg: string, phSet: Set<string> | null, pretty: boolean): string
       if (lk) {
         out +=
           grey("[") +
-          `<span class="text-blue-600 dark:text-blue-400 underline">${inline(lk[1], phSet, pretty)}</span>` +
+          `<span class="text-info underline">${inline(lk[1], phSet, pretty)}</span>` +
           grey("](") +
           `<span class="text-muted-foreground">${escapeHtml(lk[2])}</span>` +
           grey(")")

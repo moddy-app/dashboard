@@ -1,17 +1,10 @@
 import { api, ApiError } from '@/lib/auth'
 import {
-  normalizeApplication,
-  normalizeApplicationsPage,
-  normalizeApplicationStats,
   normalizeMemberApplicationsConfig,
   normalizeMemberApplicationsDiagnostics,
   serializeMemberApplicationsConfig,
 } from '@/lib/member-applications'
 import type {
-  Application,
-  ApplicationsPage,
-  ApplicationStats,
-  ApplicationStatus,
   MemberApplicationsConfig,
   MemberApplicationsDiagnostics,
 } from '@/types/member-applications'
@@ -62,34 +55,4 @@ export async function getMemberApplicationsDiagnostics(
   guildId: string
 ): Promise<MemberApplicationsDiagnostics> {
   return normalizeMemberApplicationsDiagnostics(await api(`${BASE(guildId)}/diagnostics`))
-}
-
-export interface ApplicationsQuery {
-  status?: ApplicationStatus | null
-  userId?: string | null
-  limit?: number
-  offset?: number
-}
-
-/** Plus récentes d'abord. Pas de temps réel : l'appelant recharge. */
-export async function listApplications(
-  guildId: string,
-  query: ApplicationsQuery = {}
-): Promise<ApplicationsPage> {
-  const params = new URLSearchParams()
-  if (query.status) params.set('status', query.status)
-  if (query.userId) params.set('user_id', query.userId)
-  params.set('limit', String(query.limit ?? 50))
-  params.set('offset', String(query.offset ?? 0))
-  return normalizeApplicationsPage(await api(`${BASE(guildId)}/applications?${params}`))
-}
-
-export async function getApplication(guildId: string, requestId: string): Promise<Application> {
-  return normalizeApplication(
-    await api(`${BASE(guildId)}/applications/${encodeURIComponent(requestId)}`)
-  )
-}
-
-export async function getApplicationStats(guildId: string): Promise<ApplicationStats> {
-  return normalizeApplicationStats(await api(`${BASE(guildId)}/stats`))
 }

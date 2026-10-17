@@ -1,11 +1,7 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  ChevronLeftIcon,
-  ExternalLinkIcon,
-  FileTextIcon,
-  LoaderIcon,
-} from "lucide-react"
+import { ChevronLeftIcon, ExternalLinkIcon, FileTextIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -254,7 +250,7 @@ export function ViolationDetailView({
 export function ViolationDetailFallback() {
   return (
     <div className="flex flex-1 items-center justify-center py-16">
-      <LoaderIcon className="size-5 animate-spin text-muted-foreground" />
+      <Spinner className="size-5 text-muted-foreground" />
     </div>
   )
 }

@@ -1,8 +1,9 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useRef } from "react"
 import { createPortal } from "react-dom"
 import { useTranslation } from "react-i18next"
 import { useBlocker } from "react-router-dom"
-import { LoaderIcon, SaveIcon, UndoIcon, TriangleAlertIcon } from "lucide-react"
+import { SaveIcon, UndoIcon, TriangleAlertIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { logger } from "@/lib/logger"
 
@@ -90,7 +91,7 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
   const bar = (
     <div
       ref={barRef}
-      className="fixed bottom-5 left-1/2 z-[9999] flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-xl border border-border bg-card shadow-xl shadow-black/10 backdrop-blur-sm w-[calc(100vw-2rem)] max-w-[560px] transition-colors duration-300 [&.bar-highlight]:border-primary/60 dark:[&.bar-highlight]:border-primary/50"
+      className="fixed bottom-5 left-1/2 z-[9999] flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-xl border border-border bg-card shadow-xl shadow-black/10 backdrop-blur-sm w-[calc(100vw-2rem)] max-w-[560px] transition-colors duration-300 [&.bar-highlight]:border-primary/60"
       style={{
         transform: "translateX(-50%)",
         animation: "unsavedbar-slide-up 0.25s cubic-bezier(0.34,1.56,0.64,1) forwards",
@@ -103,7 +104,7 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
         }
       `}</style>
 
-      <TriangleAlertIcon className="size-4 text-amber-500 shrink-0" />
+      <TriangleAlertIcon className="size-4 text-warning shrink-0" />
       <p className="text-sm font-medium flex-1 min-w-0 truncate">
         {t("unsavedBar.message")}
       </p>
@@ -125,7 +126,7 @@ export function UnsavedBar({ isDirty, isSaving = false, onSave, onDiscard }: Uns
           className="h-8 px-3 gap-1.5 whitespace-nowrap"
         >
           {isSaving ? (
-            <LoaderIcon className="size-3.5 animate-spin" />
+            <Spinner className="size-3.5" />
           ) : (
             <SaveIcon className="size-3.5" />
           )}

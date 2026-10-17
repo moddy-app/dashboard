@@ -1,15 +1,7 @@
 import { useEffect, useState } from "react"
 import { useLocation } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import {
-  BotIcon,
-  ImageIcon,
-  VideoIcon,
-  FileIcon,
-  MessageSquareQuoteIcon,
-  MessagesSquareIcon,
-  ExternalLinkIcon,
-} from "lucide-react"
+import { BotIcon, ImageIcon, VideoIcon, FileIcon, MessageSquareQuoteIcon, MessagesSquareIcon, ExternalLinkIcon } from '@/components/icons'
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime } from "@/lib/cases"
@@ -138,15 +130,15 @@ function AutomodCard({ event, guildId }: { event: CaseEvent; guildId: string | n
   const time = epochToIso(asNumber(p["ts"])) ?? event.created_at
 
   const confidenceTone: Record<string, string> = {
-    high: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400",
-    medium: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400",
-    low: "bg-slate-100 text-slate-600 dark:bg-slate-800/60 dark:text-slate-400",
+    high: "bg-destructive/10 text-destructive",
+    medium: "bg-warning/10 text-warning",
+    low: "bg-muted text-muted-foreground",
   }
 
   return (
     <EvidenceCard
       icon={BotIcon}
-      iconClass="text-sky-500"
+      iconClass="text-info"
       title={authorName || t("cases.timeline.evidenceAutomod")}
       time={time}
     >
@@ -188,7 +180,7 @@ function AutomodCard({ event, guildId }: { event: CaseEvent; guildId: string | n
       )}
 
       {(raison || explication) && (
-        <div className="mt-2 space-y-0.5 border-t pt-2 text-xs text-muted-foreground">
+        <div className="mt-2 flex flex-col gap-0.5 border-t pt-2 text-xs text-muted-foreground">
           {raison && (
             <p>
               <span className="font-medium text-foreground/70">{t("cases.evidence.reason")}: </span>

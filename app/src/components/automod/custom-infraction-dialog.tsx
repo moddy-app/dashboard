@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Add01Icon, AlertCircleIcon, Cancel01Icon } from "@hugeicons/core-free-icons"
+import { AddIcon, CloseIcon, ErrorIcon } from "@/components/icons"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -227,7 +226,7 @@ export function CustomInfractionDialog({
                         touch()
                       }}
                     >
-                      <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+                      <CloseIcon />
                     </Button>
                   </Field>
                 )
@@ -241,7 +240,7 @@ export function CustomInfractionDialog({
                 disabled={exemples.length >= limits.exemples}
                 onClick={() => setExemples([...exemples, ""])}
               >
-                <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+                <AddIcon data-icon="inline-start" />
                 {t("modules.automod_ai.custom.addExemple")}
               </Button>
             </div>
@@ -270,7 +269,7 @@ export function CustomInfractionDialog({
                         touch()
                       }}
                     >
-                      <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+                      <CloseIcon />
                     </Button>
                   </Badge>
                 ))}
@@ -308,7 +307,7 @@ export function CustomInfractionDialog({
 
         {failure && (
           <Alert variant={failure.kind === "unavailable" ? "default" : "destructive"}>
-            <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
+            <ErrorIcon />
             <AlertDescription>
               {failure.kind === "rejected" && failure.reason}
               {failure.kind === "unavailable" && t("modules.automod_ai.errors.check_unavailable")}

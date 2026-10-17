@@ -1,15 +1,15 @@
 import { useTranslation } from "react-i18next"
-import { GavelIcon } from "lucide-react"
+import { GavelIcon } from '@/components/icons'
 import { cn } from "@/lib/utils"
 import { relativeTime, absoluteTime } from "@/lib/cases"
 import type { Appeal, AppealStatus } from "@/types/cases"
 import { ActionChip } from "./case-badges"
 
 const STATUS_TONE: Record<AppealStatus, string> = {
-  pending: "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400",
-  accepted: "bg-green-100 text-green-700 dark:bg-green-950/60 dark:text-green-400",
-  refused: "bg-red-100 text-red-700 dark:bg-red-950/60 dark:text-red-400",
-  transformed: "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-400",
+  pending: "bg-warning/10 text-warning",
+  accepted: "bg-success/10 text-success",
+  refused: "bg-destructive/10 text-destructive",
+  transformed: "bg-primary/10 text-primary",
   cancelled: "bg-muted text-muted-foreground",
 }
 
@@ -28,8 +28,8 @@ export function AppealsPanel({ appeals }: { appeals: Appeal[] }) {
     <div className="flex flex-col divide-y">
       {appeals.map((a) => (
         <div key={a.id} className="flex items-start gap-2.5 py-3 first:pt-0 last:pb-0">
-          <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950/60">
-            <GavelIcon className="size-3.5 text-violet-500" />
+          <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <GavelIcon className="size-3.5 text-primary" />
           </span>
 
           <div className="min-w-0 flex-1">

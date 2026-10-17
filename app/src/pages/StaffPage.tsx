@@ -1,21 +1,8 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useState, useEffect, useCallback } from "react"
 import { useTranslation } from "react-i18next"
 import { useSearchParams } from "react-router-dom"
-import {
-  ShieldIcon,
-  UsersIcon,
-  ServerIcon,
-  AlertTriangleIcon,
-  SearchIcon,
-  LoaderIcon,
-  BotIcon,
-  TrendingUpIcon,
-  RefreshCwIcon,
-  XCircleIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  PlusIcon,
-} from "lucide-react"
+import { ShieldIcon, UsersIcon, ServerIcon, AlertTriangleIcon, SearchIcon, BotIcon, TrendingUpIcon, RefreshCwIcon, XCircleIcon, ChevronLeftIcon, ChevronRightIcon, PlusIcon } from '@/components/icons'
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import {
@@ -54,6 +41,13 @@ import { CasesBrowser } from "@/components/cases/cases-browser"
 import { AutomodBudgetPanel } from "@/components/automod/automod-budget-panel"
 import { StatsPanel } from "@/components/stats/stats-panel"
 import { canModerateCases } from "@/lib/cases"
+
+const STAT_TONE = {
+  info: { box: 'bg-info/10', icon: 'text-info' },
+  warning: { box: 'bg-warning/10', icon: 'text-warning' },
+  primary: { box: 'bg-primary/10', icon: 'text-primary' },
+  destructive: { box: 'bg-destructive/10', icon: 'text-destructive' },
+} as const
 
 // Rôles staff ayant accès aux différentes sections
 const CAN_ACCESS_STATS = ['Dev', 'Manager', 'Supervisor_Mod', 'Supervisor_Com', 'Supervisor_Sup']
@@ -110,28 +104,28 @@ function StatsTab({ staffRoles }: { staffRoles: string[] }) {
       <XCircleIcon className="size-8 text-destructive" />
       <p className="text-sm text-muted-foreground">{error}</p>
       <Button variant="outline" size="sm" onClick={load}>
-        <RefreshCwIcon className="size-4 mr-1.5" />
+        <RefreshCwIcon data-icon="inline-start" />
         {t('guildOverview.refresh')}
       </Button>
     </div>
   )
 
   const statCards = stats ? [
-    { label: t('staff.stats.totalUsers'), value: stats.total_users.toLocaleString(), icon: UsersIcon, color: 'blue' },
-    { label: t('staff.stats.premiumUsers'), value: stats.premium_users.toLocaleString(), icon: TrendingUpIcon, color: 'amber' },
-    { label: t('staff.stats.totalGuilds'), value: stats.total_guilds.toLocaleString(), icon: ServerIcon, color: 'purple' },
-    { label: t('staff.stats.openCases'), value: stats.open_cases.toLocaleString(), icon: AlertTriangleIcon, color: 'orange' },
+    { label: t('staff.stats.totalUsers'), value: stats.total_users.toLocaleString(), icon: UsersIcon, tone: 'info' as const },
+    { label: t('staff.stats.premiumUsers'), value: stats.premium_users.toLocaleString(), icon: TrendingUpIcon, tone: 'warning' as const },
+    { label: t('staff.stats.totalGuilds'), value: stats.total_guilds.toLocaleString(), icon: ServerIcon, tone: 'primary' as const },
+    { label: t('staff.stats.openCases'), value: stats.open_cases.toLocaleString(), icon: AlertTriangleIcon, tone: 'destructive' as const },
   ] : []
 
   return (
     <div className="flex flex-col gap-6">
       {stats && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {statCards.map(({ label, value, icon: Icon, color }) => (
+          {statCards.map(({ label, value, icon: Icon, tone }) => (
             <Card key={label} className="py-0">
               <CardContent className="flex items-center gap-4 p-6">
-                <div className={`size-10 rounded-xl bg-${color}-100 dark:bg-${color}-950 flex items-center justify-center shrink-0`}>
-                  <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
+                <div className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', STAT_TONE[tone].box)}>
+                  <Icon className={cn('size-5', STAT_TONE[tone].icon)} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-2xl font-bold leading-none">{value}</p>
@@ -205,7 +199,7 @@ function UsersTab() {
           className="flex-1"
         />
         <Button onClick={search} disabled={loading} size="icon" variant="secondary">
-          {loading ? <LoaderIcon className="size-4 animate-spin" /> : <SearchIcon className="size-4" />}
+          {loading ? <Spinner /> : <SearchIcon className="size-4" />}
         </Button>
       </div>
 
@@ -303,7 +297,7 @@ function GuildsTab() {
           className="flex-1"
         />
         <Button onClick={() => fetchGuilds(search)} variant="secondary" disabled={loading} size="icon">
-          {loading ? <LoaderIcon className="size-4 animate-spin" /> : <RefreshCwIcon className="size-4" />}
+          {loading ? <Spinner /> : <RefreshCwIcon className="size-4" />}
         </Button>
       </div>
 
@@ -330,10 +324,10 @@ function GuildsTab() {
                           <Badge key={k} variant="destructive" className="text-xs">{k}</Badge>
                         )
                         if (k === 'PREMIUM') return (
-                          <Badge key={k} className="text-xs bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400 dark:border-amber-800">Max</Badge>
+                          <Badge key={k} className="text-xs bg-warning/10 text-warning border-warning/30">Max</Badge>
                         )
                         if (k === 'OFFICIAL_SERVER') return (
-                          <Badge key={k} variant="outline" className="text-xs text-blue-600 border-blue-300 dark:text-blue-400 dark:border-blue-700">Official</Badge>
+                          <Badge key={k} variant="outline" className="text-xs text-info border-info/30">Official</Badge>
                         )
                         return null
                       })}
@@ -384,7 +378,7 @@ type FormsView =
 function StatusBadge({ status }: { status: TallySubmissionStatus }) {
   const { t } = useTranslation()
   if (status === 'done') return (
-    <Badge className="text-xs bg-green-100 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800">
+    <Badge className="text-xs bg-success/10 text-success border-success/30">
       {t('staff.forms.statusLabel.done')}
     </Badge>
   )
@@ -394,7 +388,7 @@ function StatusBadge({ status }: { status: TallySubmissionStatus }) {
     </Badge>
   )
   return (
-    <Badge className="text-xs bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800">
+    <Badge className="text-xs bg-info/10 text-info border-info/30">
       {t('staff.forms.statusLabel.pending')}
     </Badge>
   )
@@ -457,7 +451,7 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
       <XCircleIcon className="size-8 text-destructive" />
       <p className="text-sm text-muted-foreground">{error}</p>
       <Button variant="outline" size="sm" onClick={load}>
-        <RefreshCwIcon className="size-4 mr-1.5" />
+        <RefreshCwIcon data-icon="inline-start" />
         {t('guildOverview.refresh')}
       </Button>
     </div>
@@ -468,7 +462,7 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium">{t('staff.tabs.forms')}</p>
         <Button size="sm" variant="outline" onClick={openDialog}>
-          <PlusIcon className="size-4 mr-1.5" />
+          <PlusIcon data-icon="inline-start" />
           {t('staff.forms.createForm')}
         </Button>
       </div>
@@ -483,7 +477,7 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
             <p className="text-xs text-muted-foreground mt-1 max-w-xs">{t('staff.forms.emptyDescription')}</p>
           </div>
           <Button size="sm" onClick={openDialog}>
-            <PlusIcon className="size-4 mr-1.5" />
+            <PlusIcon data-icon="inline-start" />
             {t('staff.forms.createForm')}
           </Button>
         </div>
@@ -563,7 +557,7 @@ function FormsList({ onSelect }: { onSelect: (form: TallyForm) => void }) {
               onClick={create}
               disabled={creating || !newFormId.trim() || !newTitle.trim() || !newSecret.trim()}
             >
-              {creating && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+              {creating && <Spinner data-icon="inline-start" />}
               {t('staff.forms.createDialog.confirm')}
             </Button>
           </DialogFooter>
@@ -626,7 +620,7 @@ function FormSubmissions({
           <XCircleIcon className="size-8 text-destructive" />
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" onClick={() => load(page)}>
-            <RefreshCwIcon className="size-4 mr-1.5" />
+            <RefreshCwIcon data-icon="inline-start" />
             {t('guildOverview.refresh')}
           </Button>
         </div>
@@ -780,7 +774,7 @@ function SubmissionDetail({
           <XCircleIcon className="size-8 text-destructive" />
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" onClick={load}>
-            <RefreshCwIcon className="size-4 mr-1.5" />
+            <RefreshCwIcon data-icon="inline-start" />
             {t('guildOverview.refresh')}
           </Button>
         </div>
@@ -872,10 +866,10 @@ function SubmissionDetail({
                         "flex-1 px-2 py-1.5 text-xs font-medium rounded-lg transition-all select-none cursor-pointer",
                         actionStatus === s
                           ? s === 'done'
-                            ? "bg-green-600 text-white shadow-sm"
+                            ? "bg-success text-white shadow-sm"
                             : s === 'rejected'
                             ? "bg-destructive text-white shadow-sm"
-                            : "bg-blue-600 text-white shadow-sm"
+                            : "bg-info text-white shadow-sm"
                           : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                       )}
                     >
@@ -893,7 +887,7 @@ function SubmissionDetail({
                 />
 
                 <Button onClick={save} disabled={saving} className="w-full" size="sm">
-                  {saving && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+                  {saving && <Spinner data-icon="inline-start" />}
                   {t('staff.forms.save')}
                 </Button>
               </CardContent>

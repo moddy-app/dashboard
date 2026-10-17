@@ -23,7 +23,7 @@
 
 import { useState, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ChevronRightIcon, MinusIcon, PencilIcon, PlusIcon } from 'lucide-react'
+import { ChevronRightIcon, MinusIcon, PencilIcon, PlusIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { renderDiffValue } from '@/lib/brocoli'
@@ -32,9 +32,9 @@ import { MentionChip } from './mention-chip'
 import type { AiDiffEntry } from '@/types/ai'
 
 const OP_META = {
-  added: { icon: PlusIcon, className: 'text-emerald-600 dark:text-emerald-400' },
-  removed: { icon: MinusIcon, className: 'text-red-600 dark:text-red-400' },
-  changed: { icon: PencilIcon, className: 'text-amber-600 dark:text-amber-400' },
+  added: { icon: PlusIcon, className: 'text-success' },
+  removed: { icon: MinusIcon, className: 'text-destructive' },
+  changed: { icon: PencilIcon, className: 'text-warning' },
 } as const
 
 /** Un snowflake Discord : 17 à 20 chiffres, jamais autre chose. */

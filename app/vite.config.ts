@@ -2,10 +2,16 @@ import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import Icons from "unplugin-icons/vite"
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Icônes Material Symbols compilées en composants React SVG (voir src/components/icons.ts)
+    Icons({ compiler: "jsx", jsx: "react" }),
+  ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

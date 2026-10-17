@@ -336,12 +336,6 @@ export function accentToHex(color: number | null): string {
   return `#${(color ?? TICKET_DEFAULT_ACCENT).toString(16).padStart(6, '0').toUpperCase()}`
 }
 
-/** `#5865F2` → `5793266`. `null` si le hex est invalide (champ laissé tel quel). */
-export function hexToAccent(hex: string): number | null {
-  const match = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
-  return match ? parseInt(match[1], 16) : null
-}
-
 // ─── État du module ───────────────────────────────────────────────────────────
 
 /**

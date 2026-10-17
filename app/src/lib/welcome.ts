@@ -1,3 +1,4 @@
+import { intToHex } from "@/lib/color"
 import {
   MAX_WELCOME_MESSAGES,
   WELCOME_DEFAULT_ACCENT,
@@ -71,7 +72,7 @@ export function accentIntToHex(
   fallback: number = WELCOME_DEFAULT_ACCENT
 ): string {
   const value = color ?? fallback
-  return `#${value.toString(16).padStart(6, "0").toUpperCase()}`
+  return intToHex(value)
 }
 
 /** Normalise une config potentiellement absente ou incomplète. */

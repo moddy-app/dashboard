@@ -33,16 +33,10 @@
  * irréversible.
  */
 
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  CheckIcon,
-  ClockIcon,
-  LoaderIcon,
-  ShieldQuestionIcon,
-  TimerOffIcon,
-  XIcon,
-} from 'lucide-react'
+import { CheckIcon, ClockIcon, ShieldQuestionIcon, TimerOffIcon, XIcon } from '@/components/icons'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -227,7 +221,7 @@ export function BrocoliActionPanel({
       // et libellé), et par la bordure seulement quand il est `critical`.
       // L'ombre pose le panneau *au-dessus* du fil, ce qu'il est littéralement.
       className={cn(
-        'overflow-hidden rounded-xl border bg-card shadow-lg shadow-black/5 dark:shadow-black/40',
+        'overflow-hidden rounded-xl border bg-card shadow-lg shadow-black/5',
         critical && 'border-destructive/30'
       )}
       role="group"
@@ -317,7 +311,7 @@ export function BrocoliActionPanel({
             <span className="flex items-center gap-2">
               <Button size="sm" variant="ghost" disabled={locked} onClick={() => request('deny')}>
                 {submitted === 'deny' ? (
-                  <LoaderIcon data-icon="inline-start" className="animate-spin" />
+                  <Spinner data-icon="inline-start" />
                 ) : (
                   <XIcon data-icon="inline-start" />
                 )}
@@ -332,7 +326,7 @@ export function BrocoliActionPanel({
                 variant={critical ? 'outline' : 'default'}
               >
                 {submitted === 'approve' ? (
-                  <LoaderIcon data-icon="inline-start" className="animate-spin" />
+                  <Spinner data-icon="inline-start" />
                 ) : (
                   <CheckIcon data-icon="inline-start" />
                 )}
@@ -393,7 +387,7 @@ export function BrocoliActionRecord({
   // vient d'être prise serait faux.
   const pendingSend = !settled && submitted
 
-  const Icon = pendingSend ? LoaderIcon : (RECORD_ICON[action.status] ?? CheckIcon)
+  const Icon = pendingSend ? Spinner : (RECORD_ICON[action.status] ?? CheckIcon)
 
   return (
     <Marker {...(pendingSend ? { role: 'status' as const } : {})} className="gap-2">
@@ -403,7 +397,7 @@ export function BrocoliActionRecord({
             pendingSend
               ? 'animate-spin text-muted-foreground'
               : action.status === 'approved' || action.status === 'executed'
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-success'
                 : action.status === 'pending'
                   ? tone.text
                   : 'text-muted-foreground'

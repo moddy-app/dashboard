@@ -1,35 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Add01Icon,
-  Alert02Icon,
-  AlertCircleIcon,
-  Cancel01Icon,
-  Clock01Icon,
-  Delete02Icon,
-  InformationCircleIcon,
-  UserAdd01Icon,
-} from "@hugeicons/core-free-icons"
+import { AddIcon, AlertCircleIcon, ClockIcon, CloseIcon, TriangleAlertIcon } from "@/components/icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -49,14 +27,10 @@ import {
   InputGroupInput,
   InputGroupText,
 } from "@/components/ui/input-group"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ErrorPage } from "@/components/error-state"
-import { ChannelPicker, RoleMultiPicker } from "@/components/module-pickers"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import { ChannelPicker, RoleMultiPicker } from "@/components/pickers"
 import { UnsavedBar } from "@/components/unsaved-bar"
-import { ApplicationList } from "@/components/member-applications/application-list"
-import { ApplicationStatsPanel } from "@/components/member-applications/application-stats"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
 import { ApiError } from "@/lib/auth"
@@ -75,13 +49,11 @@ import type { MemberApplicationsField, MemberApplicationsIssue } from "@/lib/mem
 import { sanctionBlockedError } from "@/lib/sanctions"
 import {
   deleteMemberApplicationsConfig,
-  getApplicationStats,
   getMemberApplicationsConfig,
   getMemberApplicationsDiagnostics,
   saveMemberApplicationsConfig,
 } from "@/services/member-applications"
 import type {
-  ApplicationStats,
   MemberApplicationsConfig,
   MemberApplicationsDiagnostics,
 } from "@/types/member-applications"
@@ -98,21 +70,10 @@ const FIELDS: MemberApplicationsField[] = [
   "rejection_reasons",
 ]
 
-/**
- * Garde de chargement : le formulaire attend les salons et les rôles du
- * serveur, sinon une arrivée directe sur l'URL monte des sélecteurs vides.
- */
 export function MemberApplicationsPage() {
   const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
-
-  if (guildError) return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-  if (isLoadingGuild || !isGuildReady) {
-    return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
+  if (guildError || isLoadingGuild || !isGuildReady) {
+    return <ModulePage moduleId={MODULE_ID} loading={!guildError} error={guildError} onRetry={refreshGuildData}>{null}</ModulePage>
   }
   return <MemberApplicationsView />
 }
@@ -130,16 +91,12 @@ function MemberApplicationsView() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   /** Index des motifs fautifs, pour surligner la bonne ligne. */
   const [badReasons, setBadReasons] = useState<Set<number>>(new Set())
   /** Refus Discord (permission, salon, rôle) : texte lisible du backend. */
   const [serverError, setServerError] = useState<string | null>(null)
   const [diagnostics, setDiagnostics] = useState<MemberApplicationsDiagnostics | null>(null)
-  const [stats, setStats] = useState<ApplicationStats | null>(null)
-  const [statsError, setStatsError] = useState<string | null>(null)
 
   const textChannels = useMemo(() => memberApplicationsChannels(channels), [channels])
   const roleOptions = useMemo(() => memberApplicationsRoles(roles, guildId), [roles, guildId])
@@ -153,16 +110,6 @@ function MemberApplicationsView() {
     } catch (e) {
       // Complément, pas une condition : son échec ne casse pas la page.
       logger.warn("module:member_applications", "Diagnostics failed", e)
-    }
-  }, [guildId])
-
-  const loadStats = useCallback(async () => {
-    try {
-      setStats(await getApplicationStats(guildId))
-      setStatsError(null)
-    } catch (e) {
-      logger.warn("module:member_applications", "Stats failed", e)
-      setStatsError(e instanceof Error ? e.message : "Failed to load stats")
     }
   }, [guildId])
 
@@ -188,11 +135,10 @@ function MemberApplicationsView() {
     }
     void load()
     void loadDiagnostics()
-    void loadStats()
     return () => {
       cancelled = true
     }
-  }, [guildId, loadDiagnostics, loadStats])
+  }, [guildId, loadDiagnostics])
 
   // ── Brouillon ─────────────────────────────────────────────────────────────
 
@@ -293,88 +239,45 @@ function MemberApplicationsView() {
     setServerError(null)
   }, [saved])
 
-  const handleDelete = useCallback(async () => {
+  /** Réinitialisation (menu de l'en-tête) : DELETE, puis formulaire vierge. */
+  const handleReset = useCallback(async () => {
     logger.event("module:member_applications", "Delete")
-    setIsDeleting(true)
-    try {
-      await deleteMemberApplicationsConfig(guildId)
-      const fresh = emptyMemberApplicationsConfig()
-      setSaved(fresh)
-      setDraft(fresh)
-      setIsConfigured(false)
-      setFieldErrors({})
-      setServerError(null)
-      syncModule(MODULE_ID, null)
-      toast.success(t(`${E}.deleted`))
-      void loadDiagnostics()
-    } catch (e) {
-      logger.error("module:member_applications", "Delete failed", e)
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsDeleting(false)
-      setConfirmDelete(false)
-    }
-  }, [guildId, syncModule, loadDiagnostics, t])
+    await deleteMemberApplicationsConfig(guildId)
+    const fresh = emptyMemberApplicationsConfig()
+    setSaved(fresh)
+    setDraft(fresh)
+    setIsConfigured(false)
+    setFieldErrors({})
+    setServerError(null)
+    syncModule(MODULE_ID, null)
+    void loadDiagnostics()
+  }, [guildId, syncModule, loadDiagnostics])
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
-  if (loadError) return <ErrorPage error={loadError} onRetry={() => window.location.reload()} />
-  if (isLoading || !draft || !saved) {
-    return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
-
-  // Pas d'interrupteur : actif dès qu'un salon est configuré **en base** — un
-  // brouillon non enregistré ne fait rien tourner.
-  const isActive = saved.channel_id !== null
   const notices = memberApplicationsNotices(diagnostics)
 
   return (
-    <div className="flex w-full flex-col gap-6 pb-24">
-      {/* En-tête */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-            <HugeiconsIcon icon={UserAdd01Icon} strokeWidth={2} className="size-5" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl leading-none font-semibold">{t(`${E}.name`)}</h1>
-            <p className="text-sm text-muted-foreground">{t(`${E}.description`)}</p>
-          </div>
-        </div>
-        <Badge variant={isActive ? "default" : "secondary"}>
-          {t(isActive ? `${E}.statusActive` : `${E}.statusInactive`)}
-        </Badge>
-      </div>
+    <ModulePage
+      moduleId={MODULE_ID}
+      loading={isLoading || !draft || !saved}
+      error={loadError}
+      onRetry={() => window.location.reload()}
+      actions={<ModuleStateControl moduleId={MODULE_ID} onReset={handleReset} />}
+    >
+      {draft && saved && (
+        <>
+          {notices.map((notice) => (
+            <Alert key={notice.key} variant={notice.level === "error" ? "destructive" : "default"}>
+              {notice.level === "error" ? <AlertCircleIcon /> : <TriangleAlertIcon />}
+              <AlertTitle>{t(`${E}.diagnostics.${notice.key}Title`)}</AlertTitle>
+              <AlertDescription>{t(`${E}.diagnostics.${notice.key}`, notice.params)}</AlertDescription>
+            </Alert>
+          ))}
 
-      {/* Diagnostic — les permissions peuvent disparaître après la sauvegarde. */}
-      {notices.map((notice) => (
-        <Alert key={notice.key} variant={notice.level === "error" ? "destructive" : "default"}>
-          <HugeiconsIcon icon={notice.level === "error" ? AlertCircleIcon : Alert02Icon} strokeWidth={2} />
-          <AlertTitle>{t(`${E}.diagnostics.${notice.key}Title`)}</AlertTitle>
-          <AlertDescription>{t(`${E}.diagnostics.${notice.key}`, notice.params)}</AlertDescription>
-        </Alert>
-      ))}
-
-      <Tabs defaultValue="config">
-        <TabsList>
-          <TabsTrigger value="config">{t(`${E}.tabs.config`)}</TabsTrigger>
-          <TabsTrigger value="applications">
-            {t(`${E}.tabs.applications`)}
-            {stats && stats.pending > 0 && <Badge variant="secondary">{stats.pending}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="stats">{t(`${E}.tabs.stats`)}</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="config" className="flex flex-col gap-4 pt-4">
           {serverError && (
             <Alert variant="destructive">
-              <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
+              <AlertCircleIcon />
               <AlertTitle>{t(`${E}.errors.discordCheckTitle`)}</AlertTitle>
               <AlertDescription>{serverError}</AlertDescription>
             </Alert>
@@ -395,20 +298,16 @@ function MemberApplicationsView() {
                     channels={textChannels}
                     onChange={(channel_id) => patch({ channel_id })}
                     placeholder={t("modules.selectChannel")}
-                    clearLabel={t(`${E}.noChannel`)}
-                    invalid={Boolean(fieldErrors.channel_id)}
+                    allowNone
+                    noneLabel={t(`${E}.noChannel`)}
+                    aria-invalid={Boolean(fieldErrors.channel_id) || undefined}
                   />
                   <FieldDescription>{t(`${E}.channelDescription`)}</FieldDescription>
                   <FieldError>{fieldErrors.channel_id}</FieldError>
                 </Field>
 
                 <Field data-invalid={fieldErrors.ping_role_ids ? true : undefined}>
-                  <FieldLabel htmlFor="ma-ping-roles">
-                    {t(`${E}.pingRoles`)}
-                    <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">
-                      {draft.ping_role_ids.length}/{limits.ping_roles}
-                    </span>
-                  </FieldLabel>
+                  <FieldLabel htmlFor="ma-ping-roles">{t(`${E}.pingRoles`)}</FieldLabel>
                   <RoleMultiPicker
                     id="ma-ping-roles"
                     value={draft.ping_role_ids}
@@ -416,19 +315,14 @@ function MemberApplicationsView() {
                     max={limits.ping_roles}
                     onChange={(ping_role_ids) => patch({ ping_role_ids })}
                     placeholder={t(`${E}.addRole`)}
-                    invalid={Boolean(fieldErrors.ping_role_ids)}
+                    aria-invalid={Boolean(fieldErrors.ping_role_ids) || undefined}
                   />
                   <FieldDescription>{t(`${E}.pingRolesDescription`)}</FieldDescription>
                   <FieldError>{fieldErrors.ping_role_ids}</FieldError>
                 </Field>
 
                 <Field data-invalid={fieldErrors.reviewer_role_ids ? true : undefined}>
-                  <FieldLabel htmlFor="ma-reviewer-roles">
-                    {t(`${E}.reviewerRoles`)}
-                    <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">
-                      {draft.reviewer_role_ids.length}/{limits.reviewer_roles}
-                    </span>
-                  </FieldLabel>
+                  <FieldLabel htmlFor="ma-reviewer-roles">{t(`${E}.reviewerRoles`)}</FieldLabel>
                   <RoleMultiPicker
                     id="ma-reviewer-roles"
                     value={draft.reviewer_role_ids}
@@ -436,7 +330,7 @@ function MemberApplicationsView() {
                     max={limits.reviewer_roles}
                     onChange={(reviewer_role_ids) => patch({ reviewer_role_ids })}
                     placeholder={t(`${E}.addRole`)}
-                    invalid={Boolean(fieldErrors.reviewer_role_ids)}
+                    aria-invalid={Boolean(fieldErrors.reviewer_role_ids) || undefined}
                   />
                   <FieldDescription>{t(`${E}.reviewerRolesDescription`)}</FieldDescription>
                   <FieldError>{fieldErrors.reviewer_role_ids}</FieldError>
@@ -452,66 +346,23 @@ function MemberApplicationsView() {
                 />
               </FieldGroup>
             </CardContent>
-            <CardFooter className="flex-wrap justify-between gap-3">
-              <p className="flex items-center gap-2 text-xs text-muted-foreground">
-                <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5 shrink-0" />
-                {t(`${E}.applyDelayHint`)}
-              </p>
-              {isConfigured && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setConfirmDelete(true)}
-                  disabled={isSaving || isDeleting}
-                >
-                  {isDeleting ? (
-                    <Spinner data-icon="inline-start" />
-                  ) : (
-                    <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} data-icon="inline-start" />
-                  )}
-                  {t(`${E}.delete`)}
-                </Button>
-              )}
-            </CardFooter>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="applications" className="pt-4">
-          <Alert className="mb-4">
-            <HugeiconsIcon icon={InformationCircleIcon} strokeWidth={2} />
-            <AlertDescription>{t(`${E}.readOnlyHint`)}</AlertDescription>
-          </Alert>
-          <ApplicationList guildId={guildId} onChanged={loadStats} />
-        </TabsContent>
+          <p className="flex items-center gap-2 text-xs text-muted-foreground">
+            <ClockIcon className="size-3.5 shrink-0" />
+            {t(`${E}.applyDelayHint`)}
+          </p>
 
-        <TabsContent value="stats" className="pt-4">
-          <ApplicationStatsPanel stats={stats} error={statsError} onRetry={() => void loadStats()} />
-        </TabsContent>
-      </Tabs>
-
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t(`${E}.confirmDeleteTitle`)}</AlertDialogTitle>
-            <AlertDialogDescription>{t(`${E}.confirmDeleteDescription`)}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => void handleDelete()}>
-              {t(`${E}.delete`)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <UnsavedBar isDirty={isDirty} isSaving={isSaving} onSave={handleSave} onDiscard={handleDiscard} />
-    </div>
+          <UnsavedBar isDirty={isDirty} isSaving={isSaving} onSave={handleSave} onDiscard={handleDiscard} />
+        </>
+      )}
+    </ModulePage>
   )
 }
 
 /**
- * Motifs de refus proposés sur la carte d'examen. Le candidat **voit** le
- * motif choisi : l'avertissement est permanent, pas une note de bas de page.
+ * Motifs de refus proposés sur la carte d'examen. Le candidat voit le motif
+ * choisi : la description du champ le dit.
  */
 function RejectionReasonsField({
   reasons,
@@ -533,17 +384,11 @@ function RejectionReasonsField({
 
   return (
     <FieldSet data-invalid={error ? true : undefined}>
-      <FieldLegend variant="label">
-        {t(`${E}.rejectionReasons`)}{" "}
-        <span className="text-xs font-normal text-muted-foreground tabular-nums">
-          {reasons.length}/{max}
-        </span>
-      </FieldLegend>
-      <FieldDescription>{t(`${E}.rejectionReasonsDescription`)}</FieldDescription>
-      <Alert>
-        <HugeiconsIcon icon={Alert02Icon} strokeWidth={2} />
-        <AlertDescription>{t(`${E}.rejectionReasonsVisible`)}</AlertDescription>
-      </Alert>
+      <FieldLegend variant="label">{t(`${E}.rejectionReasons`)}</FieldLegend>
+      <FieldDescription>
+        {t(`${E}.rejectionReasonsDescription`)}
+        {reasons.length >= max - 1 && ` ${reasons.length}/${max}`}
+      </FieldDescription>
       <FieldGroup className="gap-2">
         {reasons.map((reason, index) => (
           <Field key={index} data-invalid={badIndexes.has(index) ? true : undefined}>
@@ -568,7 +413,7 @@ function RejectionReasonsField({
                   aria-label={t(`${E}.removeReason`)}
                   onClick={() => onChange(reasons.filter((_, i) => i !== index))}
                 >
-                  <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+                  <CloseIcon />
                 </InputGroupButton>
               </InputGroupAddon>
             </InputGroup>
@@ -584,7 +429,7 @@ function RejectionReasonsField({
         disabled={isFull}
         onClick={() => onChange([...reasons, ""])}
       >
-        <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+        <AddIcon data-icon="inline-start" />
         {t(`${E}.addReason`)}
       </Button>
     </FieldSet>

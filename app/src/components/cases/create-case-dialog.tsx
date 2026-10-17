@@ -1,7 +1,7 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { LoaderIcon } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -287,7 +287,7 @@ export function CreateCaseDialog({
             {t("cases.cancel")}
           </Button>
           <Button onClick={submit} disabled={busy}>
-            {busy && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+            {busy && <Spinner data-icon="inline-start" />}
             {t("cases.create.confirm")}
           </Button>
         </DialogFooter>

@@ -2,7 +2,7 @@ import { useEffect } from "react"
 import { useRouteError, isRouteErrorResponse } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import * as Sentry from "@sentry/react"
-import { AlertTriangleIcon, RefreshCwIcon, HomeIcon } from "lucide-react"
+import { AlertTriangleIcon, RefreshCwIcon, HomeIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 
 /** Extrait un message + une stack lisibles quelle que soit la forme de l'erreur. */
@@ -38,7 +38,7 @@ export function RouteError() {
         <div className="flex size-12 items-center justify-center rounded-2xl bg-destructive/10">
           <AlertTriangleIcon className="size-6 text-destructive" />
         </div>
-        <div className="space-y-1.5">
+        <div className="flex flex-col gap-1.5">
           <h1 className="text-lg font-semibold">{t("errors.boundary.title")}</h1>
           <p className="text-sm text-muted-foreground">{t("errors.boundary.description")}</p>
         </div>

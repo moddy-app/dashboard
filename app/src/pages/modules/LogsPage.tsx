@@ -1,20 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  AlertCircleIcon,
-  CheckCircle2Icon,
-  ChevronRightIcon,
-  FileClockIcon,
-  InfoIcon,
-  LoaderIcon,
-  Trash2Icon,
-  TriangleAlertIcon,
-  XIcon,
-} from "lucide-react"
+import { AlertCircleIcon, ChevronRightIcon, InfoIcon, TriangleAlertIcon, XIcon } from "@/components/icons"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ServerLanguageNote } from "@/components/server-language-note"
-import { ErrorPage } from "@/components/error-state"
 import { ApiError } from "@/lib/auth"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
@@ -22,16 +11,11 @@ import { sanctionBlockedError } from "@/lib/sanctions"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import { ChannelMultiPicker, RoleMultiPicker } from "@/components/pickers"
 import {
   Card,
   CardContent,
@@ -45,16 +29,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
 import {
@@ -65,9 +40,7 @@ import {
   diagnosticNotices,
   emptyLogsConfig,
   eventLabel,
-  eventTitle,
   isSameLogsConfig,
-  isThreadChannel,
   linkedChannelIds,
   logsDestinationChannels,
   mapLogsError,
@@ -81,7 +54,6 @@ import {
   getLogsDiagnostics,
   saveLogsConfig,
 } from "@/services/logs"
-import { roleColorToHex } from "@/types/api"
 import type {
   Channel,
   LogCategoryConfig,
@@ -97,16 +69,11 @@ import type {
 export function LogsPage() {
   const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
 
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-  }
-
-  if (isLoadingGuild || !isGuildReady) {
+  if (guildError || isLoadingGuild || !isGuildReady) {
     return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
+      <ModulePage moduleId="logs" loading={!guildError} error={guildError} onRetry={refreshGuildData}>
+        {null}
+      </ModulePage>
     )
   }
 
@@ -134,8 +101,6 @@ function LogsForm() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [isResetting, setIsResetting] = useState(false)
-  const [confirmReset, setConfirmReset] = useState(false)
   const [errors, setErrors] = useState<LogsErrors>(NO_ERRORS)
   const [clientIssues, setClientIssues] = useState<LogsIssue[]>([])
   /**
@@ -338,83 +303,42 @@ function LogsForm() {
   const handleReset = useCallback(async () => {
     if (!selectedGuildId || !savedConfig) return
     logger.event("module:logs", "Reset")
-    setIsResetting(true)
     const before = linkedChannelIds(savedConfig)
-    try {
-      await deleteLogsConfig(selectedGuildId)
-      const fresh = emptyLogsConfig()
-      setSavedConfig(fresh)
-      setDraft(fresh)
-      setIsConfigured(false)
-      setErrors(NO_ERRORS)
-      setClientIssues([])
-      setOrphanWebhooks(before)
-      syncModule("logs", null)
-      setDiagnostics(null)
-      toast.success(t("modules.logs.resetDone"))
-      logger.success("module:logs", "Reset")
-    } catch (e) {
-      logger.error("module:logs", "Reset failed", e)
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsResetting(false)
-      setConfirmReset(false)
-    }
-  }, [selectedGuildId, savedConfig, syncModule, t])
+    await deleteLogsConfig(selectedGuildId)
+    const fresh = emptyLogsConfig()
+    setSavedConfig(fresh)
+    setDraft(fresh)
+    setIsConfigured(false)
+    setErrors(NO_ERRORS)
+    setClientIssues([])
+    setOrphanWebhooks(before)
+    syncModule("logs", null)
+    setDiagnostics(null)
+    logger.success("module:logs", "Reset")
+  }, [selectedGuildId, savedConfig, syncModule])
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
-  if (loadError) {
-    return <ErrorPage error={loadError} onRetry={() => window.location.reload()} />
-  }
-
-  if (isLoading || !draft || !catalog || !savedConfig) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
-
   const notices = diagnosticNotices(diagnostics)
-  const draftLinked = linkedChannelIds(draft)
-  // Le badge dit l'état **en base** ; le brouillon, lui, est annoncé à part.
-  const isActive = savedConfig.enabled === true
+  const draftLinked = draft ? linkedChannelIds(draft) : []
+
+  const ready = !isLoading && draft && catalog && savedConfig
 
   return (
-    <div className="flex flex-col gap-6 w-full pb-24">
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4">
-          <div className="size-11 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-            <FileClockIcon className="size-5 text-slate-600 dark:text-slate-300" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold leading-none">{t("modules.logs.name")}</h1>
-            <p className="text-sm text-muted-foreground mt-1">{t("modules.logs.description")}</p>
-          </div>
-        </div>
-        {/* Pas d'interrupteur : `enabled` est calculé (au moins un salon lié). */}
-        {isActive ? (
-          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
-            <CheckCircle2Icon className="size-3 mr-1" />
-            {t("modules.logs.statusActive")}
-          </Badge>
-        ) : (
-          <Badge variant="secondary">
-            <XIcon className="size-3 mr-1" />
-            {t("modules.logs.statusInactive")}
-          </Badge>
-        )}
-      </div>
-
+    <ModulePage
+      moduleId="logs"
+      loading={!ready}
+      error={loadError}
+      onRetry={() => window.location.reload()}
+      actions={<ModuleStateControl moduleId="logs" onReset={handleReset} />}
+    >
+      {ready && (
+        <>
       {/* Erreurs sans champ d'ancrage (`loc: []`) et validation locale : sans cet
           emplacement global, ces messages n'auraient nulle part où s'afficher. */}
       {(errors.global.length > 0 || clientIssues.length > 0) && (
         <Notice level="error" title={t("modules.logs.errorsTitle")}>
-          <ul className="list-disc space-y-0.5 pl-4">
+          <ul className="list-disc pl-4">
             {clientIssues.map((issue) => (
               <li key={`${issue.key}${JSON.stringify(issue.params ?? {})}`}>
                 {t(issue.key, issue.params)}
@@ -505,37 +429,40 @@ function LogsForm() {
           <CardDescription>{t("modules.logs.filtersDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <IdPicker
+          <PickerField
             label={t("modules.logs.ignoredChannels")}
             hint={t("modules.logs.ignoredChannelsHint")}
-            emptyLabel={t("modules.noChannels")}
-            addLabel={t("modules.logs.addChannel")}
             max={catalog.limits.ignored_channels}
-            limitLabel={t("modules.logs.limitReached", { max: catalog.limits.ignored_channels })}
-            values={draft.ignored_channel_ids}
+            count={draft.ignored_channel_ids.length}
             error={errors.byPath.get("ignored_channel_ids")?.join(" ")}
-            /* Ici tous les types de salons sont acceptés : c'est une liste
-               d'exclusion, pas une destination. */
-            options={channels.map((c) => ({ id: c.id, label: `# ${c.name}` }))}
-            onChange={(ignored_channel_ids) => patch({ ignored_channel_ids })}
-          />
+          >
+            {/* Tous les types de salons sont acceptés : liste d'exclusion, pas une destination. */}
+            <ChannelMultiPicker
+              value={draft.ignored_channel_ids}
+              onChange={(ignored_channel_ids) => patch({ ignored_channel_ids })}
+              channels={channels}
+              types={["text", "announcement", "thread", "voice", "stage", "forum"]}
+              max={catalog.limits.ignored_channels}
+              placeholder={t("modules.logs.addChannel")}
+            />
+          </PickerField>
 
-          <IdPicker
+          <PickerField
             label={t("modules.logs.ignoredRoles")}
             hint={t("modules.logs.ignoredRolesHint")}
-            emptyLabel={t("modules.altguard.noRoles")}
-            addLabel={t("modules.logs.addRole")}
             max={catalog.limits.ignored_roles}
-            limitLabel={t("modules.logs.limitReached", { max: catalog.limits.ignored_roles })}
-            values={draft.ignored_role_ids}
+            count={draft.ignored_role_ids.length}
             error={errors.byPath.get("ignored_role_ids")?.join(" ")}
-            options={ignorableRoles.map((r) => ({
-              id: r.id,
-              label: r.name,
-              color: roleColorToHex(r.color),
-            }))}
-            onChange={(ignored_role_ids) => patch({ ignored_role_ids })}
-          />
+          >
+            <RoleMultiPicker
+              value={draft.ignored_role_ids}
+              onChange={(ignored_role_ids) => patch({ ignored_role_ids })}
+              roles={ignorableRoles}
+              includeManaged
+              max={catalog.limits.ignored_roles}
+              placeholder={t("modules.logs.addRole")}
+            />
+          </PickerField>
 
           <ToggleRow
             label={t("modules.logs.ignoreBots")}
@@ -580,44 +507,8 @@ function LogsForm() {
             {t("modules.logs.unlinkAll")}
           </Button>
         )}
-        {isConfigured && (
-          <Button
-            type="button"
-            variant="outline"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setConfirmReset(true)}
-            disabled={isSaving || isResetting}
-          >
-            {isResetting ? (
-              <LoaderIcon className="size-4 mr-2 animate-spin" />
-            ) : (
-              <Trash2Icon className="size-4 mr-2" />
-            )}
-            {t("modules.logs.reset")}
-          </Button>
-        )}
       </div>
       <p className="text-xs text-muted-foreground -mt-3">{t("modules.logs.unlinkAllHint")}</p>
-
-      <AlertDialog open={confirmReset} onOpenChange={setConfirmReset}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("modules.logs.confirmResetTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("modules.logs.confirmResetDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("modules.altguard.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleReset}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t("modules.logs.reset")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <UnsavedBar
         isDirty={isDirty}
@@ -625,7 +516,9 @@ function LogsForm() {
         onSave={handleSave}
         onDiscard={handleDiscard}
       />
-    </div>
+        </>
+      )}
+    </ModulePage>
   )
 }
 
@@ -690,10 +583,10 @@ function CategoryCard({
         className={cn(
           "rounded-lg border",
           problem && "border-destructive/50",
-          category.channel_ids.length > 0 && !problem && "border-primary/30"
+          category.channel_ids.length > 0 && !problem && "border-foreground/20"
         )}
       >
-        <CollapsibleTrigger className="flex w-full items-center gap-3 p-3.5 text-left">
+        <CollapsibleTrigger className="flex w-full items-center gap-3 p-3.5 text-left max-sm:flex-wrap">
           <ChevronRightIcon
             className={cn(
               "size-4 shrink-0 text-muted-foreground transition-transform",
@@ -710,7 +603,7 @@ function CategoryCard({
               <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
             )}
           </div>
-          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+          <span className="shrink-0 text-xs text-muted-foreground tabular-nums max-sm:basis-full max-sm:pl-7">
             {category.channel_ids.length > 0
               ? t("modules.logs.channelCount", { count: category.channel_ids.length })
               : t("modules.logs.noChannel")}
@@ -721,21 +614,23 @@ function CategoryCard({
 
         <CollapsibleContent>
           <div className="flex flex-col gap-4 border-t p-3.5">
-            <IdPicker
+            <PickerField
               label={t("modules.logs.categoryChannels")}
               hint={t("modules.logs.categoryChannelsHint")}
-              emptyLabel={t("modules.noChannels")}
-              addLabel={t("modules.logs.addChannel")}
               max={limit}
-              limitLabel={t("modules.logs.channelLimitReached", { max: limit })}
-              values={category.channel_ids}
+              count={category.channel_ids.length}
               error={errorMessages.join(" ") || undefined}
-              options={channels.map((c) => ({
-                id: c.id,
-                label: `${isThreadChannel(c) ? "🧵" : "#"} ${c.name}`,
-              }))}
-              onChange={(channel_ids) => onChange({ channel_ids })}
-            />
+            >
+              <ChannelMultiPicker
+                value={category.channel_ids}
+                onChange={(channel_ids) => onChange({ channel_ids })}
+                channels={channels}
+                types={["text", "announcement", "thread"]}
+                max={limit}
+                placeholder={t("modules.logs.addChannel")}
+                aria-invalid={errorMessages.length > 0 || undefined}
+              />
+            </PickerField>
 
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between gap-3">
@@ -806,7 +701,6 @@ function EventRow({
 }) {
   const { t } = useTranslation()
   const label = eventLabel(catalog, categoryId, event)
-  const title = eventTitle(catalog, categoryId, event)
   const isPartial = categoryId === "moderation" && event === "case_update"
   const inputId = `logs-${categoryId}-${event}`
 
@@ -822,28 +716,11 @@ function EventRow({
   return (
     <div className="flex items-center gap-2">
       <Checkbox id={inputId} checked={checked} onCheckedChange={onToggle} />
-      {/* La phrase du log (`locale_keys.title`) sert d'aperçu quand elle est
-          traduite. Elle est portée par le seul libellé : imbriquer deux
-          déclencheurs d'infobulle dans la même ligne les ferait se marcher dessus. */}
-      {title ? (
-        <Tooltip>
-          <TooltipTrigger asChild>{name}</TooltipTrigger>
-          <TooltipContent>{title}</TooltipContent>
-        </Tooltip>
-      ) : (
-        name
-      )}
+      {name}
       {unimplemented && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge variant="secondary" className="shrink-0 text-[10px] font-normal">
-              {isPartial ? t("modules.logs.partial") : t("modules.logs.soon")}
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>
-            {isPartial ? t("modules.logs.partialHint") : t("modules.logs.soonHint")}
-          </TooltipContent>
-        </Tooltip>
+        <Badge variant="secondary" className="shrink-0">
+          {isPartial ? t("modules.logs.partial") : t("modules.logs.soon")}
+        </Badge>
       )}
     </div>
   )
@@ -851,115 +728,28 @@ function EventRow({
 
 // ─── Champs partagés ──────────────────────────────────────────────────────────
 
-interface IdOption {
-  id: string
-  label: string
-  color?: string
-}
-
-/**
- * Liste d'identifiants bornée (salons d'une catégorie, ignorés) : chips
- * supprimables + sélecteur d'ajout. Les ids restent des **chaînes** de bout en
- * bout ; une valeur absente de la liste live (salon supprimé) reste visible
- * plutôt que de disparaître silencieusement.
- */
-function IdPicker({
-  label,
-  hint,
-  emptyLabel,
-  addLabel,
-  max,
-  limitLabel,
-  values,
-  options,
-  error,
-  onChange,
-}: {
+interface PickerFieldProps {
   label: string
   hint: string
-  emptyLabel: string
-  addLabel: string
   max: number
-  limitLabel: string
-  values: string[]
-  options: IdOption[]
+  count: number
   error?: string
-  onChange: (values: string[]) => void
-}) {
-  const byId = new Map(options.map((o) => [o.id, o] as const))
-  const available = options.filter((o) => !values.includes(o.id))
+  children: React.ReactNode
+}
 
+/** Champ de sélection bornée : libellé + compteur, picker, aide ou erreur. */
+function PickerField({ label, hint, max, count, error, children }: PickerFieldProps) {
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3">
-        <label className="text-sm font-medium">{label}</label>
-        <span className="text-xs text-muted-foreground tabular-nums">
-          {values.length} / {max}
+    <Field data-invalid={error ? true : undefined}>
+      <FieldLabel>
+        {label}
+        <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">
+          {count} / {max}
         </span>
-      </div>
-
-      {values.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {values.map((id) => {
-            const option = byId.get(id)
-            return (
-              <span
-                key={id}
-                className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-medium"
-                style={option?.color ? { borderColor: option.color, color: option.color } : undefined}
-              >
-                {option?.label ?? id}
-                <button
-                  type="button"
-                  onClick={() => onChange(values.filter((v) => v !== id))}
-                  className="ml-0.5 rounded-full text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  <XIcon className="size-3" />
-                </button>
-              </span>
-            )
-          })}
-        </div>
-      )}
-
-      {values.length >= max ? (
-        <p className="text-xs text-amber-600 dark:text-amber-400">{limitLabel}</p>
-      ) : available.length > 0 ? (
-        <Select value="" onValueChange={(id) => onChange([...values, id])}>
-          <SelectTrigger className="w-full sm:w-72">
-            <SelectValue placeholder={addLabel} />
-          </SelectTrigger>
-          <SelectContent>
-            {available.map((option) => (
-              <SelectItem key={option.id} value={option.id}>
-                <div className="flex items-center gap-2">
-                  {option.color && (
-                    <span
-                      className="size-2 rounded-full shrink-0"
-                      style={{ backgroundColor: option.color }}
-                    />
-                  )}
-                  <span className="truncate">{option.label}</span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        values.length === 0 && (
-          <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <AlertCircleIcon className="size-3.5" />
-            {emptyLabel}
-          </p>
-        )
-      )}
-
-      {error ? (
-        <p className="text-xs text-destructive">{error}</p>
-      ) : (
-        <p className="text-xs text-muted-foreground">{hint}</p>
-      )}
-    </div>
+      </FieldLabel>
+      {children}
+      {error ? <FieldError>{error}</FieldError> : <FieldDescription>{hint}</FieldDescription>}
+    </Field>
   )
 }
 
@@ -989,23 +779,7 @@ function ToggleRow({
 
 type NoticeLevel = "info" | "warning" | "error"
 
-const NOTICE_STYLES: Record<NoticeLevel, { box: string; icon: string; Icon: typeof InfoIcon }> = {
-  info: {
-    box: "border-sky-200 bg-sky-50 dark:border-sky-900 dark:bg-sky-950/40",
-    icon: "text-sky-600 dark:text-sky-400",
-    Icon: InfoIcon,
-  },
-  warning: {
-    box: "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/40",
-    icon: "text-amber-600 dark:text-amber-400",
-    Icon: TriangleAlertIcon,
-  },
-  error: {
-    box: "border-destructive/30 bg-destructive/5",
-    icon: "text-destructive",
-    Icon: AlertCircleIcon,
-  },
-}
+const NOTICE_ICONS = { info: InfoIcon, warning: TriangleAlertIcon, error: AlertCircleIcon } as const
 
 function Notice({
   level,
@@ -1018,26 +792,20 @@ function Notice({
   children?: React.ReactNode
   onDismiss?: () => void
 }) {
-  const { Icon, box, icon } = NOTICE_STYLES[level]
+  const Icon = NOTICE_ICONS[level]
   return (
-    <div className={cn("flex items-start gap-3 rounded-xl border p-4", box)}>
-      <Icon className={cn("mt-0.5 size-4 shrink-0", icon)} />
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold">{title}</p>
-        {children && (
-          <div className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{children}</div>
-        )}
-      </div>
+    <Alert variant={level === "error" ? "destructive" : "default"}>
+      <Icon />
+      <AlertTitle>{title}</AlertTitle>
+      {children && <AlertDescription>{children}</AlertDescription>}
       {onDismiss && (
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-black/5 dark:hover:bg-white/10"
-        >
-          <XIcon className="size-3.5" />
-        </button>
+        <AlertAction>
+          <Button type="button" variant="ghost" size="icon-xs" onClick={onDismiss}>
+            <XIcon />
+          </Button>
+        </AlertAction>
       )}
-    </div>
+    </Alert>
   )
 }
 

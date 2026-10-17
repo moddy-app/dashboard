@@ -1,13 +1,5 @@
 import { useTranslation } from "react-i18next"
-import {
-  ActivityIcon,
-  CircleAlertIcon,
-  LogInIcon,
-  LogOutIcon,
-  ServerIcon,
-  SparklesIcon,
-  TerminalIcon,
-} from "lucide-react"
+import { ActivityIcon, CircleAlertIcon, LogInIcon, LogOutIcon, ServerIcon, SparklesIcon, TerminalIcon } from '@/components/icons'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import {
   Card,

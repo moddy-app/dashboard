@@ -2,26 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import { toast } from "sonner"
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Add01Icon,
-  Alert02Icon,
-  AlertCircleIcon,
-  Delete02Icon,
-  PencilEdit02Icon,
-  Rocket01Icon,
-} from "@hugeicons/core-free-icons"
+import { AddIcon, AlertCircleIcon, DeleteIcon, EditIcon, RocketIcon, TriangleAlertIcon } from "@/components/icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -29,7 +11,6 @@ import {
   CardAction,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -51,14 +32,11 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { ErrorPage } from "@/components/error-state"
-import { UnsavedBar } from "@/components/unsaved-bar"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
 import { DirectoryIcon } from "@/components/bump-reminder/directory-icon"
-import { BumpLiveState } from "@/components/bump-reminder/live-state"
 import { ReminderDialog } from "@/components/bump-reminder/reminder-dialog"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useSanctionGates } from "@/contexts/SanctionContext"
@@ -70,7 +48,6 @@ import {
   formatInterval,
   hasDuplicateTarget,
   isBumpConfigValid,
-  isSameBumpConfig,
   newBumpReminderDraft,
   overQuotaDirectories,
   serializeBumpConfig,
@@ -86,27 +63,22 @@ import {
   getBumpCatalog,
   getBumpConfig,
   getBumpDiagnostics,
-  getBumpState,
   saveBumpConfig,
 } from "@/services/bump-reminder"
 import type { Channel, Role } from "@/types/api"
-import type { BumpCatalog, BumpDiagnostics, BumpState } from "@/types/bump-reminder"
+import type { BumpCatalog, BumpDiagnostics } from "@/types/bump-reminder"
 
 const MODULE_ID = "bump_reminder"
 const K = "modules.bump_reminder"
-const POLL_MS = 45_000
 
-/** Garde de chargement : le formulaire attend les salons et les rôles. */
 export function BumpReminderPage() {
   const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
 
-  if (guildError) return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-  if (isLoadingGuild || !isGuildReady) {
+  if (guildError || isLoadingGuild || !isGuildReady) {
     return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
+      <ModulePage moduleId={MODULE_ID} loading={!guildError} error={guildError} onRetry={refreshGuildData}>
+        {null}
+      </ModulePage>
     )
   }
   return <BumpReminderView />
@@ -119,18 +91,13 @@ function BumpReminderView() {
   const gates = useSanctionGates(guildId)
 
   const [catalog, setCatalog] = useState<BumpCatalog | null>(null)
-  const [saved, setSaved] = useState<BumpReminderDraft[] | null>(null)
   const [draft, setDraft] = useState<BumpReminderDraft[] | null>(null)
   const [isConfigured, setIsConfigured] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
   /** Refus du backend (quota, vérification Discord) — texte lisible. */
   const [serverError, setServerError] = useState<string | null>(null)
-  const [state, setState] = useState<BumpState | null>(null)
-  const [isRefreshingState, setIsRefreshingState] = useState(false)
   const [diagnostics, setDiagnostics] = useState<BumpDiagnostics | null>(null)
   const [editing, setEditing] = useState<{ reminder: BumpReminderDraft; isNew: boolean } | null>(null)
 
@@ -138,17 +105,6 @@ function BumpReminderView() {
   const roleOptions = useMemo(() => bumpRoles(roles, guildId), [roles, guildId])
 
   // ── Chargement ────────────────────────────────────────────────────────────
-
-  const loadState = useCallback(async () => {
-    setIsRefreshingState(true)
-    try {
-      setState(await getBumpState(guildId))
-    } catch (e) {
-      logger.warn("module:bump_reminder", "State failed", e)
-    } finally {
-      setIsRefreshingState(false)
-    }
-  }, [guildId])
 
   const loadDiagnostics = useCallback(async () => {
     try {
@@ -178,7 +134,6 @@ function BumpReminderView() {
         if (cancelled) return
         setCatalog(nextCatalog)
         setIsConfigured(config !== null)
-        setSaved(config ?? [])
         setDraft(config ?? [])
       } catch (e) {
         if (cancelled) return
@@ -189,34 +144,76 @@ function BumpReminderView() {
       }
     }
     void load()
-    void loadState()
     void loadDiagnostics()
     return () => {
       cancelled = true
     }
-  }, [guildId, loadState, loadDiagnostics])
-
-  // Pas de temps réel : relecture de `/state` toutes les 45 s, onglet visible.
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      if (document.visibilityState === "visible") void loadState()
-    }, POLL_MS)
-    return () => window.clearInterval(id)
-  }, [loadState])
+  }, [guildId, loadDiagnostics])
 
   // ── Brouillon ─────────────────────────────────────────────────────────────
 
-  const isDirty = Boolean(saved && draft && !isSameBumpConfig(saved, draft))
+  /**
+   * Écrit la liste complète (PUT) et **remplace** l'état local par la réponse :
+   * elle porte les `id` générés, sans quoi l'écriture suivante recréerait
+   * l'entrée. Renvoie `true` si l'écriture a réussi.
+   */
+  const persist = useCallback(
+    async (next: BumpReminderDraft[], opts: { validate: boolean }): Promise<boolean> => {
+      if (!catalog) return false
+      if (!isConfigured && !gates.canEnableNewModule) {
+        handleSaveError(sanctionBlockedError("new_module_blocked", gates.effective), {
+          title: t("modules.saveError"),
+        })
+        return false
+      }
+      if (opts.validate && !isBumpConfigValid(next, catalog.limits, guildId)) {
+        toast.error(t("modules.saveError"), { description: t(`${K}.errors.fixReminders`) })
+        return false
+      }
+      logger.event("module:bump_reminder", "Save", { count: next.length })
+      setIsSaving(true)
+      setServerError(null)
+      try {
+        const saved = await saveBumpConfig(guildId, next)
+        setDraft(saved)
+        setIsConfigured(true)
+        syncModule(MODULE_ID, { ...serializeBumpConfig(saved) })
+        toast.success(t(`${K}.saved`))
+        void loadCatalog()
+        void loadDiagnostics()
+        return true
+      } catch (e) {
+        logger.error("module:bump_reminder", "Save failed", e)
+        // 422 texte (quota, vérification Discord) : lisible, affiché tel quel.
+        if (e instanceof ApiError && e.status === 422 && e.validationIssues.length === 0) {
+          setServerError(e.message)
+          toast.error(t("modules.saveError"), { description: e.message })
+        } else {
+          handleSaveError(e, { title: t("modules.saveError") })
+        }
+        return false
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    [catalog, isConfigured, gates, guildId, syncModule, loadCatalog, loadDiagnostics, t]
+  )
 
-  const updateReminder = useCallback((key: string, changes: Partial<BumpReminderDraft>) => {
-    setDraft((prev) => prev?.map((r) => (r.key === key ? { ...r, ...changes } : r)) ?? prev)
-    setServerError(null)
-  }, [])
+  const toggleReminder = useCallback(
+    (key: string, enabled: boolean) => {
+      if (!draft) return
+      void persist(draft.map((r) => (r.key === key ? { ...r, enabled } : r)), { validate: false })
+    },
+    [draft, persist]
+  )
 
-  const removeReminder = useCallback((key: string) => {
-    setDraft((prev) => prev?.filter((r) => r.key !== key) ?? prev)
-    setServerError(null)
-  }, [])
+  const removeReminder = useCallback(
+    (key: string) => {
+      if (!draft) return
+      void persist(draft.filter((r) => r.key !== key), { validate: false })
+    },
+    [draft, persist]
+  )
 
   const openNew = useCallback(() => {
     if (!catalog || !draft) return
@@ -229,135 +226,53 @@ function BumpReminderView() {
     })
   }, [catalog, draft, user.user_id])
 
+  /** Validation du dialog = enregistrement. Le dialog se ferme si l'écriture passe. */
   const submitDialog = useCallback(
-    (reminder: BumpReminderDraft) => {
-      setDraft((prev) => {
-        if (!prev) return prev
-        return prev.some((r) => r.key === reminder.key)
-          ? prev.map((r) => (r.key === reminder.key ? reminder : r))
-          : [...prev, reminder]
-      })
-      setServerError(null)
-      setEditing(null)
+    async (reminder: BumpReminderDraft) => {
+      if (!draft) return
+      const next = draft.some((r) => r.key === reminder.key)
+        ? draft.map((r) => (r.key === reminder.key ? reminder : r))
+        : [...draft, reminder]
+      if (await persist(next, { validate: true })) setEditing(null)
     },
-    []
+    [draft, persist]
   )
 
-  // ── Sauvegarde ────────────────────────────────────────────────────────────
-
-  const handleSave = useCallback(async () => {
-    if (!draft || !catalog) return
-
-    if (!isConfigured && !gates.canEnableNewModule) {
-      handleSaveError(sanctionBlockedError("new_module_blocked", gates.effective), {
-        title: t("modules.saveError"),
-      })
-      return
-    }
-    if (!isBumpConfigValid(draft, catalog.limits, guildId)) {
-      toast.error(t("modules.saveError"), { description: t(`${K}.errors.fixReminders`) })
-      return
-    }
-
-    logger.event("module:bump_reminder", "Save", { count: draft.length })
-    setIsSaving(true)
-    setServerError(null)
-    try {
-      // La réponse porte les `id` générés : elle **remplace** l'état local.
-      const next = await saveBumpConfig(guildId, draft)
-      setSaved(next)
-      setDraft(next)
-      setIsConfigured(true)
-      syncModule(MODULE_ID, { ...serializeBumpConfig(next) })
-      toast.success(t(`${K}.saved`))
-      void loadCatalog()
-      void loadDiagnostics()
-      void loadState()
-    } catch (e) {
-      logger.error("module:bump_reminder", "Save failed", e)
-      // 422 texte (quota, vérification Discord) : lisible, affiché tel quel.
-      if (e instanceof ApiError && e.status === 422 && e.validationIssues.length === 0) {
-        setServerError(e.message)
-        toast.error(t("modules.saveError"), { description: e.message })
-        return
-      }
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsSaving(false)
-    }
-  }, [draft, catalog, isConfigured, gates, guildId, syncModule, loadCatalog, loadDiagnostics, loadState, t])
-
-  const handleDiscard = useCallback(() => {
-    if (!saved) return
-    setDraft(saved)
-    setServerError(null)
-  }, [saved])
-
-  const handleDelete = useCallback(async () => {
+  /** Réinitialisation (menu de l'en-tête) : DELETE, puis liste vide. */
+  const handleReset = useCallback(async () => {
     logger.event("module:bump_reminder", "Delete")
-    setIsDeleting(true)
-    try {
-      await deleteBumpConfig(guildId)
-      setSaved([])
-      setDraft([])
-      setIsConfigured(false)
-      setServerError(null)
-      syncModule(MODULE_ID, null)
-      toast.success(t(`${K}.deleted`))
-      void loadCatalog()
-      void loadDiagnostics()
-      void loadState()
-    } catch (e) {
-      logger.error("module:bump_reminder", "Delete failed", e)
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsDeleting(false)
-      setConfirmDelete(false)
-    }
-  }, [guildId, syncModule, loadCatalog, loadDiagnostics, loadState, t])
+    await deleteBumpConfig(guildId)
+    setDraft([])
+    setIsConfigured(false)
+    setServerError(null)
+    syncModule(MODULE_ID, null)
+    void loadCatalog()
+    void loadDiagnostics()
+  }, [guildId, syncModule, loadCatalog, loadDiagnostics])
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
-  if (loadError) return <ErrorPage error={loadError} onRetry={() => window.location.reload()} />
-  if (isLoading || !draft || !saved || !catalog) {
-    return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
-  const isActive = saved.some((r) => r.enabled && r.channel_id)
-  const counts = usedByDirectory(draft)
-  const canAdd = catalog.directories.some((d) => (counts[d.key] ?? 0) < catalog.limits.per_directory)
-  const overQuota = overQuotaDirectories(draft, catalog.limits)
-  const directoryName = (bot: string) => catalog.directories.find((d) => d.key === bot)?.name ?? bot
+  const reminders = draft ?? []
+  const counts = usedByDirectory(reminders)
+  const canAdd = catalog ? catalog.directories.some((d) => (counts[d.key] ?? 0) < catalog.limits.per_directory) : false
+  const overQuota = catalog ? overQuotaDirectories(reminders, catalog.limits) : []
+  const directoryName = (bot: string) => catalog?.directories.find((d) => d.key === bot)?.name ?? bot
 
   return (
-    <div className="flex w-full flex-col gap-6 pb-24">
-      {/* En-tête */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-muted">
-            <HugeiconsIcon icon={Rocket01Icon} strokeWidth={2} className="size-5" />
-          </div>
-          <div className="flex flex-col gap-1">
-            <h1 className="text-xl leading-none font-semibold">{t(`${K}.name`)}</h1>
-            <p className="text-sm text-muted-foreground">{t(`${K}.description`)}</p>
-          </div>
-        </div>
-        <Badge variant={isActive ? "default" : "secondary"}>
-          {t(isActive ? `${K}.statusActive` : `${K}.statusInactive`)}
-        </Badge>
-      </div>
-
+    <ModulePage
+      moduleId={MODULE_ID}
+      loading={isLoading || !draft || !catalog}
+      error={loadError}
+      onRetry={() => window.location.reload()}
+      actions={<ModuleStateControl moduleId={MODULE_ID} onReset={handleReset} />}
+    >
+      {draft && catalog && (
+        <>
       {/* Premium perdu : plus de rappels que le quota — rien ne s'enregistre
           tant qu'ils n'ont pas été retirés. */}
       {overQuota.length > 0 && (
         <Alert variant="destructive">
-          <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
+          <AlertCircleIcon/>
           <AlertTitle>{t(`${K}.overQuotaTitle`)}</AlertTitle>
           <AlertDescription>
             {t(`${K}.overQuota`, {
@@ -370,13 +285,11 @@ function BumpReminderView() {
 
       {serverError && (
         <Alert variant="destructive">
-          <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
+          <AlertCircleIcon/>
           <AlertTitle>{t(`${K}.errors.serverTitle`)}</AlertTitle>
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       )}
-
-      <BumpLiveState state={state} isRefreshing={isRefreshingState} onRefresh={() => void loadState()} />
 
       <Card>
         <CardHeader>
@@ -401,7 +314,7 @@ function BumpReminderView() {
           {draft.length > 0 && (
             <CardAction>
               <Button size="sm" onClick={openNew} disabled={!canAdd}>
-                <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+                <AddIcon data-icon="inline-start"/>
                 {t(`${K}.add`)}
               </Button>
             </CardAction>
@@ -412,14 +325,14 @@ function BumpReminderView() {
             <Empty className="border">
               <EmptyHeader>
                 <EmptyMedia variant="icon">
-                  <HugeiconsIcon icon={Rocket01Icon} strokeWidth={2} />
+                  <RocketIcon/>
                 </EmptyMedia>
                 <EmptyTitle>{t(`${K}.emptyTitle`)}</EmptyTitle>
                 <EmptyDescription>{t(`${K}.emptyDescription`)}</EmptyDescription>
               </EmptyHeader>
               <EmptyContent>
                 <Button onClick={openNew}>
-                  <HugeiconsIcon icon={Add01Icon} strokeWidth={2} data-icon="inline-start" />
+                  <AddIcon data-icon="inline-start"/>
                   {t(`${K}.add`)}
                 </Button>
               </EmptyContent>
@@ -437,7 +350,7 @@ function BumpReminderView() {
                   guildId={guildId}
                   diagnostics={diagnostics}
                   overQuota={overQuota.includes(reminder.bot)}
-                  onToggle={(enabled) => updateReminder(reminder.key, { enabled })}
+                  onToggle={(enabled) => toggleReminder(reminder.key, enabled)}
                   onEdit={() => setEditing({ reminder, isNew: false })}
                   onRemove={() => removeReminder(reminder.key)}
                 />
@@ -445,23 +358,6 @@ function BumpReminderView() {
             </ItemGroup>
           )}
         </CardContent>
-        {isConfigured && (
-          <CardFooter className="justify-end">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setConfirmDelete(true)}
-              disabled={isSaving || isDeleting}
-            >
-              {isDeleting ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} data-icon="inline-start" />
-              )}
-              {t(`${K}.deleteAll`)}
-            </Button>
-          </CardFooter>
-        )}
       </Card>
 
       <ReminderDialog
@@ -475,26 +371,13 @@ function BumpReminderView() {
         guildId={guildId}
         canSubscribe={gates.canSubscribe}
         onOpenChange={(open) => !open && setEditing(null)}
+        saving={isSaving}
         onSubmit={submitDialog}
       />
 
-      <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t(`${K}.confirmDeleteTitle`)}</AlertDialogTitle>
-            <AlertDialogDescription>{t(`${K}.confirmDeleteDescription`)}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={() => void handleDelete()}>
-              {t(`${K}.deleteAll`)}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <UnsavedBar isDirty={isDirty} isSaving={isSaving} onSave={handleSave} onDiscard={handleDiscard} />
-    </div>
+        </>
+      )}
+    </ModulePage>
   )
 }
 
@@ -569,7 +452,7 @@ function ReminderRow({
           )}
         </ItemDescription>
       </ItemContent>
-      <ItemActions>
+      <ItemActions className="max-sm:w-full max-sm:justify-end">
         <Switch
           checked={reminder.enabled}
           onCheckedChange={onToggle}
@@ -578,7 +461,7 @@ function ReminderRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon-sm" onClick={onEdit} aria-label={t(`${K}.edit`)}>
-              <HugeiconsIcon icon={PencilEdit02Icon} strokeWidth={2} />
+              <EditIcon/>
             </Button>
           </TooltipTrigger>
           <TooltipContent>{t(`${K}.edit`)}</TooltipContent>
@@ -586,7 +469,7 @@ function ReminderRow({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon-sm" onClick={onRemove} aria-label={t(`${K}.remove`)}>
-              <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+              <DeleteIcon/>
             </Button>
           </TooltipTrigger>
           <TooltipContent>{t(`${K}.remove`)}</TooltipContent>
@@ -596,13 +479,13 @@ function ReminderRow({
         <ItemFooter className="flex-col items-stretch gap-2">
           {invalid && (
             <Alert variant="destructive">
-              <HugeiconsIcon icon={AlertCircleIcon} strokeWidth={2} />
+              <AlertCircleIcon/>
               <AlertDescription>{t(`${K}.errors.rowInvalid`)}</AlertDescription>
             </Alert>
           )}
           {notices.map((notice) => (
             <Alert key={notice.key} variant={notice.level === "error" ? "destructive" : "default"}>
-              <HugeiconsIcon icon={notice.level === "error" ? AlertCircleIcon : Alert02Icon} strokeWidth={2} />
+              {notice.level === "error" ? <AlertCircleIcon /> : <TriangleAlertIcon />}
               <AlertDescription>
                 {t(`${K}.diagnostics.${notice.key}`, {
                   roles: notice.roleIds?.map((id) => `@${roleName(id)}`).join(", ") ?? "",

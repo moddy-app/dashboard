@@ -6,7 +6,7 @@ import {
   PlusIcon,
   SettingsIcon,
   Trash2Icon,
-} from "lucide-react"
+} from "@/components/icons"
 import {
   Collapsible,
   CollapsibleContent,
@@ -24,11 +24,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { MessageEditor } from "@/components/message-editor"
-import { ChannelSelect, Field } from "@/components/tickets/fields"
+import { ChannelPicker, ColorPicker, EmojiGlyph } from "@/components/pickers"
+import { Field } from "@/components/tickets/fields"
+import { Empty, EmptyDescription, EmptyHeader } from "@/components/ui/empty"
+import { hexToInt, intToHex } from "@/lib/color"
 import {
   accentToHex,
   categoryFieldKey,
-  hexToAccent,
   panelCategoryCap,
   panelChannels,
   panelFieldKey,
@@ -154,20 +156,21 @@ export function PanelCard({
             description={t("modules.tickets.panel.channelDescription")}
             error={err("channel_id")}
           >
-            <ChannelSelect
+            <ChannelPicker
               value={panel.channel_id}
               channels={destinations}
               onChange={(v) => onChange({ channel_id: v })}
               placeholder={t("modules.selectChannel")}
-              emptyLabel={t("modules.noChannels")}
-              clearLabel={t("modules.tickets.panel.noChannelOption")}
+              allowNone
+              noneLabel={t("modules.tickets.panel.noChannelOption")}
+              aria-invalid={Boolean(err("channel_id"))}
             />
           </Field>
         </div>
 
         <Field
           label={t("modules.tickets.panel.title")}
-          description={`${t("modules.tickets.panel.titleDescription")} ${leaveEmpty}`}
+          description={leaveEmpty}
           error={err("title")}
           hint={`${panel.title?.length ?? 0} / ${TICKET_TEXT_LIMITS.title}`}
         >
@@ -224,32 +227,13 @@ export function PanelCard({
             description={t("modules.tickets.panel.accentColorDescription")}
             error={err("accent_color")}
           >
-            <div className="flex items-center gap-2">
-              <input
-                type="color"
-                value={accentToHex(panel.accent_color)}
-                onChange={(e) => onChange({ accent_color: hexToAccent(e.target.value) })}
-                className="size-9 shrink-0 cursor-pointer rounded-md border bg-transparent p-1"
-              />
-              <Input
-                value={accentToHex(panel.accent_color)}
-                onChange={(e) => {
-                  const parsed = hexToAccent(e.target.value)
-                  if (parsed !== null) onChange({ accent_color: parsed })
-                }}
-                className="font-mono"
-              />
-              {panel.accent_color !== null && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onChange({ accent_color: null })}
-                >
-                  {t("modules.tickets.panel.resetColor")}
-                </Button>
-              )}
-            </div>
+            <ColorPicker
+              value={panel.accent_color === null ? null : intToHex(panel.accent_color)}
+              defaultColor={accentToHex(null)}
+              onChange={(v) => onChange({ accent_color: v === null ? null : hexToInt(v) })}
+              allowReset
+              aria-invalid={Boolean(err("accent_color"))}
+            />
           </Field>
         </div>
 
@@ -272,9 +256,7 @@ export function PanelCard({
         {/* ── Catégories ──────────────────────────────────────────────── */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
-            <label className="text-sm font-medium">
-              {t("modules.tickets.panel.categories")}
-            </label>
+            <span className="text-sm font-medium">{t("modules.tickets.panel.categories")}</span>
             <span className="text-xs tabular-nums text-muted-foreground">
               {panel.categories.length} / {cap}
             </span>
@@ -283,9 +265,11 @@ export function PanelCard({
           {err("categories") && <p className="text-xs text-destructive">{err("categories")}</p>}
 
           {panel.categories.length === 0 ? (
-            <p className="rounded-lg border border-dashed p-4 text-center text-xs text-muted-foreground">
-              {t("modules.tickets.panel.noCategories")}
-            </p>
+            <Empty className="p-6">
+              <EmptyHeader>
+                <EmptyDescription>{t("modules.tickets.panel.noCategories")}</EmptyDescription>
+              </EmptyHeader>
+            </Empty>
           ) : (
             <div className="divide-y rounded-lg border">
               {panel.categories.map((category) => {
@@ -296,7 +280,7 @@ export function PanelCard({
                     <GripVerticalIcon className="size-4 shrink-0 text-muted-foreground/40" />
                     <div className="min-w-0 flex-1">
                       <p className="flex items-center gap-1.5 truncate text-sm font-medium">
-                        {category.emoji && <span>{category.emoji}</span>}
+                        {category.emoji && <EmojiGlyph value={category.emoji} />}
                         {category.name || t("modules.tickets.category.untitled")}
                         {!category.enabled && (
                           <Badge variant="secondary" className="ml-1">
@@ -320,7 +304,7 @@ export function PanelCard({
                       size="sm"
                       onClick={() => onEditCategory(category)}
                     >
-                      <SettingsIcon className="size-4" />
+                      <SettingsIcon />
                     </Button>
                     <Button
                       type="button"
@@ -329,7 +313,7 @@ export function PanelCard({
                       className="text-destructive hover:text-destructive"
                       onClick={() => onDeleteCategory(category)}
                     >
-                      <Trash2Icon className="size-4" />
+                      <Trash2Icon />
                     </Button>
                   </div>
                 )
@@ -345,11 +329,11 @@ export function PanelCard({
             onClick={onAddCategory}
             disabled={isFull}
           >
-            <PlusIcon className="size-4" />
+            <PlusIcon data-icon="inline-start" />
             {t("modules.tickets.panel.addCategory")}
           </Button>
           {isFull && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            <p className="text-xs text-warning">
               {t("modules.tickets.panel.categoryCapReached", { max: cap })}
             </p>
           )}
@@ -366,7 +350,7 @@ export function PanelCard({
             className="text-destructive hover:text-destructive"
             onClick={onDelete}
           >
-            <Trash2Icon className="size-4" />
+            <Trash2Icon data-icon="inline-start" />
             {t("modules.tickets.panel.delete")}
           </Button>
         </div>
