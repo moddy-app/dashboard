@@ -2,7 +2,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
-import { ArrowRightIcon, InfoIcon, LifeBuoyIcon, RefreshCwIcon, ScrollTextIcon, ShieldCheckIcon } from '@/components/icons'
+import { ArrowRightIcon, InfoIcon, LifeBuoyIcon, RefreshCwIcon, ScrollTextIcon, FingerprintIcon } from '@/components/icons'
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -66,7 +66,7 @@ interface InstallWelcomeDialogProps {
 const QUICK_STARTS = [
   { id: "tickets", to: "modules/tickets", icon: LifeBuoyIcon },
   { id: "logs", to: "modules/logs", icon: ScrollTextIcon },
-  { id: "altguard", to: "modules/altguard", icon: ShieldCheckIcon },
+  { id: "altguard", to: "modules/altguard", icon: FingerprintIcon },
 ] as const
 
 export function InstallWelcomeDialog({ state, onDismiss, guilds }: InstallWelcomeDialogProps) {

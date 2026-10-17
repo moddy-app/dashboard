@@ -89,6 +89,8 @@ import ForumIcon from '~icons/material-symbols/forum-rounded'
 import GavelIcon from '~icons/material-symbols/gavel-rounded'
 import GroupIcon from '~icons/material-symbols/group-rounded'
 import HelpIcon from '~icons/material-symbols/help-rounded'
+// Pas de variante -rounded pour fingerprint dans Material Symbols : version pleine standard.
+import FingerprintIcon from '~icons/material-symbols/fingerprint'
 import HistoryEduIcon from '~icons/material-symbols/history-edu-rounded'
 import HistoryIcon from '~icons/material-symbols/history-rounded'
 import HomeIcon from '~icons/material-symbols/home-rounded'
@@ -257,6 +259,7 @@ export {
   GavelIcon,
   GroupIcon,
   HelpIcon,
+  FingerprintIcon,
   HistoryEduIcon,
   HistoryIcon,
   HomeIcon,

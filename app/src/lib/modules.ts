@@ -1,13 +1,13 @@
 import type { IconComponent } from '@/components/icons'
 import {
   BellRingIcon,
-  FileClockIcon,
+  FingerprintIcon,
+  ReceiptLongIcon,
   GaugeIcon,
   MailIcon,
   MessageSquareIcon,
   PaletteIcon,
   RocketIcon,
-  ShieldCheckIcon,
   SparklesIcon,
   StarIcon,
   TicketIcon,
@@ -94,12 +94,12 @@ export const MODULES: readonly ModuleDefinition[] = [
       Boolean(r.notify_channel_id)
     )
   }, { supportsSimulation: true }),
-  def('altguard', 'moderation', ShieldCheckIcon, (c) => isAltGuardActive(asRec(c))),
+  def('altguard', 'moderation', FingerprintIcon, (c) => isAltGuardActive(asRec(c))),
   def('adaptive_slowmode', 'moderation', GaugeIcon, (c) => {
     const channels = asRec(c).channels
     return channels !== null && typeof channels === 'object' && Object.keys(channels).length > 0
   }),
-  def('logs', 'moderation', FileClockIcon, (c) => isLogsActive(asRec(c))),
+  def('logs', 'moderation', ReceiptLongIcon, (c) => isLogsActive(asRec(c))),
 
   def('welcome_channel', 'welcome', MessageSquareIcon, (c) => isWelcomeActive(c as never)),
   def('welcome_dm', 'welcome', MailIcon, (c) => isWelcomeDmActive(c as never)),
