@@ -1,14 +1,9 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate } from "react-router-dom"
 import { toast } from "sonner"
-import {
-  GlobeIcon,
-  InfoIcon,
-  LoaderIcon,
-  SettingsIcon,
-  TriangleAlertIcon,
-} from "lucide-react"
+import { GlobeIcon, InfoIcon, SettingsIcon, TriangleAlertIcon } from '@/components/icons'
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -200,7 +195,7 @@ export function GuildSettingsPage() {
                 ))}
               </SelectContent>
             </Select>
-            {isSaving && <LoaderIcon className="size-4 animate-spin text-muted-foreground" />}
+            {isSaving && <Spinner className="text-muted-foreground" />}
           </div>
 
           {/* Explication contextuelle — le cœur de l'écran. */}
@@ -218,7 +213,7 @@ export function GuildSettingsPage() {
           {/* Hors Communauté, `auto` veut dire anglais : le ton reste informatif,
               ce n'est pas une erreur — mais ça doit se voir. */}
           {notice === "notCommunity" && (
-            <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-700 dark:text-amber-400">
+            <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2.5 text-xs text-warning">
               <TriangleAlertIcon className="size-3.5 mt-0.5 shrink-0" />
               <span className="leading-relaxed">
                 {t("guildSettings.language.autoNotCommunity")}

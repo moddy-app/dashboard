@@ -1,14 +1,7 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  BoldIcon,
-  ItalicIcon,
-  StrikethroughIcon,
-  Heading2Icon,
-  SmileIcon,
-  LinkIcon,
-  LoaderIcon,
-} from "lucide-react"
+import { BoldIcon, ItalicIcon, StrikethroughIcon, Heading2Icon, SmileIcon, LinkIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
@@ -161,7 +154,7 @@ export function MessageEditor({
           <div className="border-b bg-muted/20 p-2">
             {emojis === null ? (
               <div className="flex items-center justify-center py-5">
-                <LoaderIcon className="size-4 animate-spin text-muted-foreground" />
+                <Spinner className="text-muted-foreground" />
               </div>
             ) : emojis.length === 0 ? (
               <p className="py-5 text-center text-xs text-muted-foreground">
@@ -220,7 +213,7 @@ export function MessageEditor({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => editorRef.current?.insertText(v)}
-              className="rounded border bg-background px-1.5 py-0.5 font-mono text-[11px] text-blue-600 dark:text-blue-400 hover:bg-accent transition-colors"
+              className="rounded border bg-background px-1.5 py-0.5 font-mono text-[11px] text-info hover:bg-accent transition-colors"
               title={t("messageEditor.insertVariable")}
             >
               {v}

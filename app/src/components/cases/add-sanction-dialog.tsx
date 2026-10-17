@@ -1,6 +1,6 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
-import { LoaderIcon } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -93,7 +93,7 @@ export function AddSanctionDialog({ open, onOpenChange, allowedActions, onSubmit
             {t("cases.cancel")}
           </Button>
           <Button onClick={submit} disabled={busy || !action}>
-            {busy && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+            {busy && <Spinner data-icon="inline-start" />}
             {t("cases.addSanction.confirm")}
           </Button>
         </DialogFooter>

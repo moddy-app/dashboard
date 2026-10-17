@@ -1,10 +1,4 @@
-import {
-  UsersIcon,
-  UserCogIcon,
-  CircleDotIcon,
-  GavelIcon,
-  CalendarIcon,
-} from "lucide-react"
+import { UsersIcon, UserCogIcon, CircleDotIcon, GavelIcon, CalendarIcon } from '@/components/icons'
 import type { IconComponent } from "@/components/icons"
 import type { CaseStatus, SanctionAction } from "@/types/cases"
 

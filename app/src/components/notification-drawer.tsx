@@ -1,14 +1,7 @@
+import { Spinner } from '@/components/ui/spinner'
 import * as React from "react"
 import { useTranslation } from "react-i18next"
-import {
-  AlertTriangleIcon,
-  BellIcon,
-  CheckCheckIcon,
-  CheckIcon,
-  Loader2Icon,
-  MailXIcon,
-  RefreshCwIcon,
-} from "lucide-react"
+import { AlertTriangleIcon, BellIcon, CheckCheckIcon, CheckIcon, MailXIcon, RefreshCwIcon } from '@/components/icons'
 
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
@@ -382,7 +375,7 @@ function NotificationList({
       {hasMore && (
         <div className="flex justify-center pb-2 pt-1">
           <Button variant="ghost" size="sm" onClick={state.loadMore} disabled={loadingMore}>
-            {loadingMore && <Loader2Icon className="animate-spin" />}
+            {loadingMore && <Spinner />}
             {t("notifications.loadMore")}
           </Button>
         </div>

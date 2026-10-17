@@ -1,14 +1,4 @@
-import {
-  AlertTriangleIcon,
-  BanIcon,
-  MicOffIcon,
-  DoorOpenIcon,
-  ShieldAlertIcon,
-  ShieldCheckIcon,
-  ShieldMinusIcon,
-  KeyRoundIcon,
-  GavelIcon,
-} from 'lucide-react'
+import { AlertTriangleIcon, BanIcon, MicOffIcon, DoorOpenIcon, ShieldAlertIcon, ShieldCheckIcon, ShieldMinusIcon, KeyRoundIcon, GavelIcon } from '@/components/icons'
 import type { IconComponent } from '@/components/icons'
 import type { User } from '@/lib/auth'
 import type {

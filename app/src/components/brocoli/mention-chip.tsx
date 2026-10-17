@@ -6,7 +6,7 @@
  * pastille qui laisserait croire que le salon existe.
  */
 
-import { HashIcon, AtSignIcon } from 'lucide-react'
+import { HashIcon, AtSignIcon } from '@/components/icons'
 import { cn } from '@/lib/utils'
 
 export interface MentionTarget {

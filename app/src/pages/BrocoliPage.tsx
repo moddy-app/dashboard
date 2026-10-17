@@ -19,13 +19,7 @@
 import { useCallback, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import {
-  ArrowUpRightIcon,
-  MessageSquarePlusIcon,
-  RefreshCwIcon,
-  SparklesIcon,
-  TriangleAlertIcon,
-} from 'lucide-react'
+import { ArrowUpRightIcon, MessageSquarePlusIcon, RefreshCwIcon, SparklesIcon, TriangleAlertIcon } from '@/components/icons'
 import { Button } from '@/components/ui/button'
 import {
   Empty,
@@ -80,7 +74,7 @@ function ErrorNotice({
   return (
     <div
       role="alert"
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+      className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2.5 text-sm text-foreground"
     >
       <TriangleAlertIcon className="size-4 shrink-0" />
       <span className="min-w-0 flex-1 wrap-break-word">{body}</span>

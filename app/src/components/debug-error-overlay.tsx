@@ -1,5 +1,5 @@
 import { useDebugMode } from "@/hooks/useDebugMode"
-import { AlertCircleIcon, BugIcon, XIcon } from "lucide-react"
+import { AlertCircleIcon, BugIcon, XIcon } from '@/components/icons'
 import { useState } from "react"
 
 interface DebugErrorOverlayProps {
@@ -56,7 +56,7 @@ export function DebugModeBadge() {
   if (!isDebug) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9998] flex items-center gap-1.5 bg-amber-500/90 text-white text-xs font-mono px-2 py-1 rounded-full shadow pointer-events-none">
+    <div className="fixed bottom-4 right-4 z-[9998] flex items-center gap-1.5 bg-warning/90 text-white text-xs font-mono px-2 py-1 rounded-full shadow pointer-events-none">
       <BugIcon className="size-3" />
       DEBUG MODE
     </div>

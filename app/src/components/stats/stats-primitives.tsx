@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { RefreshCwIcon, TrendingDownIcon, TrendingUpIcon, XCircleIcon } from "lucide-react"
+import { RefreshCwIcon, TrendingDownIcon, TrendingUpIcon, XCircleIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -83,7 +83,7 @@ export function StatTile({
               <span
                 className={cn(
                   "inline-flex items-center gap-0.5 text-xs font-medium tabular-nums",
-                  isUp ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
+                  isUp ? "text-success" : "text-destructive"
                 )}
               >
                 {isUp ? (

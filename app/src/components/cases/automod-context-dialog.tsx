@@ -1,6 +1,6 @@
 import { useMemo } from "react"
 import { useTranslation } from "react-i18next"
-import { BotIcon, AlertTriangleIcon } from "lucide-react"
+import { BotIcon, AlertTriangleIcon } from '@/components/icons'
 import {
   Dialog,
   DialogContent,
@@ -117,7 +117,7 @@ export function AutomodContextDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <BotIcon className="size-4 text-sky-500" />
+            <BotIcon className="size-4 text-info" />
             {t("cases.evidence.contextTitle")}
           </DialogTitle>
           <DialogDescription>{t("cases.evidence.contextDescription")}</DialogDescription>

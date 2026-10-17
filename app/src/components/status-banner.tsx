@@ -1,9 +1,11 @@
-import { AlertOctagon, TriangleAlert, Wrench, ActivityIcon, X, type LucideProps } from 'lucide-react'
+import type { SVGProps } from 'react'
+import { AlertOctagonIcon, TriangleAlertIcon, WrenchIcon, ActivityIcon, XIcon } from '@/components/icons'
 import type { StatusBanner as StatusBannerData, StatusLevel } from '@/services/status-banner'
+import { cn } from '@/lib/utils'
 import { parseInlineMarkdown } from '@/lib/inline-markdown'
 
 interface LevelStyle {
-  Icon: React.ComponentType<LucideProps>
+  Icon: React.ComponentType<SVGProps<SVGSVGElement>>
   containerClass: string
   iconClass: string
   closeClass: string
@@ -11,32 +13,32 @@ interface LevelStyle {
 
 const LEVEL_STYLES: Record<string, LevelStyle> = {
   degraded_performance: {
-    Icon: TriangleAlert,
+    Icon: TriangleAlertIcon,
     containerClass:
-      'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-400',
-    iconClass: 'text-amber-600 dark:text-amber-400',
-    closeClass: 'hover:bg-amber-500/15 dark:hover:bg-amber-500/25',
+      'bg-warning/10 border-warning/20 text-warning',
+    iconClass: 'text-warning',
+    closeClass: 'hover:bg-warning/15',
   },
   partial_outage: {
-    Icon: AlertOctagon,
+    Icon: AlertOctagonIcon,
     containerClass:
-      'bg-orange-500/10 border-orange-500/20 text-orange-700 dark:bg-orange-500/15 dark:border-orange-500/30 dark:text-orange-400',
-    iconClass: 'text-orange-600 dark:text-orange-400',
-    closeClass: 'hover:bg-orange-500/15 dark:hover:bg-orange-500/25',
+      'bg-warning/10 border-warning/20 text-warning',
+    iconClass: 'text-warning',
+    closeClass: 'hover:bg-warning/15',
   },
   major_outage: {
-    Icon: AlertOctagon,
+    Icon: AlertOctagonIcon,
     containerClass:
-      'bg-destructive/10 border-destructive/20 text-destructive dark:bg-destructive/15 dark:border-destructive/30',
+      'bg-destructive/10 border-destructive/20 text-destructive',
     iconClass: 'text-destructive',
-    closeClass: 'hover:bg-destructive/15 dark:hover:bg-destructive/25',
+    closeClass: 'hover:bg-destructive/15',
   },
   maintenance: {
-    Icon: Wrench,
+    Icon: WrenchIcon,
     containerClass:
-      'bg-sky-500/10 border-sky-500/20 text-sky-700 dark:bg-sky-500/15 dark:border-sky-500/30 dark:text-sky-400',
-    iconClass: 'text-sky-600 dark:text-sky-400',
-    closeClass: 'hover:bg-sky-500/15 dark:hover:bg-sky-500/25',
+      'bg-info/10 border-info/20 text-info',
+    iconClass: 'text-info',
+    closeClass: 'hover:bg-info/15',
   },
 }
 
@@ -44,7 +46,7 @@ const LEVEL_STYLES: Record<string, LevelStyle> = {
 const FALLBACK_STYLE: LevelStyle = {
   Icon: ActivityIcon,
   containerClass:
-    'bg-muted/60 border-border text-foreground dark:bg-muted/40',
+    'bg-muted/60 border-border text-foreground',
   iconClass: 'text-muted-foreground',
   closeClass: 'hover:bg-muted',
 }
@@ -73,18 +75,18 @@ export function StatusBanner({ banner, onDismiss }: StatusBannerProps) {
     <div
       role="status"
       aria-live="polite"
-      className={`shrink-0 flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
+      className={cn('shrink-0 flex w-full items-center border-b px-6 py-3 text-sm', containerClass)}
     >
       <div className="flex flex-1 items-start justify-center gap-3">
-        <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
+        <Icon className={cn('mt-0.5 size-4 shrink-0', iconClass)} aria-hidden />
         <p className="leading-relaxed">{nodes}</p>
       </div>
       <button
         onClick={onDismiss}
         aria-label="Fermer"
-        className={`ml-4 shrink-0 rounded p-1 transition-colors ${closeClass}`}
+        className={cn('ml-4 shrink-0 rounded p-1 transition-colors', closeClass)}
       >
-        <X className="size-4" aria-hidden />
+        <XIcon className="size-4" aria-hidden />
       </button>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { ShieldAlertIcon } from "lucide-react"
+import { ShieldAlertIcon } from '@/components/icons'
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorPage } from "@/components/error-state"
 import { useGuildContext } from "@/contexts/GuildContext"
@@ -29,8 +29,8 @@ export function GuildCasesPage() {
 
   const header = (
     <div className="flex items-center gap-4">
-      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-950">
-        <ShieldAlertIcon className="size-5 text-orange-500" />
+      <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-warning/10">
+        <ShieldAlertIcon className="size-5 text-warning" />
       </div>
       <div className="min-w-0">
         <h1 className="text-xl font-semibold leading-none">{t("cases.guild.title")}</h1>

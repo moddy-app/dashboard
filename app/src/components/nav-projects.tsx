@@ -1,9 +1,4 @@
-import {
-  FolderIcon,
-  MoreHorizontalIcon,
-  ShareIcon,
-  TrashIcon,
-} from "lucide-react"
+import { FolderIcon, MoreHorizontalIcon, ShareIcon, TrashIcon } from '@/components/icons'
 import type { IconComponent } from "@/components/icons"
 
 import {

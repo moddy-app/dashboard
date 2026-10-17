@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { SearchIcon, ArrowLeftIcon } from "lucide-react"
+import { SearchIcon, ArrowLeftIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import {
   Empty,

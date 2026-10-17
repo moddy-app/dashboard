@@ -13,9 +13,10 @@
  * `@/lib/brocoli-mentions` pour ce qui est mentionnable et pourquoi.
  */
 
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ArrowUpIcon, AtSignIcon, HashIcon, LoaderIcon } from 'lucide-react'
+import { ArrowUpIcon, AtSignIcon, HashIcon } from '@/components/icons'
 import {
   InputGroup,
   InputGroupAddon,
@@ -351,7 +352,7 @@ export function BrocoliComposer({
               onClick={submit}
             >
               {runState === 'streaming' ? (
-                <LoaderIcon className="animate-spin" />
+                <Spinner />
               ) : (
                 <ArrowUpIcon />
               )}

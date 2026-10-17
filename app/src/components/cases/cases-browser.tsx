@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { PlusIcon } from "lucide-react"
+import { PlusIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { useCasesMeta } from "@/hooks/useCasesMeta"
 import type { CaseFilters, CaseType, SubjectType, ScopeType } from "@/types/cases"

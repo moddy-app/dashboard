@@ -6,7 +6,6 @@ import {
   ExternalLinkIcon,
   HashIcon,
   LinkIcon,
-  LoaderIcon,
   LockIcon,
   RadioIcon,
   ShieldAlertIcon,
@@ -21,6 +20,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Spinner } from "@/components/ui/spinner"
+import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ErrorPage } from "@/components/error-state"
@@ -39,12 +40,12 @@ import type { IconComponent } from "@/components/icons"
 import { ModuleStatusBadge } from "@/components/module/module-status-badge"
 import { MODULES, getModuleStatus, type ModuleStatus } from "@/lib/modules"
 
-// Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
+// Classes statiques par ton (Tailwind ne peut pas générer de classes dynamiques).
 const STAT_STYLES = {
-  blue: { box: "bg-blue-100 dark:bg-blue-950", icon: "text-blue-600 dark:text-blue-400" },
-  green: { box: "bg-green-100 dark:bg-green-950", icon: "text-green-600 dark:text-green-400" },
-  orange: { box: "bg-orange-100 dark:bg-orange-950", icon: "text-orange-600 dark:text-orange-400" },
-  purple: { box: "bg-purple-100 dark:bg-purple-950", icon: "text-purple-600 dark:text-purple-400" },
+  blue: { box: "bg-info/10", icon: "text-info" },
+  green: { box: "bg-success/10", icon: "text-success" },
+  orange: { box: "bg-warning/10", icon: "text-warning" },
+  purple: { box: "bg-primary/10", icon: "text-primary" },
 } as const
 
 // ─── Carte module ─────────────────────────────────────────────────────────────
@@ -181,7 +182,7 @@ export function GuildOverviewPage() {
   if (!guildDetail || !selectedGuildId) {
     return (
       <div className="flex flex-1 items-center justify-center min-h-[40vh]">
-        <LoaderIcon className="size-6 animate-spin text-muted-foreground" />
+        <Spinner className="size-6 text-muted-foreground" />
       </div>
     )
   }
@@ -239,14 +240,14 @@ export function GuildOverviewPage() {
               <h1 className="text-xl font-semibold leading-none">{guildDetail.name}</h1>
               {verifiedKind && <VerifiedBadge kind={verifiedKind} className="-ml-1" />}
               {isPremium && !hidePremium && (
-                <Badge className="bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800 text-xs">
-                  <CrownIcon className="size-3 mr-1" />
+                <Badge className="border-primary/30 bg-primary/10 text-xs text-primary">
+                  <CrownIcon data-icon="inline-start" />
                   Moddy Max
                 </Badge>
               )}
               {boostTierLabel && (
                 <Badge variant="secondary" className="text-xs">
-                  <ZapIcon className="size-3 mr-1 text-purple-500" />
+                  <ZapIcon className="size-3 mr-1 text-primary" />
                   {boostTierLabel}
                 </Badge>
               )}
@@ -276,7 +277,7 @@ export function GuildOverviewPage() {
               )}
               {boostCount > 0 && (
                 <span className="flex items-center gap-1 shrink-0">
-                  <ZapIcon className="size-3 text-purple-400" />
+                  <ZapIcon className="size-3 text-primary" />
                   {boostCount} {boostCount > 1 ? 'boosts' : 'boost'}
                 </span>
               )}
@@ -294,8 +295,8 @@ export function GuildOverviewPage() {
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="py-0">
             <CardContent className="flex items-center gap-4 p-6">
-              <div className={`size-10 rounded-xl flex items-center justify-center shrink-0 ${STAT_STYLES[color].box}`}>
-                <Icon className={`size-5 ${STAT_STYLES[color].icon}`} />
+              <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", STAT_STYLES[color].box)}>
+                <Icon className={cn("size-5", STAT_STYLES[color].icon)} />
               </div>
               <div className="min-w-0">
                 <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
@@ -311,27 +312,27 @@ export function GuildOverviewPage() {
           abonnement que le back-end refusera ensuite est une fausse promesse.
           Le bandeau de sanction, lui, dit déjà ce qui est fermé et pourquoi. */}
       {!isPremium && !hidePremium && gates.canLinkGuild && (
-        <Card className="py-0 border-violet-400/60 dark:border-violet-600/40 bg-violet-400/15 dark:bg-violet-900/25">
+        <Card className="border-primary/30 bg-primary/5 py-0">
           <CardContent className="flex items-center justify-between gap-4 p-6 flex-wrap">
             <div className="flex items-center gap-4">
-              <div className="size-10 rounded-xl bg-violet-400/30 dark:bg-violet-700/40 flex items-center justify-center shrink-0">
-                <CrownIcon className="size-5 text-violet-600 dark:text-violet-300" />
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <CrownIcon className="size-5 text-primary" />
               </div>
               <div>
-                <p className="font-semibold text-sm text-violet-900 dark:text-violet-100">{t('guildOverview.premium.title')}</p>
-                <p className="text-xs text-violet-700/80 dark:text-violet-300/70 mt-0.5">{t('guildOverview.premium.description')}</p>
+                <p className="font-semibold text-sm text-foreground">{t('guildOverview.premium.title')}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.premium.description')}</p>
               </div>
             </div>
             <Button
               size="sm"
-              className="bg-violet-600 hover:bg-violet-700 text-white shrink-0 shadow-sm"
+              className="shrink-0"
               onClick={handleUpgrade}
               disabled={isUpgrading}
             >
               {isUpgrading ? (
-                <LoaderIcon className="size-4 animate-spin" />
+                <Spinner data-icon="inline-start" />
               ) : (
-                <SparklesIcon className="size-4" />
+                <SparklesIcon data-icon="inline-start" />
               )}
               {t('guildOverview.premium.cta')}
             </Button>

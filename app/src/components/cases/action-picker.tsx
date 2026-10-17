@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { InfinityIcon } from "lucide-react"
+import { InfinityIcon } from '@/components/icons'
 import { cn } from "@/lib/utils"
 import { ACTION_META, actionTone } from "@/lib/cases"
 import type { SanctionAction } from "@/types/cases"

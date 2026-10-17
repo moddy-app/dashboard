@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useNavigate, useParams } from "react-router-dom"
-import { ArchiveXIcon, FileWarningIcon, ShieldAlertIcon } from "lucide-react"
+import { ArchiveXIcon, FileWarningIcon, ShieldAlertIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { TranscriptView } from "@/components/tickets/transcript-view"

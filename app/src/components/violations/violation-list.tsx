@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { CircleDotIcon, CheckCircle2Icon, ShieldCheckIcon } from "lucide-react"
+import { CircleDotIcon, CheckCircle2Icon, ShieldCheckIcon } from '@/components/icons'
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Empty,
@@ -98,7 +98,7 @@ function ViolationRow({
         title={group.active ? t("violations.list.activeTitle") : t("violations.list.resolved")}
       >
         {group.active ? (
-          <CircleDotIcon className="size-4 text-red-500" />
+          <CircleDotIcon className="size-4 text-destructive" />
         ) : (
           <CheckCircle2Icon className="size-4 text-muted-foreground/60" />
         )}
@@ -170,7 +170,7 @@ export function ViolationList({
         {[...Array(3)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 px-4 py-3">
             <Skeleton className="size-4 rounded-full" />
-            <div className="flex-1 space-y-1.5">
+            <div className="flex-1 flex flex-col gap-1.5">
               <Skeleton className="h-3.5 w-2/3" />
               <Skeleton className="h-3 w-1/3" />
             </div>

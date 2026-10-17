@@ -260,7 +260,7 @@ export function AppSidebar({
               tooltip={hasBilling ? t("sidebar.manageSubscription") : "Moddy Max"}
               onClick={() => navigate(hasBilling ? "/?openSettings=billing" : "/premium")}
               isActive={location.pathname === "/premium"}
-              className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 dark:text-violet-400 dark:hover:text-violet-300 dark:hover:bg-violet-950/60 data-[active=true]:bg-violet-50 data-[active=true]:text-violet-700 dark:data-[active=true]:bg-violet-950/60 dark:data-[active=true]:text-violet-300"
+              className="text-primary hover:bg-primary/10 hover:text-primary data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
             >
               <CrownIcon />
               <span>{hasBilling ? t("sidebar.manageSubscription") : "Moddy Max"}</span>

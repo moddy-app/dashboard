@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next"
-import { ArrowUpRightIcon, PlusIcon, CrownIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { ArrowUpRightIcon, PlusIcon, CrownIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -20,7 +21,7 @@ import { VerifiedBadge } from "@/components/verified-badge"
 import { LevelPill } from "@/components/violations/violation-badges"
 import { resolveVerifiedKind } from "@/lib/verified"
 import { getGuildIconUrl } from "@/lib/auth"
-import { ServerIcon } from "lucide-react"
+import { ServerIcon } from "@/components/icons"
 
 export function GuildSelectionView() {
   const { t } = useTranslation()
@@ -94,11 +95,12 @@ export function GuildSelectionView() {
             <Card
               key={guild.id}
               aria-disabled={suspended || undefined}
-              className={`transition-all group py-0 ${
+              className={cn(
+                'transition-all group py-0',
                 suspended
-                  ? 'cursor-not-allowed opacity-60 border-red-200 dark:border-red-900/70'
+                  ? 'cursor-not-allowed opacity-60 border-destructive/30'
                   : 'cursor-pointer hover:bg-accent hover:text-accent-foreground hover:shadow-sm'
-              }`}
+              )}
               onClick={() => !suspended && selectGuild(String(guild.id))}
             >
               <CardContent className="flex items-center gap-3.5 p-6">
@@ -119,7 +121,7 @@ export function GuildSelectionView() {
                     <p className="font-semibold truncate">{guild.name}</p>
                     {kind && <VerifiedBadge kind={kind} className="-ml-1 shrink-0" />}
                     {showMax && (
-                      <Badge className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-950 dark:text-violet-300 dark:border-violet-800">
+                      <Badge className="shrink-0 gap-0.5 px-1.5 py-0 text-[10px] bg-primary/10 text-primary border-primary/30">
                         <CrownIcon className="size-2.5" />
                         Max
                       </Badge>

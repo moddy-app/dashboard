@@ -1,6 +1,7 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { XCircleIcon, LoaderIcon, ClockIcon, InfinityIcon } from "lucide-react"
+import { XCircleIcon, ClockIcon, InfinityIcon } from '@/components/icons'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -153,7 +154,7 @@ export function SanctionsPanel({ sanctions, canWrite, onRevoke, caseType }: Sanc
               disabled={busy}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {busy && <LoaderIcon className="size-4 animate-spin mr-1.5" />}
+              {busy && <Spinner data-icon="inline-start" />}
               {t("cases.sanctions.revoke")}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,20 +1,13 @@
-import {
-  Megaphone,
-  AlertOctagon,
-  Wrench,
-  Info,
-  TriangleAlert,
-  CheckCircle2,
-  X,
-  type LucideProps,
-} from 'lucide-react'
+import type { SVGProps } from 'react'
+import { MegaphoneIcon, AlertOctagonIcon, WrenchIcon, InfoIcon, TriangleAlertIcon, CheckCircle2Icon, XIcon } from '@/components/icons'
 import type { Banner, BannerType } from '@/services/banner'
+import { cn } from '@/lib/utils'
 import { parseInlineMarkdown } from '@/lib/inline-markdown'
 
 // ─── Design system per type ───────────────────────────────────────────────────
 
 interface TypeStyle {
-  Icon: React.ComponentType<LucideProps>
+  Icon: React.ComponentType<SVGProps<SVGSVGElement>>
   containerClass: string
   iconClass: string
   closeClass: string
@@ -22,46 +15,46 @@ interface TypeStyle {
 
 const TYPE_STYLES: Record<BannerType, TypeStyle> = {
   announcement: {
-    Icon: Megaphone,
+    Icon: MegaphoneIcon,
     containerClass:
-      'bg-primary/10 border-primary/20 text-primary dark:bg-primary/15 dark:border-primary/30',
+      'bg-primary/10 border-primary/20 text-primary',
     iconClass: 'text-primary',
-    closeClass: 'hover:bg-primary/15 dark:hover:bg-primary/25',
+    closeClass: 'hover:bg-primary/15',
   },
   incident: {
-    Icon: AlertOctagon,
+    Icon: AlertOctagonIcon,
     containerClass:
-      'bg-destructive/10 border-destructive/20 text-destructive dark:bg-destructive/15 dark:border-destructive/30',
+      'bg-destructive/10 border-destructive/20 text-destructive',
     iconClass: 'text-destructive',
-    closeClass: 'hover:bg-destructive/15 dark:hover:bg-destructive/25',
+    closeClass: 'hover:bg-destructive/15',
   },
   maintenance: {
-    Icon: Wrench,
+    Icon: WrenchIcon,
     containerClass:
-      'bg-amber-500/10 border-amber-500/20 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-400',
-    iconClass: 'text-amber-600 dark:text-amber-400',
-    closeClass: 'hover:bg-amber-500/15 dark:hover:bg-amber-500/25',
+      'bg-warning/10 border-warning/20 text-warning',
+    iconClass: 'text-warning',
+    closeClass: 'hover:bg-warning/15',
   },
   information: {
-    Icon: Info,
+    Icon: InfoIcon,
     containerClass:
-      'bg-sky-500/10 border-sky-500/20 text-sky-700 dark:bg-sky-500/15 dark:border-sky-500/30 dark:text-sky-400',
-    iconClass: 'text-sky-600 dark:text-sky-400',
-    closeClass: 'hover:bg-sky-500/15 dark:hover:bg-sky-500/25',
+      'bg-info/10 border-info/20 text-info',
+    iconClass: 'text-info',
+    closeClass: 'hover:bg-info/15',
   },
   warning: {
-    Icon: TriangleAlert,
+    Icon: TriangleAlertIcon,
     containerClass:
-      'bg-orange-500/10 border-orange-500/20 text-orange-700 dark:bg-orange-500/15 dark:border-orange-500/30 dark:text-orange-400',
-    iconClass: 'text-orange-600 dark:text-orange-400',
-    closeClass: 'hover:bg-orange-500/15 dark:hover:bg-orange-500/25',
+      'bg-warning/10 border-warning/20 text-warning',
+    iconClass: 'text-warning',
+    closeClass: 'hover:bg-warning/15',
   },
   resolved: {
-    Icon: CheckCircle2,
+    Icon: CheckCircle2Icon,
     containerClass:
-      'bg-emerald-500/10 border-emerald-500/20 text-emerald-700 dark:bg-emerald-500/15 dark:border-emerald-500/30 dark:text-emerald-400',
-    iconClass: 'text-emerald-600 dark:text-emerald-400',
-    closeClass: 'hover:bg-emerald-500/15 dark:hover:bg-emerald-500/25',
+      'bg-success/10 border-success/20 text-success',
+    iconClass: 'text-success',
+    closeClass: 'hover:bg-success/15',
   },
 }
 
@@ -81,18 +74,18 @@ export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
       <div
         role="status"
         aria-live="polite"
-        className={`shrink-0 flex w-full items-center border-b px-6 py-3 text-sm ${containerClass}`}
+        className={cn('shrink-0 flex w-full items-center border-b px-6 py-3 text-sm', containerClass)}
       >
         <div className="flex flex-1 items-start justify-center gap-3">
-          <Icon className={`mt-0.5 size-4 shrink-0 ${iconClass}`} aria-hidden />
+          <Icon className={cn('mt-0.5 size-4 shrink-0', iconClass)} aria-hidden />
           <p className="leading-relaxed">{nodes}</p>
         </div>
         <button
           onClick={onDismiss}
           aria-label="Fermer"
-          className={`ml-4 shrink-0 rounded p-1 transition-colors ${closeClass}`}
+          className={cn('ml-4 shrink-0 rounded p-1 transition-colors', closeClass)}
         >
-          <X className="size-4" aria-hidden />
+          <XIcon className="size-4" aria-hidden />
         </button>
       </div>
     )
@@ -129,7 +122,7 @@ export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
         onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${accentColor}20`)}
         onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
       >
-        <X className="size-4" aria-hidden />
+        <XIcon className="size-4" aria-hidden />
       </button>
     </div>
   )

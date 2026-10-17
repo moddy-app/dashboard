@@ -1,6 +1,7 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { SendHorizonalIcon, LoaderIcon, LockIcon, MessageSquareIcon } from "lucide-react"
+import { SendHorizonalIcon, LockIcon, MessageSquareIcon } from '@/components/icons'
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -37,7 +38,7 @@ export function CaseComposer({ onSubmit, canNote = false }: CaseComposerProps) {
     <div
       className={cn(
         "rounded-xl border bg-card transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50",
-        asNote && "border-amber-300 dark:border-amber-900"
+        asNote && "border-warning/30"
       )}
     >
       <Textarea
@@ -73,7 +74,7 @@ export function CaseComposer({ onSubmit, canNote = false }: CaseComposerProps) {
                 onClick={() => setAsNote(true)}
                 className={cn(
                   "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
-                  asNote ? "bg-amber-500 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  asNote ? "bg-warning text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 <LockIcon className="size-3" />
@@ -87,7 +88,7 @@ export function CaseComposer({ onSubmit, canNote = false }: CaseComposerProps) {
         </div>
         <Button size="sm" onClick={submit} disabled={disabled}>
           {submitting ? (
-            <LoaderIcon className="size-4 animate-spin" />
+            <Spinner />
           ) : (
             <SendHorizonalIcon className="size-4" />
           )}

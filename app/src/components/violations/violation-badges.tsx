@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { ClockIcon, HourglassIcon, InfinityIcon, PauseIcon } from "lucide-react"
+import { ClockIcon, HourglassIcon, InfinityIcon, PauseIcon } from '@/components/icons'
 import { cn } from "@/lib/utils"
 import { ACTION_META } from "@/lib/cases"
 import { ActionChip } from "@/components/cases/case-badges"

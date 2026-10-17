@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
-import {
-  CreditCardIcon,
-  ExternalLinkIcon,
-  LogOutIcon,
-  RefreshCwIcon,
-} from "lucide-react"
+import { CreditCardIcon, ExternalLinkIcon, LogOutIcon, RefreshCwIcon } from '@/components/icons'
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"

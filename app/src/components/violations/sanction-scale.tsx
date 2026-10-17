@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { CheckIcon } from "lucide-react"
+import { CheckIcon } from '@/components/icons'
 import { cn } from "@/lib/utils"
 import { LEVEL_TONE, levelRank } from "@/lib/sanctions"
 import type { SanctionLevel } from "@/types/violations"

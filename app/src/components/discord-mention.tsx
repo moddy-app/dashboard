@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from "react"
 import { useTranslation } from "react-i18next"
-import { CopyIcon } from "lucide-react"
+import { CopyIcon } from '@/components/icons'
 import {
   ContextMenu,
   ContextMenuContent,

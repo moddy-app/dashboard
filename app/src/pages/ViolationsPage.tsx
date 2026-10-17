@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { RefreshCwIcon } from "lucide-react"
+import { RefreshCwIcon } from '@/components/icons'
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { usePageTitle } from "@/hooks/usePageTitle"

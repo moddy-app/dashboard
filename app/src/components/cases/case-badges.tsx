@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { LockIcon } from "lucide-react"
+import { LockIcon } from '@/components/icons'
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -54,7 +54,7 @@ export function CaseStatusPill({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-xs font-medium",
         open
-          ? "border-green-200 bg-green-50 text-green-700 dark:border-green-900 dark:bg-green-950/50 dark:text-green-400"
+          ? "border-success/30 bg-success/10 text-success"
           : "border-border bg-muted text-muted-foreground",
         className
       )}
@@ -62,7 +62,7 @@ export function CaseStatusPill({
       <span
         className={cn(
           "size-1.5 rounded-full",
-          open ? "bg-green-500" : "bg-muted-foreground/50"
+          open ? "bg-success" : "bg-muted-foreground/50"
         )}
       />
       {t(`cases.status.${status}`)}
@@ -144,7 +144,7 @@ export function SanctionStatusBadge({ status }: { status: SanctionStatus }) {
   const { t } = useTranslation()
   if (status === "active")
     return (
-      <Badge className="text-[10px] px-1.5 py-0 bg-green-100 text-green-700 border-green-200 dark:bg-green-950/60 dark:text-green-400 dark:border-green-900">
+      <Badge className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/30">
         {t("cases.sanctionStatus.active")}
       </Badge>
     )

@@ -8,9 +8,10 @@
  * Il reste accessible dans un repli « détails ».
  */
 
+import { Spinner } from '@/components/ui/spinner'
 import { createElement, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { CheckIcon, ChevronRightIcon, LoaderIcon, TriangleAlertIcon } from 'lucide-react'
+import { CheckIcon, ChevronRightIcon, TriangleAlertIcon } from '@/components/icons'
 import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 import { cn } from '@/lib/utils'
 import { toolIcon, toolLabelKey } from '@/lib/brocoli'
@@ -46,9 +47,9 @@ export function BrocoliToolStep({ item }: { item: ToolItem }) {
       >
         <MarkerIcon>
           {running ? (
-            <LoaderIcon className="animate-spin" />
+            <Spinner />
           ) : item.state === 'failed' ? (
-            <TriangleAlertIcon className="text-amber-600 dark:text-amber-400" />
+            <TriangleAlertIcon className="text-warning" />
           ) : (
             // `createElement` plutôt qu'une variable capitalisée : l'icône est
             // choisie dynamiquement selon l'outil, ce qu'un composant déclaré

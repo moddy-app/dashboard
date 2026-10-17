@@ -1,5 +1,6 @@
+import { Spinner } from '@/components/ui/spinner'
 import { useState } from "react"
-import { ChevronsUpDownIcon, CrownIcon, LoaderIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from "lucide-react"
+import { ChevronsUpDownIcon, CrownIcon, PlusIcon, RefreshCwIcon, ServerIcon, ShieldIcon } from '@/components/icons'
 import { useTranslation } from "react-i18next"
 import { useLocation, useNavigate } from "react-router-dom"
 
@@ -69,7 +70,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
     if (isOnStaffPage) {
       return (
         <>
-          <div className="bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 flex aspect-square size-8 items-center justify-center rounded-lg shrink-0">
+          <div className="bg-primary/10 text-primary flex aspect-square size-8 items-center justify-center rounded-lg shrink-0">
             <ShieldIcon className="size-4" />
           </div>
           <div className="grid flex-1 text-left text-sm leading-tight">
@@ -186,7 +187,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                         <>
                           {kind && <VerifiedBadge kind={kind} className="-ml-1 shrink-0" />}
                           {premiumIds.has(String(guild.id)) && kind !== "official" && (
-                            <CrownIcon className="size-3 text-violet-500 shrink-0" />
+                            <CrownIcon className="size-3 text-primary shrink-0" />
                           )}
                           {(suspended || level === "limited") && (
                             <LevelDot
@@ -198,7 +199,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                       )
                     })()}
                     {isActive && (
-                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      <span className="ml-auto size-1.5 rounded-full bg-primary shrink-0" />
                     )}
                   </DropdownMenuItem>
                 )
@@ -243,7 +244,7 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
               >
                 <div className="bg-background flex size-6 items-center justify-center rounded-md border shrink-0">
                   {isRefreshing ? (
-                    <LoaderIcon className="size-4 animate-spin" />
+                    <Spinner />
                   ) : (
                     <RefreshCwIcon className="size-4" />
                   )}
@@ -266,12 +267,12 @@ export function TeamSwitcher({ onRefreshGuilds }: TeamSwitcherProps) {
                   onClick={() => navigate("/staff")}
                   data-active={isOnStaffPage}
                 >
-                  <div className="bg-violet-100 dark:bg-violet-950 flex size-6 items-center justify-center rounded-md shrink-0">
-                    <ShieldIcon className="size-3.5 text-violet-600 dark:text-violet-400" />
+                  <div className="bg-primary/10 flex size-6 items-center justify-center rounded-md shrink-0">
+                    <ShieldIcon className="size-3.5 text-primary" />
                   </div>
                   <span className="truncate">{t("staff.title")}</span>
                   {isOnStaffPage && (
-                    <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                    <span className="ml-auto size-1.5 rounded-full bg-primary shrink-0" />
                   )}
                 </DropdownMenuItem>
               </>
