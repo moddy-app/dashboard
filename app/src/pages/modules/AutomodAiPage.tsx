@@ -2,22 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  AlertCircleIcon,
-  LoaderIcon,
-  LockIcon,
-  RotateCcwIcon,
-  SparklesIcon,
-  WandSparklesIcon,
-} from "lucide-react"
+import { ErrorIcon, LockIcon } from "@/components/icons"
 import { UnsavedBar } from "@/components/unsaved-bar"
-import { AutomodCustomTab } from "@/components/automod/custom-infractions-tab"
-import { AutomodPendingApprovalsPanel } from "@/components/automod/pending-approvals-panel"
-import { AutomodProfileHoldsPanel } from "@/components/automod/profile-holds-panel"
-import { AutomodScaleTab } from "@/components/automod/scale-tab"
-import { SetupWizard } from "@/components/automod/setup-wizard"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import { AutomodAdvancedTab } from "@/components/automod/advanced-tab"
+import { AutomodExemptionsTab } from "@/components/automod/exemptions-tab"
+import { AutomodMonitoringTab } from "@/components/automod/monitoring-tab"
+import { AutomodSanctionsTab } from "@/components/automod/sanctions-tab"
 import { AutomodSettingsTab } from "@/components/automod/settings-tab"
-import { StatusBadges, StatusWarnings } from "@/components/automod/status-display"
+import { StatusWarnings } from "@/components/automod/status-display"
 import {
   AUTOMOD_TABS,
   type AutomodTabId,
@@ -25,17 +19,6 @@ import {
 } from "@/components/automod/automod-form"
 import { ErrorPage } from "@/components/error-state"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useGuildContext } from "@/contexts/GuildContext"
@@ -47,9 +30,11 @@ import { useSanctionGates, useSanctions } from "@/contexts/SanctionContext"
 import { sanctionBlockedError } from "@/lib/sanctions"
 import { logger } from "@/lib/logger"
 import {
+  applyAutomodPreset,
   applyExemptions,
   automodErrorKey,
   readAutomodErrorInfo,
+  readModuleState,
   resolveFaultyInfractionId,
   stableStringify,
 } from "@/lib/automod"
@@ -60,7 +45,7 @@ import {
   getAutomodStatus,
   saveAutomodConfig,
 } from "@/services/automod"
-import type { AutomodAiConfig, AutomodAiStatus, AutomodFeature } from "@/types/api"
+import type { AutomodAiConfig, AutomodAiStatus, AutomodCatalogPreset } from "@/types/api"
 
 /** Encart global d'erreur d'enregistrement. */
 interface FormError {
@@ -74,7 +59,7 @@ interface FaultyInfraction {
   /** `null` quand l'erreur ne vise aucune entrée précise (ex. trop d'infractions). */
   id: string | null
   message: string
-  tab: Extract<AutomodTabId, "infractions" | "scale">
+  tab: Extract<AutomodTabId, "sanctions">
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -161,7 +146,7 @@ export function AutomodAiPage() {
 
 function AutomodAiForm() {
   const { t } = useTranslation()
-  const { selectedGuildId } = useGuildContext()
+  const { selectedGuildId, modules, syncModule } = useGuildContext()
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [savedConfig, setSavedConfig] = useState<AutomodAiConfig | null>(null)
@@ -170,14 +155,11 @@ function AutomodAiForm() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [isResetting, setIsResetting] = useState(false)
-  const [confirmReset, setConfirmReset] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   /** Erreur du PUT qui ne se rattache à aucun champ. */
   const [formError, setFormError] = useState<FormError | null>(null)
   /** Infraction personnalisée ou barème refusé par le PUT. */
   const [faulty, setFaulty] = useState<FaultyInfraction | null>(null)
-  const [wizardOpen, setWizardOpen] = useState(false)
   /** Ids d'infractions supprimés pendant la session : jamais réutilisés. */
   const usedInfractionIds = useRef<Set<string>>(new Set())
 
@@ -188,6 +170,19 @@ function AutomodAiForm() {
     retry: retryCatalog,
   } = useAutomodCatalog(selectedGuildId)
   const { policies, reload: reloadPolicies } = useAutomodPolicies(selectedGuildId)
+
+  // L'état (actif / simulation / pause) s'écrit depuis l'en-tête, hors brouillon :
+  // on le recopie ici pour que ni la comparaison ni un PUT ne le contredisent.
+  const configured = Boolean(modules.automod_ai)
+  const ctxState = modules.automod_ai
+    ? readModuleState((modules.automod_ai as { state?: unknown }).state)
+    : undefined
+  useEffect(() => {
+    if (!ctxState) return
+    const sync = (c: AutomodAiConfig | null) => (c && c.state !== ctxState ? { ...c, state: ctxState } : c)
+    setSavedConfig(sync)
+    setDraft(sync)
+  }, [ctxState])
 
   // L'onglet actif vit dans `?tab=` ; le brouillon, lui, est unique et partagé.
   const tabParam = searchParams.get("tab")
@@ -208,10 +203,6 @@ function AutomodAiForm() {
     },
     [setSearchParams]
   )
-
-  const onOpenWizard = useCallback(() => {
-    setWizardOpen(true)
-  }, [])
 
   // ── Chargement ────────────────────────────────────────────────────────────
 
@@ -269,18 +260,6 @@ function AutomodAiForm() {
     setDraft((prev) => (prev ? updater(prev) : prev))
   }, [])
 
-  const patchFeature = useCallback((featureId: string, changes: Partial<AutomodFeature>) => {
-    setDraft((prev) => {
-      if (!prev) return prev
-      const current = prev.features[featureId]
-      if (!current) return prev
-      return {
-        ...prev,
-        features: { ...prev.features, [featureId]: { ...current, ...changes } },
-      }
-    })
-  }, [])
-
   /** Une seule liste dans l'UI, recopiée sur tous les blocs (comme le panneau du bot). */
   const patchExemptions = useCallback((changes: { roles?: string[]; channels?: string[] }) => {
     setDraft((prev) => (prev ? { ...prev, features: applyExemptions(prev.features, changes) } : prev))
@@ -330,7 +309,12 @@ function AutomodAiForm() {
     try {
       // On envoie l'objet complet issu de celui reçu : tout champ inconnu de
       // ce front est préservé.
-      const saved = await saveAutomodConfig(selectedGuildId, draft)
+      // Un module déjà configuré garde l'état posé par l'en-tête : sans `state`
+      // dans le corps, le backend conserve l'état enregistré.
+      const body: AutomodAiConfig = { ...draft }
+      if (configured) delete body.state
+      const saved = await saveAutomodConfig(selectedGuildId, body)
+      syncModule("automod_ai", { ...saved })
       setSavedConfig(saved)
       setDraft(structuredClone(saved))
       toast.success(t("modules.saved"))
@@ -350,14 +334,14 @@ function AutomodAiForm() {
         if (knownMessage) {
           setFormError({ message: knownMessage })
           if (knownKey?.startsWith("sanctions_")) {
-            setFaulty({ id: info?.sanctionKey ?? info?.infractionId ?? null, message: knownMessage, tab: "scale" })
+            setFaulty({ id: info?.sanctionKey ?? info?.infractionId ?? null, message: knownMessage, tab: "sanctions" })
           }
         } else if (info) {
           const faultyId = resolveFaultyInfractionId(info, draft.infractions_perso ?? [])
           setFaulty({
             id: faultyId,
             message: e.message,
-            tab: info.code.startsWith("sanction") ? "scale" : "infractions",
+            tab: "sanctions",
           })
         }
         // 503 : rien n'a été écrit — le contrôle (IA) est indisponible.
@@ -391,7 +375,7 @@ function AutomodAiForm() {
     } finally {
       setIsSaving(false)
     }
-  }, [selectedGuildId, draft, t, loadStatus, reloadPolicies, gates])
+  }, [selectedGuildId, draft, t, loadStatus, reloadPolicies, gates, configured, syncModule])
 
   useEffect(() => {
     saveRef.current = handleSave
@@ -406,94 +390,44 @@ function AutomodAiForm() {
     setFaulty(null)
   }, [savedConfig])
 
+  // Réinitialisation depuis le menu de l'en-tête (qui porte sa propre confirmation).
   const handleReset = useCallback(async () => {
     if (!selectedGuildId) return
     logger.event("module:automod_ai", "Reset config")
-    setIsResetting(true)
-    try {
-      await deleteAutomodConfig(selectedGuildId)
-      const fresh = defaultAutomodConfig()
-      setSavedConfig(fresh)
-      setDraft(structuredClone(fresh))
-      setFieldErrors({})
-      setFormError(null)
-      setFaulty(null)
-      toast.success(t("modules.automod_ai.resetSuccess"))
-      logger.success("module:automod_ai", "Config reset")
-      await loadStatus()
-      reloadPolicies()
-    } catch (e) {
-      logger.error("module:automod_ai", "Reset failed", e)
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsResetting(false)
-      setConfirmReset(false)
-    }
-  }, [selectedGuildId, t, loadStatus, reloadPolicies])
+    await deleteAutomodConfig(selectedGuildId)
+    const fresh = defaultAutomodConfig()
+    syncModule("automod_ai", null)
+    setSavedConfig(fresh)
+    setDraft(structuredClone(fresh))
+    setFieldErrors({})
+    setFormError(null)
+    setFaulty(null)
+    logger.success("module:automod_ai", "Config reset")
+    await loadStatus()
+    reloadPolicies()
+  }, [selectedGuildId, loadStatus, reloadPolicies, syncModule])
+
+  /** Un niveau est un point de départ : il remplit le brouillon, sans enregistrer. */
+  const handleApplyPreset = useCallback(
+    (preset: AutomodCatalogPreset) => {
+      setDraft((prev) =>
+        prev
+          ? applyAutomodPreset(prev, preset, catalog?.presets ?? [], {
+              notifyChannelId: prev.notify_channel_id,
+              // Module existant : son état ne bouge pas. Nouveau : on démarre en simulation.
+              state: configured ? readModuleState(prev.state) : "simulation",
+            })
+          : prev
+      )
+      toast.success(t("modules.automod_ai.levelApplied"))
+    },
+    [catalog, configured, t]
+  )
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
-  if (loadError) {
-    return <ErrorPage error={loadError} onRetry={() => window.location.reload()} />
-  }
-
-  if (isLoading || !draft) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-32 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
-  const catalogProps = {
-    catalog,
-    loading: catalogLoading,
-    error: catalogError,
-    onRetry: retryCatalog,
-  }
-
-  return (
-    <div className="flex flex-col gap-6 w-full pb-24">
-      <SetupWizard
-        open={wizardOpen && !readOnly}
-        onOpenChange={setWizardOpen}
-        config={draft}
-        {...catalogProps}
-        onApply={(next) => setDraft(next)}
-      />
-
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-4">
-          <div className="size-11 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center shrink-0">
-            <SparklesIcon className="size-5 text-violet-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold leading-none">{t("modules.automod_ai.name")}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t("modules.automod_ai.description")}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <StatusBadges status={status} />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onOpenWizard}
-            disabled={readOnly}
-            aria-haspopup="dialog"
-            aria-expanded={wizardOpen}
-          >
-            <WandSparklesIcon data-icon="inline-start" />
-            {t("modules.automod_ai.wizard.open")}
-          </Button>
-        </div>
-      </div>
-
+  const content = draft ? (
+    <>
       {/* Sanction globale : le bandeau de la page couvre le cas connu du
           contexte ; celui-ci couvre le cas que seul `/status` a vu. */}
       {blockedByStatus && gates.canWriteAutomod && (
@@ -509,7 +443,7 @@ function AutomodAiForm() {
 
       {formError && (
         <Alert variant="destructive">
-          <AlertCircleIcon />
+          <ErrorIcon />
           <AlertTitle>
             {t(formError.notSaved ? "modules.automod_ai.notSavedTitle" : "modules.automod_ai.formErrorTitle")}
           </AlertTitle>
@@ -524,111 +458,68 @@ function AutomodAiForm() {
         <div className="overflow-x-auto">
           <TabsList>
             <TabsTrigger value="settings">{t("modules.automod_ai.tabs.settings")}</TabsTrigger>
-            <TabsTrigger value="scale">
-              {t("modules.automod_ai.tabs.scale")}
-              {faulty?.tab === "scale" && <FaultyDot />}
+            <TabsTrigger value="monitoring">{t("modules.automod_ai.tabs.monitoring")}</TabsTrigger>
+            <TabsTrigger value="sanctions">
+              {t("modules.automod_ai.tabs.sanctions")}
+              {faulty?.tab === "sanctions" && <FaultyDot />}
             </TabsTrigger>
-            <TabsTrigger value="infractions">
-              {t("modules.automod_ai.tabs.infractions")}
-              {faulty?.tab === "infractions" && <FaultyDot />}
-            </TabsTrigger>
-            <TabsTrigger value="approvals">{t("modules.automod_ai.tabs.approvals")}</TabsTrigger>
-            <TabsTrigger value="profiles">{t("modules.automod_ai.tabs.profiles")}</TabsTrigger>
+            <TabsTrigger value="exemptions">{t("modules.automod_ai.tabs.exemptions")}</TabsTrigger>
+            <TabsTrigger value="advanced">{t("modules.automod_ai.tabs.advanced")}</TabsTrigger>
           </TabsList>
         </div>
 
         {/* En lecture seule, `disabled` sur le fieldset désactive tous les
             contrôles natifs d'un coup (Switch, Select, Checkbox, boutons). */}
         <fieldset disabled={readOnly} className="contents">
-          <TabsContent value="settings" className="flex flex-col gap-6">
+          <TabsContent value="settings">
             <AutomodSettingsTab
+              draft={draft}
+              catalog={catalog}
+              catalogLoading={catalogLoading}
+              fieldErrors={fieldErrors}
+              onPatch={patch}
+              onApplyPreset={handleApplyPreset}
+              onClearFieldError={clearFieldError}
+            />
+          </TabsContent>
+
+          <TabsContent value="monitoring">
+            <AutomodMonitoringTab draft={draft} catalog={catalog} onUpdate={updateDraft} />
+          </TabsContent>
+
+          <TabsContent value="sanctions">
+            <AutomodSanctionsTab
+              guildId={selectedGuildId ?? ""}
+              draft={draft}
+              savedConfig={savedConfig}
+              catalog={catalog}
+              loading={catalogLoading}
+              error={catalogError}
+              onRetry={retryCatalog}
+              onUpdate={updateDraft}
+              policies={policies}
+              readOnly={readOnly}
+              usedIds={usedInfractionIds}
+              faulty={faulty}
+              onClearFaulty={() => setFaulty(null)}
+            />
+          </TabsContent>
+
+          <TabsContent value="exemptions">
+            <AutomodExemptionsTab
               draft={draft}
               readOnly={readOnly}
               fieldErrors={fieldErrors}
               onPatch={patch}
-              onPatchFeature={patchFeature}
               onPatchExemptions={patchExemptions}
-              onClearFieldError={clearFieldError}
-            />
-
-            {/* Réinitialisation */}
-            <Button
-              type="button"
-              variant="outline"
-              className="text-destructive hover:text-destructive w-fit"
-              onClick={() => setConfirmReset(true)}
-              disabled={isSaving || isResetting}
-            >
-              {isResetting ? (
-                <LoaderIcon className="size-4 mr-2 animate-spin" />
-              ) : (
-                <RotateCcwIcon className="size-4 mr-2" />
-              )}
-              {t("modules.automod_ai.reset")}
-            </Button>
-          </TabsContent>
-
-          <TabsContent value="scale">
-            <AutomodScaleTab
-              draft={draft}
-              readOnly={readOnly}
-              onUpdate={updateDraft}
-              policies={policies}
-              {...catalogProps}
             />
           </TabsContent>
 
-          <TabsContent value="infractions">
-            <AutomodCustomTab
-              guildId={selectedGuildId ?? ""}
-              draft={draft}
-              savedConfig={savedConfig}
-              onUpdate={updateDraft}
-              usedIds={usedInfractionIds}
-              faulty={faulty}
-              onClearFaulty={() => setFaulty(null)}
-              onOpenScale={() => setTab("scale")}
-              {...catalogProps}
-            />
+          <TabsContent value="advanced">
+            <AutomodAdvancedTab draft={draft} fieldErrors={fieldErrors} onPatch={patch} />
           </TabsContent>
         </fieldset>
-
-        {/* Lecture seule par nature : hors du fieldset, ses boutons restent actifs
-            (y compris sous sanction globale). */}
-        <TabsContent value="approvals">
-          {selectedGuildId && (
-            <AutomodPendingApprovalsPanel
-              key={String(selectedGuildId)}
-              guildId={String(selectedGuildId)}
-              catalog={catalog}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="profiles">
-          {selectedGuildId && <AutomodProfileHoldsPanel key={String(selectedGuildId)} guildId={String(selectedGuildId)} />}
-        </TabsContent>
       </Tabs>
-
-      <AlertDialog open={confirmReset} onOpenChange={(open) => !open && setConfirmReset(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("modules.automod_ai.confirmResetTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("modules.automod_ai.confirmResetDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("modules.automod_ai.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleReset}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t("modules.automod_ai.reset")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <UnsavedBar
         isDirty={isDirty && !readOnly}
@@ -636,7 +527,19 @@ function AutomodAiForm() {
         onSave={handleSave}
         onDiscard={handleDiscard}
       />
-    </div>
+    </>
+  ) : null
+
+  return (
+    <ModulePage
+      moduleId="automod_ai"
+      loading={isLoading || !draft}
+      error={loadError}
+      onRetry={() => window.location.reload()}
+      actions={<ModuleStateControl moduleId="automod_ai" onReset={handleReset} />}
+    >
+      {content}
+    </ModulePage>
   )
 }
 

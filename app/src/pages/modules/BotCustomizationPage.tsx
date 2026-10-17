@@ -7,12 +7,11 @@ import {
   CrownIcon,
   EraserIcon,
   ImageIcon,
-  LoaderIcon,
   PaletteIcon,
   RotateCcwIcon,
   UploadIcon,
   XIcon,
-} from "lucide-react"
+} from "@/components/icons"
 import { DiscordMarkup } from "@/components/discord-markup"
 import {
   DiscordProfilePreview,
@@ -20,20 +19,14 @@ import {
 } from "@/components/discord-profile-preview"
 import { NameStylePreview } from "@/components/name-style-preview"
 import { UnsavedBar } from "@/components/unsaved-bar"
-import { ErrorPage } from "@/components/error-state"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import { ColorPicker } from "@/components/pickers"
+import { Spinner } from "@/components/ui/spinner"
 import { DebugErrorOverlay } from "@/components/debug-error-overlay"
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import {
   Card,
   CardContent,
@@ -50,7 +43,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useGuildContext } from "@/contexts/GuildContext"
 import { useBotProfile } from "@/hooks/useBotProfile"
@@ -69,7 +61,6 @@ import {
   formatBytes,
   isDirty as computeIsDirty,
   isValidHex,
-  normalizeHex,
   stateToDraft,
   validateImage,
   type CustomizationDraft,
@@ -278,7 +269,7 @@ function ImageField({
             </p>
           )}
           {draft.kind === "clear" && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            <p className="text-xs text-muted-foreground">
               {t("modules.bot_customization.pendingRemoval")}
             </p>
           )}
@@ -296,20 +287,15 @@ function PremiumNotice() {
   const navigate = useNavigate()
 
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-violet-400/50 bg-violet-400/10 px-4 py-3">
-      <CrownIcon className="size-4 shrink-0 text-violet-500" />
-      <p className="min-w-0 flex-1 text-xs text-violet-700 dark:text-violet-300">
-        {t("modules.bot_customization.premiumLockDescription")}
-      </p>
-      <Button
-        type="button"
-        size="sm"
-        className="bg-violet-600 text-white shadow-sm hover:bg-violet-700"
-        onClick={() => navigate("/premium")}
-      >
-        {t("modules.bot_customization.premiumCta")}
-      </Button>
-    </div>
+    <Alert>
+      <CrownIcon />
+      <AlertDescription>{t("modules.bot_customization.premiumLockDescription")}</AlertDescription>
+      <AlertAction>
+        <Button type="button" size="sm" onClick={() => navigate("/premium")}>
+          {t("modules.bot_customization.premiumCta")}
+        </Button>
+      </AlertAction>
+    </Alert>
   )
 }
 
@@ -318,16 +304,11 @@ function PremiumNotice() {
 export function BotCustomizationPage() {
   const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
 
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-  }
-
-  if (isLoadingGuild || !isGuildReady) {
+  if (guildError || isLoadingGuild || !isGuildReady) {
     return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
+      <ModulePage moduleId="bot_customization" loading={!guildError} error={guildError} onRetry={refreshGuildData}>
+        {null}
+      </ModulePage>
     )
   }
 
@@ -349,7 +330,6 @@ function BotCustomizationForm() {
   const [loadErrorRaw, setLoadErrorRaw] = useState<unknown>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isResetting, setIsResetting] = useState(false)
-  const [confirmReset, setConfirmReset] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
 
   // Les URLs d'aperçu local (`URL.createObjectURL`) doivent être révoquées :
@@ -561,15 +541,23 @@ function BotCustomizationForm() {
       }
 
       await saveBotCustomization(selectedGuildId, body)
-      // La réponse du PUT est le résultat brut du bot : on relit le GET pour
-      // ré-hydrater le formulaire et l'aperçu dans la forme documentée
-      // (hashes frais, `updated_at`/`updated_by`, `is_premium`).
-      applyState(await getBotCustomization(selectedGuildId))
-      logger.success("module:bot_customization", "Saved")
-      toast.success(t("modules.saved"))
     } catch (e) {
       logger.error("module:bot_customization", "Save failed", e)
       showApiError(e)
+      setIsSaving(false)
+      return
+    }
+    logger.success("module:bot_customization", "Saved")
+    toast.success(t("modules.saved"))
+    // La réponse du PATCH est le résultat brut du bot : on relit le GET pour
+    // ré-hydrater le formulaire et l'aperçu (hashes frais, `updated_at`,
+    // `is_premium`). Hors du try de l'écriture : un échec de relecture n'est
+    // pas un échec d'enregistrement.
+    try {
+      applyState(await getBotCustomization(selectedGuildId))
+    } catch (e) {
+      logger.warn("module:bot_customization", "Refresh after save failed", e)
+      toast.warning(t("modules.bot_customization.refreshFailed"))
     } finally {
       setIsSaving(false)
     }
@@ -583,15 +571,10 @@ function BotCustomizationForm() {
       await resetBotCustomization(selectedGuildId)
       applyState(await getBotCustomization(selectedGuildId))
       logger.success("module:bot_customization", "Reset done")
-      toast.success(t("modules.bot_customization.resetSuccess"))
-      setConfirmReset(false)
-    } catch (e) {
-      logger.error("module:bot_customization", "Reset failed", e)
-      showApiError(e)
     } finally {
       setIsResetting(false)
     }
-  }, [selectedGuildId, applyState, showApiError, t])
+  }, [selectedGuildId, applyState])
 
   const handleDiscard = useCallback(() => {
     if (state) applyState(state)
@@ -605,21 +588,18 @@ function BotCustomizationForm() {
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
-  if (isLoading) {
-    return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-56 rounded-xl" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
-  if (loadError || !state || !draft) {
+  if (isLoading || loadError || !state || !draft) {
     return (
       <>
-        <ErrorPage error={loadError ?? "Failed to load module config"} onRetry={load} />
-        <DebugErrorOverlay error={loadErrorRaw} context="bot_customization/load" />
+        <ModulePage
+          moduleId="bot_customization"
+          loading={isLoading}
+          error={isLoading ? null : (loadError ?? "Failed to load module config")}
+          onRetry={load}
+        >
+          {null}
+        </ModulePage>
+        {!isLoading && <DebugErrorOverlay error={loadErrorRaw} context="bot_customization/load" />}
       </>
     )
   }
@@ -665,22 +645,10 @@ function BotCustomizationForm() {
     : null
 
   return (
-    <div className="flex w-full flex-col gap-6 pb-24">
-      {/* En-tête */}
-      <div className="flex items-center gap-4">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-fuchsia-100 dark:bg-fuchsia-950">
-          <PaletteIcon className="size-5 text-fuchsia-500" />
-        </div>
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold leading-none">
-            {t("modules.bot_customization.name")}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("modules.bot_customization.description")}
-          </p>
-        </div>
-      </div>
-
+    <ModulePage
+      moduleId="bot_customization"
+      actions={<ModuleStateControl moduleId="bot_customization" onReset={handleReset} />}
+    >
       {!isPremium && <PremiumNotice />}
 
       {/* Aperçu */}
@@ -711,11 +679,8 @@ function BotCustomizationForm() {
             <CardTitle className="text-base">
               {t("modules.bot_customization.identityTitle")}
             </CardTitle>
-            <Badge
-              variant="outline"
-              className="border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-300"
-            >
-              <CrownIcon className="mr-1 size-3" />
+            <Badge variant="secondary">
+              <CrownIcon data-icon="inline-start" />
               {t("modules.bot_customization.premiumBadge")}
             </Badge>
           </div>
@@ -957,22 +922,9 @@ function BotCustomizationForm() {
               <div className="flex flex-col gap-2">
                 {draft.style.colors.map((color, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      className="color-field size-10 shrink-0 rounded-lg border border-input"
-                      // `<input type="color">` n'accepte qu'un `#rrggbb`
-                      // minuscule ; le champ texte reste en majuscules.
-                      value={(isValidHex(color) ? color : DEFAULT_STYLE_COLOR).toLowerCase()}
-                      disabled={formDisabled}
-                      onChange={(e) => setColor(index, e.target.value.toUpperCase())}
-                    />
-                    <Input
-                      value={color}
-                      onChange={(e) => setColor(index, e.target.value)}
-                      onBlur={(e) => setColor(index, normalizeHex(e.target.value))}
-                      placeholder={DEFAULT_STYLE_COLOR}
-                      className="max-w-40 font-mono"
-                      maxLength={7}
+                    <ColorPicker
+                      value={isValidHex(color) ? color : DEFAULT_STYLE_COLOR}
+                      onChange={(v) => setColor(index, v ?? DEFAULT_STYLE_COLOR)}
                       disabled={formDisabled}
                     />
                     <span className="text-xs text-muted-foreground">
@@ -1053,54 +1005,13 @@ function BotCustomizationForm() {
           )}
           {isSaving && (
             <p className="mt-1 flex items-center gap-1.5">
-              <LoaderIcon className="size-3.5 animate-spin" />
+              <Spinner />
               {t("modules.bot_customization.savingHint")}
             </p>
           )}
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          className="w-fit text-destructive hover:text-destructive"
-          onClick={() => setConfirmReset(true)}
-          disabled={formDisabled}
-        >
-          {isResetting ? (
-            <LoaderIcon className="size-4 animate-spin" />
-          ) : (
-            <RotateCcwIcon className="size-4" />
-          )}
-          {t("modules.bot_customization.reset")}
-        </Button>
       </div>
-
-      <AlertDialog open={confirmReset} onOpenChange={(open) => !isResetting && setConfirmReset(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("modules.bot_customization.resetTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("modules.bot_customization.resetDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isResetting}>{t("modules.bot_customization.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={(e) => {
-                // Le dialogue ne doit pas se fermer avant la fin de l'appel :
-                // l'écriture passe par le bot et peut durer plusieurs secondes.
-                e.preventDefault()
-                void handleReset()
-              }}
-              disabled={isResetting}
-              className="bg-destructive text-white hover:bg-destructive/90"
-            >
-              {isResetting && <LoaderIcon className="size-4 animate-spin" />}
-              {t("modules.bot_customization.resetConfirm")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <UnsavedBar
         isDirty={isDirty}
@@ -1108,6 +1019,6 @@ function BotCustomizationForm() {
         onSave={handleSave}
         onDiscard={handleDiscard}
       />
-    </div>
+    </ModulePage>
   )
 }

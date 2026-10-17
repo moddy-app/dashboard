@@ -3,11 +3,10 @@ import {
   normalizeBumpCatalog,
   normalizeBumpConfig,
   normalizeBumpDiagnostics,
-  normalizeBumpState,
   serializeBumpConfig,
 } from '@/lib/bump-reminder'
 import type { BumpReminderDraft } from '@/lib/bump-reminder'
-import type { BumpCatalog, BumpDiagnostics, BumpState } from '@/types/bump-reminder'
+import type { BumpCatalog, BumpDiagnostics } from '@/types/bump-reminder'
 
 const BASE = (guildId: string) => `/guilds/${guildId}/modules/bump_reminder`
 
@@ -52,10 +51,6 @@ export async function deleteBumpConfig(guildId: string): Promise<void> {
 }
 
 /** Une ligne par annuaire (pas par entrée). Pas de temps réel : l'appelant recharge. */
-export async function getBumpState(guildId: string): Promise<BumpState> {
-  return normalizeBumpState(await api(`${BASE(guildId)}/state`))
-}
-
 export async function getBumpDiagnostics(guildId: string): Promise<BumpDiagnostics> {
   return normalizeBumpDiagnostics(await api(`${BASE(guildId)}/diagnostics`))
 }

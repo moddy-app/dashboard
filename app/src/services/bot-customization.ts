@@ -1,9 +1,12 @@
-import { api } from '@/lib/auth'
+import { api, ApiError } from '@/lib/auth'
 import type {
   BotCustomizationState,
   BotCustomizationUpdate,
   BotCustomizationUpload,
 } from '@/types/api'
+
+/** Au-delà, on abandonne l'attente : la tâche reste en file côté bot. */
+const SAVE_TIMEOUT_MS = 30_000
 
 const BASE = (guildId: string | number) => `/guilds/${guildId}/modules/bot_customization`
 
@@ -24,16 +27,35 @@ export async function getBotCustomization(
  *
  * L'écriture est déléguée au bot (téléchargement de l'image puis appel Discord)
  * et peut prendre plusieurs secondes — timeout serveur 25 s, puis `504
- * bot_timeout` : dans ce cas la tâche reste en file, **ne pas rejouer**.
+ * bot_timeout` : dans ce cas la tâche reste en file, **ne pas rejouer**. Le client
+ * abandonne lui-même l'attente après 30 s (même signal).
  */
 export async function saveBotCustomization(
   guildId: string | number,
   update: BotCustomizationUpdate
 ): Promise<void> {
-  await api(BASE(guildId), {
-    method: 'PATCH',
-    body: JSON.stringify(update),
-  })
+  const controller = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, SAVE_TIMEOUT_MS)
+  try {
+    await api(BASE(guildId), {
+      method: 'PATCH',
+      body: JSON.stringify(update),
+      signal: controller.signal,
+    })
+  } catch (e) {
+    // Une attente abandonnée n'est pas une panne réseau : même signal qu'un
+    // `504 bot_timeout` du backend (la modification sera appliquée, ne pas rejouer).
+    if (timedOut && e instanceof ApiError && e.status === 0) {
+      throw new ApiError(504, 'bot_timeout', 'bot_timeout', { error: 'bot_timeout' })
+    }
+    throw e
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 /** Reset complet : pseudo, bio, avatar, bannière et style. */

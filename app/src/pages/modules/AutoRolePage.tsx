@@ -1,283 +1,170 @@
-import { useEffect, useState, useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  Trash2Icon,
-  UsersIcon,
-  XIcon,
-  PlusIcon,
-  LoaderIcon,
-} from "lucide-react"
+
 import { UnsavedBar } from "@/components/unsaved-bar"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { AlertCircleIcon } from "@/components/icons"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import { RoleMultiPicker } from "@/components/pickers"
+import { useGuildContext } from "@/contexts/GuildContext"
+import { ApiError } from "@/lib/auth"
+import { botTopRolePosition, isRoleAboveBot } from "@/lib/altguard"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
-import { resolveRoleIds } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ErrorPage } from "@/components/error-state"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { useGuildContext } from "@/contexts/GuildContext"
-import { roleColorToHex } from "@/types/api"
-import type { AutoRoleConfig } from "@/types/api"
+import type { AutoRoleConfig, Role } from "@/types/api"
 
-/**
- * Garde de chargement : le contenu n'est monté qu'une fois les rôles et la
- * config du serveur disponibles, sinon l'état local s'initialise à vide lors
- * d'une arrivée directe sur l'URL.
- */
-export function AutoRolePage() {
-  const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
+const MODULE_ID = "auto_role"
+const MAX_ROLES = 20
+const KNOWN_ERRORS = [
+  "auto_role_role_not_found",
+  "auto_role_everyone",
+  "auto_role_managed",
+  "auto_role_too_high",
+] as const
 
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
+/** Ancien format `role_ids` lu comme `member_roles`. */
+function readLists(config: AutoRoleConfig | undefined): { member: string[]; bot: string[] } {
+  const strings = (v: unknown) => (Array.isArray(v) ? v.map(String) : [])
+  const member = strings(config?.member_roles)
+  return {
+    member: member.length > 0 ? member : strings(config?.role_ids),
+    bot: strings(config?.bot_roles),
   }
-
-  if (isLoadingGuild || !isGuildReady) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    )
-  }
-
-  return <AutoRoleForm />
 }
 
-function AutoRoleForm() {
+interface SaveProblem {
+  /** Clé i18n (code connu) ou message brut du backend. */
+  code: string | null
+  message: string
+  roleIds: string[]
+}
+
+function toProblem(e: unknown): SaveProblem | null {
+  if (!(e instanceof ApiError) || e.status !== 422) return null
+  const body = e.body ?? {}
+  const raw = String(body.code ?? body.error ?? "")
+  const code = (KNOWN_ERRORS as readonly string[]).includes(raw) ? raw : null
+  const roleIds = Array.isArray(body.role_ids) ? body.role_ids.map(String) : []
+  return { code, message: e.message, roleIds }
+}
+
+export function AutoRolePage() {
   const { t } = useTranslation()
-  const {
-    selectedGuildId,
-    roles,
-    modules,
-    updateModule,
-    disableModule,
-  } = useGuildContext()
+  const { roles, modules, updateModule, disableModule, isLoadingGuild, isGuildReady, guildError, refreshGuildData } =
+    useGuildContext()
 
-  const currentConfig = modules['auto_role'] as AutoRoleConfig | undefined
-  const isEnabled = 'auto_role' in modules
+  const config = modules[MODULE_ID] as AutoRoleConfig | undefined
+  const saved = useMemo(() => readLists(config), [config])
 
-  // Exclure les rôles gérés par des intégrations (bots)
-  const manageableRoles = roles.filter(
-    (r) => !r.managed && r.name !== '@everyone'
-  )
-
-  const [enabled, setEnabled] = useState(isEnabled)
-  const [selectedRoleIds, setSelectedRoleIds] = useState<string[]>(
-    resolveRoleIds(currentConfig?.role_ids ?? [], manageableRoles.map((r) => r.id))
-  )
+  const [member, setMember] = useState<string[]>(saved.member)
+  const [bot, setBot] = useState<string[]>(saved.bot)
   const [saving, setSaving] = useState(false)
+  const [problem, setProblem] = useState<SaveProblem | null>(null)
 
-  // Valeurs enregistrées — pour calculer isDirty
-  const [savedEnabled, setSavedEnabled] = useState(isEnabled)
-  const [savedRoleIds, setSavedRoleIds] = useState<string[]>(
-    resolveRoleIds(currentConfig?.role_ids ?? [], manageableRoles.map((r) => r.id))
-  )
-
-  // Re-populate quand config ou liste de rôles chargée
   useEffect(() => {
-    const ids = resolveRoleIds(currentConfig?.role_ids ?? [], manageableRoles.map((r) => r.id))
-    setSelectedRoleIds(ids)
-    setSavedRoleIds(ids)
-    setEnabled(isEnabled)
-    setSavedEnabled(isEnabled)
-  }, [currentConfig, isEnabled, roles.length])
+    setMember(saved.member)
+    setBot(saved.bot)
+  }, [saved])
 
-  // Calcul du dirty state
-  const isDirty = useMemo(() => {
-    if (enabled !== savedEnabled) return true
-    const a = [...selectedRoleIds].sort().join(',')
-    const b = [...savedRoleIds].sort().join(',')
-    return a !== b
-  }, [enabled, savedEnabled, selectedRoleIds, savedRoleIds])
+  const botTop = useMemo(() => botTopRolePosition(roles), [roles])
+  const disabledReason = (role: Role) => (isRoleAboveBot(role, botTop) ? t("modules.auto_role.aboveBot") : null)
 
-  const addRole = (roleId: string) => {
-    if (!selectedRoleIds.includes(roleId)) {
-      setSelectedRoleIds((prev) => [...prev, roleId])
-    }
-  }
-
-  const removeRole = (roleId: string) => {
-    setSelectedRoleIds((prev) => prev.filter((id) => id !== roleId))
-  }
+  const same = (a: string[], b: string[]) => [...a].sort().join(",") === [...b].sort().join(",")
+  const isDirty = !same(member, saved.member) || !same(bot, saved.bot)
+  const isEmpty = member.length === 0 && bot.length === 0
+  const isConfigured = saved.member.length > 0 || saved.bot.length > 0
 
   const handleSave = async () => {
-    if (!selectedGuildId) return
-    logger.event('module:auto_role', 'Submit', { enabled, roleIds: selectedRoleIds })
     setSaving(true)
+    setProblem(null)
     try {
-      if (!enabled) {
-        await disableModule('auto_role')
-        setSavedEnabled(false)
-        setSavedRoleIds([])
-        toast.success(t('modules.auto_role.disabledSuccess'))
+      if (isEmpty) {
+        await disableModule(MODULE_ID)
+        toast.success(t("modules.auto_role.disabledSuccess"))
         return
       }
-      await updateModule('auto_role', {
-        role_ids: selectedRoleIds,
-      })
-      setSavedEnabled(enabled)
-      setSavedRoleIds([...selectedRoleIds])
-      logger.success('module:auto_role', 'Saved')
-      toast.success(t('modules.saved'))
+      await updateModule(MODULE_ID, { member_roles: member, bot_roles: bot })
+      toast.success(t("modules.saved"))
     } catch (e) {
-      logger.error('module:auto_role', 'Save failed', e)
-      handleSaveError(e, { title: t('modules.saveError') })
+      logger.error(`module:${MODULE_ID}`, "Save failed", e)
+      const p = toProblem(e)
+      if (p) setProblem(p)
+      else handleSaveError(e, { title: t("modules.saveError") })
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDiscard = () => {
-    logger.event('module:auto_role', 'Discard clicked')
-    setEnabled(savedEnabled)
-    setSelectedRoleIds([...savedRoleIds])
-  }
+  const faultyNames = (problem?.roleIds ?? []).map((id) => roles.find((r) => r.id === id)?.name ?? id)
 
-  const handleDisable = async () => {
-    logger.event('module:auto_role', 'Disable clicked')
-    setSaving(true)
-    try {
-      await disableModule('auto_role')
-      setEnabled(false)
-      setSavedEnabled(false)
-      setSavedRoleIds([])
-      setSelectedRoleIds([])
-      logger.success('module:auto_role', 'Disabled')
-      toast.success(t('modules.auto_role.disabledSuccess'))
-    } catch (e) {
-      logger.error('module:auto_role', 'Disable failed', e)
-      handleSaveError(e, { title: t('modules.saveError') })
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const availableRoles = manageableRoles.filter(
-    (r) => !selectedRoleIds.includes(r.id)
+  const section = (
+    key: "member" | "bot",
+    value: string[],
+    onChange: (v: string[]) => void
+  ) => (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t(`modules.auto_role.${key}Title`)}</CardTitle>
+        <CardDescription>{t(`modules.auto_role.${key}Description`)}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <FieldGroup>
+          <Field>
+            <FieldLabel>{t("modules.auto_role.rolesLabel")}</FieldLabel>
+            <RoleMultiPicker
+              value={value}
+              onChange={onChange}
+              max={MAX_ROLES}
+              disabledReason={disabledReason}
+              placeholder={t("modules.auto_role.addRole")}
+            />
+            <FieldDescription>{t("modules.auto_role.max", { max: MAX_ROLES })}</FieldDescription>
+          </Field>
+        </FieldGroup>
+      </CardContent>
+    </Card>
   )
 
   return (
-    <div className="flex flex-col gap-6 w-full pb-24">
-      {/* En-tête */}
-      <div className="flex items-center gap-3">
-        <div className="size-10 rounded-lg bg-green-100 dark:bg-green-950 flex items-center justify-center">
-          <UsersIcon className="size-5 text-green-600 dark:text-green-400" />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold">{t('modules.auto_role.name')}</h1>
-          <p className="text-sm text-muted-foreground">{t('modules.auto_role.description')}</p>
-        </div>
-      </div>
-
-      {/* Config rôles */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">{t('modules.auto_role.configTitle')}</CardTitle>
-          <CardDescription>{t('modules.auto_role.configDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          {/* Rôles sélectionnés */}
-          {selectedRoleIds.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedRoleIds.map((id) => {
-                const role = roles.find((r) => r.id === id)
-                if (!role) return null
-                const color = roleColorToHex(role.color)
-                return (
-                  <span
-                    key={id}
-                    className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium border"
-                    style={{ borderColor: color, color }}
-                  >
-                    {role.name}
-                    <button
-                      type="button"
-                      onClick={() => removeRole(id)}
-                      className="ml-0.5 rounded-full hover:opacity-70 transition-opacity"
-                    >
-                      <XIcon className="size-3" />
-                    </button>
-                  </span>
-                )
-              })}
-            </div>
-          )}
-
-          {/* Sélecteur de rôle */}
-          {availableRoles.length > 0 && (
-            <div className="flex items-center gap-2">
-              <Select onValueChange={addRole}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder={t('modules.auto_role.addRole')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableRoles.map((role) => {
-                    const color = roleColorToHex(role.color)
-                    return (
-                      <SelectItem key={role.id} value={role.id}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="size-2 rounded-full"
-                            style={{ backgroundColor: color }}
-                          />
-                          {role.name}
-                        </div>
-                      </SelectItem>
-                    )
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {selectedRoleIds.length === 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground rounded-lg border border-dashed p-4">
-              <PlusIcon className="size-4" />
-              {t('modules.auto_role.noRoles')}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Bouton désactiver (uniquement si déjà activé) */}
-      {isEnabled && (
-        <Button
-          type="button"
-          variant="outline"
-          className="text-destructive hover:text-destructive w-fit"
-          onClick={handleDisable}
-          disabled={saving}
-        >
-          {saving ? (
-            <LoaderIcon className="size-4 mr-2 animate-spin" />
-          ) : (
-            <Trash2Icon className="size-4 mr-2" />
-          )}
-          {t('modules.disable')}
-        </Button>
+    <ModulePage
+      moduleId={MODULE_ID}
+      loading={isLoadingGuild || !isGuildReady}
+      error={guildError}
+      onRetry={refreshGuildData}
+      actions={<ModuleStateControl moduleId={MODULE_ID} />}
+    >
+      {problem && (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertTitle>{t("modules.saveError")}</AlertTitle>
+          <AlertDescription>
+            {problem.code ? t(`modules.auto_role.errors.${problem.code}`) : problem.message}
+            {faultyNames.length > 0 && ` ${faultyNames.join(", ")}`}
+          </AlertDescription>
+        </Alert>
       )}
-
-      {/* Save bar Discord-style */}
+      {isDirty && isEmpty && isConfigured && (
+        <Alert>
+          <AlertCircleIcon />
+          <AlertDescription>{t("modules.auto_role.emptyHint")}</AlertDescription>
+        </Alert>
+      )}
+      {section("member", member, setMember)}
+      {section("bot", bot, setBot)}
       <UnsavedBar
         isDirty={isDirty}
         isSaving={saving}
         onSave={handleSave}
-        onDiscard={handleDiscard}
+        onDiscard={() => {
+          setMember(saved.member)
+          setBot(saved.bot)
+          setProblem(null)
+        }}
       />
-    </div>
+    </ModulePage>
   )
 }

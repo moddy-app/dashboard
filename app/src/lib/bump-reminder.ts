@@ -5,13 +5,10 @@ import type {
   BumpCatalog,
   BumpDiagnostics,
   BumpDirectory,
-  BumpDirectoryState,
-  BumpDirectoryStateKind,
   BumpLimits,
   BumpPingMode,
   BumpReminder,
   BumpReminderConfig,
-  BumpState,
 } from '@/types/bump-reminder'
 
 // Helpers du module Rappels de bump (`bump_reminder`). Snowflakes en chaînes,
@@ -332,47 +329,6 @@ export function formatInterval(seconds: number): string {
   if (hours === 0) return `${minutes} min`
   if (minutes === 0) return `${hours} h`
   return `${hours} h ${String(minutes).padStart(2, '0')}`
-}
-
-/** Compte à rebours « 1:02:03 » / « 12:34 », toujours calculé depuis `due_at`. */
-export function formatCountdown(seconds: number): string {
-  const s = Math.max(0, Math.floor(seconds))
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  const sec = s % 60
-  const mm = String(m).padStart(h > 0 ? 2 : 1, '0')
-  const ss = String(sec).padStart(2, '0')
-  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
-}
-
-// ─── État en direct ───────────────────────────────────────────────────────────
-
-const STATE_KINDS: BumpDirectoryStateKind[] = ['never_bumped', 'scheduled', 'due', 'sent']
-
-export function normalizeBumpState(raw: unknown): BumpState {
-  const r = asRecord(raw)
-  const directories: BumpDirectoryState[] = Array.isArray(r.directories)
-    ? r.directories.map((d) => {
-        const x = asRecord(d)
-        const state = STATE_KINDS.includes(x.state as BumpDirectoryStateKind)
-          ? (x.state as BumpDirectoryStateKind)
-          : 'never_bumped'
-        return {
-          bot: String(x.bot ?? ''),
-          name: asString(x.name) ?? String(x.bot ?? ''),
-          configured: x.configured !== false,
-          state,
-          seconds_remaining: typeof x.seconds_remaining === 'number' ? x.seconds_remaining : null,
-          channel_id: asSnowflake(x.channel_id),
-          due_at: asString(x.due_at),
-          sent: x.sent === true,
-          bumper_id: asSnowflake(x.bumper_id),
-          opt_in: x.opt_in === true,
-          bumped_at: asString(x.bumped_at),
-        }
-      })
-    : []
-  return { guild_id: String(r.guild_id ?? ''), enabled: r.enabled === true, directories }
 }
 
 // ─── Diagnostic ───────────────────────────────────────────────────────────────

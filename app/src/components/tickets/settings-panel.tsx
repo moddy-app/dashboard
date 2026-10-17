@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next"
-import { ClockIcon, SparklesIcon } from "lucide-react"
+import { ClockIcon, SparklesIcon } from "@/components/icons"
 import { Input } from "@/components/ui/input"
+import { Field as FieldRoot, FieldContent, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
 import {
   Select,
@@ -9,7 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChannelSelect, Field, Notice } from "@/components/tickets/fields"
+import { ChannelPicker } from "@/components/pickers"
+import { Field, Notice } from "@/components/tickets/fields"
 import { panelChannels, retentionShrinks, settingsFieldKey } from "@/lib/tickets"
 import {
   TICKET_RETENTION_PRESETS,
@@ -46,20 +48,21 @@ export function TicketsSettingsPanel({
   const shrinking = retentionShrinks(savedSettings.transcript_retention_days, days)
 
   return (
-    <div className="flex flex-col gap-5">
+    <FieldGroup>
       {/* ── Journal ──────────────────────────────────────────────────────── */}
       <Field
         label={t("modules.tickets.settings.logChannel")}
         description={t("modules.tickets.settings.logChannelDescription")}
         error={err("log_channel_id")}
       >
-        <ChannelSelect
+        <ChannelPicker
           value={settings.log_channel_id}
           channels={panelChannels(channels)}
           onChange={(value) => onChange({ log_channel_id: value })}
           placeholder={t("modules.tickets.settings.selectLogChannel")}
-          emptyLabel={t("modules.tickets.settings.noTextChannel")}
-          clearLabel={t("modules.tickets.settings.noLogChannel")}
+          allowNone
+          noneLabel={t("modules.tickets.settings.noLogChannel")}
+          aria-invalid={Boolean(err("log_channel_id"))}
         />
       </Field>
 
@@ -159,7 +162,7 @@ export function TicketsSettingsPanel({
         <ClockIcon className="mt-0.5 size-3.5 shrink-0" />
         {t("modules.tickets.settings.purgeHint")}
       </p>
-    </div>
+    </FieldGroup>
   )
 }
 
@@ -177,15 +180,15 @@ function ToggleCard({
   icon?: React.ReactNode
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-lg border p-3.5">
-      <div className="flex min-w-0 gap-2">
-        {icon && <span className="mt-0.5 shrink-0">{icon}</span>}
-        <div className="min-w-0">
-          <p className="text-sm font-medium">{label}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} className="shrink-0" />
-    </div>
+    <FieldRoot orientation="horizontal" className="rounded-lg border p-3.5">
+      <FieldContent>
+        <FieldLabel className="gap-2">
+          {icon}
+          {label}
+        </FieldLabel>
+        <FieldDescription>{description}</FieldDescription>
+      </FieldContent>
+      <Switch checked={checked} onCheckedChange={onCheckedChange} />
+    </FieldRoot>
   )
 }

@@ -1,15 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  CheckCircle2Icon,
-  ClockIcon,
-  LoaderIcon,
-  PlusIcon,
-  TicketIcon,
-  Trash2Icon,
-  XIcon,
-} from "lucide-react"
+import { ClockIcon, PlusIcon, TicketIcon } from "@/components/icons"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -23,8 +15,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-import { ErrorPage } from "@/components/error-state"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ApplyNotice, Notice } from "@/components/tickets/fields"
 import { CategoryDialog } from "@/components/tickets/category-dialog"
@@ -79,14 +71,11 @@ const MODULE_ID = "tickets"
 export function TicketsPage() {
   const { isLoadingGuild, isGuildReady, guildError, refreshGuildData } = useGuildContext()
 
-  if (guildError) return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-
-  if (isLoadingGuild || !isGuildReady) {
+  if (guildError || isLoadingGuild || !isGuildReady) {
     return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
+      <ModulePage moduleId={MODULE_ID} loading={!guildError} error={guildError} onRetry={refreshGuildData}>
+        {null}
+      </ModulePage>
     )
   }
 
@@ -117,8 +106,6 @@ function TicketsForm() {
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
-  const [isDisabling, setIsDisabling] = useState(false)
-  const [confirmDisable, setConfirmDisable] = useState(false)
   const [openPanelId, setOpenPanelId] = useState<string | null>(null)
   const [editing, setEditing] = useState<{ panelId: string; categoryId: string } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<
@@ -388,77 +375,35 @@ function TicketsForm() {
   }, [savedPanels, savedSettings])
 
   const handleDisable = useCallback(async () => {
-    setIsDisabling(true)
-    try {
-      const apply = await deleteTicketsConfig(guildId)
-      setSavedPanels([])
-      setPanels([])
-      setSavedSettings(TICKET_SETTINGS_DEFAULTS)
-      setSettings(TICKET_SETTINGS_DEFAULTS)
-      setIsConfigured(false)
-      setApiErrors({ fields: {}, global: [] })
-      syncModule(MODULE_ID, null)
-      const result = ticketsApplyFeedback(apply)
-      setFeedback(result)
-      notify(result)
-      await loadSideData()
-    } catch (e) {
-      logger.error("module:tickets", "Disable failed", e)
-      handleSaveError(e, { title: t("modules.saveError") })
-    } finally {
-      setIsDisabling(false)
-      setConfirmDisable(false)
-    }
-  }, [guildId, syncModule, loadSideData, t])
+    const apply = await deleteTicketsConfig(guildId)
+    setSavedPanels([])
+    setPanels([])
+    setSavedSettings(TICKET_SETTINGS_DEFAULTS)
+    setSettings(TICKET_SETTINGS_DEFAULTS)
+    setIsConfigured(false)
+    setApiErrors({ fields: {}, global: [] })
+    syncModule(MODULE_ID, null)
+    const result = ticketsApplyFeedback(apply)
+    setFeedback(result)
+    notify(result)
+    await loadSideData()
+  }, [guildId, syncModule, loadSideData])
 
   // ── Rendu ─────────────────────────────────────────────────────────────────
 
-  if (loadError) {
-    return <ErrorPage error={loadError} onRetry={() => window.location.reload()} />
-  }
-
-  if (isLoading || savedPanels === null) {
-    return (
-      <div className="flex w-full flex-col gap-4">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-24 rounded-xl" />
-        <Skeleton className="h-96 rounded-xl" />
-      </div>
-    )
-  }
-
-  const isActive = panels.some((p) => p.enabled && Boolean(p.channel_id))
   const editingPanel = editing ? panels.find((p) => p.id === editing.panelId) : undefined
   const editingCategory = editingPanel?.categories.find((c) => c.id === editing?.categoryId)
 
   return (
-    <div className="flex w-full flex-col gap-6 pb-24">
-      {/* En-tête */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-indigo-100 dark:bg-indigo-950">
-            <TicketIcon className="size-5 text-indigo-500" />
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold leading-none">{t("modules.tickets.name")}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("modules.tickets.description")}
-            </p>
-          </div>
-        </div>
-        {isActive ? (
-          <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-            <CheckCircle2Icon className="mr-1 size-3" />
-            {t("modules.tickets.statusActive")}
-          </Badge>
-        ) : (
-          <Badge variant="secondary">
-            <XIcon className="mr-1 size-3" />
-            {t("modules.tickets.statusInactive")}
-          </Badge>
-        )}
-      </div>
-
+    <ModulePage
+      moduleId={MODULE_ID}
+      loading={isLoading || savedPanels === null}
+      error={loadError}
+      onRetry={() => window.location.reload()}
+      actions={<ModuleStateControl moduleId={MODULE_ID} onReset={handleDisable} />}
+    >
+      {savedPanels !== null && (
+        <>
       {/* Tickets orphelins — supprimer une catégorie ne ferme pas ses tickets. */}
       {orphanCount > 0 && (
         <Notice level="warning" title={t("modules.tickets.orphans.title", { count: orphanCount })}>
@@ -486,7 +431,7 @@ function TicketsForm() {
 
       {globalIssues.length > 0 && (
         <Notice level="error" title={t("modules.tickets.validation.title")}>
-          <ul className="list-disc space-y-0.5 pl-4">
+          <ul className="list-disc pl-4">
             {globalIssues.map((message) => (
               <li key={message}>{message}</li>
             ))}
@@ -567,7 +512,7 @@ function TicketsForm() {
               {t("modules.tickets.addPanel")}
             </Button>
             {!canAddPanel(panels, limits) && limits && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
+              <p className="text-xs text-warning">
                 {t("modules.tickets.panelCapReached", { max: limits.max_panels })}
               </p>
             )}
@@ -578,22 +523,6 @@ function TicketsForm() {
             {t("modules.tickets.saveDurationHint")}
           </p>
 
-          {isConfigured && (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-fit text-destructive hover:text-destructive"
-              onClick={() => setConfirmDisable(true)}
-              disabled={isSaving || isDisabling}
-            >
-              {isDisabling ? (
-                <LoaderIcon className="size-4 animate-spin" />
-              ) : (
-                <Trash2Icon className="size-4" />
-              )}
-              {t("modules.disable")}
-            </Button>
-          )}
         </TabsContent>
 
         {/* ── Réglages du module ──────────────────────────────────────── */}
@@ -670,26 +599,6 @@ function TicketsForm() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("modules.tickets.confirmDisableTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("modules.tickets.confirmDisableDescription")}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("modules.tickets.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDisable}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t("modules.disable")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Baisser la rétention **supprime des conversations** : le bot efface, à
           sa prochaine purge quotidienne, toute archive fermée depuis plus de N
           jours. Ce n'est pas réversible — d'où un oui explicite, jamais un
@@ -724,7 +633,9 @@ function TicketsForm() {
         onSave={requestSave}
         onDiscard={handleDiscard}
       />
-    </div>
+        </>
+      )}
+    </ModulePage>
   )
 }
 

@@ -5,7 +5,6 @@ import {
   Trash2Icon,
   BellRingIcon,
   PlusIcon,
-  LoaderIcon,
   PencilIcon,
   AlertCircleIcon,
   XIcon,
@@ -15,11 +14,13 @@ import {
   ExternalLinkIcon,
   InfoIcon,
   SparklesIcon,
-} from "lucide-react"
+} from "@/components/icons"
 import { handleSaveError } from "@/lib/handle-error"
 import { ApiError } from "@/lib/auth"
 import { logger } from "@/lib/logger"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import {
   Card,
   CardContent,
@@ -62,7 +63,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { ErrorPage } from "@/components/error-state"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import { ColorPicker } from "@/components/pickers"
 import { SocialIcon } from "@/components/social-icons"
 import { MessageEditor } from "@/components/message-editor"
 import { useGuildContext } from "@/contexts/GuildContext"
@@ -427,38 +430,14 @@ export function SocialNotificationsPage() {
     }
   }
 
-  // ── États de chargement / erreur ───────────────────────────────────────────
-
-  if (isLoadingGuild || !isGuildReady) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-  }
-
   return (
-    <div className="flex flex-col gap-6 w-full pb-16">
-      {/* En-tête */}
-      <div className="flex items-center gap-4">
-        <div className="size-11 rounded-xl bg-pink-100 dark:bg-pink-950 flex items-center justify-center shrink-0">
-          <BellRingIcon className="size-5 text-pink-500" />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold leading-none">
-            {t("modules.social_notifications.name")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t("modules.social_notifications.description")}
-          </p>
-        </div>
-      </div>
-
+    <ModulePage
+      moduleId={MODULE_ID}
+      loading={isLoadingGuild || !isGuildReady}
+      error={guildError}
+      onRetry={refreshGuildData}
+      actions={<ModuleStateControl moduleId={MODULE_ID} />}
+    >
       {/* Carte abonnements */}
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -483,12 +462,10 @@ export function SocialNotificationsPage() {
         </CardHeader>
         <CardContent>
           {!isPremium && !canAddAny && subscriptions.length > 0 && (
-            <div className="mb-4 flex items-center gap-3 rounded-lg border border-violet-400/50 bg-violet-400/10 px-4 py-3">
-              <CrownIcon className="size-4 text-violet-500 shrink-0" />
-              <p className="text-xs text-violet-700 dark:text-violet-300">
-                {t("modules.social_notifications.quotaUpsell")}
-              </p>
-            </div>
+            <Alert className="mb-4">
+              <CrownIcon />
+              <AlertDescription>{t("modules.social_notifications.quotaUpsell")}</AlertDescription>
+            </Alert>
           )}
 
           {subsError ? (
@@ -570,7 +547,7 @@ export function SocialNotificationsPage() {
               {t("modules.social_notifications.cancel")}
             </Button>
             <Button type="button" onClick={handleSave} disabled={isSaving}>
-              {isSaving && <LoaderIcon className="size-4 mr-2 animate-spin" />}
+              {isSaving && <Spinner data-icon="inline-start" />}
               {editing?.isNew
                 ? t("modules.social_notifications.add")
                 : t("modules.social_notifications.save")}
@@ -608,7 +585,7 @@ export function SocialNotificationsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ModulePage>
   )
 }
 
@@ -698,7 +675,7 @@ function SubscriptionRow({ sub, pending, onEdit, onTogglePause, onDelete, t }: S
           title={sub.enabled ? t("modules.social_notifications.pause") : t("modules.social_notifications.resume")}
         >
           {pending ? (
-            <LoaderIcon className="size-4 animate-spin" />
+            <Spinner />
           ) : sub.enabled ? (
             <PauseIcon className="size-4" />
           ) : (
@@ -862,24 +839,16 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
 
       {/* Upsell Max (free + quota atteint) */}
       {showUpsell && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-violet-400/50 bg-violet-400/10 p-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <CrownIcon className="size-4 text-violet-500 shrink-0" />
-            <p className="text-xs text-violet-700 dark:text-violet-300">
-              {t("modules.social_notifications.quotaUpsell")}
-            </p>
+        <Alert>
+          <CrownIcon />
+          <AlertDescription>{t("modules.social_notifications.quotaUpsell")}</AlertDescription>
+          <div className="mt-2">
+            <Button type="button" size="sm" onClick={handleUpgrade} disabled={upgrading}>
+              {upgrading ? <Spinner data-icon="inline-start" /> : <SparklesIcon data-icon="inline-start" />}
+              {t("modules.social_notifications.upgrade")}
+            </Button>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            className="bg-violet-600 hover:bg-violet-700 text-white shrink-0"
-            onClick={handleUpgrade}
-            disabled={upgrading}
-          >
-            {upgrading ? <LoaderIcon className="size-4 animate-spin" /> : <SparklesIcon className="size-4" />}
-            {t("modules.social_notifications.upgrade")}
-          </Button>
-        </div>
+        </Alert>
       )}
 
       {/* Identifiant (création uniquement) */}
@@ -1049,11 +1018,10 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         </div>
         {!draft.useBrandColor && (
           <div className="flex items-center gap-2">
-            <input
-              type="color"
-              className="color-field size-10 shrink-0 rounded-lg border border-input"
+            <ColorPicker
               value={draft.embed_color}
-              onChange={(e) => onChange({ embed_color: e.target.value })}
+              onChange={(v) => onChange({ embed_color: v ?? meta.brandColor })}
+              defaultColor={meta.brandColor}
             />
             <Input
               value={draft.embed_color}

@@ -176,6 +176,8 @@ export function normalizeAutomodConfig(raw: AutomodAiConfig): AutomodAiConfig {
     // `state` absent = `active` : on ne l'invente pas, une sauvegarde sans
     // `state` conserve l'état enregistré côté backend.
     ...(config.state !== undefined && { state: readModuleState(config.state) }),
+    // Booléen strict, vrai par défaut (clé absente d'une ancienne config).
+    use_precedents: config.use_precedents !== false,
     sanctions,
     infractions_perso: Array.isArray(config.infractions_perso) ? config.infractions_perso : [],
     features,

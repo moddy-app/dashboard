@@ -5,7 +5,7 @@ import {
   LayoutPanelTopIcon,
   UserCogIcon,
   UserIcon,
-} from "lucide-react"
+} from "@/components/icons"
 import type { IconComponent } from "@/components/icons"
 import type { TicketStatus } from "@/types/api"
 

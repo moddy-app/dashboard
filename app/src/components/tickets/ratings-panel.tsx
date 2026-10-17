@@ -9,7 +9,7 @@ import {
   StarIcon,
   ThumbsDownIcon,
   TriangleAlertIcon,
-} from "lucide-react"
+} from "@/components/icons"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -311,7 +311,7 @@ function SummaryCard({ summary }: { summary: TicketRatingsSummary }) {
           })}
         </p>
         {negative > 0 && (
-          <p className="text-xs text-amber-600 dark:text-amber-400">
+          <p className="text-xs text-warning">
             {t("modules.tickets.ratings.negativeCount", { count: negative })}
           </p>
         )}
@@ -406,7 +406,7 @@ function StaffRow({ row }: { row: TicketStaffRating }) {
       <TableCell
         className={cn(
           "text-right tabular-nums",
-          row.negative > 0 && "text-amber-600 dark:text-amber-400"
+          row.negative > 0 && "text-warning"
         )}
       >
         {row.negative}
@@ -430,7 +430,7 @@ function RatingRow({ rating }: { rating: TicketRating }) {
             variant="secondary"
             className={cn(
               "gap-1",
-              isNegativeScore(rating.score) && "text-amber-600 dark:text-amber-400"
+              isNegativeScore(rating.score) && "text-warning"
             )}
           >
             <StarIcon className="size-3" />

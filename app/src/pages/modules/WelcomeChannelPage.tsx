@@ -1,34 +1,11 @@
 import { useCallback, useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import {
-  AlertCircleIcon,
-  LoaderIcon,
-  MessageSquareIcon,
-  PauseIcon,
-  PencilIcon,
-  PlayIcon,
-  PlusIcon,
-  Trash2Icon,
-} from "lucide-react"
+import { AddIcon, DeleteIcon, EditIcon, MessageSquareIcon, PauseIcon, PlayIcon } from "@/components/icons"
 import { handleSaveError } from "@/lib/handle-error"
 import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,21 +16,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { ErrorPage } from "@/components/error-state"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Spinner } from "@/components/ui/spinner"
+import { Switch } from "@/components/ui/switch"
 import { MessageEditor } from "@/components/message-editor"
+import { ModulePage } from "@/components/module/module-page"
+import { ModuleStateControl } from "@/components/module/module-state-control"
+import {
+  ResponsiveDialog,
+  ResponsiveDialogBody,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from "@/components/module/responsive-dialog"
+import { ChannelPicker, ColorPicker } from "@/components/pickers"
+import { WelcomeMessagePreview } from "@/components/welcome/welcome-preview"
 import { useGuildContext } from "@/contexts/GuildContext"
-import { CHANNEL_TYPES, MAX_WELCOME_MESSAGES, WELCOME_DEFAULT_ACCENT } from "@/types/api"
+import { MAX_WELCOME_MESSAGES, WELCOME_DEFAULT_ACCENT } from "@/types/api"
 import type { WelcomeChannelConfig, WelcomeMessage } from "@/types/api"
 import {
   WELCOME_PLACEHOLDERS,
@@ -66,6 +49,9 @@ import {
 } from "@/lib/welcome"
 import { cn } from "@/lib/utils"
 
+// Module Welcome Messages. Constantes
+// propres au module (préfixe `wm_`, 5 entrées max).
+
 const MODULE_ID = "welcome_channel"
 const MESSAGE_MAX = 1500
 const DEFAULT_ACCENT_HEX = accentIntToHex(WELCOME_DEFAULT_ACCENT)
@@ -75,14 +61,14 @@ const DEFAULT_ACCENT_HEX = accentIntToHex(WELCOME_DEFAULT_ACCENT)
 interface MessageDraft {
   channel_id: string
   message: string
-  useDefaultColor: boolean
-  accent_color: string // hex #RRGGBB
+  /** Hex `#RRGGBB`, `null` = couleur par défaut. */
+  accent_color: string | null
   enabled: boolean
 }
 
 interface EditingState {
   isNew: boolean
-  /** Entrée d'origine (édition) — porte l'id à conserver. */
+  /** Entrée d'origine (édition) — porte l'id et les métadonnées à conserver. */
   source: WelcomeMessage | null
   draft: MessageDraft
 }
@@ -91,8 +77,7 @@ function draftFromMessage(m: WelcomeMessage): MessageDraft {
   return {
     channel_id: String(m.channel_id),
     message: m.message,
-    useDefaultColor: m.accent_color === null,
-    accent_color: accentIntToHex(m.accent_color),
+    accent_color: m.accent_color === null ? null : accentIntToHex(m.accent_color),
     enabled: m.enabled,
   }
 }
@@ -103,7 +88,6 @@ export function WelcomeChannelPage() {
   const { t } = useTranslation()
   const {
     modules,
-    channels,
     isLoadingGuild,
     isGuildReady,
     guildError,
@@ -113,6 +97,7 @@ export function WelcomeChannelPage() {
   } = useGuildContext()
 
   const config = modules[MODULE_ID] as WelcomeChannelConfig | undefined
+  const currentState = (config as { state?: string } | undefined)?.state
 
   const [messages, setMessages] = useState<WelcomeMessage[]>([])
   const [editing, setEditing] = useState<EditingState | null>(null)
@@ -121,14 +106,10 @@ export function WelcomeChannelPage() {
   const [confirmDelete, setConfirmDelete] = useState<WelcomeMessage | null>(null)
 
   // La config vient du chargement du serveur (GET /modules) — toujours du v2,
-  // les entrées v1 sont migrées côté backend à la lecture.
+  // les entrées v1 sont migrées côté backend à la lecture (id `wdm_00000000`).
   useEffect(() => {
     setMessages(readWelcomeConfig(config))
   }, [config])
-
-  const textChannels = channels.filter(
-    (c) => c.type === CHANNEL_TYPES.TEXT || c.type === CHANNEL_TYPES.ANNOUNCEMENT
-  )
 
   /**
    * Écrit la liste complète : chaque action déclenche une sauvegarde immédiate
@@ -142,7 +123,10 @@ export function WelcomeChannelPage() {
         if (next.length === 0) {
           await disableModule(MODULE_ID)
         } else {
-          await updateModule(MODULE_ID, { ...buildWelcomeConfig(next) })
+          await updateModule(MODULE_ID, {
+            ...buildWelcomeConfig(next),
+            ...(currentState ? { state: currentState } : {}),
+          })
         }
         return true
       } catch (e) {
@@ -153,7 +137,7 @@ export function WelcomeChannelPage() {
         return false
       }
     },
-    [messages, updateModule, disableModule, t]
+    [messages, updateModule, disableModule, currentState, t]
   )
 
   // ── Ouverture du formulaire ────────────────────────────────────────────────
@@ -165,8 +149,7 @@ export function WelcomeChannelPage() {
       draft: {
         channel_id: "",
         message: t("modules.welcome_channel.defaultMessage"),
-        useDefaultColor: true,
-        accent_color: DEFAULT_ACCENT_HEX,
+        accent_color: null,
         enabled: true,
       },
     })
@@ -186,6 +169,8 @@ export function WelcomeChannelPage() {
     if (!editing) return
     const { isNew, source, draft } = editing
 
+    // Validation client — le backend rejette la config *entière* au premier
+    // manquement, pas seulement l'entrée fautive.
     if (!draft.channel_id) {
       toast.error(t("modules.welcome_channel.errorChannelRequired"))
       return
@@ -196,12 +181,14 @@ export function WelcomeChannelPage() {
       return
     }
     if (text.length > MESSAGE_MAX) {
-      toast.error(t("modules.welcome_channel.errorMessageTooLong", { max: MESSAGE_MAX }))
+      toast.error(
+        t("modules.welcome_channel.errorMessageTooLong", { max: MESSAGE_MAX })
+      )
       return
     }
 
     let accent: number | null = null
-    if (!draft.useDefaultColor) {
+    if (draft.accent_color !== null) {
       accent = accentHexToInt(draft.accent_color)
       if (accent === null) {
         toast.error(t("modules.welcome_channel.errorColorInvalid"))
@@ -229,15 +216,11 @@ export function WelcomeChannelPage() {
         next = [...messages, created]
         logger.event(`module:${MODULE_ID}`, "Add message", created)
       } else if (source) {
+        // `id`, `created_by` et `created_at` sont repris à l'identique : le bot
+        // matche les entrées par id, un id régénéré ferait un message neuf.
         next = messages.map((m) =>
           m.id === source.id
-            ? {
-                ...m,
-                channel_id: draft.channel_id,
-                message: text,
-                accent_color: accent,
-                enabled: draft.enabled,
-              }
+            ? { ...m, channel_id: draft.channel_id, message: text, accent_color: accent, enabled: draft.enabled }
             : m
         )
         logger.event(`module:${MODULE_ID}`, "Update message", { id: source.id })
@@ -246,9 +229,7 @@ export function WelcomeChannelPage() {
       }
 
       if (await persist(next)) {
-        toast.success(
-          isNew ? t("modules.welcome_channel.addedSuccess") : t("modules.saved")
-        )
+        toast.success(isNew ? t("modules.welcome_channel.addedSuccess") : t("modules.saved"))
         setEditing(null)
       }
     } finally {
@@ -289,89 +270,49 @@ export function WelcomeChannelPage() {
     }
   }
 
-  // ── États de chargement / erreur ───────────────────────────────────────────
-
-  if (guildError) {
-    return <ErrorPage error={guildError} onRetry={refreshGuildData} />
-  }
-
-  if (isLoadingGuild || !isGuildReady) {
-    return (
-      <div className="flex flex-col gap-4 w-full">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-64 rounded-xl" />
-      </div>
-    )
-  }
-
   const canAdd = canAddWelcomeMessage(messages)
 
   return (
-    <div className="flex flex-col gap-6 w-full pb-16">
-      {/* En-tête */}
-      <div className="flex items-center gap-4">
-        <div className="size-11 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center shrink-0">
-          <MessageSquareIcon className="size-5 text-blue-600 dark:text-blue-400" />
-        </div>
-        <div>
-          <h1 className="text-xl font-semibold leading-none">
-            {t("modules.welcome_channel.name")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t("modules.welcome_channel.description")}
-          </p>
-        </div>
-      </div>
-
-      {/* Liste des messages */}
+    <ModulePage
+      moduleId={MODULE_ID}
+      loading={isLoadingGuild || !isGuildReady}
+      error={guildError}
+      onRetry={refreshGuildData}
+      actions={<ModuleStateControl moduleId={MODULE_ID} />}
+    >
       <Card>
         <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="text-base">
-              {t("modules.welcome_channel.messagesTitle")}
-            </CardTitle>
+          <div className="flex flex-col gap-1">
+            <CardTitle>{t("modules.welcome_channel.messagesTitle")}</CardTitle>
             <CardDescription>
-              {t("modules.welcome_channel.messagesDescription", {
-                used: messages.length,
-                max: MAX_WELCOME_MESSAGES,
-              })}
+              {t("modules.welcome_channel.messagesDescription", { used: messages.length, max: MAX_WELCOME_MESSAGES })}
             </CardDescription>
           </div>
-          <Button
-            type="button"
-            size="sm"
-            onClick={openNew}
-            disabled={!canAdd}
-            className="w-full sm:w-auto shrink-0"
-          >
-            <PlusIcon className="size-4" />
+          <Button type="button" size="sm" onClick={openNew} disabled={!canAdd} className="w-full sm:w-auto">
+            <AddIcon data-icon="inline-start" />
             {t("modules.welcome_channel.addMessage")}
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           {!canAdd && (
-            <div className="mb-4 flex items-center gap-2 rounded-lg border px-4 py-3 text-xs text-muted-foreground">
-              <AlertCircleIcon className="size-4 shrink-0" />
-              {t("modules.welcome_channel.limitReached", { max: MAX_WELCOME_MESSAGES })}
-            </div>
+            <Alert>
+              <AlertDescription>{t("modules.welcome_channel.limitReached", { max: MAX_WELCOME_MESSAGES })}</AlertDescription>
+            </Alert>
           )}
-
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-10 text-center border border-dashed rounded-lg">
-              <div className="size-10 rounded-full bg-muted flex items-center justify-center">
-                <MessageSquareIcon className="size-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium">{t("modules.welcome_channel.empty")}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {t("modules.welcome_channel.emptyDescription")}
-                </p>
-              </div>
+            <Empty className="border border-dashed">
+              <EmptyHeader>
+                <EmptyMedia variant="icon">
+                  <MessageSquareIcon />
+                </EmptyMedia>
+                <EmptyTitle>{t("modules.welcome_channel.empty")}</EmptyTitle>
+                <EmptyDescription>{t("modules.welcome_channel.emptyDescription")}</EmptyDescription>
+              </EmptyHeader>
               <Button type="button" size="sm" variant="outline" onClick={openNew}>
-                <PlusIcon className="size-4" />
+                <AddIcon data-icon="inline-start" />
                 {t("modules.welcome_channel.addFirst")}
               </Button>
-            </div>
+            </Empty>
           ) : (
             <div className="flex flex-col gap-2">
               {messages.map((m) => (
@@ -390,88 +331,57 @@ export function WelcomeChannelPage() {
         </CardContent>
       </Card>
 
-      {/* Dialog ajout / édition */}
-      <Dialog
+      <ResponsiveDialog
         open={editing !== null}
         onOpenChange={(open) => {
           if (!open && !isSaving) setEditing(null)
         }}
+        className="sm:max-w-lg"
       >
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editing?.isNew
-                ? t("modules.welcome_channel.addTitle")
-                : t("modules.welcome_channel.editTitle")}
-            </DialogTitle>
-            <DialogDescription>
-              {t("modules.welcome_channel.dialogDescription")}
-            </DialogDescription>
-          </DialogHeader>
-
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>
+            {editing?.isNew ? t("modules.welcome_channel.addTitle") : t("modules.welcome_channel.editTitle")}
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>{t("modules.welcome_channel.dialogDescription")}</ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+        <ResponsiveDialogBody>
           {editing && (
             <MessageForm
               editing={editing}
-              textChannels={textChannels}
-              usedChannelIds={messages
-                .filter((m) => m.id !== editing.source?.id)
-                .map((m) => m.channel_id)}
+              usedChannelIds={messages.filter((m) => m.id !== editing.source?.id).map((m) => String(m.channel_id))}
               onChange={patchDraft}
               t={t}
             />
           )}
+        </ResponsiveDialogBody>
+        <ResponsiveDialogFooter>
+          <Button type="button" variant="outline" onClick={() => setEditing(null)} disabled={isSaving}>
+            {t("modules.welcome_channel.cancel")}
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={isSaving}>
+            {isSaving && <Spinner data-icon="inline-start" />}
+            {editing?.isNew ? t("modules.welcome_channel.add") : t("modules.welcome_channel.save")}
+          </Button>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialog>
 
-          <DialogFooter className="gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditing(null)}
-              disabled={isSaving}
-            >
-              {t("modules.welcome_channel.cancel")}
-            </Button>
-            <Button type="button" onClick={handleSave} disabled={isSaving}>
-              {isSaving && <LoaderIcon className="size-4 mr-2 animate-spin" />}
-              {editing?.isNew
-                ? t("modules.welcome_channel.add")
-                : t("modules.welcome_channel.save")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Confirmation suppression */}
-      <AlertDialog
-        open={confirmDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) setConfirmDelete(null)
-        }}
-      >
+      <AlertDialog open={confirmDelete !== null} onOpenChange={(open) => !open && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {t("modules.welcome_channel.confirmDeleteTitle")}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {t("modules.welcome_channel.confirmDeleteDescription")}
-            </AlertDialogDescription>
+            <AlertDialogTitle>{t("modules.welcome_channel.confirmDeleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("modules.welcome_channel.confirmDeleteDescription")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("modules.welcome_channel.cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => confirmDelete && handleDelete(confirmDelete)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction variant="destructive" onClick={() => confirmDelete && handleDelete(confirmDelete)}>
               {t("modules.welcome_channel.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </ModulePage>
   )
 }
-
-// ─── Ligne de message ─────────────────────────────────────────────────────────
 
 interface MessageRowProps {
   message: WelcomeMessage
@@ -486,9 +396,6 @@ function MessageRow({ message, pending, onEdit, onTogglePause, onDelete, t }: Me
   const { channels } = useGuildContext()
   const channel = channels.find((c) => String(c.id) === String(message.channel_id))
   const color = accentIntToHex(message.accent_color)
-  // Aperçu sur une ligne : les sauts de ligne deviennent des espaces.
-  const preview = message.message.replace(/\s+/g, " ").trim()
-
   const stop = (fn: () => void) => (e: React.MouseEvent) => {
     e.stopPropagation()
     fn()
@@ -506,132 +413,76 @@ function MessageRow({ message, pending, onEdit, onTogglePause, onDelete, t }: Me
         }
       }}
       className={cn(
-        "flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 sm:px-4 sm:py-3 cursor-pointer transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+        "flex cursor-pointer items-start justify-between gap-2 rounded-lg border px-3 py-2.5 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:px-4 sm:py-3",
         !message.enabled && "opacity-60"
       )}
     >
-      <div className="flex items-center gap-3 min-w-0">
-        {/* Barre d'accent — reprend le rendu du bot (Components V2) */}
-        <span
-          className="w-1 self-stretch min-h-9 rounded-full shrink-0"
-          style={{ backgroundColor: color }}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {channel ? `# ${channel.name}` : `#${message.channel_id}`}
-            </p>
-            {!message.enabled && (
-              <Badge variant="secondary" className="shrink-0 text-[10px] px-1.5 py-0">
-                {t("modules.welcome_channel.paused")}
-              </Badge>
-            )}
+      <div className="flex min-w-0 flex-1 gap-3">
+        <span className="min-h-9 w-1 shrink-0 self-stretch rounded-full" style={{ backgroundColor: color }} />
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <p className="truncate text-sm font-medium">{channel ? `# ${channel.name}` : `#${message.channel_id}`}</p>
+            {!message.enabled && <Badge variant="secondary">{t("modules.welcome_channel.paused")}</Badge>}
           </div>
-          <p className="text-xs text-muted-foreground truncate mt-0.5">{preview}</p>
+          <WelcomeMessagePreview message={message.message} />
         </div>
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div className="flex shrink-0 items-center gap-1">
         <Button
           type="button"
           variant="ghost"
-          size="icon"
-          className="size-8"
+          size="icon-sm"
           onClick={stop(onTogglePause)}
           disabled={pending}
-          title={
-            message.enabled
-              ? t("modules.welcome_channel.pause")
-              : t("modules.welcome_channel.resume")
-          }
+          aria-label={message.enabled ? t("modules.welcome_channel.pause") : t("modules.welcome_channel.resume")}
         >
-          {pending ? (
-            <LoaderIcon className="size-4 animate-spin" />
-          ) : message.enabled ? (
-            <PauseIcon className="size-4" />
-          ) : (
-            <PlayIcon className="size-4" />
-          )}
+          {pending ? <Spinner /> : message.enabled ? <PauseIcon /> : <PlayIcon />}
         </Button>
-        <Button type="button" variant="ghost" size="icon" className="size-8" onClick={stop(onEdit)}>
-          <PencilIcon className="size-4" />
+        <Button type="button" variant="ghost" size="icon-sm" onClick={stop(onEdit)} aria-label={t("modules.welcome_channel.editTitle")}>
+          <EditIcon />
         </Button>
         <Button
           type="button"
           variant="ghost"
-          size="icon"
-          className="size-8 text-destructive hover:text-destructive"
+          size="icon-sm"
           onClick={stop(onDelete)}
           disabled={pending}
+          aria-label={t("modules.welcome_channel.delete")}
         >
-          <Trash2Icon className="size-4" />
+          <DeleteIcon />
         </Button>
       </div>
     </div>
   )
 }
 
-// ─── Formulaire ───────────────────────────────────────────────────────────────
-
 interface MessageFormProps {
   editing: EditingState
-  textChannels: { id: string; name: string }[]
-  /** Salons déjà utilisés par une autre entrée (avertissement, pas un blocage). */
   usedChannelIds: string[]
   onChange: (patch: Partial<MessageDraft>) => void
   t: (key: string, opts?: Record<string, unknown>) => string
 }
 
-function MessageForm({ editing, textChannels, usedChannelIds, onChange, t }: MessageFormProps) {
+function MessageForm({ editing, usedChannelIds, onChange, t }: MessageFormProps) {
   const { selectedGuildId } = useGuildContext()
   const { isNew, draft } = editing
   const duplicateChannel = Boolean(draft.channel_id) && usedChannelIds.includes(draft.channel_id)
-  // Le champ texte peut contenir une saisie en cours (`#58`) : le swatch et le
-  // sélecteur natif retombent alors sur la couleur par défaut.
-  const customColor = accentHexToInt(draft.accent_color)
-  const swatchColor = customColor === null ? DEFAULT_ACCENT_HEX : accentIntToHex(customColor)
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Salon */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">{t("modules.welcome_channel.channel")}</label>
-        <Select
-          value={draft.channel_id || undefined}
-          onValueChange={(v) => onChange({ channel_id: v })}
-        >
-          <SelectTrigger disabled={textChannels.length === 0}>
-            <SelectValue placeholder={t("modules.selectChannel")} />
-          </SelectTrigger>
-          <SelectContent>
-            {textChannels.length === 0 && (
-              <div className="flex items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
-                <AlertCircleIcon className="size-4" />
-                {t("modules.noChannels")}
-              </div>
-            )}
-            {textChannels.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                # {c.name}
-              </SelectItem>
-            ))}
-            {draft.channel_id && !textChannels.find((c) => c.id === draft.channel_id) && (
-              <SelectItem value={draft.channel_id} disabled>
-                # {draft.channel_id}
-              </SelectItem>
-            )}
-          </SelectContent>
-        </Select>
+    <FieldGroup>
+      <Field data-invalid={duplicateChannel || undefined}>
+        <FieldLabel>{t("modules.welcome_channel.channel")}</FieldLabel>
+        <ChannelPicker
+          value={draft.channel_id || null}
+          onChange={(v) => onChange({ channel_id: v ?? "" })}
+          placeholder={t("modules.selectChannel")}
+        />
         {duplicateChannel && (
-          <p className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-            <AlertCircleIcon className="size-3.5 shrink-0" />
-            {t("modules.welcome_channel.duplicateChannelHint")}
-          </p>
+          <FieldDescription>{t("modules.welcome_channel.duplicateChannelHint")}</FieldDescription>
         )}
-      </div>
-
-      {/* Message */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">{t("modules.welcome_channel.message")}</label>
+      </Field>
+      <Field>
+        <FieldLabel>{t("modules.welcome_channel.message")}</FieldLabel>
         <MessageEditor
           value={draft.message}
           onChange={(v) => onChange({ message: v })}
@@ -640,100 +491,26 @@ function MessageForm({ editing, textChannels, usedChannelIds, onChange, t }: Mes
           maxLength={MESSAGE_MAX}
           placeholder={t("modules.welcome_channel.messagePlaceholder")}
         />
-        <p className="text-xs text-muted-foreground">
-          {t("modules.welcome_channel.placeholdersHint")}
-        </p>
-      </div>
-
-      {/* Couleur d'accent */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium">{t("modules.welcome_channel.accentColor")}</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => onChange({ useDefaultColor: true })}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
-              draft.useDefaultColor
-                ? "border-primary ring-1 ring-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/50"
-            )}
-          >
-            <span
-              className="size-6 rounded-full ring-1 ring-border shrink-0"
-              style={{ backgroundColor: DEFAULT_ACCENT_HEX }}
-            />
-            <span className="flex flex-col min-w-0">
-              <span className="text-sm font-medium truncate">
-                {t("modules.welcome_channel.colorDefault")}
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {DEFAULT_ACCENT_HEX}
-              </span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange({ useDefaultColor: false })}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
-              !draft.useDefaultColor
-                ? "border-primary ring-1 ring-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/50"
-            )}
-          >
-            <span
-              className="size-6 rounded-full ring-1 ring-border shrink-0"
-              style={{ backgroundColor: swatchColor }}
-            />
-            <span className="flex flex-col min-w-0">
-              <span className="text-sm font-medium truncate">
-                {t("modules.welcome_channel.colorCustom")}
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {!draft.useDefaultColor
-                  ? draft.accent_color
-                  : t("modules.welcome_channel.colorPick")}
-              </span>
-            </span>
-          </button>
-        </div>
-        {!draft.useDefaultColor && (
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              className="color-field size-10 shrink-0 rounded-lg border border-input"
-              // `<input type="color">` n'accepte qu'un `#rrggbb` minuscule ; on
-              // affiche l'hex en majuscules côté champ texte uniquement.
-              value={swatchColor.toLowerCase()}
-              onChange={(e) => onChange({ accent_color: e.target.value.toUpperCase() })}
-            />
-            <Input
-              value={draft.accent_color}
-              onChange={(e) => onChange({ accent_color: e.target.value })}
-              placeholder={DEFAULT_ACCENT_HEX}
-              className="flex-1 font-mono"
-              maxLength={7}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Actif / en pause (édition uniquement) */}
+        <FieldDescription>{t("modules.welcome_channel.placeholdersHint")}</FieldDescription>
+      </Field>
+      <Field>
+        <FieldLabel>{t("modules.welcome_channel.accentColor")}</FieldLabel>
+        <ColorPicker
+          value={draft.accent_color}
+          onChange={(v) => onChange({ accent_color: v })}
+          defaultColor={DEFAULT_ACCENT_HEX}
+          allowReset
+        />
+      </Field>
       {!isNew && (
-        <div className="flex items-center justify-between gap-2 rounded-lg border p-3">
-          <div className="min-w-0">
-            <p className="text-sm">{t("modules.welcome_channel.active")}</p>
-            <p className="text-xs text-muted-foreground">
-              {t("modules.welcome_channel.activeHint")}
-            </p>
+        <Field orientation="horizontal">
+          <div className="flex flex-1 flex-col gap-1">
+            <FieldLabel>{t("modules.welcome_channel.active")}</FieldLabel>
+            <FieldDescription>{t("modules.welcome_channel.activeHint")}</FieldDescription>
           </div>
-          <Switch
-            checked={draft.enabled}
-            onCheckedChange={(v) => onChange({ enabled: v })}
-          />
-        </div>
+          <Switch checked={draft.enabled} onCheckedChange={(v) => onChange({ enabled: v })} />
+        </Field>
       )}
-    </div>
+    </FieldGroup>
   )
 }

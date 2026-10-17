@@ -1,7 +1,8 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
-import { LoaderIcon, RotateCcwIcon, SearchIcon, SparklesIcon } from "lucide-react"
+import { AutoAwesomeIcon, RotateLeftIcon, SearchIcon } from "@/components/icons"
+import { Spinner } from "@/components/ui/spinner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -84,7 +85,7 @@ export function AutomodBudgetPanel() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
-            <SparklesIcon className="size-4 text-violet-500" />
+            <AutoAwesomeIcon className="text-muted-foreground" />
             {t("staff.automodBudget.title")}
           </CardTitle>
           <CardDescription>{t("staff.automodBudget.description")}</CardDescription>
@@ -100,11 +101,7 @@ export function AutomodBudgetPanel() {
               inputMode="numeric"
             />
             <Button onClick={() => load(guildId)} disabled={isLoading || !guildId.trim()}>
-              {isLoading ? (
-                <LoaderIcon className="size-4 animate-spin" />
-              ) : (
-                <SearchIcon className="size-4" />
-              )}
+              {isLoading ? <Spinner data-icon="inline-start" /> : <SearchIcon data-icon="inline-start" />}
               {t("staff.automodBudget.load")}
             </Button>
           </div>
@@ -137,7 +134,7 @@ export function AutomodBudgetPanel() {
                   <div
                     className={cn(
                       "h-full rounded-full transition-all",
-                      usageRatio >= 1 ? "bg-destructive" : usageRatio > 0.8 ? "bg-amber-500" : "bg-primary"
+                      usageRatio >= 1 ? "bg-destructive" : usageRatio > 0.8 ? "bg-foreground" : "bg-primary"
                     )}
                     style={{ width: `${usageRatio * 100}%` }}
                   />
@@ -158,7 +155,7 @@ export function AutomodBudgetPanel() {
                 />
                 <div className="flex gap-2">
                   <Button onClick={() => save(parsedCap)} disabled={!canSave || isSaving}>
-                    {isSaving && <LoaderIcon className="size-4 mr-2 animate-spin" />}
+                    {isSaving && <Spinner data-icon="inline-start" />}
                     {t("staff.automodBudget.save")}
                   </Button>
                   <Button
@@ -166,7 +163,7 @@ export function AutomodBudgetPanel() {
                     onClick={() => save(null)}
                     disabled={isSaving || !budget.cap_overridden}
                   >
-                    <RotateCcwIcon className="size-4 mr-2" />
+                    <RotateLeftIcon data-icon="inline-start" />
                     {t("staff.automodBudget.restoreDefault")}
                   </Button>
                 </div>

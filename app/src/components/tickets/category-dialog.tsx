@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next"
-import { PlusIcon, XIcon } from "lucide-react"
+import { XIcon } from "@/components/icons"
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,9 @@ import {
 } from "@/components/ui/select"
 import { MessageEditor } from "@/components/message-editor"
 import { ServerLanguageNote } from "@/components/server-language-note"
-import { ChannelSelect, Field, RoleChips } from "@/components/tickets/fields"
+import { ChannelPicker, EmojiPicker, RoleMultiPicker, RolePicker } from "@/components/pickers"
+import { Field } from "@/components/tickets/fields"
+import { Field as FieldRoot, FieldContent, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { categoryFieldKey, discordCategories } from "@/lib/tickets"
 import { cn } from "@/lib/utils"
 import {
@@ -118,21 +120,20 @@ export function CategoryDialog({
             <div className="grid gap-5 sm:grid-cols-2">
               <Field
                 label={t("modules.tickets.category.emoji")}
-                description={t("modules.tickets.category.emojiDescription")}
                 error={err("emoji")}
               >
-                <Input
-                  value={category.emoji ?? ""}
-                  maxLength={TICKET_TEXT_LIMITS.emoji}
-                  placeholder="🎫"
-                  onChange={(e) => onChange({ emoji: e.target.value || null })}
+                <EmojiPicker
+                  value={category.emoji}
+                  onChange={(v) => onChange({ emoji: v })}
+                  guildId={guildId}
+                  allowNone
+                  aria-invalid={Boolean(err("emoji"))}
                 />
               </Field>
 
               {panel.style === "buttons" ? (
                 <Field
                   label={t("modules.tickets.category.buttonStyle")}
-                  description={t("modules.tickets.category.buttonStyleDescription")}
                   error={err("button_style")}
                 >
                   <Select
@@ -172,14 +173,15 @@ export function CategoryDialog({
               description={t("modules.tickets.category.discordCategoryDescription")}
               error={err("discord_category_id")}
             >
-              <ChannelSelect
+              <ChannelPicker
                 value={category.discord_category_id}
                 channels={parents}
+                types={["category"]}
                 onChange={(v) => onChange({ discord_category_id: v })}
                 placeholder={t("modules.tickets.category.selectDiscordCategory")}
-                emptyLabel={t("modules.tickets.category.noDiscordCategory")}
-                clearLabel={t("modules.tickets.category.noParent")}
-                prefix=""
+                allowNone
+                noneLabel={t("modules.tickets.category.noParent")}
+                aria-invalid={Boolean(err("discord_category_id"))}
               />
             </Field>
 
@@ -198,7 +200,6 @@ export function CategoryDialog({
 
               <Field
                 label={t("modules.tickets.category.maxOpenPerUser")}
-                description={t("modules.tickets.category.maxOpenPerUserDescription")}
                 error={err("max_open_per_user")}
               >
                 <Input
@@ -238,12 +239,13 @@ export function CategoryDialog({
               description={t("modules.tickets.category.allowedRolesDescription")}
               error={err("allowed_role_ids")}
             >
-              <RoleChips
+              <RoleMultiPicker
                 value={category.allowed_role_ids}
                 roles={assignableRoles}
+                includeManaged
                 onChange={(v) => onChange({ allowed_role_ids: v })}
-                addLabel={t("modules.tickets.category.addRole")}
-                emptyLabel={t("modules.tickets.category.noRole")}
+                placeholder={t("modules.tickets.category.addRole")}
+                aria-invalid={Boolean(err("allowed_role_ids"))}
               />
             </Field>
 
@@ -252,13 +254,13 @@ export function CategoryDialog({
               description={t("modules.tickets.category.deniedRolesDescription")}
               error={err("denied_role_ids")}
             >
-              <RoleChips
+              <RoleMultiPicker
                 value={category.denied_role_ids}
                 roles={assignableRoles}
+                includeManaged
                 onChange={(v) => onChange({ denied_role_ids: v })}
-                addLabel={t("modules.tickets.category.addRole")}
-                emptyLabel={t("modules.tickets.category.noRole")}
-                tone="danger"
+                placeholder={t("modules.tickets.category.addRole")}
+                aria-invalid={Boolean(err("denied_role_ids"))}
               />
             </Field>
 
@@ -267,12 +269,13 @@ export function CategoryDialog({
               description={t("modules.tickets.category.pingRolesDescription")}
               error={err("ping_role_ids")}
             >
-              <RoleChips
+              <RoleMultiPicker
                 value={category.ping_role_ids}
                 roles={assignableRoles}
+                includeManaged
                 onChange={(v) => onChange({ ping_role_ids: v })}
-                addLabel={t("modules.tickets.category.addRole")}
-                emptyLabel={t("modules.tickets.category.noRole")}
+                placeholder={t("modules.tickets.category.addRole")}
+                aria-invalid={Boolean(err("ping_role_ids"))}
               />
             </Field>
 
@@ -348,13 +351,13 @@ function ToggleRow({
   onCheckedChange: (value: boolean) => void
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 rounded-lg border p-3.5">
-      <div className="min-w-0">
-        <p className="text-sm font-medium">{label}</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
-      </div>
+    <FieldRoot orientation="horizontal" className="rounded-lg border p-3.5">
+      <FieldContent>
+        <FieldLabel>{label}</FieldLabel>
+        <FieldDescription>{description}</FieldDescription>
+      </FieldContent>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
-    </div>
+    </FieldRoot>
   )
 }
 
@@ -474,7 +477,7 @@ function ButtonsEditor({
             </label>
           ))}
           {checked.length === 0 && (
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+            <p className="text-xs text-warning">
               {t("modules.tickets.category.noButtonsWarning")}
             </p>
           )}
@@ -554,13 +557,15 @@ function PermissionsEditor({
                 />
                 <span className="truncate">@{role?.name ?? roleId}</span>
               </span>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label={t("modules.tickets.permissions.removeRole")}
                 onClick={() => removeRole(roleId)}
-                className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:text-foreground"
               >
-                <XIcon className="size-3.5" />
-              </button>
+                <XIcon />
+              </Button>
             </div>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {TICKET_PERMISSIONS.map((permission) => {
@@ -605,27 +610,13 @@ function PermissionsEditor({
       })}
 
       {available.length > 0 && (
-        <Select value="" onValueChange={(roleId) => setRole(roleId, ["view"])}>
-          <SelectTrigger className="w-full">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <PlusIcon className="size-3.5" />
-              {t("modules.tickets.permissions.addRole")}
-            </span>
-          </SelectTrigger>
-          <SelectContent>
-            {available.map((role) => (
-              <SelectItem key={role.id} value={role.id}>
-                <div className="flex items-center gap-2">
-                  <span
-                    className="size-2 shrink-0 rounded-full"
-                    style={{ backgroundColor: roleColorToHex(role.color) }}
-                  />
-                  {role.name}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <RolePicker
+          value={null}
+          roles={available}
+          includeManaged
+          onChange={(roleId) => roleId && setRole(roleId, ["view"])}
+          placeholder={t("modules.tickets.permissions.addRole")}
+        />
       )}
     </div>
   )

@@ -1,14 +1,6 @@
 import { CHANNEL_TYPES } from '@/types/api'
 import type { Channel, Role } from '@/types/api'
-import { APPLICATION_STATUSES } from '@/types/member-applications'
 import type {
-  Application,
-  ApplicationReviewerStats,
-  ApplicationsPage,
-  ApplicationStats,
-  ApplicationStatus,
-  ApplicationUser,
-  FormResponse,
   MemberApplicationsConfig,
   MemberApplicationsDiagnostics,
   MemberApplicationsLimits,
@@ -33,10 +25,6 @@ function asSnowflake(value: unknown): string | null {
 
 function asSnowflakes(value: unknown): string[] {
   return Array.isArray(value) ? value.map(asSnowflake).filter((v): v is string => v !== null) : []
-}
-
-function asString(value: unknown): string | null {
-  return typeof value === 'string' ? value : null
 }
 
 function asNumber(value: unknown, fallback = 0): number {
@@ -283,150 +271,4 @@ export function memberApplicationsNotices(
     }
   }
   return notices
-}
-
-// ─── Candidatures ─────────────────────────────────────────────────────────────
-
-function asStatus(value: unknown): ApplicationStatus {
-  const upper = typeof value === 'string' ? value.toUpperCase() : ''
-  return (APPLICATION_STATUSES as readonly string[]).includes(upper)
-    ? (upper as ApplicationStatus)
-    : 'SUBMITTED'
-}
-
-function normalizeUser(raw: unknown): ApplicationUser | null {
-  if (!raw || typeof raw !== 'object') return null
-  const r = asRecord(raw)
-  const id = asSnowflake(r.id)
-  if (!id) return null
-  return {
-    id,
-    username: asString(r.username) ?? id,
-    global_name: asString(r.global_name),
-    avatar: asString(r.avatar),
-    public_flags: typeof r.public_flags === 'number' ? r.public_flags : undefined,
-  }
-}
-
-/**
- * Une réponse de formulaire. Un `field_type` inconnu n'est jamais écarté : il
- * ressort en `unknown`, avec son libellé et la réponse brute.
- */
-export function normalizeFormResponse(raw: unknown): FormResponse {
-  const r = asRecord(raw)
-  const label = asString(r.label) ?? ''
-  const type = typeof r.field_type === 'string' ? r.field_type : ''
-  switch (type) {
-    case 'TERMS':
-      return {
-        field_type: 'TERMS',
-        label,
-        values: Array.isArray(r.values) ? r.values.map(String) : [],
-        response: r.response === true,
-      }
-    case 'TEXT_INPUT':
-    case 'PARAGRAPH':
-      return { field_type: type, label, response: typeof r.response === 'string' ? r.response : '' }
-    case 'MULTIPLE_CHOICE':
-      return {
-        field_type: 'MULTIPLE_CHOICE',
-        label,
-        choices: Array.isArray(r.choices) ? r.choices.map(String) : [],
-        response: typeof r.response === 'number' ? r.response : null,
-        response_label: asString(r.response_label),
-      }
-    default:
-      return { field_type: 'unknown', raw_type: type, label, response: r.response }
-  }
-}
-
-/** Réponse brute d'un type inconnu, rendue lisible sans jamais planter. */
-export function formatRawResponse(value: unknown): string {
-  if (value === null || value === undefined) return ''
-  if (typeof value === 'string') return value
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return String(value)
-  }
-}
-
-export function normalizeApplication(raw: unknown): Application {
-  const r = asRecord(raw)
-  const request = asRecord(r.request)
-  const decided = r.decided_in
-  return {
-    request_id: String(r.request_id ?? ''),
-    guild_id: String(r.guild_id ?? ''),
-    user_id: String(r.user_id ?? ''),
-    status: asStatus(r.status),
-    channel_id: asSnowflake(r.channel_id),
-    message_id: asSnowflake(r.message_id),
-    reviewed_by: asSnowflake(r.reviewed_by),
-    reviewed_at: asString(r.reviewed_at),
-    rejection_reason: asString(r.rejection_reason),
-    decided_in: decided === 'moddy' || decided === 'discord' ? decided : null,
-    submitted_at: asString(r.submitted_at),
-    created_at: asString(r.created_at) ?? '',
-    updated_at: asString(r.updated_at) ?? '',
-    user: normalizeUser(r.user),
-    form_responses: Array.isArray(request.form_responses)
-      ? request.form_responses.map(normalizeFormResponse)
-      : [],
-  }
-}
-
-export function normalizeApplicationsPage(raw: unknown): ApplicationsPage {
-  const r = asRecord(raw)
-  const applications = Array.isArray(r.applications) ? r.applications.map(normalizeApplication) : []
-  return {
-    applications,
-    total: asNumber(r.total, applications.length),
-    limit: asNumber(r.limit, applications.length),
-    offset: asNumber(r.offset, 0),
-  }
-}
-
-export function normalizeApplicationStats(raw: unknown): ApplicationStats {
-  const r = asRecord(raw)
-  const byStatus = asRecord(r.by_status)
-  const byOrigin = asRecord(r.by_origin)
-  const reviewers: ApplicationReviewerStats[] = Array.isArray(r.reviewers)
-    ? r.reviewers.map((item) => {
-        const x = asRecord(item)
-        const s = asRecord(x.by_status)
-        return {
-          user_id: String(x.user_id ?? ''),
-          total: asNumber(x.total),
-          approved: asNumber(s.APPROVED),
-          rejected: asNumber(s.REJECTED),
-        }
-      })
-    : []
-  return {
-    guild_id: String(r.guild_id ?? ''),
-    total: asNumber(r.total),
-    pending: asNumber(r.pending, asNumber(byStatus.SUBMITTED)),
-    by_status: {
-      SUBMITTED: asNumber(byStatus.SUBMITTED),
-      APPROVED: asNumber(byStatus.APPROVED),
-      REJECTED: asNumber(byStatus.REJECTED),
-      WITHDRAWN: asNumber(byStatus.WITHDRAWN),
-    },
-    // Clés absentes = 0.
-    by_origin: { moddy: asNumber(byOrigin.moddy), discord: asNumber(byOrigin.discord) },
-    reviewers,
-  }
-}
-
-/** Nom affiché du candidat — l'instantané pris au moment de la candidature. */
-export function applicantName(application: Application): string {
-  return application.user?.global_name ?? application.user?.username ?? application.user_id
-}
-
-/** Lien vers la carte d'examen dans Discord, `null` si elle n'a pas été postée. */
-export function applicationCardUrl(application: Application): string | null {
-  if (!application.channel_id || !application.message_id) return null
-  return `https://discord.com/channels/${application.guild_id}/${application.channel_id}/${application.message_id}`
 }
