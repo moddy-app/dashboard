@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next"
 import { Link } from "react-router-dom"
 import {
   CrownIcon,
-  ExternalLinkIcon,
   HashIcon,
   LinkIcon,
   LockIcon,
@@ -14,11 +13,15 @@ import {
   ZapIcon,
 } from "@/components/icons"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  Card,
-  CardContent,
-  CardTitle,
-} from "@/components/ui/card"
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
@@ -38,7 +41,7 @@ import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { IconComponent } from "@/components/icons"
 import { ModuleStatusBadge } from "@/components/module/module-status-badge"
-import { MODULES, getModuleStatus, type ModuleStatus } from "@/lib/modules"
+import { MODULES, MODULE_GROUPS, getModuleStatus, type ModuleStatus } from "@/lib/modules"
 
 // Classes statiques par ton (Tailwind ne peut pas générer de classes dynamiques).
 const STAT_STYLES = {
@@ -63,46 +66,43 @@ interface ModuleCardProps {
 function ModuleCard({ to, name, description, icon: Icon, status, isLocked }: ModuleCardProps) {
   const { t } = useTranslation()
   return (
-    <Link
-      to={to}
-      className="block rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+    <Item
+      asChild
+      variant="outline"
+      className="h-full flex-nowrap items-start transition-colors hover:bg-accent/50"
     >
-      <Card className="h-full py-0 transition-colors hover:bg-accent/50">
-        <CardContent className="p-6">
-          <div className="mb-1.5 flex items-start justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
-                <Icon className="size-3.5 text-muted-foreground" />
-              </div>
-              <CardTitle className="truncate text-sm font-medium">{name}</CardTitle>
-            </div>
+      <Link to={to}>
+        <ItemMedia variant="icon">
+          <Icon />
+        </ItemMedia>
+        <ItemContent>
+          <ItemTitle className="w-full">
+            <span className="truncate">{name}</span>
+          </ItemTitle>
+          <ItemDescription className="line-clamp-2">{description}</ItemDescription>
+          <div className="mt-2">
             {isLocked ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge
                     variant="outline"
-                    className={`shrink-0 ${LEVEL_TONE.limited.text} ${LEVEL_TONE.limited.border} ${LEVEL_TONE.limited.softBg}`}
+                    className={cn("shrink-0", LEVEL_TONE.limited.text, LEVEL_TONE.limited.border, LEVEL_TONE.limited.softBg)}
                   >
                     <LockIcon data-icon="inline-start" />
-                    {t('violations.locked')}
+                    {t("violations.locked")}
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-64">
-                  {t('violations.banner.newModuleBlockedDescription')}
+                  {t("violations.banner.newModuleBlockedDescription")}
                 </TooltipContent>
               </Tooltip>
             ) : (
               <ModuleStatusBadge status={status} />
             )}
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
-          <div className={`mt-2 flex items-center gap-1 text-xs ${isLocked ? 'text-muted-foreground' : 'text-primary'}`}>
-            <ExternalLinkIcon className="size-3" />
-            <span>{isLocked ? t('violations.viewOnly') : t('guildOverview.modules.configure')}</span>
-          </div>
-        </CardContent>
-      </Card>
-    </Link>
+        </ItemContent>
+      </Link>
+    </Item>
   )
 }
 
@@ -213,7 +213,7 @@ export function GuildOverviewPage() {
     (st) => st === 'active' || st === 'simulation'
   ).length
 
-  const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null
+  const boostTierLabel = boostTier > 0 ? t('guildOverview.stats.boostLevel', { level: boostTier }) : null
 
   // ── Rendu ──────────────────────────────────────────────────────────────────
 
@@ -286,15 +286,15 @@ export function GuildOverviewPage() {
         </div>
 
       {/* ── Stats ───────────────────────────────────────────────────────── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
           { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' as const },
           { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' as const },
-          { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' as const },
+          { label: t('guildOverview.stats.cases'), value: stats ? String(stats.open_cases) : '—', icon: ShieldAlertIcon, color: 'orange' as const },
           { label: t('guildOverview.stats.activeModules'), value: String(runningModules), icon: HashIcon, color: 'purple' as const },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="py-0">
-            <CardContent className="flex items-center gap-4 p-6">
+            <CardContent className="flex items-center gap-3 p-4">
               <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", STAT_STYLES[color].box)}>
                 <Icon className={cn("size-5", STAT_STYLES[color].icon)} />
               </div>
@@ -307,61 +307,62 @@ export function GuildOverviewPage() {
         ))}
       </div>
 
-      {/* ── CTA Premium ─────────────────────────────────────────────────── */}
-      {/* Sous sanction globale, la carte disparaît entièrement : proposer un
+      {/* ── Modules, par catégorie ──────────────────────────────────────── */}
+      <div className="flex flex-col gap-8">
+        {MODULE_GROUPS.map((group) => {
+          const list = MODULES.filter((m) => m.group === group)
+          if (list.length === 0) return null
+          const running = list.filter((m) => {
+            const st = moduleStatuses.get(m.id)
+            return st === "active" || st === "simulation"
+          }).length
+          return (
+            <section key={group} className="flex flex-col gap-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="text-base font-semibold">{t(`modules.groups.${group}`)}</h2>
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {t("guildOverview.modules.running", { count: running, total: list.length })}
+                </span>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                {list.map((m) => (
+                  <ModuleCard
+                    key={m.id}
+                    to={m.path(selectedGuildId)}
+                    name={t(m.titleKey)}
+                    description={t(m.descriptionKey)}
+                    icon={m.icon}
+                    status={moduleStatuses.get(m.id) ?? "not_configured"}
+                    isLocked={!gates.canEnableNewModule && !modules[m.id]}
+                  />
+                ))}
+              </div>
+            </section>
+          )
+        })}
+      </div>
+
+      {/* ── CTA Premium, discret, en bas ────────────────────────────────── */}
+      {/* Sous sanction globale, la ligne disparaît entièrement : proposer un
           abonnement que le back-end refusera ensuite est une fausse promesse.
           Le bandeau de sanction, lui, dit déjà ce qui est fermé et pourquoi. */}
       {!isPremium && !hidePremium && gates.canLinkGuild && (
-        <Card className="border-primary/30 bg-primary/5 py-0">
-          <CardContent className="flex items-center justify-between gap-4 p-6 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <CrownIcon className="size-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm text-foreground">{t('guildOverview.premium.title')}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{t('guildOverview.premium.description')}</p>
-              </div>
-            </div>
-            <Button
-              size="sm"
-              className="shrink-0"
-              onClick={handleUpgrade}
-              disabled={isUpgrading}
-            >
-              {isUpgrading ? (
-                <Spinner data-icon="inline-start" />
-              ) : (
-                <SparklesIcon data-icon="inline-start" />
-              )}
-              {t('guildOverview.premium.cta')}
+        <Item variant="muted">
+          <ItemMedia variant="icon">
+            <CrownIcon />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>{t("guildOverview.premium.title")}</ItemTitle>
+            <ItemDescription>{t("guildOverview.premium.description")}</ItemDescription>
+          </ItemContent>
+          <ItemActions>
+            <Button size="sm" variant="outline" onClick={handleUpgrade} disabled={isUpgrading}>
+              {isUpgrading ? <Spinner data-icon="inline-start" /> : <SparklesIcon data-icon="inline-start" />}
+              {t("guildOverview.premium.cta")}
             </Button>
-          </CardContent>
-        </Card>
+          </ItemActions>
+        </Item>
       )}
-
-      {/* ── Modules ─────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4">
-        <div>
-          <h2 className="text-base font-semibold">{t('guildOverview.modules.title')}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t('guildOverview.modules.description')}
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {MODULES.map((m) => (
-            <ModuleCard
-              key={m.id}
-              to={m.path(selectedGuildId)}
-              name={t(m.titleKey)}
-              description={t(m.descriptionKey)}
-              icon={m.icon}
-              status={moduleStatuses.get(m.id) ?? 'not_configured'}
-              isLocked={!gates.canEnableNewModule && !modules[m.id]}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

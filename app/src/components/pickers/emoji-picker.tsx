@@ -78,6 +78,10 @@ export interface EmojiPickerProps {
   disabled?: boolean
   id?: string
   "aria-invalid"?: boolean
+  /** Déclencheur personnalisé (ex. bouton icône d'une barre d'outils) à la place du champ. */
+  trigger?: React.ReactNode
+  /** Alignement de la fenêtre par rapport au déclencheur. */
+  align?: "start" | "center" | "end"
 }
 
 export function EmojiPicker({
@@ -90,6 +94,8 @@ export function EmojiPicker({
   disabled,
   id,
   "aria-invalid": invalid,
+  trigger,
+  align = "start",
 }: EmojiPickerProps) {
   const { t, i18n } = useTranslation()
   const ctx = useGuildContext()
@@ -105,13 +111,20 @@ export function EmojiPicker({
   const lang = i18n.language?.startsWith("fr") ? "fr" : "en"
 
   // Ouverture : repartir d'une recherche vide, onglet serveur s'il en a.
+  // Les émojis du serveur arrivent après l'ouverture : tant que l'utilisateur
+  // n'a pas choisi d'onglet, on bascule dessus à leur arrivée.
+  const tabTouched = React.useRef(false)
   const onOpenChange = (next: boolean) => {
     setOpen(next)
     if (next) {
       setQuery("")
+      tabTouched.current = false
       setTab(hasServer && emojis.length > 0 ? "server" : "unicode")
     }
   }
+  React.useEffect(() => {
+    if (open && !tabTouched.current && emojis.length > 0) setTab("server")
+  }, [open, emojis.length])
 
   React.useEffect(() => {
     if (!open || unicode) return
@@ -159,7 +172,7 @@ export function EmojiPicker({
   return (
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
-        <button
+        {trigger ?? <button
           type="button"
           id={id}
           role="combobox"
@@ -181,9 +194,9 @@ export function EmojiPicker({
             )}
           </span>
           <ChevronDownIcon className="pointer-events-none size-4 shrink-0 text-muted-foreground" />
-        </button>
+        </button>}
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-80 gap-2 p-2">
+      <PopoverContent align={align} className="w-80 gap-2 p-2">
         <InputGroup>
           <InputGroupInput
             value={query}
@@ -196,7 +209,10 @@ export function EmojiPicker({
           </InputGroupAddon>
         </InputGroup>
         {hasServer && (
-          <Tabs value={activeTab} onValueChange={(v) => setTab(v as "server" | "unicode")}>
+          <Tabs value={activeTab} onValueChange={(v) => {
+              tabTouched.current = true
+              setTab(v as "server" | "unicode")
+            }}>
             <TabsList className="w-full">
               <TabsTrigger value="server">{t("pickers.emoji.server")}</TabsTrigger>
               <TabsTrigger value="unicode">{t("pickers.emoji.unicode")}</TabsTrigger>

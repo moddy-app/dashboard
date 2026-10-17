@@ -65,7 +65,8 @@ export function AutomodAdvancedTab({ draft, fieldErrors, onPatch }: AutomodAdvan
           <FieldError>{fieldErrors.severity}</FieldError>
         ) : (
           <FieldDescription>
-            {t(`modules.automod_ai.severity_${draft.severity}`, { defaultValue: "" })}{" "}
+            {t(`modules.automod_ai.severity_${draft.severity}`, { defaultValue: "" })}
+            {". "}
             {t("modules.automod_ai.severityDescription")}
           </FieldDescription>
         )}

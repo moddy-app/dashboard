@@ -586,7 +586,7 @@ function CategoryCard({
           category.channel_ids.length > 0 && !problem && "border-foreground/20"
         )}
       >
-        <CollapsibleTrigger className="flex w-full items-center gap-3 p-3.5 text-left">
+        <CollapsibleTrigger className="flex w-full items-center gap-3 p-3.5 text-left max-sm:flex-wrap">
           <ChevronRightIcon
             className={cn(
               "size-4 shrink-0 text-muted-foreground transition-transform",
@@ -603,7 +603,7 @@ function CategoryCard({
               <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
             )}
           </div>
-          <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
+          <span className="shrink-0 text-xs text-muted-foreground tabular-nums max-sm:basis-full max-sm:pl-7">
             {category.channel_ids.length > 0
               ? t("modules.logs.channelCount", { count: category.channel_ids.length })
               : t("modules.logs.noChannel")}

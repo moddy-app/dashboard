@@ -452,7 +452,7 @@ function ReminderRow({
           )}
         </ItemDescription>
       </ItemContent>
-      <ItemActions>
+      <ItemActions className="max-sm:w-full max-sm:justify-end">
         <Switch
           checked={reminder.enabled}
           onCheckedChange={onToggle}

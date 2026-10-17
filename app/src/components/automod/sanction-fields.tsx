@@ -121,7 +121,7 @@ export function LegacyPlan({
         <InfoIcon />
         <AlertTitle>{t("modules.automod_ai.scale.legacyTitle")}</AlertTitle>
         <AlertDescription>{t("modules.automod_ai.scale.legacyDescription")}</AlertDescription>
-        <AlertAction>
+        <AlertAction inline>
           <Button type="button" size="sm" variant="outline" onClick={onReplace}>
             {t("modules.automod_ai.scale.legacyReplace")}
           </Button>

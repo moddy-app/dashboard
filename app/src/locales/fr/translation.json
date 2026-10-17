@@ -131,7 +131,8 @@
     "stats": {
       "members": "Membres",
       "online": "En ligne",
-      "cases": "Sanctions (ouvertes/total)",
+      "cases": "Sanctions en cours",
+      "boostLevel": "Niveau {{level}}",
       "activeModules": "Modules actifs"
     },
     "premium": {
@@ -143,6 +144,8 @@
     "modules": {
       "title": "Modules",
       "description": "Activez et réglez les fonctionnalités de Moddy sur ce serveur.",
+      "running_one": "{{count}} sur {{total}} actif",
+      "running_other": "{{count}} sur {{total}} actifs",
       "configure": "Configurer"
     }
   },
@@ -183,6 +186,7 @@
     "noServerSelected": "Aucun serveur sélectionné"
   },
   "modules": {
+    "noChannels": "Aucun salon disponible",
     "saved": "Paramètres enregistrés avec succès.",
     "saveError": "Impossible d'enregistrer les paramètres.",
     "selectChannel": "Sélectionner un salon",
@@ -1807,6 +1811,8 @@
       }
     },
     "bump_reminder": {
+      "add": "Ajouter un rappel",
+      "edit": "Modifier le rappel",
       "name": "Rappels de bump",
       "description": "Soyez prévenu quand votre serveur peut de nouveau être bumpé sur les annuaires.",
       "remindersTitle": "Rappels",

@@ -177,7 +177,7 @@ export function AutomodSanctionsTab({
         <ErrorIcon />
         <AlertTitle>{t("modules.automod_ai.catalogErrorTitle")}</AlertTitle>
         <AlertDescription>{t("modules.automod_ai.catalogErrorDescription")}</AlertDescription>
-        <AlertAction>
+        <AlertAction inline>
           <Button type="button" size="sm" variant="outline" onClick={onRetry}>
             {t("modules.automod_ai.retry")}
           </Button>

@@ -131,7 +131,8 @@
     "stats": {
       "members": "Members",
       "online": "Online",
-      "cases": "Cases (open/total)",
+      "cases": "Open cases",
+      "boostLevel": "Level {{level}}",
       "activeModules": "Active Modules"
     },
     "premium": {
@@ -143,6 +144,8 @@
     "modules": {
       "title": "Modules",
       "description": "Turn on and adjust Moddy's features on this server.",
+      "running_one": "{{count}} of {{total}} running",
+      "running_other": "{{count}} of {{total}} running",
       "configure": "Configure"
     }
   },
@@ -183,6 +186,7 @@
     "noServerSelected": "No server selected"
   },
   "modules": {
+    "noChannels": "No channels available",
     "saved": "Settings saved successfully.",
     "saveError": "Failed to save settings.",
     "selectChannel": "Select a channel",
@@ -1807,6 +1811,8 @@
       }
     },
     "bump_reminder": {
+      "add": "Add a reminder",
+      "edit": "Edit reminder",
       "name": "Bump reminders",
       "description": "Get reminded when your server can be bumped again on server listings.",
       "remindersTitle": "Reminders",

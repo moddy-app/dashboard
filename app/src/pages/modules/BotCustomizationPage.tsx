@@ -290,7 +290,7 @@ function PremiumNotice() {
     <Alert>
       <CrownIcon />
       <AlertDescription>{t("modules.bot_customization.premiumLockDescription")}</AlertDescription>
-      <AlertAction>
+      <AlertAction inline>
         <Button type="button" size="sm" onClick={() => navigate("/premium")}>
           {t("modules.bot_customization.premiumCta")}
         </Button>

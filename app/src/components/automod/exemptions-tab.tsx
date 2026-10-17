@@ -47,7 +47,7 @@ export function AutomodExemptionsTab({
           <AlertTitle>{t("modules.automod_ai.exemptionsDivergedTitle")}</AlertTitle>
           <AlertDescription>{t("modules.automod_ai.exemptionsDivergedDescription")}</AlertDescription>
           {!readOnly && (
-            <AlertAction>
+            <AlertAction inline>
               <Button
                 type="button"
                 size="sm"
