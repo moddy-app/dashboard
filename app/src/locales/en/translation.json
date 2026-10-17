@@ -639,8 +639,6 @@
       },
       "optionsTitle": "Options",
       "colorBrand": "Platform color",
-      "colorCustom": "Custom",
-      "colorPick": "Pick a color",
       "showAvatarHint": "Show the account's avatar in the notification.",
       "showMediaHint": "Show the post's thumbnail or media preview.",
       "errorLimitFree": "Limit reached (1 account per platform). Upgrade to Moddy Max to follow up to 5.",
@@ -1580,12 +1578,10 @@
         "status": "Status",
         "category": "Category",
         "owner": "Author",
-        "ownerPlaceholder": "Discord ID",
         "noCategory": "No categories configured.",
         "panel": "Panel",
         "staff": "Handled by",
         "number": "Ticket number",
-        "staffPlaceholder": "Discord ID",
         "numberPlaceholder": "e.g. 42",
         "noPanel": "No panels configured."
       },
@@ -2505,7 +2501,6 @@
       "date": "Date",
       "dateFrom": "From",
       "dateTo": "To",
-      "idPlaceholder": "Discord ID…",
       "remove": "Remove filter",
       "add": "Filter",
       "allUsed": "All filters in use",
@@ -3193,6 +3188,12 @@
       "hex": "Hex color",
       "swatches": "Color swatches",
       "reset": "Default color"
+    },
+    "user": {
+      "placeholder": "Discord user ID or mention",
+      "invalid": "Enter a valid user ID (17 to 20 digits).",
+      "notFound": "User not found",
+      "clear": "Clear the user"
     }
   }
 }

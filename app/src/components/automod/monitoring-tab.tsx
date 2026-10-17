@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { CheckIcon, ChevronDownIcon, WarningIcon } from "@/components/icons"
+import { ChevronDownIcon, WarningIcon } from "@/components/icons"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -56,7 +56,7 @@ function CheckboxMultiSelect({ id, options, selected, onChange, placeholder, dis
               <span className="text-muted-foreground">{placeholder}</span>
             ) : (
               chosen.map((o) => (
-                <Badge key={o.value} variant="secondary">
+                <Badge key={o.value} variant="outline" className="bg-background">
                   {o.label}
                 </Badge>
               ))
@@ -75,7 +75,6 @@ function CheckboxMultiSelect({ id, options, selected, onChange, placeholder, dis
                   <CommandItem key={o.value} value={o.label} onSelect={() => toggle(o.value)}>
                     <Checkbox checked={checked} tabIndex={-1} className="pointer-events-none" />
                     {o.label}
-                    <CheckIcon className={cn("ml-auto", !checked && "invisible")} />
                   </CommandItem>
                 )
               })}

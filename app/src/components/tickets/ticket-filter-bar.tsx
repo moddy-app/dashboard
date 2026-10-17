@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ChevronDownIcon, PlusIcon, Trash2Icon } from "@/components/icons"
 import { Input } from "@/components/ui/input"
+import { MemberPicker } from "@/components/pickers"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   DropdownMenu,
@@ -198,6 +199,7 @@ function FilterChip({
   categories,
   panels,
   autoOpen,
+  guildId,
   onChange,
   onRemove,
 }: {
@@ -206,6 +208,7 @@ function FilterChip({
   categories: { id: string; name: string; panelName: string }[]
   panels: { id: string; name: string }[]
   autoOpen: boolean
+  guildId: string
   onChange: (patch: TicketFilterValues) => void
   onRemove: () => void
 }) {
@@ -214,9 +217,10 @@ function FilterChip({
   const meta = TICKET_FILTER_META[filterKey]
   const Icon = meta.icon
   const filled = hasTicketFilterValue(filterKey, values)
-  const isText = filterKey === "owner" || filterKey === "staff" || filterKey === "number"
+  const isText = filterKey === "number"
+  const isMember = filterKey === "owner" || filterKey === "staff"
   const currentText =
-    filterKey === "owner" ? values.owner : filterKey === "staff" ? values.staff : values.number
+    filterKey === "number" ? values.number : undefined
 
   // Ouverture différée à l'ajout : sinon le clic qui a sélectionné le filtre
   // dans le menu déroulant est capté par le popover comme un « clic extérieur »
@@ -244,11 +248,8 @@ function FilterChip({
     setOpen(false)
     if (isText) {
       const v = draft.trim()
-      if (v) {
-        onChange(
-          filterKey === "owner" ? { owner: v } : filterKey === "staff" ? { staff: v } : { number: v }
-        )
-      } else onRemove()
+      if (v) onChange({ number: v })
+      else onRemove()
     } else if (!hasTicketFilterValue(filterKey, values)) {
       onRemove()
     }
@@ -277,24 +278,28 @@ function FilterChip({
           <ChevronDownIcon className="size-3.5 shrink-0 opacity-70" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 gap-0 p-2">
+      <PopoverContent align="start" className={cn("gap-0 p-2", isMember ? "w-72" : "w-56")}>
         <div className="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-medium text-muted-foreground">
           <Icon className="size-3.5" />
           {t(meta.labelKey)}
         </div>
+        {isMember && (
+          <MemberPicker
+            guildId={guildId}
+            value={(filterKey === "owner" ? values.owner : values.staff) ?? null}
+            onChange={(v) => {
+              onChange(filterKey === "owner" ? { owner: v ?? undefined } : { staff: v ?? undefined })
+              if (v) setOpen(false)
+            }}
+          />
+        )}
         {isText && (
           <TextEditor
             value={draft}
             onChange={setDraft}
             onSubmit={() => handleOpenChange(false)}
-            numeric={filterKey === "number"}
-            placeholder={t(
-              filterKey === "owner"
-                ? "modules.tickets.filters.ownerPlaceholder"
-                : filterKey === "staff"
-                  ? "modules.tickets.filters.staffPlaceholder"
-                  : "modules.tickets.filters.numberPlaceholder"
-            )}
+            numeric
+            placeholder={t("modules.tickets.filters.numberPlaceholder")}
           />
         )}
         {filterKey === "status" && (
@@ -347,6 +352,7 @@ export function TicketFilterChips({
   panels,
   availableKeys,
   pendingKey,
+  guildId,
   onChange,
   onRemove,
   onAdd,
@@ -359,6 +365,7 @@ export function TicketFilterChips({
   availableKeys: TicketFilterKey[]
   /** Filtre fraîchement ajouté dont il faut ouvrir l'éditeur. */
   pendingKey: TicketFilterKey | null
+  guildId: string
   onChange: (patch: TicketFilterValues) => void
   onRemove: (key: TicketFilterKey) => void
   onAdd: (key: TicketFilterKey) => void
@@ -376,6 +383,7 @@ export function TicketFilterChips({
           categories={categories}
           panels={panels}
           autoOpen={pendingKey === key}
+          guildId={guildId}
           onChange={onChange}
           onRemove={() => onRemove(key)}
         />

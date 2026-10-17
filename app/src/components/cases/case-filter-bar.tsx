@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { ChevronDownIcon, PlusIcon, Trash2Icon } from '@/components/icons'
-import { Input } from "@/components/ui/input"
+import { MemberPicker, UserIdPicker } from "@/components/pickers"
 import {
   Popover,
   PopoverContent,
@@ -36,28 +36,20 @@ function ResolvedName({ id }: { id: string }) {
 
 // ─── Éditeurs par type de filtre ──────────────────────────────────────────────
 
-function IdEditor({
+function UserEditor({
   value,
   onChange,
-  onSubmit,
-  placeholder,
+  guildId,
 }: {
-  value: string
-  onChange: (v: string) => void
-  onSubmit: () => void
-  placeholder: string
+  value: string | undefined
+  onChange: (v: string | null) => void
+  /** Vue d'un serveur : recherche par nom ; sinon saisie d'un identifiant. */
+  guildId: string | undefined
 }) {
-  return (
-    <Input
-      autoFocus
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") onSubmit()
-      }}
-      placeholder={placeholder}
-      className="h-8 font-mono text-xs"
-    />
+  return guildId ? (
+    <MemberPicker guildId={guildId} value={value ?? null} onChange={onChange} />
+  ) : (
+    <UserIdPicker value={value ?? null} onChange={onChange} />
   )
 }
 
@@ -234,6 +226,7 @@ function FilterChip({
   values,
   actions,
   autoOpen,
+  guildId,
   onChange,
   onRemove,
 }: {
@@ -241,6 +234,7 @@ function FilterChip({
   values: CaseFilterValues
   actions: SanctionAction[]
   autoOpen: boolean
+  guildId: string | undefined
   onChange: (patch: CaseFilterValues) => void
   onRemove: () => void
 }) {
@@ -264,14 +258,8 @@ function FilterChip({
     return () => clearTimeout(id)
   }, [autoOpen])
 
-  // Brouillon local pour les filtres ID : évite toute lecture de state périmé à
-  // la fermeture (commit synchrone du texte saisi).
-  const currentId = filterKey === "subject" ? values.subject : filterKey === "issuer" ? values.issuer : ""
-  const [idDraft, setIdDraft] = useState(currentId ?? "")
-
   const handleOpenChange = (o: boolean) => {
     if (o) {
-      setIdDraft(currentId ?? "")
       openedAtRef.current = Date.now()
       setOpen(true)
       return
@@ -283,11 +271,7 @@ function FilterChip({
     // être configuré).
     if (Date.now() - openedAtRef.current < 250) return
     setOpen(false)
-    if (isId) {
-      const v = idDraft.trim()
-      if (v) onChange(filterKey === "subject" ? { subject: v } : { issuer: v })
-      else onRemove()
-    } else if (!hasValue(filterKey, values)) {
+    if (!hasValue(filterKey, values)) {
       // Fermeture sans valeur → on retire le filtre (règle « rien configuré = supprimé »).
       onRemove()
     }
@@ -316,17 +300,19 @@ function FilterChip({
           <ChevronDownIcon className="size-3.5 shrink-0 opacity-70" />
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-56 gap-0 p-2">
+      <PopoverContent align="start" className={cn("gap-0 p-2", isId ? "w-72" : "w-56")}>
         <div className="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-medium text-muted-foreground">
           <Icon className="size-3.5" />
           {t(meta.labelKey)}
         </div>
         {isId && (
-          <IdEditor
-            value={idDraft}
-            onChange={setIdDraft}
-            onSubmit={() => handleOpenChange(false)}
-            placeholder={t("cases.filters.idPlaceholder")}
+          <UserEditor
+            guildId={guildId}
+            value={filterKey === "subject" ? values.subject : values.issuer}
+            onChange={(v) => {
+              onChange(filterKey === "subject" ? { subject: v ?? undefined } : { issuer: v ?? undefined })
+              if (v) setOpen(false)
+            }}
           />
         )}
         {filterKey === "status" && (
@@ -416,6 +402,7 @@ export function CaseFilterChips({
   availableKeys,
   actions,
   pendingKey,
+  guildId,
   onChange,
   onRemove,
   onAdd,
@@ -426,6 +413,8 @@ export function CaseFilterChips({
   actions: SanctionAction[]
   /** Filtre fraîchement ajouté dont il faut ouvrir l'éditeur. */
   pendingKey: FilterKey | null
+  /** Serveur de la vue (cases d'un serveur), sinon `undefined`. */
+  guildId?: string
   onChange: (patch: CaseFilterValues) => void
   onRemove: (key: FilterKey) => void
   onAdd: (key: FilterKey) => void
@@ -444,6 +433,7 @@ export function CaseFilterChips({
           values={values}
           actions={actions}
           autoOpen={pendingKey === key}
+          guildId={guildId}
           onChange={onChange}
           onRemove={() => onRemove(key)}
         />

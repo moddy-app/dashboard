@@ -487,6 +487,7 @@ export function CaseList({
         availableKeys={availableKeys}
         actions={actions}
         pendingKey={pendingKey}
+        guildId={baseFilters.scope_type === "discord_guild" ? baseFilters.scope_id : undefined}
         onChange={patchFilter}
         onRemove={removeFilter}
         onAdd={addFilter}

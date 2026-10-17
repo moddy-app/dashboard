@@ -967,71 +967,18 @@ function SubscriptionForm({ editing, isAtLimit, onChange, t }: SubscriptionFormP
         <p className="text-xs text-muted-foreground">{t("modules.social_notifications.messageHint")}</p>
       </div>
 
-      {/* Couleur d'embed — choix marque / personnalisée */}
+      {/* Couleur d'embed — null = couleur de la plateforme */}
       <div className="flex flex-col gap-2">
         <label className="text-sm font-medium">{t("modules.social_notifications.embedColor")}</label>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => onChange({ useBrandColor: true })}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
-              draft.useBrandColor
-                ? "border-primary ring-1 ring-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/50"
-            )}
-          >
-            <span
-              className="size-6 rounded-full ring-1 ring-border shrink-0"
-              style={{ backgroundColor: meta.brandColor }}
-            />
-            <span className="flex flex-col min-w-0">
-              <span className="text-sm font-medium truncate">
-                {t("modules.social_notifications.colorBrand")}
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">{meta.brandColor}</span>
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onChange({ useBrandColor: false })}
-            className={cn(
-              "flex items-center gap-2.5 rounded-lg border p-3 text-left transition-all",
-              !draft.useBrandColor
-                ? "border-primary ring-1 ring-primary bg-primary/5"
-                : "border-border hover:border-muted-foreground/50"
-            )}
-          >
-            <span
-              className="size-6 rounded-full ring-1 ring-border shrink-0"
-              style={{ backgroundColor: draft.embed_color }}
-            />
-            <span className="flex flex-col min-w-0">
-              <span className="text-sm font-medium truncate">
-                {t("modules.social_notifications.colorCustom")}
-              </span>
-              <span className="text-xs text-muted-foreground font-mono">
-                {!draft.useBrandColor ? draft.embed_color : t("modules.social_notifications.colorPick")}
-              </span>
-            </span>
-          </button>
-        </div>
-        {!draft.useBrandColor && (
-          <div className="flex items-center gap-2">
-            <ColorPicker
-              value={draft.embed_color}
-              onChange={(v) => onChange({ embed_color: v ?? meta.brandColor })}
-              defaultColor={meta.brandColor}
-            />
-            <Input
-              value={draft.embed_color}
-              onChange={(e) => onChange({ embed_color: e.target.value })}
-              placeholder={meta.brandColor}
-              className="flex-1 font-mono"
-              maxLength={7}
-            />
-          </div>
-        )}
+        <ColorPicker
+          value={draft.useBrandColor ? null : draft.embed_color}
+          onChange={(v) =>
+            onChange(v === null ? { useBrandColor: true } : { useBrandColor: false, embed_color: v })
+          }
+          defaultColor={meta.brandColor}
+          allowReset
+          resetLabel={t("modules.social_notifications.colorBrand")}
+        />
       </div>
 
       {/* Options (taille uniforme) */}
