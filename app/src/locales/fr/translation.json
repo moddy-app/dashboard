@@ -550,7 +550,7 @@
         "contentHelp": "Le texte que l'IA lit pour reconnaître cette infraction.",
         "editContent": "Modifier le contenu"
       },
-      "precedents": "Utiliser les précédents de ce serveur",
+      "precedents": "Utiliser les précédents appris de ce serveur",
       "precedentsDescription": "Les décisions humaines de votre serveur, comme les appels et les annotations faites en simulation, guident l'IA."
     },
     "social_notifications": {
