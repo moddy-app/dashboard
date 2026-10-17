@@ -550,7 +550,7 @@
         "contentHelp": "The text the AI reads to recognize this infraction.",
         "editContent": "Edit content"
       },
-      "precedents": "Use this server's precedents",
+      "precedents": "Use this server's learned precedents",
       "precedentsDescription": "Your server's human decisions, such as appeals and annotations made during simulation, guide the AI."
     },
     "social_notifications": {
