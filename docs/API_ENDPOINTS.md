@@ -802,7 +802,7 @@ Retourne toutes les configs modules du serveur.
 {
   "starboard": {"channel_id": 999, "reaction_count": 5, "emoji": "⭐"},
   "welcome_channel": {"version": 2, "messages": [{"id": "wm_3f9a1c72", "channel_id": "888", "message": "Bienvenue {user} !", "accent_color": null, "enabled": true, "created_by": null, "created_at": null}]},
-  "auto_role": {"role_ids": [111, 222]}
+  "auto_role": {"member_roles": ["111"], "bot_roles": ["222"]}
 }
 ```
 
@@ -929,6 +929,27 @@ dans le schéma d'**aucun** module : le registre la valide à part
 - **`social_notifications`** : le bot écrit lui-même la config minimale `{"configured": true, "state": …}` dès qu'un serveur ajoute un abonnement ou ouvre son panneau (pour qu'un module sans autre réglage puisse être mis en pause). Le backend reconduit `configured` à chaque sauvegarde et refuse `configured: false`. En pause, le bot n'envoie pas les publications reçues, et elles ne sont **pas** rejouées à la reprise ; les abonnements (table `social_subscriptions`) ne changent pas.
 
 Guide d'intégration front : `docs/MODULE_STATE.md`.
+
+### `PUT /guilds/{guild_id}/modules/{module_id}/state`
+
+Change **uniquement** l'état. Corps `{"state": "active" | "paused" | "simulation"}`. La config stockée est reprise telle quelle (ni validation de schéma, ni `pre_save`/`on_save`) : une pause marche même si la config est devenue invalide.
+
+**Réponse 200 :** la config **complète** (forme du `GET`, avec `state`) ; `altguard` et `tickets` ajoutent `_apply`.
+
+| Erreur | Cas |
+|---|---|
+| `404 Module introuvable` | jamais configuré, ou config vide (`logs` désactivé écrit `{}`) ; module retiré |
+| `422 module_state_invalid` (+ `allowed`) | valeur inconnue |
+| `422 module_state_unsupported` (+ `allowed`) | `simulation` hors `automod_ai` ; `bot_customization` quel que soit l'état (pas de pause depuis le dashboard) |
+| `403` | utilisateur suspendu, ou `automod_ai` sur un serveur limité |
+
+Ne jamais envoyer `{"state": …}` seul au `PUT`/`PATCH` générique : il **remplace** toute la config.
+
+## Module — Auto Role
+
+`auto_role` a un `ModuleSpec` : `{"member_roles": ["…"], "bot_roles": ["…"]}` — rôles donnés aux humains / aux bots qui rejoignent. Ids en chaînes en lecture (entiers ou chaînes acceptés en écriture), ≤ 20 par liste, pas de doublon dans une liste, au moins une liste non vide (sinon `422`). Pas de clé `enabled` : actif dès qu'un rôle est configuré ; pause par la route d'état, suppression par `DELETE`. L'ancien `{"role_ids": […]}` est lu comme `member_roles` et disparaît à la prochaine écriture.
+
+Erreurs `422` de vérification Discord (sautées si Discord est injoignable), corps `{"error", "code", "role_ids": [rôles fautifs]}` : `auto_role_role_not_found`, `auto_role_everyone`, `auto_role_managed`, `auto_role_too_high` (au-dessus ou au niveau du rôle du bot). Bot sans « Gérer les rôles » : `422` **sans** `code`, lire `error`. Ids invalides, doublon, > 20 ou aucune liste : erreurs Pydantic.
 
 ---
 
@@ -1183,7 +1204,7 @@ Le module `adaptive_slowmode` ajuste automatiquement le délai d'envoi d'un salo
 
 **Application immédiate :** à la réception d'une config (`PUT` complet ou par salon), le backend applique tout de suite le **slowmode minimal** (`min_delay`) sur le ou les salons concernés via l'API Discord (`PATCH /channels/{id}` avec le token du bot). Cette opération est best-effort : si Discord refuse (permission `MANAGE_CHANNELS` manquante, salon introuvable...), la config reste persistée et la requête réussit quand même — l'échec est seulement loggué côté backend.
 
-**Valeurs de delay valides (secondes) :** `0, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600, 7200, 21600`
+**Délais (secondes) :** `min_delay` entier `0..21600`, `max_delay` entier `1..21600`, `max_delay > min_delay` — valeurs libres (la liste fixe a été retirée en 2026-10). Les paliers intermédiaires choisis par le bot restent pris dans sa liste standard.
 
 **Structure stockée en DB** (`guilds.data.modules.adaptive_slowmode`) :
 
@@ -1406,6 +1427,7 @@ Nom affiché : **Automod** (anciennement « Automod AI » — l'id `automod_ai` 
 | `ignore_moderators` | bool | `true` | Ignore les membres avec `manage_messages`. |
 | `severity` | int 1–5 | `3` | Sensibilité (seuil embedding + décalage de cran du barème). |
 | `max_action` | `warn`\|`mute`\|`ban` | `ban` | Plafond dur du barème. |
+| `use_precedents` | bool **strict** | `true` | Utiliser les précédents appris **de ce serveur** (appels, annotations en simulation). `false` = plus consultés (toujours enregistrés). Ne couvre pas les références apprises par l'équipe Moddy (globales). `"false"`, `0`, `null` → `422`. |
 | `categories_desactivees` | string[] | — | **LEGACY, ne plus écrire.** Remplacé par `sanctions[<id>].enabled = false`. Repliée à la lecture et retirée à l'écriture. |
 | `sanctions` | objet | `{}` | Politique de sanction par infraction, clé = id du catalogue (`insulte`, `menace`, `harcelement`, `harcelement_sexuel`, `haine_discrimination`, `incitation_automutilation`, `doxxing`, `arnaque_scam`, `contenu_nsfw`, `contenu_choquant`, `profil_avatar_nsfw`, `profil_avatar_choquant`, `profil_pseudo`) ou `perso:<id>`. Entrée absente = barème de Moddy. Détail ci-dessous. |
 | `infractions_perso` | objet[] ≤ 10 | `[]` | Infractions définies par le serveur. Détail ci-dessous. |

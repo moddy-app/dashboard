@@ -73,7 +73,9 @@
 - **Tailwind CSS 4.1.17** - Framework CSS utility-first
 - **shadcn/ui 3.8.4** - Bibliothèque de composants pré-construits et personnalisables
 - **Radix UI 1.4.3** - Composants UI headless (base de shadcn)
-- **lucide-react 0.563.0** - Bibliothèque d'icônes (1000+ icônes)
+- **Material Symbols Rounded (plein)** - Icônes, compilées en composants SVG par `unplugin-icons` + `@iconify-json/material-symbols`, exposées **uniquement** par le barrel `src/components/icons.ts` (`lucide-react` et Hugeicons sont abandonnés)
+- **react-colorful** - Zone de couleur du `ColorPicker`
+- **emojibase-data** - Émojis Unicode du `EmojiPicker` (chargés en `import()` paresseux)
 - **Recharts 3.8.0** - Moteur des graphiques, via le composant shadcn `chart`
 - **Class Variance Authority (CVA) 0.7.1** - Gestion des variantes de composants
 - **Tailwind Merge 3.4.0** - Fusion intelligente des classes Tailwind
@@ -615,6 +617,48 @@ i18n.changeLanguage('fr')
 3. Ajout de composants UI (forms, input groups, selects)
 4. Ajout du projet shadcn Vite de base
 5. Ajout du sous-projet Vite
+
+## Règles UI obligatoires (refonte 2026-10)
+
+> Ces règles ne se discutent pas : elles existent parce que le dashboard était devenu
+> incohérent d'un module à l'autre. Tout écran nouveau ou modifié les respecte.
+> Lire aussi `app/.agents/skills/shadcn/SKILL.md` et ses `rules/*.md`.
+
+### Icônes
+- **Uniquement** `import { XxxIcon } from '@/components/icons'` — Material Symbols **Rounded, plein**. Jamais `lucide-react`, jamais Hugeicons, jamais `-outline`/`-sharp`.
+- Icône manquante : l'ajouter au barrel (`import X from '~icons/material-symbols/<nom>-rounded'`, vérifier le nom dans `@iconify-json/material-symbols/icons.json`). Type : `IconComponent`.
+- Un composant ajouté par `npx shadcn add` arrive avec des icônes Hugeicons/lucide (`components.json` dit `hugeicons`) : **les remplacer** par le barrel avant de commiter.
+- Dans un `Button` : `data-icon="inline-start|inline-end"`, **aucune** classe de taille.
+
+### Pages de module
+- Toute page de module = `ModulePage` + `ModuleHeader` (`src/components/module/`). Pas d'en-tête fait main, pas de tuile d'icône colorée.
+- Le statut vient **uniquement** de `getModuleStatus()` / registre `MODULES` (`src/lib/modules.ts`) et s'affiche **toujours** (`ModuleStatusBadge` dans l'en-tête, la vue d'ensemble et la sidebar). Une règle « actif » se modifie dans le registre, jamais dans une page.
+- Pause / reprise / simulation / réinitialisation : `ModuleStateControl` dans les actions de l'en-tête. L'état s'écrit par `PUT /guilds/{id}/modules/{id}/state` (`setModuleState` du `GuildContext`) — **jamais** `{state}` seul au PUT générique (il remplace toute la config). `bot_customization` ne se met pas en pause.
+- Nouveau module : l'ajouter à `MODULES` (id, groupe, icône, `isActive`, `supportsPause`, `supportsSimulation`) — la sidebar et la vue d'ensemble suivent.
+
+### Sélecteurs
+- Salon, rôle, membre, emoji, couleur : **uniquement** `src/components/pickers/*` (`ChannelPicker`/`ChannelMultiPicker`, `RolePicker`/`RoleMultiPicker`, `MemberPicker`/`MemberMultiPicker`, `EmojiPicker` avec `unicodeOnly` quand le champ refuse les émojis perso, `ColorPicker`). Popover + Command : liste bornée, recherche, clavier.
+- Jamais un `Select` sur une liste Discord (il s'ouvre pleine hauteur sans recherche), jamais `<input type="color">`, jamais une grille d'émojis en dur.
+- Couleurs : `src/lib/color.ts` (`hexToInt`, `intToHex`, `normalizeHex`) — pas de nouveau convertisseur local.
+
+### Enregistrement
+- Page de réglages : brouillon + `UnsavedBar`.
+- Collection d'éléments (messages de bienvenue, abonnements, salons de slowmode, rappels de bump) : liste + `ResponsiveDialog` d'édition **enregistré à la validation du dialog** — pas de barre d'enregistrement en plus.
+- Dialog d'édition : `ResponsiveDialog` (Dialog ≥ `sm`, Drawer en dessous). Action destructive : `AlertDialog` qui dit ce qui est perdu.
+
+### Composants
+- Formulaire : `FieldGroup` / `Field` / `FieldSet` / `FieldLegend` / `FieldDescription`. Encart : `Alert`. État vide : `Empty`. Chargement de page : `Skeleton` ; dans un bouton : `Spinner` + `disabled`. Statut : `Badge` en variantes stock. 2–5 choix : `ToggleGroup`. Ligne de liste : `Item`.
+- Pas de composant « maison » quand shadcn en a un (`Notice`, badge en `span`, état vide en `div` pointillé…).
+
+### Style
+- Tokens sémantiques uniquement (`bg-muted`, `text-muted-foreground`, `--success`, `--warning`, `--destructive`…) : **aucune** couleur de palette brute (`bg-emerald-500`, `text-amber-600`…), **aucun** `dark:` manuel. Seule exception : une couleur qui est une **donnée** (couleur d'un rôle Discord, d'accent d'un message) en style inline.
+- `flex flex-col gap-*` (jamais `space-y-*`), `size-*`, `truncate`, `cn()` (jamais de template literal), jamais `uppercase`.
+
+### Textes
+- Vouvoiement partout. Une description apporte une information que le titre ne donne pas — sinon pas de description.
+- Pas de détail d'implémentation (bot, Redis, stream, « en vol », « côté backend »), pas d'auto-justification, pas de phrase décorative, pas de tiret cadratin pour faire style, pas de majuscules d'emphase.
+- Une contrainte se dit au moment où elle s'applique (message d'erreur à la saisie), pas en avance dans une description.
+- Toute clé dans `en` **et** `fr`.
 
 ## Notes importantes pour Claude
 
