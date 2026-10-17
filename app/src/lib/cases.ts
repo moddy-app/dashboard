@@ -8,8 +8,8 @@ import {
   ShieldMinusIcon,
   KeyRoundIcon,
   GavelIcon,
-  type LucideIcon,
 } from 'lucide-react'
+import type { IconComponent } from '@/components/icons'
 import type { User } from '@/lib/auth'
 import type {
   SanctionAction,
@@ -33,7 +33,7 @@ export function canModerateCases(user: Pick<User, 'is_staff' | 'staff_roles'> | 
 // Chaque action a une couleur d'accent (token Tailwind) et une icône.
 
 interface ActionMeta {
-  icon: LucideIcon
+  icon: IconComponent
   /** Base de couleur pour construire les classes (voir ACTION_TONE). */
   tone: keyof typeof ACTION_TONE
   temporary: boolean

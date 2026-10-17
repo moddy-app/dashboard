@@ -1,6 +1,6 @@
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
-import { CheckCircle, Info, AlertTriangle, XCircle, Loader2 } from "lucide-react"
+import { CheckCircleIcon, InfoIcon, WarningIcon, CancelIcon, ProgressActivityIcon } from "@/components/icons"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
@@ -10,11 +10,11 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       icons={{
-        success: <CheckCircle className="size-4" />,
-        info: <Info className="size-4" />,
-        warning: <AlertTriangle className="size-4" />,
-        error: <XCircle className="size-4" />,
-        loading: <Loader2 className="size-4 animate-spin" />,
+        success: <CheckCircleIcon className="size-4" />,
+        info: <InfoIcon className="size-4" />,
+        warning: <WarningIcon className="size-4" />,
+        error: <CancelIcon className="size-4" />,
+        loading: <ProgressActivityIcon className="size-4 animate-spin" />,
       }}
       style={
         {

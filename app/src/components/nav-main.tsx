@@ -1,4 +1,5 @@
-import { ChevronRightIcon, type LucideIcon } from "lucide-react"
+import { ChevronRightIcon } from "lucide-react"
+import type { IconComponent } from "@/components/icons"
 import { Link, useLocation } from "react-router-dom"
 
 import {
@@ -21,7 +22,7 @@ import { cn } from "@/lib/utils"
 interface NavSubItem {
   title: string
   url: string
-  icon?: LucideIcon
+  icon?: IconComponent
   disabled?: boolean
   /** Étiquette d'état (« Beta »…) posée après le titre. */
   badge?: string
@@ -30,7 +31,7 @@ interface NavSubItem {
 interface NavItem {
   title: string
   url: string
-  icon?: LucideIcon
+  icon?: IconComponent
   isActive?: boolean
   disabled?: boolean
   /** Étiquette d'état (« Beta »…) posée après le titre. */

@@ -4,8 +4,8 @@ import {
   CircleDotIcon,
   GavelIcon,
   CalendarIcon,
-  type LucideIcon,
 } from "lucide-react"
+import type { IconComponent } from "@/components/icons"
 import type { CaseStatus, SanctionAction } from "@/types/cases"
 
 // ─── Modèle de filtres (partagé, sans JSX) ────────────────────────────────────
@@ -28,7 +28,7 @@ export interface CaseFilterValues {
 
 export const ALL_FILTER_KEYS: FilterKey[] = ["subject", "issuer", "status", "action", "date"]
 
-export const FILTER_META: Record<FilterKey, { icon: LucideIcon; labelKey: string }> = {
+export const FILTER_META: Record<FilterKey, { icon: IconComponent; labelKey: string }> = {
   subject: { icon: UsersIcon, labelKey: "cases.filters.subject" },
   issuer: { icon: UserCogIcon, labelKey: "cases.filters.issuer" },
   status: { icon: CircleDotIcon, labelKey: "cases.filters.status" },

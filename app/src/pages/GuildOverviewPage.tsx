@@ -48,7 +48,7 @@ import { useGuildAttributes } from "@/hooks/useGuildAttributes"
 import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
-import type { LucideIcon } from "lucide-react"
+import type { IconComponent } from "@/components/icons"
 import type {
   AltGuardConfig,
   LogsConfig,
@@ -123,7 +123,7 @@ interface ModuleCardProps {
   moduleId: string
   name: string
   description: string
-  icon: LucideIcon
+  icon: IconComponent
   isEnabled: boolean
   /** Module jamais configuré alors qu'une sanction interdit d'en activer un. */
   isLocked: boolean

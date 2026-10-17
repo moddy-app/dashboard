@@ -3,8 +3,8 @@ import {
   MoreHorizontalIcon,
   ShareIcon,
   TrashIcon,
-  type LucideIcon,
 } from "lucide-react"
+import type { IconComponent } from "@/components/icons"
 
 import {
   DropdownMenu,
@@ -26,7 +26,7 @@ import {
 interface ProjectItem {
   name: string
   url: string
-  icon: LucideIcon
+  icon: IconComponent
 }
 
 export function NavProjects({

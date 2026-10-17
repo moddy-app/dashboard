@@ -5,8 +5,8 @@ import {
   LayoutPanelTopIcon,
   UserCogIcon,
   UserIcon,
-  type LucideIcon,
 } from "lucide-react"
+import type { IconComponent } from "@/components/icons"
 import type { TicketStatus } from "@/types/api"
 
 // ─── Modèle de filtres — même schéma en chips que `cases` ─────────────────────
@@ -36,7 +36,7 @@ export const LIVE_ONLY_FILTER_KEYS: TicketFilterKey[] = ["panel"]
 /** Le ticket est fermé : l'archive se filtre par agent et par numéro, jamais par panneau. */
 export const ARCHIVE_ONLY_FILTER_KEYS: TicketFilterKey[] = ["staff", "number"]
 
-export const TICKET_FILTER_META: Record<TicketFilterKey, { icon: LucideIcon; labelKey: string }> = {
+export const TICKET_FILTER_META: Record<TicketFilterKey, { icon: IconComponent; labelKey: string }> = {
   status: { icon: CircleDotIcon, labelKey: "modules.tickets.filters.status" },
   category: { icon: FolderIcon, labelKey: "modules.tickets.filters.category" },
   owner: { icon: UserIcon, labelKey: "modules.tickets.filters.owner" },
