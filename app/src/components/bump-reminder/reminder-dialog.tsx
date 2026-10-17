@@ -38,7 +38,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { DirectoryIcon } from "@/components/bump-reminder/directory-icon"
-import { ChannelPicker, RoleMultiPicker } from "@/components/module-pickers"
+import { ChannelPicker, RoleMultiPicker } from "@/components/pickers"
 import {
   formatInterval,
   hasDuplicateTarget,
@@ -241,7 +241,7 @@ function ReminderForm({
             channels={channels}
             onChange={(channel_id) => patch({ channel_id })}
             placeholder={t("modules.selectChannel")}
-            invalid={Boolean(errors.channel_id)}
+            aria-invalid={Boolean(errors.channel_id) || undefined}
           />
           <FieldDescription>{t(`${K}.fields.channelDescription`)}</FieldDescription>
           <FieldError>{errors.channel_id}</FieldError>
@@ -261,7 +261,7 @@ function ReminderForm({
             max={limits.roles}
             onChange={(role_ids) => patch({ role_ids })}
             placeholder={t(`${K}.fields.rolesPlaceholder`)}
-            invalid={Boolean(errors.role_ids)}
+            aria-invalid={Boolean(errors.role_ids) || undefined}
           />
           <FieldDescription>{t(`${K}.fields.rolesDescription`)}</FieldDescription>
           <FieldError>{errors.role_ids}</FieldError>

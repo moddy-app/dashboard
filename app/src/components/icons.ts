@@ -132,6 +132,7 @@ import PersonAddIcon from '~icons/material-symbols/person-add-rounded'
 import PersonIcon from '~icons/material-symbols/person-rounded'
 import PersonSearchIcon from '~icons/material-symbols/person-search-rounded'
 import PlayIcon from '~icons/material-symbols/play-arrow-rounded'
+import PodcastsIcon from '~icons/material-symbols/podcasts-rounded'
 import ProgressActivityIcon from '~icons/material-symbols/progress-activity-rounded'
 import RadioButtonCheckedIcon from '~icons/material-symbols/radio-button-checked-rounded'
 import ReceiptLongIcon from '~icons/material-symbols/receipt-long-rounded'
@@ -175,6 +176,7 @@ import UnfoldMoreIcon from '~icons/material-symbols/unfold-more-rounded'
 import UnknownDocumentIcon from '~icons/material-symbols/unknown-document-rounded'
 import UploadIcon from '~icons/material-symbols/upload-rounded'
 import VideocamIcon from '~icons/material-symbols/videocam-rounded'
+import VolumeUpIcon from '~icons/material-symbols/volume-up-rounded'
 import ViewQuiltIcon from '~icons/material-symbols/view-quilt-rounded'
 import VisibilityIcon from '~icons/material-symbols/visibility-rounded'
 import VisibilityOffIcon from '~icons/material-symbols/visibility-off-rounded'
@@ -298,6 +300,7 @@ export {
   PersonIcon,
   PersonSearchIcon,
   PlayIcon,
+  PodcastsIcon,
   ProgressActivityIcon,
   RadioButtonCheckedIcon,
   ReceiptLongIcon,
@@ -341,6 +344,7 @@ export {
   UnknownDocumentIcon,
   UploadIcon,
   VideocamIcon,
+  VolumeUpIcon,
   ViewQuiltIcon,
   VisibilityIcon,
   VisibilityOffIcon,

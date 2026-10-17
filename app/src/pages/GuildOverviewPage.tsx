@@ -1,32 +1,19 @@
 import { useState } from "react"
 import { useTranslation } from "react-i18next"
-import { useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import {
-  LoaderIcon,
-  SparklesIcon,
-  ShieldAlertIcon,
-  ShieldCheckIcon,
-  FileClockIcon,
-  UsersIcon,
-  StarIcon,
-  MailIcon,
-  MessageSquareIcon,
-  GaugeIcon,
-  BellRingIcon,
-  CheckCircleIcon,
-  XCircleIcon,
-  ExternalLinkIcon,
   CrownIcon,
-  LockIcon,
-  ZapIcon,
-  RadioIcon,
+  ExternalLinkIcon,
   HashIcon,
   LinkIcon,
-  PaletteIcon,
-  TicketIcon,
-  UserPlusIcon,
-  RocketIcon,
-} from "lucide-react"
+  LoaderIcon,
+  LockIcon,
+  RadioIcon,
+  ShieldAlertIcon,
+  SparklesIcon,
+  UsersIcon,
+  ZapIcon,
+} from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -49,24 +36,8 @@ import { getGuildIconUrl } from "@/lib/auth"
 import { createCheckout } from "@/services/guilds"
 import { handleSaveError } from "@/lib/handle-error"
 import type { IconComponent } from "@/components/icons"
-import type {
-  AltGuardConfig,
-  LogsConfig,
-  BotCustomizationConfig,
-  ModuleConfig,
-  WelcomeChannelConfig,
-  TicketsConfig,
-  WelcomeDmConfig,
-} from "@/types/api"
-import { readModuleState } from "@/lib/automod"
-import { isWelcomeActive } from "@/lib/welcome"
-import { isWelcomeDmActive } from "@/lib/welcome-dm"
-import { isBotCustomizationActive } from "@/lib/bot-customization"
-import { isAltGuardActive } from "@/lib/altguard"
-import { isLogsActive } from "@/lib/logs"
-import { isTicketsActive } from "@/lib/tickets"
-import { isMemberApplicationsActive } from "@/lib/member-applications"
-import { isBumpReminderActive } from "@/lib/bump-reminder"
+import { ModuleStatusBadge } from "@/components/module/module-status-badge"
+import { MODULES, getModuleStatus, type ModuleStatus } from "@/lib/modules"
 
 // Classes statiques par couleur (Tailwind ne peut pas générer `bg-${color}-100`).
 const STAT_STYLES = {
@@ -76,113 +47,61 @@ const STAT_STYLES = {
   purple: { box: "bg-purple-100 dark:bg-purple-950", icon: "text-purple-600 dark:text-purple-400" },
 } as const
 
-/**
- * Un module est « activé » dès qu'il est configuré, sauf ceux qui portent leur
- * propre interrupteur : `automod_ai` reste stocké (indications, exemptions) même
- * éteint, sa présence dans `modules` ne veut donc pas dire qu'il est actif.
- * (L'état *réel* d'automod_ai dépend en plus du salon d'alertes et des
- * détecteurs — il est affiché sur la page du module, via GET /status.)
- */
-function isModuleEnabled(id: string, modules: Record<string, ModuleConfig>): boolean {
-  const config = modules[id]
-  if (!config) return false
-  // `state` générique : un module en pause garde sa config mais ne tourne pas.
-  if (readModuleState((config as { state?: unknown }).state) === 'paused') return false
-  // automod_ai : actif ou en simulation tant qu'il n'est pas en pause.
-  if (id === 'automod_ai') return true
-  // welcome_channel n'a pas d'interrupteur global : il est actif dès qu'un
-  // message est activé et rattaché à un salon.
-  if (id === 'welcome_channel') return isWelcomeActive(config as WelcomeChannelConfig)
-  // welcome_dm non plus (et il n'a même pas de salon) : actif dès qu'un message
-  // est activé.
-  if (id === 'welcome_dm') return isWelcomeDmActive(config as WelcomeDmConfig)
-  // bot_customization non plus : le bloc peut exister vide (`{}`) — il est actif
-  // dès qu'un champ (pseudo, bio, avatar, bannière, style) est renseigné.
-  if (id === 'bot_customization') return isBotCustomizationActive(config as BotCustomizationConfig)
-  // altguard non plus : il est actif dès que le salon de vérification et les
-  // deux rôles sont renseignés (`enabled` est calculé, jamais stocké).
-  if (id === 'altguard') return isAltGuardActive(config as AltGuardConfig)
-  // logs non plus : il tourne dès qu'une catégorie a un salon (`enabled` est
-  // calculé côté serveur, jamais stocké).
-  if (id === 'logs') return isLogsActive(config as LogsConfig)
-  // tickets non plus : il tourne dès qu'un panneau activé est rattaché à un
-  // salon (`enabled` est calculé côté serveur, jamais stocké).
-  if (id === 'tickets') return isTicketsActive(config as TicketsConfig)
-  // member_applications a un vrai interrupteur, mais il ne tourne qu'avec un
-  // salon : `enabled` seul ne suffit pas.
-  if (id === 'member_applications') return isMemberApplicationsActive(config)
-  // bump_reminder n'a pas d'interrupteur général : actif dès qu'un rappel
-  // actif est rattaché à un salon.
-  if (id === 'bump_reminder') return isBumpReminderActive(config)
-  return true
-}
-
 // ─── Carte module ─────────────────────────────────────────────────────────────
 
 interface ModuleCardProps {
-  moduleId: string
+  to: string
   name: string
   description: string
   icon: IconComponent
-  isEnabled: boolean
+  status: ModuleStatus
   /** Module jamais configuré alors qu'une sanction interdit d'en activer un. */
   isLocked: boolean
-  guildId: string
-  onNavigate: (path: string) => void
 }
 
-function ModuleCard({
-  moduleId, name, description, icon: Icon,
-  isEnabled, isLocked, guildId, onNavigate,
-}: ModuleCardProps) {
+function ModuleCard({ to, name, description, icon: Icon, status, isLocked }: ModuleCardProps) {
   const { t } = useTranslation()
   return (
-    <Card
-      className="cursor-pointer transition-colors hover:bg-accent/50 py-0"
-      onClick={() => onNavigate(`/servers/${guildId}/modules/${moduleId}`)}
+    <Link
+      to={to}
+      className="block rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-2 mb-1.5">
-          <div className="flex items-center gap-2">
-            <div className="size-7 rounded-md bg-muted flex items-center justify-center shrink-0">
-              <Icon className="size-3.5 text-muted-foreground" />
+      <Card className="h-full py-0 transition-colors hover:bg-accent/50">
+        <CardContent className="p-6">
+          <div className="mb-1.5 flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex size-7 shrink-0 items-center justify-center rounded-md bg-muted">
+                <Icon className="size-3.5 text-muted-foreground" />
+              </div>
+              <CardTitle className="truncate text-sm font-medium">{name}</CardTitle>
             </div>
-            <CardTitle className="text-sm font-medium">{name}</CardTitle>
+            {isLocked ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className={`shrink-0 ${LEVEL_TONE.limited.text} ${LEVEL_TONE.limited.border} ${LEVEL_TONE.limited.softBg}`}
+                  >
+                    <LockIcon data-icon="inline-start" />
+                    {t('violations.locked')}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent className="max-w-64">
+                  {t('violations.banner.newModuleBlockedDescription')}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <ModuleStatusBadge status={status} />
+            )}
           </div>
-          {isEnabled ? (
-            <Badge variant="outline" className="text-xs shrink-0 text-green-600 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800 dark:text-green-400">
-              <CheckCircleIcon className="size-3 mr-1" />
-              {t('guildOverview.modules.enabled')}
-            </Badge>
-          ) : isLocked ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Badge
-                  variant="outline"
-                  className={`text-xs shrink-0 ${LEVEL_TONE.limited.text} ${LEVEL_TONE.limited.border} ${LEVEL_TONE.limited.softBg}`}
-                >
-                  <LockIcon className="size-3 mr-1" />
-                  {t('violations.locked')}
-                </Badge>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-64">
-                {t('violations.banner.newModuleBlockedDescription')}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Badge variant="outline" className="text-xs shrink-0 text-muted-foreground">
-              <XCircleIcon className="size-3 mr-1" />
-              {t('guildOverview.modules.disabled')}
-            </Badge>
-          )}
-        </div>
-        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
-        <div className={`flex items-center gap-1 mt-2 text-xs ${isLocked ? 'text-muted-foreground' : 'text-primary'}`}>
-          <ExternalLinkIcon className="size-3" />
-          <span>{isLocked ? t('violations.viewOnly') : t('guildOverview.modules.configure')}</span>
-        </div>
-      </CardContent>
-    </Card>
+          <p className="text-xs leading-relaxed text-muted-foreground">{description}</p>
+          <div className={`mt-2 flex items-center gap-1 text-xs ${isLocked ? 'text-muted-foreground' : 'text-primary'}`}>
+            <ExternalLinkIcon className="size-3" />
+            <span>{isLocked ? t('violations.viewOnly') : t('guildOverview.modules.configure')}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }
 
@@ -190,7 +109,6 @@ function ModuleCard({
 
 export function GuildOverviewPage() {
   const { t } = useTranslation()
-  const navigate = useNavigate()
   const {
     guildDetail,
     guilds,
@@ -287,22 +205,12 @@ export function GuildOverviewPage() {
   // Les serveurs officiels n'affichent aucune indication premium (ni Max, ni CTA).
   const hidePremium = verifiedKind === 'official'
 
-  // Uniquement les modules disponibles — les modules en dev ne sont pas listés
-  const allModules = [
-    { id: 'starboard', icon: StarIcon },
-    { id: 'welcome_channel', icon: MessageSquareIcon },
-    { id: 'welcome_dm', icon: MailIcon },
-    { id: 'auto_role', icon: UsersIcon },
-    { id: 'adaptive_slowmode', icon: GaugeIcon },
-    { id: 'social_notifications', icon: BellRingIcon },
-    { id: 'automod_ai', icon: SparklesIcon },
-    { id: 'bot_customization', icon: PaletteIcon },
-    { id: 'altguard', icon: ShieldCheckIcon },
-    { id: 'logs', icon: FileClockIcon },
-    { id: 'tickets', icon: TicketIcon },
-    { id: 'member_applications', icon: UserPlusIcon },
-    { id: 'bump_reminder', icon: RocketIcon },
-  ]
+  const moduleStatuses = new Map(
+    MODULES.map((m) => [m.id, getModuleStatus(m.id, modules[m.id])])
+  )
+  const runningModules = [...moduleStatuses.values()].filter(
+    (st) => st === 'active' || st === 'simulation'
+  ).length
 
   const boostTierLabel = boostTier > 0 ? `Level ${boostTier}` : null
 
@@ -382,7 +290,7 @@ export function GuildOverviewPage() {
           { label: t('guildOverview.stats.members'), value: guildDetail.member_count?.toLocaleString() ?? '—', icon: UsersIcon, color: 'blue' as const },
           { label: t('guildOverview.stats.online'), value: guildDetail.presence_count?.toLocaleString() ?? '—', icon: RadioIcon, color: 'green' as const },
           { label: t('guildOverview.stats.cases'), value: stats ? `${stats.open_cases}/${stats.total_cases}` : '—', icon: ShieldAlertIcon, color: 'orange' as const },
-          { label: t('guildOverview.stats.activeModules'), value: String(Object.keys(modules).length), icon: HashIcon, color: 'purple' as const },
+          { label: t('guildOverview.stats.activeModules'), value: String(runningModules), icon: HashIcon, color: 'purple' as const },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="py-0">
             <CardContent className="flex items-center gap-4 p-6">
@@ -440,17 +348,15 @@ export function GuildOverviewPage() {
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {allModules.map(({ id, icon }) => (
+          {MODULES.map((m) => (
             <ModuleCard
-              key={id}
-              moduleId={id}
-              name={t(`modules.${id}.name`)}
-              description={t(`modules.${id}.description`)}
-              icon={icon}
-              isEnabled={isModuleEnabled(id, modules)}
-              isLocked={!gates.canEnableNewModule && !modules[id]}
-              guildId={selectedGuildId}
-              onNavigate={navigate}
+              key={m.id}
+              to={m.path(selectedGuildId)}
+              name={t(m.titleKey)}
+              description={t(m.descriptionKey)}
+              icon={m.icon}
+              status={moduleStatuses.get(m.id) ?? 'not_configured'}
+              isLocked={!gates.canEnableNewModule && !modules[m.id]}
             />
           ))}
         </div>

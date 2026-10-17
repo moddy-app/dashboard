@@ -2179,6 +2179,37 @@
     },
     "channelPicker": {
       "empty": "No channels found"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "simulation": "Simulation",
+      "incomplete": "Needs setup",
+      "not_configured": "Not configured"
+    },
+    "groups": {
+      "moderation": "Moderation",
+      "welcome": "Arrivals",
+      "engagement": "Community",
+      "customization": "Customization"
+    },
+    "loading": "Loading module",
+    "stateControl": {
+      "label": "Module state",
+      "pause": "Pause",
+      "resume": "Resume",
+      "more": "More actions",
+      "reset": "Reset module",
+      "resetTitle": "Reset this module?",
+      "resetDescription": "All of this module's configuration will be deleted.",
+      "resetDone": "Module reset.",
+      "resetError": "Could not reset the module.",
+      "error": "Could not change the module state.",
+      "done": {
+        "active": "Module resumed.",
+        "paused": "Module paused.",
+        "simulation": "Simulation mode enabled."
+      }
     }
   },
   "staff": {
@@ -3388,6 +3419,66 @@
       "channel": "Channel",
       "everyone": "Mass mention",
       "command": "Command"
+    }
+  },
+  "pickers": {
+    "remove": "Remove {{name}}",
+    "more": "+{{count}}",
+    "channel": {
+      "placeholder": "Select a channel",
+      "placeholderMulti": "Add channels",
+      "search": "Search channels...",
+      "empty": "No channels found",
+      "none": "No channel",
+      "deleted": "Deleted channel ({{id}})"
+    },
+    "role": {
+      "placeholder": "Select a role",
+      "placeholderMulti": "Add roles",
+      "search": "Search roles...",
+      "empty": "No roles found",
+      "none": "No role",
+      "deleted": "Deleted role"
+    },
+    "member": {
+      "placeholder": "Select a member",
+      "placeholderMulti": "Add members",
+      "search": "Search by name...",
+      "hint": "Type a name to search.",
+      "empty": "No members found",
+      "loading": "Searching...",
+      "none": "No member",
+      "bot": "Bot",
+      "notFound": "Member not found",
+      "rateLimited": "Discord is limiting requests, try again in a few seconds.",
+      "failed": "Search failed, please try again."
+    },
+    "emoji": {
+      "placeholder": "Choose an emoji",
+      "search": "Search emojis...",
+      "server": "Server",
+      "unicode": "Unicode",
+      "empty": "No emojis found",
+      "loading": "Loading...",
+      "failed": "Could not load emojis.",
+      "none": "No emoji",
+      "groups": {
+        "0": "Smileys and emotions",
+        "1": "People and body",
+        "3": "Animals and nature",
+        "4": "Food and drink",
+        "5": "Travel and places",
+        "6": "Activities",
+        "7": "Objects",
+        "8": "Symbols",
+        "9": "Flags"
+      }
+    },
+    "color": {
+      "default": "Default color",
+      "hex": "Hex color",
+      "swatches": "Color swatches",
+      "reset": "Default color"
     }
   }
 }

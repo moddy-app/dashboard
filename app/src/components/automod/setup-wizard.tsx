@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { CheckIcon } from "lucide-react"
-import { ChannelPicker } from "@/components/module-pickers"
+import { ChannelPicker } from "@/components/pickers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {

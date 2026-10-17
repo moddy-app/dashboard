@@ -105,20 +105,55 @@ export async function updateModule(
   })
 }
 
+/** Modules dont `enabled` est calculé côté serveur : jamais renvoyé à l'écriture. */
+const COMPUTED_ENABLED_MODULES = new Set([
+  'altguard',
+  'logs',
+  'tickets',
+  'bump_reminder',
+  'member_applications',
+])
+
+/** Retire les clés calculées en lecture (`enabled` selon le module, `_apply`). */
+function stripReadOnlyKeys(moduleId: string, config: Record<string, unknown>) {
+  const out = { ...config }
+  delete out._apply
+  if (COMPUTED_ENABLED_MODULES.has(moduleId)) delete out.enabled
+  return out
+}
+
 /**
- * Change l'état d'un module (`active` / `paused` / `simulation`) sans toucher
- * à ses réglages : `PATCH` avec le seul `state`. Pour arrêter un module en
- * gardant sa config, utiliser `paused`, pas `DELETE`.
+ * Change l'état d'un module (`active` / `paused` / `simulation`) via
+ * `PUT .../modules/{id}/state` : seul `state` change, la réponse est la config
+ * COMPLÈTE (forme du GET), sans les clés calculées en lecture.
+ * Repli GET + PUT complet seulement si la route répond 404/405 alors que le
+ * module existe (backend pas encore déployé). Pour arrêter un module en
+ * gardant ses réglages : `paused`, pas `DELETE`.
  */
 export async function setModuleState(
   guildId: string | number,
   moduleId: string,
   state: ModuleState
-): Promise<void> {
-  await api(`/guilds/${guildId}/modules/${moduleId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ state }),
-  })
+): Promise<Record<string, unknown>> {
+  try {
+    const res = (await api(`/guilds/${guildId}/modules/${moduleId}/state`, {
+      method: 'PUT',
+      body: JSON.stringify({ state }),
+    })) as Record<string, unknown> | null
+    return stripReadOnlyKeys(moduleId, { ...(res ?? {}), state: (res?.state as ModuleState) ?? state })
+  } catch (e) {
+    const status = (e as { status?: number } | null)?.status
+    if (status !== 404 && status !== 405) throw e
+    // Route absente ? Le module doit exister pour qu'un repli ait un sens.
+    const base = (await getModule(guildId, moduleId)) as unknown as Record<string, unknown> | null
+    if (!base || Object.keys(base).length === 0) throw e
+    const body = stripReadOnlyKeys(moduleId, { ...base, state })
+    const res = (await api(`/guilds/${guildId}/modules/${moduleId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })) as Record<string, unknown> | null
+    return stripReadOnlyKeys(moduleId, res ?? body)
+  }
 }
 
 export async function disableModule(

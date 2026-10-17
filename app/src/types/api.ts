@@ -107,6 +107,8 @@ export function roleColorToHex(color: number): string {
 }
 
 export interface GuildEmoji {
+  /** `false` : emoji que le serveur ne peut plus utiliser (perte de boost…). */
+  available?: boolean
   id: string
   name: string
   animated?: boolean

@@ -5,7 +5,7 @@ import {
   ChevronDownIcon,
   TriangleAlertIcon,
 } from "lucide-react"
-import { ChannelMultiPicker, RoleMultiPicker } from "@/components/module-pickers"
+import { ChannelMultiPicker, RoleMultiPicker } from "@/components/pickers"
 import { ServerLanguageNote } from "@/components/server-language-note"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -365,10 +365,11 @@ export function AutomodSettingsTab({
                 id="automod-exempt-roles"
                 value={exemptions.roles}
                 roles={exemptableRoles}
+                includeManaged
                 onChange={(roles) => onPatchExemptions({ roles })}
                 max={EXEMPT_MAX}
                 placeholder={t("modules.automod_ai.addRole")}
-                invalid={Boolean(fieldErrors.exemptions)}
+                aria-invalid={Boolean(fieldErrors.exemptions) || undefined}
                 disabled={readOnly}
               />
               <FieldDescription>{t("modules.automod_ai.exemptRolesHint")}</FieldDescription>
@@ -389,10 +390,11 @@ export function AutomodSettingsTab({
                 id="automod-exempt-channels"
                 value={exemptions.channels}
                 channels={exemptableChannels}
+                types={["text", "announcement", "forum"]}
                 onChange={(channels) => onPatchExemptions({ channels })}
                 max={EXEMPT_MAX}
                 placeholder={t("modules.automod_ai.addChannel")}
-                invalid={Boolean(fieldErrors.exemptions)}
+                aria-invalid={Boolean(fieldErrors.exemptions) || undefined}
                 disabled={readOnly}
               />
               <FieldDescription>{t("modules.automod_ai.exemptChannelsHint")}</FieldDescription>

@@ -53,7 +53,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ErrorPage } from "@/components/error-state"
-import { ChannelPicker, RoleMultiPicker } from "@/components/module-pickers"
+import { ChannelPicker, RoleMultiPicker } from "@/components/pickers"
 import { UnsavedBar } from "@/components/unsaved-bar"
 import { ApplicationList } from "@/components/member-applications/application-list"
 import { ApplicationStatsPanel } from "@/components/member-applications/application-stats"
@@ -395,8 +395,9 @@ function MemberApplicationsView() {
                     channels={textChannels}
                     onChange={(channel_id) => patch({ channel_id })}
                     placeholder={t("modules.selectChannel")}
-                    clearLabel={t(`${E}.noChannel`)}
-                    invalid={Boolean(fieldErrors.channel_id)}
+                    allowNone
+                    noneLabel={t(`${E}.noChannel`)}
+                    aria-invalid={Boolean(fieldErrors.channel_id) || undefined}
                   />
                   <FieldDescription>{t(`${E}.channelDescription`)}</FieldDescription>
                   <FieldError>{fieldErrors.channel_id}</FieldError>
@@ -416,7 +417,7 @@ function MemberApplicationsView() {
                     max={limits.ping_roles}
                     onChange={(ping_role_ids) => patch({ ping_role_ids })}
                     placeholder={t(`${E}.addRole`)}
-                    invalid={Boolean(fieldErrors.ping_role_ids)}
+                    aria-invalid={Boolean(fieldErrors.ping_role_ids) || undefined}
                   />
                   <FieldDescription>{t(`${E}.pingRolesDescription`)}</FieldDescription>
                   <FieldError>{fieldErrors.ping_role_ids}</FieldError>
@@ -436,7 +437,7 @@ function MemberApplicationsView() {
                     max={limits.reviewer_roles}
                     onChange={(reviewer_role_ids) => patch({ reviewer_role_ids })}
                     placeholder={t(`${E}.addRole`)}
-                    invalid={Boolean(fieldErrors.reviewer_role_ids)}
+                    aria-invalid={Boolean(fieldErrors.reviewer_role_ids) || undefined}
                   />
                   <FieldDescription>{t(`${E}.reviewerRolesDescription`)}</FieldDescription>
                   <FieldError>{fieldErrors.reviewer_role_ids}</FieldError>

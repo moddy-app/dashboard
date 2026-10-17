@@ -1,6 +1,9 @@
-import { ChevronRightIcon } from "lucide-react"
-import type { IconComponent } from "@/components/icons"
+import { ChevronRightIcon, type IconComponent } from "@/components/icons"
+import { ModuleStatusDot } from "@/components/module/module-status-badge"
+import type { ModuleStatus } from "@/lib/modules"
 import { Link, useLocation } from "react-router-dom"
+
+import * as React from "react"
 
 import {
   Collapsible,
@@ -26,6 +29,10 @@ interface NavSubItem {
   disabled?: boolean
   /** Étiquette d'état (« Beta »…) posée après le titre. */
   badge?: string
+  /** Statut d'un module : petit point à droite de l'entrée. */
+  status?: ModuleStatus
+  /** Titre de groupe affiché au-dessus de cette entrée. */
+  group?: string
 }
 
 interface NavItem {
@@ -99,7 +106,13 @@ export function NavMain({
                       {item.items?.map((subItem) => {
                         const isSubCurrent = location.pathname === subItem.url
                         return (
-                          <SidebarMenuSubItem key={subItem.title}>
+                          <React.Fragment key={subItem.title}>
+                          {subItem.group && (
+                            <li className="px-2 pt-2 text-xs font-medium text-sidebar-foreground/60 first:pt-0">
+                              {subItem.group}
+                            </li>
+                          )}
+                          <SidebarMenuSubItem>
                             <SidebarMenuSubButton
                               asChild={!subItem.disabled}
                               isActive={isSubCurrent}
@@ -127,10 +140,14 @@ export function NavMain({
                                   {subItem.badge && (
                                     <NavBadge>{subItem.badge}</NavBadge>
                                   )}
+                                  {subItem.status && (
+                                    <ModuleStatusDot status={subItem.status} className="ml-auto" />
+                                  )}
                                 </Link>
                               )}
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>
+                          </React.Fragment>
                         )
                       })}
                     </SidebarMenuSub>

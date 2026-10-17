@@ -2179,6 +2179,37 @@
     },
     "channelPicker": {
       "empty": "Aucun salon trouvé"
+    },
+    "status": {
+      "active": "Actif",
+      "paused": "En pause",
+      "simulation": "Simulation",
+      "incomplete": "À compléter",
+      "not_configured": "Non configuré"
+    },
+    "groups": {
+      "moderation": "Modération",
+      "welcome": "Arrivées",
+      "engagement": "Communauté",
+      "customization": "Personnalisation"
+    },
+    "loading": "Chargement du module",
+    "stateControl": {
+      "label": "État du module",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "more": "Autres actions",
+      "reset": "Réinitialiser le module",
+      "resetTitle": "Réinitialiser ce module ?",
+      "resetDescription": "Toute la configuration de ce module sera supprimée.",
+      "resetDone": "Module réinitialisé.",
+      "resetError": "Impossible de réinitialiser le module.",
+      "error": "Impossible de changer l'état du module.",
+      "done": {
+        "active": "Module repris.",
+        "paused": "Module mis en pause.",
+        "simulation": "Mode simulation activé."
+      }
     }
   },
   "staff": {
@@ -3388,6 +3419,66 @@
       "channel": "Salon",
       "everyone": "Mention de masse",
       "command": "Commande"
+    }
+  },
+  "pickers": {
+    "remove": "Retirer {{name}}",
+    "more": "+{{count}}",
+    "channel": {
+      "placeholder": "Choisissez un salon",
+      "placeholderMulti": "Ajouter des salons",
+      "search": "Rechercher un salon...",
+      "empty": "Aucun salon trouvé",
+      "none": "Aucun salon",
+      "deleted": "Salon supprimé ({{id}})"
+    },
+    "role": {
+      "placeholder": "Choisissez un rôle",
+      "placeholderMulti": "Ajouter des rôles",
+      "search": "Rechercher un rôle...",
+      "empty": "Aucun rôle trouvé",
+      "none": "Aucun rôle",
+      "deleted": "Rôle supprimé"
+    },
+    "member": {
+      "placeholder": "Choisissez un membre",
+      "placeholderMulti": "Ajouter des membres",
+      "search": "Rechercher par nom...",
+      "hint": "Saisissez un nom pour rechercher.",
+      "empty": "Aucun membre trouvé",
+      "loading": "Recherche...",
+      "none": "Aucun membre",
+      "bot": "Bot",
+      "notFound": "Membre introuvable",
+      "rateLimited": "Discord limite les requêtes, réessayez dans quelques secondes.",
+      "failed": "La recherche a échoué, veuillez réessayer."
+    },
+    "emoji": {
+      "placeholder": "Choisissez un emoji",
+      "search": "Rechercher un emoji...",
+      "server": "Serveur",
+      "unicode": "Unicode",
+      "empty": "Aucun emoji trouvé",
+      "loading": "Chargement...",
+      "failed": "Impossible de charger les emojis.",
+      "none": "Aucun emoji",
+      "groups": {
+        "0": "Smileys et émotions",
+        "1": "Personnes et corps",
+        "3": "Animaux et nature",
+        "4": "Nourriture et boissons",
+        "5": "Voyages et lieux",
+        "6": "Activités",
+        "7": "Objets",
+        "8": "Symboles",
+        "9": "Drapeaux"
+      }
+    },
+    "color": {
+      "default": "Couleur par défaut",
+      "hex": "Couleur hexadécimale",
+      "swatches": "Nuancier",
+      "reset": "Couleur par défaut"
     }
   }
 }
