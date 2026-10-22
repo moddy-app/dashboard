@@ -6,7 +6,7 @@ Quand l'API ne répond plus du tout, afficher `https://moddy.app/down` en iframe
 ## Tâches accomplies
 - `useAuth` distingue un nouvel état `down` : erreur réseau (`status 0`) ou 5xx sur `GET /auth/me`. Avant, tout échec retombait sur `unauthenticated` et redirigeait vers `/auth/login`, servi par la même API en panne.
 - Tant que l'état est `down`, `/auth/me` est relu toutes les 30 s ; au retour de l'API, le dashboard reprend sans rechargement.
-- Nouveau composant `ApiDownScreen` : iframe `fixed inset-0` vers `moddy.app/down`.
+- Nouveau composant `ApiDownScreen` : iframe `fixed inset-0` au z-index maximal vers `moddy.app/down`, seule chose affichée (ni bannières, ni toasts, ni châssis).
 
 ## Fichiers
 - `app/src/hooks/useAuth.ts` (modifié)
