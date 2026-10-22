@@ -11,12 +11,14 @@ type AuthState =
 const DOWN_RETRY_MS = 30_000
 
 /**
- * L'API ne répond pas du tout : pas de réponse (erreur réseau) ou une 5xx sur
- * `/auth/me`. Sans cette distinction, l'échec retombait sur `unauthenticated`
- * et renvoyait vers le login… servi par cette même API en panne.
+ * L'API ne répond pas du tout : pas de réponse (erreur réseau), une 5xx, ou une
+ * 404 sur `/auth/me`. Cette route existe toujours quand le backend tourne : une
+ * 404 vient de l'hébergeur (« Application not found »), pas du backend. Sans
+ * cette distinction, l'échec retombait sur `unauthenticated` et renvoyait vers
+ * le login… servi par cette même API en panne.
  */
 function isApiDown(e: unknown): boolean {
-  return e instanceof ApiError && (e.isNetworkError || e.isServerError)
+  return e instanceof ApiError && (e.isNetworkError || e.isServerError || e.isNotFound)
 }
 
 export function useAuth() {

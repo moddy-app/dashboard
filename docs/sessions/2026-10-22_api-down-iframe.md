@@ -4,7 +4,7 @@
 Quand l'API ne répond plus du tout, afficher `https://moddy.app/down` en iframe plein écran au lieu de boucler sur le login.
 
 ## Tâches accomplies
-- `useAuth` distingue un nouvel état `down` : erreur réseau (`status 0`) ou 5xx sur `GET /auth/me`. Avant, tout échec retombait sur `unauthenticated` et redirigeait vers `/auth/login`, servi par la même API en panne.
+- `useAuth` distingue un nouvel état `down` : erreur réseau (`status 0`), 5xx ou 404 sur `GET /auth/me` (route toujours présente quand le backend tourne ; pendant la panne du 2026-10-22, l'hébergeur répondait `404 Application not found` sans en-tête CORS). Avant, tout échec retombait sur `unauthenticated` et redirigeait vers `/auth/login`, servi par la même API en panne.
 - Tant que l'état est `down`, `/auth/me` est relu toutes les 30 s ; au retour de l'API, le dashboard reprend sans rechargement.
 - Nouveau composant `ApiDownScreen` : iframe `fixed inset-0` au z-index maximal vers `moddy.app/down`, seule chose affichée (ni bannières, ni toasts, ni châssis).
 
