@@ -3195,5 +3195,8 @@
       "notFound": "Utilisateur introuvable",
       "clear": "Effacer l'utilisateur"
     }
+  },
+  "apiDown": {
+    "title": "Moddy est indisponible"
   }
 }
