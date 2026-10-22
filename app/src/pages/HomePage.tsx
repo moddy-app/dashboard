@@ -4,6 +4,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { GuildProvider } from '@/contexts/GuildContext'
 import { SanctionProvider } from '@/contexts/SanctionContext'
 import { login } from '@/lib/auth'
+import { ApiDownScreen } from '@/components/api-down-screen'
 
 type AuthPhase = 'authenticating' | 'authenticated'
 
@@ -113,6 +114,8 @@ export function HomePage() {
       </SanctionProvider>
     )
   }
+
+  if (auth.status === 'down') return <ApiDownScreen />
 
   return <AuthScreen phase={phase} />
 }

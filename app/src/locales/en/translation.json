@@ -3195,5 +3195,8 @@
       "notFound": "User not found",
       "clear": "Clear the user"
     }
+  },
+  "apiDown": {
+    "title": "Moddy is unavailable"
   }
 }
