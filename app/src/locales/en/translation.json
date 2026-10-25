@@ -288,17 +288,21 @@
       "memberDescription": "Roles given to every human who joins.",
       "botTitle": "Bots",
       "botDescription": "Roles given to every bot that joins.",
+      "tagTitle": "Server tag",
+      "tagDescription": "Roles given while a member displays this server's tag on their profile, and removed when they take it off.",
+      "tagDescriptionWithTag": "Roles given while a member displays the {{tag}} tag on their profile, and removed when they take it off.",
       "rolesLabel": "Roles",
       "addRole": "Add a role...",
       "max": "Up to {{max}} roles.",
       "aboveBot": "Above Moddy's role",
-      "emptyHint": "Both lists are empty: saving will reset the module.",
+      "emptyHint": "All lists are empty: saving will reset the module.",
       "disabledSuccess": "Auto Role reset.",
       "errors": {
         "auto_role_role_not_found": "One of the roles no longer exists.",
         "auto_role_everyone": "@everyone cannot be given as a role.",
         "auto_role_managed": "Roles managed by an integration cannot be given.",
-        "auto_role_too_high": "Moddy cannot give roles placed above its own role."
+        "auto_role_too_high": "Moddy cannot give roles placed above its own role.",
+        "auto_role_missing_permission": "Moddy is missing the Manage Roles permission on this server."
       }
     },
     "auto_restore_roles": {

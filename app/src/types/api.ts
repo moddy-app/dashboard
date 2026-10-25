@@ -221,10 +221,12 @@ export const MAX_WELCOME_DMS = 3
 export const WELCOME_DM_DEFAULT_ACCENT = 0x5865f2
 
 export interface AutoRoleConfig {
-  /** Rôles donnés aux membres (≤ 20). */
+  /** Rôles donnés aux membres (≤ 25). */
   member_roles?: string[]
-  /** Rôles donnés aux bots (≤ 20). */
+  /** Rôles donnés aux bots (≤ 25). */
   bot_roles?: string[]
+  /** Rôles donnés tant que le membre affiche le tag du serveur (≤ 25, absent = []). */
+  tag_roles?: string[]
   /** Ancien format, lu comme `member_roles`. */
   role_ids?: string[]
 }

@@ -288,17 +288,21 @@
       "memberDescription": "Rôles donnés à chaque personne qui rejoint le serveur.",
       "botTitle": "Bots",
       "botDescription": "Rôles donnés à chaque bot qui rejoint le serveur.",
+      "tagTitle": "Tag du serveur",
+      "tagDescription": "Rôles donnés tant qu'un membre affiche le tag de ce serveur sur son profil, et retirés quand il l'enlève.",
+      "tagDescriptionWithTag": "Rôles donnés tant qu'un membre affiche le tag {{tag}} sur son profil, et retirés quand il l'enlève.",
       "rolesLabel": "Rôles",
       "addRole": "Ajouter un rôle...",
       "max": "{{max}} rôles maximum.",
       "aboveBot": "Au-dessus du rôle de Moddy",
-      "emptyHint": "Les deux listes sont vides : l'enregistrement réinitialisera le module.",
+      "emptyHint": "Toutes les listes sont vides : l'enregistrement réinitialisera le module.",
       "disabledSuccess": "Rôle automatique réinitialisé.",
       "errors": {
         "auto_role_role_not_found": "L'un des rôles n'existe plus.",
         "auto_role_everyone": "@everyone ne peut pas être attribué.",
         "auto_role_managed": "Les rôles gérés par une intégration ne peuvent pas être attribués.",
-        "auto_role_too_high": "Moddy ne peut pas attribuer un rôle placé au-dessus du sien."
+        "auto_role_too_high": "Moddy ne peut pas attribuer un rôle placé au-dessus du sien.",
+        "auto_role_missing_permission": "Moddy n'a pas la permission « Gérer les rôles » sur ce serveur."
       }
     },
     "auto_restore_roles": {

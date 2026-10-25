@@ -11,6 +11,7 @@ import { ModulePage } from "@/components/module/module-page"
 import { ModuleStateControl } from "@/components/module/module-state-control"
 import { RoleMultiPicker } from "@/components/pickers"
 import { useGuildContext } from "@/contexts/GuildContext"
+import { getGuildTag, type GuildTagInfo } from "@/services/auto-role"
 import { ApiError } from "@/lib/auth"
 import { botTopRolePosition, isRoleAboveBot } from "@/lib/altguard"
 import { handleSaveError } from "@/lib/handle-error"
@@ -18,21 +19,25 @@ import { logger } from "@/lib/logger"
 import type { AutoRoleConfig, Role } from "@/types/api"
 
 const MODULE_ID = "auto_role"
-const MAX_ROLES = 20
+/** Même plafond que le sélecteur du panneau `/config` côté bot. */
+const MAX_ROLES = 25
+const GUILD_TAGS_FEATURE = "GUILD_TAGS"
 const KNOWN_ERRORS = [
   "auto_role_role_not_found",
   "auto_role_everyone",
   "auto_role_managed",
   "auto_role_too_high",
+  "auto_role_missing_permission",
 ] as const
 
 /** Ancien format `role_ids` lu comme `member_roles`. */
-function readLists(config: AutoRoleConfig | undefined): { member: string[]; bot: string[] } {
+function readLists(config: AutoRoleConfig | undefined): { member: string[]; bot: string[]; tag: string[] } {
   const strings = (v: unknown) => (Array.isArray(v) ? v.map(String) : [])
   const member = strings(config?.member_roles)
   return {
     member: member.length > 0 ? member : strings(config?.role_ids),
     bot: strings(config?.bot_roles),
+    tag: strings(config?.tag_roles),
   }
 }
 
@@ -54,29 +59,61 @@ function toProblem(e: unknown): SaveProblem | null {
 
 export function AutoRolePage() {
   const { t } = useTranslation()
-  const { roles, modules, updateModule, disableModule, isLoadingGuild, isGuildReady, guildError, refreshGuildData } =
-    useGuildContext()
+  const {
+    guildDetail,
+    roles,
+    modules,
+    updateModule,
+    disableModule,
+    isLoadingGuild,
+    isGuildReady,
+    guildError,
+    refreshGuildData,
+  } = useGuildContext()
+  const guildId = guildDetail?.guild_id ?? null
 
   const config = modules[MODULE_ID] as AutoRoleConfig | undefined
   const saved = useMemo(() => readLists(config), [config])
 
   const [member, setMember] = useState<string[]>(saved.member)
   const [bot, setBot] = useState<string[]>(saved.bot)
+  const [tag, setTag] = useState<string[]>(saved.tag)
+  const [tagInfo, setTagInfo] = useState<GuildTagInfo | null>(null)
   const [saving, setSaving] = useState(false)
   const [problem, setProblem] = useState<SaveProblem | null>(null)
 
   useEffect(() => {
     setMember(saved.member)
     setBot(saved.bot)
+    setTag(saved.tag)
   }, [saved])
+
+  useEffect(() => {
+    if (!guildId) return
+    let cancelled = false
+    getGuildTag(guildId)
+      .then((info) => {
+        if (!cancelled) setTagInfo(info)
+      })
+      .catch((e) => logger.warn(`module:${MODULE_ID}`, "Guild tag lookup failed", e))
+    return () => {
+      cancelled = true
+    }
+  }, [guildId])
+
+  // `supported: null` (Discord injoignable) retombe sur les features déjà chargées.
+  const tagSupported =
+    tagInfo?.supported ?? (guildDetail?.features ?? []).includes(GUILD_TAGS_FEATURE)
+  // Des rôles déjà enregistrés gardent la section visible : sinon impossible de les retirer.
+  const showTagSection = tagSupported || saved.tag.length > 0 || tag.length > 0
 
   const botTop = useMemo(() => botTopRolePosition(roles), [roles])
   const disabledReason = (role: Role) => (isRoleAboveBot(role, botTop) ? t("modules.auto_role.aboveBot") : null)
 
   const same = (a: string[], b: string[]) => [...a].sort().join(",") === [...b].sort().join(",")
-  const isDirty = !same(member, saved.member) || !same(bot, saved.bot)
-  const isEmpty = member.length === 0 && bot.length === 0
-  const isConfigured = saved.member.length > 0 || saved.bot.length > 0
+  const isDirty = !same(member, saved.member) || !same(bot, saved.bot) || !same(tag, saved.tag)
+  const isEmpty = member.length === 0 && bot.length === 0 && tag.length === 0
+  const isConfigured = saved.member.length > 0 || saved.bot.length > 0 || saved.tag.length > 0
 
   const handleSave = async () => {
     setSaving(true)
@@ -87,7 +124,7 @@ export function AutoRolePage() {
         toast.success(t("modules.auto_role.disabledSuccess"))
         return
       }
-      await updateModule(MODULE_ID, { member_roles: member, bot_roles: bot })
+      await updateModule(MODULE_ID, { member_roles: member, bot_roles: bot, tag_roles: tag })
       toast.success(t("modules.saved"))
     } catch (e) {
       logger.error(`module:${MODULE_ID}`, "Save failed", e)
@@ -102,14 +139,15 @@ export function AutoRolePage() {
   const faultyNames = (problem?.roleIds ?? []).map((id) => roles.find((r) => r.id === id)?.name ?? id)
 
   const section = (
-    key: "member" | "bot",
+    key: "member" | "bot" | "tag",
     value: string[],
-    onChange: (v: string[]) => void
+    onChange: (v: string[]) => void,
+    description: string = t(`modules.auto_role.${key}Description`)
   ) => (
     <Card>
       <CardHeader>
         <CardTitle>{t(`modules.auto_role.${key}Title`)}</CardTitle>
-        <CardDescription>{t(`modules.auto_role.${key}Description`)}</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
         <FieldGroup>
@@ -155,6 +193,15 @@ export function AutoRolePage() {
       )}
       {section("member", member, setMember)}
       {section("bot", bot, setBot)}
+      {showTagSection &&
+        section(
+          "tag",
+          tag,
+          setTag,
+          tagInfo?.tag
+            ? t("modules.auto_role.tagDescriptionWithTag", { tag: tagInfo.tag })
+            : t("modules.auto_role.tagDescription")
+        )}
       <UnsavedBar
         isDirty={isDirty}
         isSaving={saving}
@@ -162,6 +209,7 @@ export function AutoRolePage() {
         onDiscard={() => {
           setMember(saved.member)
           setBot(saved.bot)
+          setTag(saved.tag)
           setProblem(null)
         }}
       />
