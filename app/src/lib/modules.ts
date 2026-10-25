@@ -103,10 +103,15 @@ export const MODULES: readonly ModuleDefinition[] = [
 
   def('welcome_channel', 'welcome', MessageSquareIcon, (c) => isWelcomeActive(c as never)),
   def('welcome_dm', 'welcome', MailIcon, (c) => isWelcomeDmActive(c as never)),
-  // Le bot lit `member_roles` / `bot_roles` ; `role_ids` est l'ancien format.
+  // Le bot lit `member_roles` / `bot_roles` / `tag_roles` ; `role_ids` est l'ancien format.
   def('auto_role', 'welcome', UsersIcon, (c) => {
     const r = asRec(c)
-    return nonEmptyArray(r.member_roles) || nonEmptyArray(r.bot_roles) || nonEmptyArray(r.role_ids)
+    return (
+      nonEmptyArray(r.member_roles) ||
+      nonEmptyArray(r.bot_roles) ||
+      nonEmptyArray(r.tag_roles) ||
+      nonEmptyArray(r.role_ids)
+    )
   }),
   def('member_applications', 'welcome', UserPlusIcon, isMemberApplicationsActive),
 
