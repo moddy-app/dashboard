@@ -69,16 +69,6 @@ export async function getEmojis(guildId: string | number): Promise<GuildEmoji[]>
   return (await api(`/guilds/${guildId}/emojis`)) as GuildEmoji[]
 }
 
-export async function updateGuildSettings(
-  guildId: string | number,
-  settings: Record<string, unknown>
-): Promise<void> {
-  await api(`/guilds/${guildId}/settings`, {
-    method: 'PATCH',
-    body: JSON.stringify(settings),
-  })
-}
-
 // ─── Modules ──────────────────────────────────────────────────────────────────
 
 export async function getModules(

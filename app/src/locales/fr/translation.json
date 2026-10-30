@@ -349,7 +349,11 @@
       "confirmDeleteDescription": "La configuration du slowmode de #{{channel}} sera supprimée. Moddy ne gérera plus ce salon.",
       "cancel": "Annuler",
       "save": "Enregistrer",
-      "delete": "Supprimer"
+      "delete": "Supprimer",
+      "errors": {
+        "discordUnavailable": "Discord ne répond pas. Rien n'a été enregistré, réessayez dans un instant.",
+        "channelUnavailable": "Ce salon est introuvable sur ce serveur. Si vous venez de le créer, réessayez dans deux minutes."
+      }
     },
     "automod_ai": {
       "name": "Automod",
@@ -717,6 +721,7 @@
         "gradient_needs_two_colors": "Le dégradé demande exactement deux couleurs.",
         "effect_needs_color": "Cet effet demande exactement une couleur.",
         "invalid_image_type": "Format d'image non pris en charge.",
+        "invalid_image_url": "Cette image n'est plus valide. Choisissez-la de nouveau, puis enregistrez.",
         "image_too_large": "Cette image est trop lourde.",
         "invalid_config": "Cette personnalisation est invalide.",
         "image_download_failed": "Moddy n'a pas pu télécharger l'image. Réessayez de l'envoyer.",

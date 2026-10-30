@@ -11,7 +11,7 @@ import "./i18n"
 
 // Pages (lazy-safe imports)
 import { HomePage } from "@/pages/HomePage"
-import { DebugPage } from "@/pages/DebugPage"
+import { DebugRoute } from "@/pages/DebugRoute"
 import { NotFoundPage } from "@/pages/NotFoundPage"
 import { GuildOverviewPage } from "@/pages/GuildOverviewPage"
 import { GuildSelectionView } from "@/pages/GuildSelectionView"
@@ -82,7 +82,7 @@ const router = createBrowserRouter([
   // Hors du châssis : le lien d'archive est donné au salon de journal **et** au
   // DM de fermeture, donc à quelqu'un qui n'administre peut-être aucun serveur.
   { path: "/transcripts/:key", element: <TranscriptPage />, errorElement: <RouteError /> },
-  { path: "/debug", element: <DebugPage />, errorElement: <RouteError /> },
+  { path: "/debug", element: <DebugRoute />, errorElement: <RouteError /> },
   { path: "*", element: <NotFoundPage /> },
 ])
 

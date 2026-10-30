@@ -349,7 +349,11 @@
       "confirmDeleteDescription": "The slowmode configuration for #{{channel}} will be deleted. Moddy will no longer manage this channel.",
       "cancel": "Cancel",
       "save": "Save",
-      "delete": "Remove"
+      "delete": "Remove",
+      "errors": {
+        "discordUnavailable": "Discord is not responding. Nothing was saved, try again in a moment.",
+        "channelUnavailable": "This channel could not be found on this server. If you just created it, try again in a couple of minutes."
+      }
     },
     "automod_ai": {
       "name": "Automod",
@@ -717,6 +721,7 @@
         "gradient_needs_two_colors": "The gradient needs exactly two colors.",
         "effect_needs_color": "This effect needs exactly one color.",
         "invalid_image_type": "Unsupported image format.",
+        "invalid_image_url": "This image is no longer valid. Choose it again, then save.",
         "image_too_large": "This image is too large.",
         "invalid_config": "This customization is invalid.",
         "image_download_failed": "Moddy could not download the image. Try uploading it again.",

@@ -18,7 +18,8 @@
 ```
 /workspaces/dashboard/
 ├── api/                    # Serverless Functions Vercel
-│   └── backend-proxy.ts   # Proxy sécurisé pour signer les requêtes HMAC
+│   ├── health.ts          # Health check (monitor externe)
+│   └── healthz.ts         # Health check minimal (/healthz)
 ├── app/                    # Application React + Vite principale
 │   ├── src/
 │   │   ├── components/     # Composants React réutilisables
@@ -305,20 +306,14 @@ variants: {
 - Fonction `detectBrowserLanguage()` - Détecte la langue du navigateur parmi les langues supportées
 
 **`src/lib/auth.ts`** :
-- Fonction `verifySession()` - Vérifie si l'utilisateur est connecté
-- Fonction `signInWithDiscord()` - Démarre le flow d'authentification Discord OAuth (via proxy)
+- Fonction `api()` - Client HTTP vers `api.moddy.app` (`credentials: 'include'`, snowflakes préservés, `ApiError` avec `status`, `detail`, `body` et `retryAfter` lu sur `Retry-After`)
+- Fonction `getMe()` - Profil de l'utilisateur connecté (`GET /auth/me`)
+- Fonction `login()` - Redirige vers `GET /auth/login?redirect=<url>` du backend
 - Fonction `logout()` - Déconnecte l'utilisateur
-- Fonction `getUserInfo()` - Récupère les informations complètes de l'utilisateur
-- Fonction `callBackendProxy()` - Appelle le proxy Vercel pour signer les requêtes
 
 ### API Serverless (Vercel Functions)
 
-**`/api/backend-proxy.ts`** :
-- Proxy sécurisé pour les requêtes vers le backend Moddy
-- Génère les signatures HMAC côté serveur (clé API jamais exposée au client)
-- Utilise `crypto` Node.js pour HMAC-SHA256
-- Forward les requêtes vers le backend avec signature
-- **Sécurité** : La clé API reste côté serveur uniquement
+Seuls des health checks (`api/health.ts`, `api/healthz.ts`). ⛔ **Aucune fonction ne détient de secret du backend** : l'ancien `api/backend-proxy.ts` (signature HMAC avec `API_KEY` de toute requête reçue, sans authentification, `endpoint` concaténé à l'URL, CORS réfléchi avec credentials) a été supprimé à l'audit de sécurité 2026-10 (DASH-01/02). Ne pas en réintroduire : tout ce qui est déployé sous `/api` est appelable par n'importe qui.
 
 ### Hooks personnalisés
 
@@ -343,37 +338,20 @@ Le dashboard communique avec le backend Moddy via l'API `https://api.moddy.app`.
 - `VITE_API_URL` - URL de l'API backend (https://api.moddy.app)
 - `VITE_DISCORD_CLIENT_ID` - ID client Discord OAuth
 
-**Privées** (côté serveur uniquement, jamais exposées au client) :
-- `API_URL` - URL de l'API backend (pour les serverless functions)
-- `API_KEY` - Clé partagée pour signer les requêtes HMAC (⚠️ NE JAMAIS préfixer par `VITE_`)
+Aucune variable privée : le dashboard n'a plus de fonction serveur qui appelle le backend. `API_KEY` et `API_URL` peuvent être retirées du projet Vercel (`API_KEY` reste à renouveler côté backend : elle a pu fuiter par l'ancien proxy).
 
 ### Authentification
 
-Le système utilise :
-- **Discord OAuth2** pour l'authentification
-- **HMAC-SHA256** pour signer les requêtes API vers `/api/website/*`
-- **Proxy Vercel** qui signe les requêtes côté serveur (la clé API n'est jamais exposée au client)
-- **Cookies HTTP-only** (`moddy_session`) pour la gestion de session
-- Le **backend gère la création des cookies**, le frontend ne fait que vérifier
-
-### Flow d'authentification
-
-1. User clique sur "Se connecter avec Discord"
-2. Frontend → `POST /api/backend-proxy` (proxy Vercel)
-3. Proxy Vercel → Signe la requête avec HMAC côté serveur
-4. Proxy → `POST /api/website/auth/init` vers le backend Moddy
-5. Backend → Retourne un `state` token
-6. Frontend → Redirige vers Discord OAuth avec le `state`
-7. Discord → User autorise l'application
-8. Discord → Redirige vers le backend `/auth/discord/callback`
-9. Backend → Crée la session et pose le cookie `moddy_session`
-10. Backend → Redirige vers la page d'origine
-11. Frontend → Vérifie la session avec `GET /auth/verify`
+- **Discord OAuth2**, piloté entièrement par le backend : `login()` redirige vers `GET /auth/login?redirect=<url>`, le backend pose le cookie `moddy_session` puis renvoie vers la page d'origine
+- **Cookies HTTP-only** (`moddy_session`), envoyés par `credentials: 'include'`
+- Le frontend ne fait que vérifier la session (`GET /auth/me`) ; un `401` relance le login
 
 ### Sécurité
 
-- **Clé API jamais exposée** : La clé API reste côté serveur (proxy Vercel)
-- **Signature HMAC côté serveur** : Les requêtes vers `/api/website/*` sont signées par le proxy
+- **Aucun secret côté dashboard** : ni dans le bundle, ni dans une fonction Vercel
+- **En-têtes HTTP** (`vercel.json` racine et `app/vercel.json`) : `X-Frame-Options: SAMEORIGIN`, `Content-Security-Policy: frame-ancestors 'self'`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Strict-Transport-Security`
+- **Jamais de HTML injecté** depuis une réponse d'API : `icon_svg` des bandeaux est rendu en masque CSS (data URI, inerte), les liens de `inline-markdown.ts` ne suivent que `http(s)://` et `/chemin` (`isSafeInlineHref()`)
+- **Journalisation** : `logger` n'écrit les charges utiles (corps de requête/réponse) qu'en dev ou avec `?debug` ; `/debug` est chargée à la demande et réservée au dev et au staff (`DebugRoute`)
 - **Cookies sécurisés** : `HttpOnly`, `Secure`, et `SameSite=Lax`
 - **CORS strict** : Le backend n'accepte que les requêtes depuis `moddy.app`
 - **Credentials include** : Le frontend utilise `credentials: 'include'` pour envoyer les cookies
@@ -387,7 +365,7 @@ Le système utilise :
 - Configuration ESLint pour la qualité du code
 - TypeScript en mode strict
 - Showcase de composants d'exemple
-- **Intégration backend complète (proxy Vercel sécurisé, auth Discord, gestion de session)**
+- **Intégration backend complète (auth Discord, gestion de session)**
 - **Hook useAuth pour la gestion d'état d'authentification**
 - **Récupération des informations complètes de l'utilisateur (avatar, email, etc.)**
 - **Routing SPA avec react-router-dom** (`/` et `/debug`)
@@ -518,7 +496,7 @@ npx shadcn@latest add [component-name]
 | `/servers/:guildId/modules/member_applications` | `MemberApplicationsPage` | Oui | Module Candidatures (configuration) |
 | `/servers/:guildId/modules/bump_reminder` | `BumpReminderPage` | Oui | Module Rappels de bump |
 | `/servers/:guildId/settings` | `GuildSettingsPage` | Oui | Réglages du serveur (langue) |
-| `/debug` | `DebugPage` | Non | Panneau de debug complet |
+| `/debug` | `DebugRoute` → `DebugPage` (lazy) | Dev ou staff (sinon 404) | Panneau de debug complet |
 
 ### Auth Guard
 La page d'accueil vérifie l'authentification :

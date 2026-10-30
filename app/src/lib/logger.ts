@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-// Detailed frontend logger. Always-on in dev, verbose in debug mode.
+// Detailed frontend logger. Always-on; payloads only in dev or with `?debug`.
 // Writes timestamped/colored entries to the browser console for every
 // action, API call, navigation, success, warn and error the app emits.
 
@@ -24,7 +24,25 @@ function timestamp(): string {
   return `${hh}:${mm}:${ss}.${ms}`
 }
 
+/**
+ * Les charges utiles (corps de requête et de réponse, profils, configurations)
+ * ne sont écrites qu'en développement ou avec `?debug` dans l'URL. En
+ * production, une ligne garde sa portée et son message (`← GET /auth/me 200`)
+ * mais pas les données : une console ouverte ou une extension qui la lit
+ * n'a pas à voir l'e-mail ou les dossiers de modération de la personne.
+ * Les erreurs et avertissements gardent leur détail, utile au support.
+ */
+function verbose(): boolean {
+  if (import.meta.env.DEV) return true
+  try {
+    return new URLSearchParams(window.location.search).has('debug')
+  } catch {
+    return false
+  }
+}
+
 function emit(level: LogLevel, scope: string, message: string, ...rest: unknown[]): void {
+  if (rest.length && level !== 'error' && level !== 'warn' && !verbose()) rest = []
   const prefix = `%c[${timestamp()}] %c${level.toUpperCase().padEnd(7)} %c${scope}`
   const base = 'color:#94a3b8'
   const style = STYLES[level]
