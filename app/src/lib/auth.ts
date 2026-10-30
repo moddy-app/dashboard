@@ -55,11 +55,23 @@ export class ApiError extends Error {
    * que `detail` ne garde pas.
    */
   body: Record<string, unknown> | null
-  constructor(status: number, message: string, detail?: unknown, body?: Record<string, unknown> | null) {
+  /**
+   * Secondes avant réessai, lues sur l'en-tête `Retry-After` (`429` du budget
+   * Discord, `503` quand Discord ne répond pas). `null` sans en-tête exploitable.
+   */
+  retryAfter: number | null
+  constructor(
+    status: number,
+    message: string,
+    detail?: unknown,
+    body?: Record<string, unknown> | null,
+    retryAfter?: number | null
+  ) {
     super(message)
     this.status = status
     this.detail = detail ?? message
     this.body = body ?? null
+    this.retryAfter = retryAfter ?? null
   }
   get isUnauthorized() { return this.status === 401 }
   get isForbidden() { return this.status === 403 }
@@ -67,6 +79,7 @@ export class ApiError extends Error {
   get isServerError() { return this.status >= 500 }
   get isNetworkError() { return this.status === 0 }
   get isUnavailable() { return this.status === 503 }
+  get isRateLimited() { return this.status === 429 }
 
   /** Erreurs de validation par champ (vide si `error` était une chaîne). */
   get validationIssues(): ApiValidationIssue[] {
@@ -99,6 +112,13 @@ function formatApiError(raw: unknown, status: number): string {
     if (parts.length > 0) return parts.join(' · ')
   }
   return `HTTP ${status}`
+}
+
+/** `Retry-After` en secondes (la forme date HTTP n'est pas utilisée par le backend). */
+function parseRetryAfter(header: string | null): number | null {
+  if (!header) return null
+  const seconds = Number(header)
+  return Number.isFinite(seconds) && seconds > 0 ? seconds : null
 }
 
 export async function api(path: string, options: RequestInit = {}): Promise<unknown> {
@@ -145,7 +165,7 @@ export async function api(path: string, options: RequestInit = {}): Promise<unkn
       typeof error === 'object' && error !== null && !Array.isArray(error)
         ? (error as Record<string, unknown>)
         : null
-    throw new ApiError(response.status, message, detail, body)
+    throw new ApiError(response.status, message, detail, body, parseRetryAfter(response.headers.get('Retry-After')))
   }
 
   const text = await response.text()

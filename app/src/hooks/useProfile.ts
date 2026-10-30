@@ -7,6 +7,7 @@ import {
 } from '@/services/cases'
 import type { DiscordUserProfile, DiscordGuildProfile } from '@/types/cases'
 import { logger } from '@/lib/logger'
+import { ApiError } from '@/lib/auth'
 
 // Cache module-level partagé entre tous les composants — un ID donné n'est
 // résolu qu'une seule fois par session (le back-end cache déjà 5 min côté Redis).
@@ -19,13 +20,36 @@ const guildCache = new Map<string, Promise<DiscordGuildProfile>>()
 // refusés alors que `GET /users/{id}` (public) et `GET /guilds/{id}` répondent
 // encore. Sans ce repli, un compte suspendu ne voit que des snowflakes.
 
+// `GET /users/{id}` partage un budget global d'appels Discord : au-delà, `429`
+// avec `Retry-After` (~60 s). On attend le délai et on réessaie une fois — le
+// profil reste « en chargement » plutôt que de basculer sur un snowflake nu.
+// Un `404` est mis en cache 10 min par le backend : il est gardé ici aussi
+// (pas de nouvel essai dans la session), réessayer ne changerait rien.
+
+const RATE_LIMIT_FALLBACK_S = 60
+
+function wait(seconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, seconds * 1000))
+}
+
+async function loadPublicUser(id: string): Promise<DiscordUserProfile> {
+  try {
+    return await getPublicUser(id)
+  } catch (e) {
+    if (!(e instanceof ApiError) || !e.isRateLimited) throw e
+    await wait(e.retryAfter ?? RATE_LIMIT_FALLBACK_S)
+    return getPublicUser(id)
+  }
+}
+
 function loadUser(id: string): Promise<DiscordUserProfile> {
   let p = userCache.get(id)
   if (!p) {
     p = getUserProfile(id)
-      .catch(() => getPublicUser(id))
+      .catch(() => loadPublicUser(id))
       .catch((e) => {
-        userCache.delete(id) // autorise un nouvel essai plus tard
+        // autorise un nouvel essai plus tard, sauf sur un utilisateur inexistant
+        if (!(e instanceof ApiError) || !e.isNotFound) userCache.delete(id)
         throw e
       })
     userCache.set(id, p)

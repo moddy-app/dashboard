@@ -251,6 +251,7 @@ export const BOT_CUSTOMIZATION_ERROR_CODES = [
   'gradient_needs_two_colors',
   'effect_needs_color',
   'invalid_image_type',
+  'invalid_image_url',
   'image_too_large',
   'invalid_config',
   'image_download_failed',

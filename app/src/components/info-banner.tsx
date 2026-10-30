@@ -1,4 +1,4 @@
-import type { SVGProps } from 'react'
+import type { CSSProperties, SVGProps } from 'react'
 import { MegaphoneIcon, AlertOctagonIcon, WrenchIcon, InfoIcon, TriangleAlertIcon, CheckCircle2Icon, XIcon } from '@/components/icons'
 import type { Banner, BannerType } from '@/services/banner'
 import { cn } from '@/lib/utils'
@@ -65,6 +65,17 @@ interface InfoBannerProps {
   onDismiss: () => void
 }
 
+/**
+ * Rend `icon_svg` en masque CSS plutôt qu'en `innerHTML` : un SVG chargé comme
+ * image (data URI) est inerte, ses `<script>`, `onload` ou `<foreignObject>`
+ * ne s'exécutent pas. Seule sa silhouette compte, peinte dans `color` — ce qui
+ * reproduit le rendu d'une icône en `currentColor`.
+ */
+function svgMaskStyle(svg: string, color: string): CSSProperties {
+  const mask = `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / contain no-repeat`
+  return { backgroundColor: color, mask, WebkitMask: mask }
+}
+
 export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
   const nodes = parseInlineMarkdown(banner.message)
 
@@ -106,11 +117,13 @@ export function InfoBanner({ banner, onDismiss }: InfoBannerProps) {
     >
       <div className="flex flex-1 items-start justify-center gap-3">
         {banner.icon_svg ? (
+          // Jamais injecté dans le DOM : le SVG sert de masque, peint dans la
+          // couleur d'accent. Chargé comme image, il ne peut exécuter aucun
+          // script ni gestionnaire d'événement, même s'il en contient.
           <span
             className="mt-0.5 size-4 shrink-0"
             aria-hidden
-            dangerouslySetInnerHTML={{ __html: banner.icon_svg }}
-            style={{ color: accentColor }}
+            style={svgMaskStyle(banner.icon_svg, accentColor)}
           />
         ) : null}
         <p className="leading-relaxed">{nodes}</p>

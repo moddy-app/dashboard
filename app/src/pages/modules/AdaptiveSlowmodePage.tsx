@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next"
 import { toast } from "sonner"
 import { AddIcon, DeleteIcon, EditIcon, GaugeIcon } from "@/components/icons"
 import { handleSaveError } from "@/lib/handle-error"
+import { ApiError } from "@/lib/auth"
 import { logger } from "@/lib/logger"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -266,6 +267,27 @@ export function AdaptiveSlowmodePage() {
     setEditing({ isNew: false, channelId, config: { ...existing } })
   }
 
+  // L'écriture d'un salon est vérifiée auprès de Discord : `503` quand Discord
+  // ne répond pas (rien n'est enregistré, `Retry-After` ~30 s), `422` en chaîne
+  // quand le salon est introuvable sur ce serveur — ce qui arrive aussi à un
+  // salon créé il y a moins de deux minutes. Les `422` de validation (tableau)
+  // gardent le traitement générique.
+  const handleChannelError = (e: unknown) => {
+    if (e instanceof ApiError && e.isUnavailable) {
+      toast.error(t('modules.saveError'), {
+        description: t('modules.adaptive_slowmode.errors.discordUnavailable'),
+      })
+      return
+    }
+    if (e instanceof ApiError && e.status === 422 && typeof e.detail === 'string') {
+      toast.error(t('modules.saveError'), {
+        description: t('modules.adaptive_slowmode.errors.channelUnavailable'),
+      })
+      return
+    }
+    handleSaveError(e, { title: t('modules.saveError') })
+  }
+
   const handleSaveChannel = async () => {
     if (!selectedGuildId || !editing || !editing.channelId) return
 
@@ -285,7 +307,7 @@ export function AdaptiveSlowmodePage() {
       logger.success('module:adaptive_slowmode', 'Channel saved')
     } catch (e) {
       logger.error('module:adaptive_slowmode', 'Channel save failed', e)
-      handleSaveError(e, { title: t('modules.saveError') })
+      handleChannelError(e)
     } finally {
       setIsSavingChannel(false)
     }
@@ -306,7 +328,7 @@ export function AdaptiveSlowmodePage() {
       logger.success('module:adaptive_slowmode', 'Channel deleted')
     } catch (e) {
       logger.error('module:adaptive_slowmode', 'Delete failed', e)
-      handleSaveError(e, { title: t('modules.saveError') })
+      handleChannelError(e)
     } finally {
       setDeletingChannelId(null)
       setConfirmDeleteId(null)
